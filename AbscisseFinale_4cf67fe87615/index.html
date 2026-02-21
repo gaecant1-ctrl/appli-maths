@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Droite graduée</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
+    <script src="Nombre.js"></script>
+    <script src="Configuration.js"></script>
+  </head>
+
+  <body>
+    <div id="zone-options">
+      <div class="option-block">
+        <label for="niveau-select">Niveau :</label>
+        <select id="niveau-select">
+          <option value="1">Niveau 1</option>
+          <option value="2">Niveau 2</option>
+          <option value="3">Niveau 3</option>
+          <option value="4">Niveau 4</option>
+          <option value="5" selected>Niveau 5</option>
+          <option value="6">Niveau 6</option>
+          <option value="7">Mixte</option>
+        </select>
+      </div>
+
+      <div class="option-block">
+        <label for="type-select">Type :</label>
+        <select id="type-select">
+          <option value="placer">Placer</option>
+          <option value="lire" selected>Lire</option>
+          <option value="mixte">Mixte</option>
+        </select>
+      </div>
+      <div class="option-block">
+  <label for="curseur-checkbox">Curseur :</label>
+  <input type="checkbox" id="curseur-checkbox" checked>
+</div>
+
+    </div>
+
+    <div id="consigne">
+      Consigne : <span id="cible"></span>
+    </div>
+
+    <div id="zone-canvas"></div>
+
+    <div id="zone-reponse">
+      <input id="reponse" type="text" placeholder="Réponse ici" autocomplete="off">
+      <button id="validation" onclick="verifier()">Valider</button>
+      <button id="suivant" onclick="initialize()">Suivant</button>
+    </div>
+
+    <p id="feedback"></p>
+
+   <script src="DroiteGraduee.js"></script>
+<script>
+
+
+  const app = new DroiteGraduee("zone-canvas");
+
+  function initialize() {
+    app.initie();
+  }
+
+  function verifier() {
+    app.verifier();
+  }
+
+
+
+   
+</script>
+  </body>
+</html>
