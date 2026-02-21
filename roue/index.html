@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Roue – Vitesse angulaire</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+
+<div id="container">
+<h1>Roue et vitesse angulaire</h1>
+  <!-- Ligne paramètres -->
+  <div class="ligne ligne-param">
+    <div class="info" id="vitesseInfo"></div>
+    <div class="info" id="tempsInfo"></div>
+  </div>
+
+  <!-- Ligne chrono -->
+  <div class="ligne ligne-chrono">
+    <div class="info">
+      Chronomètre : <span id="chrono">0m 00s</span>
+    </div>
+  </div>
+
+  <canvas id="canvas" width="250" height="250"></canvas>
+
+  <!-- Ligne actions -->
+  <div class="ligne ligne-actions">
+    <button id="startBtn">Démarrer</button>
+    <input 
+  id="reponse" 
+  placeholder="Numéro ?" 
+  type="text"
+  inputmode="numeric"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+/>
+    <button id="validerBtn">Valider</button>
+  </div>
+
+  <!-- Feedback -->
+  <div id="feedback"></div>
+
+  <!-- Nouvelle question -->
+  <div class="ligne">
+    <button id="nouvelleBtn">Nouvelle question</button>
+  </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
