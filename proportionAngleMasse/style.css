@@ -1,0 +1,198 @@
+/* ============================= */
+/* RESET GLOBAL */
+/* ============================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f0f7ff;
+  color: #1f2937;
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================= */
+/* APP PRINCIPALE */
+/* ============================= */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  position: relative;
+  z-index: 2; /* sous animation */
+}
+
+/* ============================= */
+/* TITRE */
+/* ============================= */
+
+h1 {
+  margin-bottom: 25px;
+  font-size: 19pt;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+/* ============================= */
+/* GRILLE */
+/* ============================= */
+
+#container {
+  display: grid;
+  grid-template-columns: 180px 180px;
+  gap: 18px 32px;
+
+  padding: 22px;
+  background: white;
+
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* ============================= */
+/* CANVAS EXERCICE */
+/* ============================= */
+
+#container canvas {
+  display: block;
+  border-radius: 12px;
+  border: 2px solid #1e3a8a;
+  background: #ffffff;
+}
+
+/* ============================= */
+/* BLOCS TEXTE */
+/* ============================= */
+
+.bloc {
+  width: 180px;
+  padding: 10px;
+
+  text-align: center;
+  font-size: 14pt;
+  font-weight: 600;
+
+  border-radius: 10px;
+}
+
+/* Angle */
+#angle1, #angle2 {
+  background: #2563eb;
+  color: white;
+}
+
+/* Masse */
+#masse1, #masse2 {
+  background: #fb7185;
+  color: white;
+}
+
+/* ============================= */
+/* INPUT */
+/* ============================= */
+
+#reponse {
+  margin-top: 25px;
+
+  width: 170px;
+  height: 46px;
+
+  font-size: 17pt;
+  text-align: center;
+  font-weight: 600;
+
+  border-radius: 10px;
+  border: 2px solid #1e3a8a;
+  background: white;
+}
+
+#reponse:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* ============================= */
+/* SCORE */
+/* ============================= */
+
+/* ============================= */
+/* SCORE */
+/* ============================= */
+
+/* ============================= */
+/* SCORE */
+/* ============================= */
+
+/* ============================= */
+/* SCORE = BOUTON SUIVANT */
+/* ============================= */
+
+#score {
+  margin-top: 22px;
+  padding: 14px 28px;
+
+  background: #1e3a8a;
+  color: white;
+
+  border-radius: 12px;
+
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+
+  min-width: 260px;
+  text-align: center;
+
+  transition: all 0.2s ease;
+}
+
+/* état cliquable */
+#score.scoButton {
+  background: #16a34a;
+  cursor: pointer;
+}
+
+#score.scoButton:hover {
+  background: #15803d;
+  transform: translateY(-2px);
+}
+
+#score.scoButton:active {
+  transform: translateY(0);
+}
+
+
+
+
+/* ============================= */
+/* CANVAS D’ANIMATION */
+/* ============================= */
+
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+
+  z-index: 10;          /* au-dessus de tout */
+  pointer-events: none; /* non interactif */
+
+  background: transparent;
+}
+
+
+

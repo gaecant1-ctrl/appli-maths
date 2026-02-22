@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Proportionnalité : angle et masse</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div id="app">
+
+    <h1>Proportionnalité : angle et masse</h1>
+
+    <div id="container">
+
+      <canvas id="canvas1" width="180" height="180"></canvas>
+      <canvas id="canvas2" width="180" height="180"></canvas>
+
+      <div id="angle1" class="bloc"></div>
+      <div id="angle2" class="bloc"></div>
+
+      <div id="masse1" class="bloc"></div>
+      <div id="masse2" class="bloc"></div>
+
+    </div>
+
+    <input type="text"
+           id="reponse"
+           placeholder="m"
+           autocomplete="off"
+           onfocusin="vide()">
+
+    <div id="score" class="sco">Score : 0/0</div>
+
+  </div>
+
+  <canvas id="bgCanvas"></canvas>
+
+  <script src="anim.js"></script>
+
+</body>
+</html>
