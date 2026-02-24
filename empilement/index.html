@@ -1,0 +1,91 @@
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Piles 3D avec JSpreadsheet + Three.js</title>
+
+  <!-- JSpreadsheet -->
+  <link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v5/jspreadsheet.css" />
+  <link rel="stylesheet" href="https://jsuites.net/v5/jsuites.css" />
+  <script src="https://jsuites.net/v5/jsuites.js"></script>
+  <script src="https://bossanova.uk/jspreadsheet/v5/jspreadsheet.js"></script>
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-title">
+  <span class="title-icon">🧱</span>
+  <span class="title-text">Tableau → Piles 3D</span>
+  <button id="modeRandomBtn" class="palette-btn"></button>
+<button id="modeHeightBtn">Hauteur</button>
+<button id="modeColumnBtn">Colonnes</button>
+<button id="modeRowBtn">Lignes</button>
+<button id="modeFacesBtn" class="palette-btn"></button>
+
+</div>
+  <div class="main-layout">
+
+    <!-- CONTAINER TABLEAU -->
+    <div id="container-tableau">
+            <div class="toolbar jss_object">
+<button id="shuffleBtn" class="tool-btn">🎲</button>
+<button id="clearBtn" class="tool-btn">🗑</button>
+<button id="incBtn" class="tool-btn">➕1</button>
+<button id="decBtn" class="tool-btn">➖1</button>
+
+
+<button id="toggleTableBtn" class="tool-btn" title="Afficher / masquer tableau">
+  👁
+</button>
+
+<input id="totalCubesInput"
+       type="number"
+       min="0"
+       max="125"
+       value="18"
+       class="cube-input">
+
+<button id="shuffleRandomBtn" class="palette-btn">
+  shuffle
+</button>
+      </div>
+      <div id="spreadsheet"></div>
+      
+                 <div class="toolbar jss_object">
+<button id="toggleRotBtn" class="tool-btn" title="Rotation">⟳</button>
+<button id="resetViewBtn" class="tool-btn" title="Vue initiale">
+
+</button>
+<button id="zoomInBtn" class="tool-btn" title="Zoom +">＋</button>
+<button id="zoomOutBtn" class="tool-btn" title="Zoom -">－</button>
+<button id="savePngBtn" class="tool-btn" title="Exporter PNG">🖼</button>
+<button id="saveLatexBtn" class="tool-btn" title="Exporter LaTeX">∑</button>  
+<button id="viewTopBtn"    class="tool-btn" title="Vue dessus">top</button>
+<button id="viewFrontBtn"  class="tool-btn" title="Vue face">front</button>
+<button id="viewBackBtn"   class="tool-btn" title="Vue arrière">back</button>
+<button id="viewLeftBtn"   class="tool-btn" title="Vue gauche">left</button>
+<button id="viewRightBtn"  class="tool-btn" title="Vue droite">right</button>
+<button id="viewOrbitBtn"  class="tool-btn" title="Vue perspective (home)">home</button>
+      </div>
+
+
+    </div>
+
+    <!-- CONTAINER SCENE -->
+    <div class="container-scene">
+
+      <div id="scene-container"></div>
+
+ 
+    </div>
+
+
+
+ </div>
+ <script src="tabl.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="scr.js" defer></script>
+</body>
+</html>

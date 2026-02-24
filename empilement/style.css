@@ -1,0 +1,238 @@
+body {
+  margin: 0;
+}
+
+
+/* =========================
+   TITRE APPLICATION
+========================= */
+
+.app-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  margin-top: 30px;
+  margin-bottom: 10px;
+
+  font-size: 28px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.title-icon {
+  font-size: 30px;
+}
+
+.title-text {
+  letter-spacing: 0.5px;
+}
+
+.main-layout {
+  display: flex;          /* ← met les deux côte à côte */
+  flex-direction: row;    /* ← sur une ligne */
+  gap: 30px;              /* ← espace entre les deux */
+  align-items: flex-start;
+}
+
+
+/* =========================
+   CELLULES JSpreadsheet
+========================= */
+
+#spreadsheet .jss_cell {
+  width: 36px !important;
+  height: 50px !important;
+
+  line-height: 50px !important;   /* centrage vertical */
+  text-align: center;
+
+  font-size: 16px;
+  font-weight: 500;
+
+  border: 1px solid #d1d5db !important;
+}
+
+/* cellule sélectionnée */
+#spreadsheet .jss_selected {
+  background: #dbeafe !important;
+}
+
+/* focus édition */
+#spreadsheet .jss_cell:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: -2px;
+}
+
+#spreadsheet {
+  transition: opacity 0.2s ease;
+}
+
+#container-tableau {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  width: 280px;        /* largeur fixe */
+  flex-shrink: 0;      /* empêche le rétrécissement */
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 2px solid #d1d5db;
+  border-radius: 16px;
+  padding: 20px;
+  height: 400px;
+}
+
+.container-scene {
+  flex: 1;                /* prend tout le reste à droite */
+}
+
+#scene-container {
+  
+  height: 400px;
+}
+
+.container-scene {
+width: 300px;
+}
+/* =========================
+   STYLE DES DEUX CONTAINERS
+========================= */
+
+#container-tableau,
+.container-scene {
+  background: #ffffff;
+  border: 2px solid #d1d5db;     /* bordure visible */
+  border-radius: 16px;           /* angles bien arrondis */
+  padding: 20px;
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   TOOLBAR
+========================= */
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+
+  padding: 10px 12px;
+
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   BOUTONS
+========================= */
+
+/* =========================
+   BOUTONS ICONES PROPRES
+========================= */
+
+.hidden {
+  display: none !important;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+.hidden-spreadsheet {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tool-btn {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+
+  font-size: 15px;
+  line-height: 1;
+
+  cursor: pointer;
+  padding: 0;
+
+  transition: all 0.15s ease;
+}
+
+.tool-btn:hover {
+  background: #e0f2fe;
+  border-color: #3b82f6;
+}
+
+.tool-btn:active {
+  transform: scale(0.92);
+}
+
+/* état pause */
+.tool-btn.paused {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.icon {
+  width: 15px;
+  height: 15px;
+  stroke: #334155;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.tool-btn:hover .icon {
+  stroke: #2563eb;
+}
+
+
+.palette-btn{
+  width:38px;
+  height:38px;
+  border:2px solid #cbd5e1;
+  border-radius:14px;
+  background:linear-gradient(145deg,#ffffff,#f1f5f9);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.palette-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 14px rgba(0,0,0,0.15);
+}
+
+.palette-btn.active{
+  border-color:#2563eb;
+  box-shadow:0 0 0 3px #bfdbfe inset;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+}
+
+.tool-btn {
+  color: #334155;
+}
+
+.tool-btn:hover {
+  color: #2563eb;
+}
