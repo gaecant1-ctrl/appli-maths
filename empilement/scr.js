@@ -7,7 +7,10 @@ class SceneManager {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xf1f5f9);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: true        // 🔥 IMPORTANT
+});
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -136,22 +139,75 @@ class CameraController {
     };
 
     sceneManager.setCamera(this.camera);
+    this.updateRotationButtons();
   }
+
+setRotation(active) {
+
+  this.rotationActive = active;
+
+  const rotBtn = document.getElementById("toggleRotBtn");
+
+  if (rotBtn) {
+    rotBtn.innerHTML = active ? iconPause : iconPlay;
+    rotBtn.classList.toggle("active", active);
+  }
+
+  this.updateRotationButtons();
+}
+
+rotateStep(direction) {
+
+  // On ne tourne que si rotation auto désactivée
+  if (this.rotationActive) return;
+
+  if (this.mode !== "orbit") return;
+
+  const step = THREE.MathUtils.degToRad(1);
+
+  if (direction === "left") {
+    this.orbit.angle -= step;
+  }
+
+  if (direction === "right") {
+    this.orbit.angle += step;
+  }
+}
+
+updateRotationButtons() {
+
+  const leftBtn  = document.getElementById("rotLeftBtn");
+  const rightBtn = document.getElementById("rotRightBtn");
+
+  const manualAllowed =
+    this.mode === "orbit" && !this.rotationActive;
+
+  if (leftBtn && rightBtn) {
+
+    leftBtn.disabled  = !manualAllowed;
+    rightBtn.disabled = !manualAllowed;
+
+    leftBtn.classList.toggle("disabled", !manualAllowed);
+    rightBtn.classList.toggle("disabled", !manualAllowed);
+  }
+}
 
 setView(mode) {
 
   this.mode = mode;
 
-  // arrêter la rotation orbit quand on change de vue
-  this.rotationActive = false;
+  // On coupe toujours la rotation auto
+  this.setRotation(false);
 
-  // si on revient en orbit → on remet la vue initiale
   if (mode === "orbit") {
     this.orbit.angle  = Math.PI / 3 * 1.9;
     this.orbit.radius = 10;
     this.orbit.height = 6;
   }
+
+  this.updateRotationButtons();
 }
+
 update() {
 
   const centerX = (COLS - 1) / 2;
@@ -577,6 +633,12 @@ class App {
 }
 
 const app = new App();
+
+let rotBtn = document.getElementById("toggleRotBtn");
+rotBtn.innerHTML = iconPause; // rotation active au départ
+rotBtn.classList.add("active");
+app.camera.updateRotationButtons();
+
 
 function setPile(row, col, h) {
   app.piles.setHeight(row, col, h);

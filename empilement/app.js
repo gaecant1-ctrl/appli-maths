@@ -41,11 +41,7 @@ setIcon("modeFacesBtn", `
   <path d="M20 8V16L12 21"/>
 </svg>`);
 
-setIcon("shuffleRandomBtn", `
-<svg viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-  <path d="M4 7h4l2 3 2-3h8"/>
-  <path d="M4 17h4l2-3 2 3h8"/>
-</svg>`);
+
 
 setIcon("resetViewBtn", `
 <svg viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
@@ -116,39 +112,58 @@ setIcon("viewBackBtn", cubeIcon("back"));
 setIcon("viewTopBtn", cubeIcon("top"));
 setIcon("viewLeftBtn", cubeIcon("left"));
 setIcon("viewRightBtn", cubeIcon("right"));
+
+
+const iconPlay = `
+<svg viewBox="0 0 24 24" class="icon" fill="currentColor">
+  <polygon points="8,5 19,12 8,19"/>
+</svg>`;
+
+const iconPause = `
+<svg viewBox="0 0 24 24" class="icon" fill="currentColor">
+  <rect x="6" y="5" width="4" height="14"/>
+  <rect x="14" y="5" width="4" height="14"/>
+</svg>`;
+
+setIcon("savePngBtn", `
+<svg viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+  <circle cx="16" cy="9" r="2"></circle>
+  <path d="M4 18l6-6 4 4 3-3 3 5"></path>
+</svg>
+`);
 // back = on colorie la face avant du cube orienté gauche
 /* =========================================================
    ROTATION / ZOOM / RESET
 ========================================================= */
 
-document.getElementById("toggleRotBtn").addEventListener("click", () => {
+document.getElementById("toggleRotBtn")
+  .addEventListener("click", () => {
 
-  const cam = app.camera;
-  cam.rotationActive = !cam.rotationActive;
+    const cam = app.camera;
 
-  const btn = document.getElementById("toggleRotBtn");
+    // 🔁 Si on n’est pas en orbit → on revient en orbit
+    if (cam.mode !== "orbit") {
+      cam.setView("orbit");
+      cam.setRotation(true);
+      return;
+    }
 
-  if (cam.rotationActive) {
-    btn.textContent = "⟳";
-    btn.classList.remove("paused");
-  } else {
-    btn.textContent = "⏸";
-    btn.classList.add("paused");
-  }
+    // 🎬 Si déjà en orbit → on toggle
+    cam.setRotation(!cam.rotationActive);
 });
 
-document.getElementById("resetViewBtn").addEventListener("click", () => {
 
-  const cam = app.camera;
+document.getElementById("rotLeftBtn")
+  .addEventListener("click", () => {
+    app.camera.rotateStep("left");
+  });
 
-  cam.rotationActive = false;
-  cam.orbit.radius = 10;
-  cam.orbit.height = 6;
-  cam.orbit.angle  = Math.PI / 3 * 1.9;
-
-  cam.camera.zoom = 1;
-  cam.camera.updateProjectionMatrix();
-});
+document.getElementById("rotRightBtn")
+  .addEventListener("click", () => {
+    app.camera.rotateStep("right");
+  });
+  
 
 document.getElementById("zoomInBtn").addEventListener("click", () => {
   const cam = app.camera.camera;
@@ -233,17 +248,29 @@ document.getElementById("toggleTableBtn")
    EXPORT PNG
 ========================================================= */
 
-document.getElementById("savePngBtn").addEventListener("click", () => {
+document.getElementById("savePngBtn")
+  .addEventListener("click", () => {
 
-  app.sceneManager.render();
+    const scene = app.sceneManager.scene;
+    const renderer = app.sceneManager.renderer;
 
-  const dataURL =
-    app.sceneManager.renderer.domElement.toDataURL("image/png");
+    const originalBg = scene.background;
 
-  const a = document.createElement("a");
-  a.href = dataURL;
-  a.download = "scene.png";
-  a.click();
+    // 🔥 Fond transparent
+    scene.background = null;
+
+    renderer.render(scene, app.camera.camera);
+
+    const dataURL = renderer.domElement.toDataURL("image/png");
+
+    // Restaurer le fond écran
+    scene.background = originalBg;
+    renderer.render(scene, app.camera.camera);
+
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "capture.png";
+    link.click();
 });
 
 
@@ -416,3 +443,5 @@ document.getElementById("shuffleBtn").addEventListener("click", () => {
 
   valider(); // mise à jour 3D
 });
+
+

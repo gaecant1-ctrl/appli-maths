@@ -74,7 +74,7 @@ body {
   flex-direction: column;
   gap: 20px;
 
-  width: 280px;        /* largeur fixe */
+  width: 350px;        /* largeur fixe */
   flex-shrink: 0;      /* empêche le rétrécissement */
   justify-content: space-between;
   align-items: center;
@@ -236,3 +236,10 @@ width: 300px;
 .tool-btn:hover {
   color: #2563eb;
 }
+
+.tool-btn.disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
