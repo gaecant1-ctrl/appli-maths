@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Atelier mécano responsive</title>
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+  <style>
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", "Segoe UI", sans-serif;
+  background: #f0f2f5;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.container { display: flex; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  overflow: hidden; width: 90%; height: 85%; padding: 10px; box-sizing: border-box; gap: 10px; border: 3px solid #ddd; }
+.plateau { flex: 3; background: #fafafa; display: flex; justify-content: center; align-items: center;
+  border: 3px solid #ff9800; border-radius: 12px; padding: 8px; box-sizing: border-box; }
+.reglages { flex: 1; padding: 15px; display: flex; flex-direction: column; justify-content: flex-start;
+  background: linear-gradient(135deg, #ffecd2, #fcb69f); border: 3px solid #ff9800; border-radius: 12px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
+h1 { font-size: 1.4rem; margin-bottom: 10px; color: #ff5722; text-shadow: 1px 1px #fff; }
+#controls { display: flex; flex-direction: column; gap: 8px; }
+#affichage { display: flex; flex-direction: column; gap: 6px; font-size: 1.2rem; }
+.input-color { min-height: 28px; padding: 4px 6px; border: 2px solid #ff9800; border-radius: 6px; font-size: 0.9rem;
+  background: #fff7e6; color: #333; outline: none; white-space: nowrap; }
+.input-color span.a { color: green; font-weight: bold; }
+.input-color span.b { color: blue; font-weight: bold; }
+.input-color span.c { color: red; font-weight: bold; }
+.input-color span.d { color: purple; font-weight: bold; }
+.input-color span.e { color: orange; font-weight: bold; }
+
+#controls button, #toggleView { padding: 6px 10px; border-radius: 14px; border: none; font-size: 0.9rem; font-weight: bold;
+  cursor: pointer; background: linear-gradient(145deg, #ff9800, #ff5722); color: white;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.2); transition: transform 0.2s, background 0.2s; margin-bottom: 8px; }
+#controls button:hover, #toggleView:hover { transform: scale(1.05); background: linear-gradient(145deg, #ffb74d, #e64a19); }
+#scaleRange { width: 100%; }
+#scaleMarks { display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: -4px; padding: 0 2px; color: #333; }
+#legend { margin-top: 10px; font-size: 1.1rem; text-align: center; font-weight: bold; color: #444; }
+canvas { width: 100%; height: 100%; background: #fff; display: block; }
+
+/* couleurs des valeurs */
+.aVal { color: green; font-weight: bold; }
+.bVal { color: blue; font-weight: bold; }
+.cVal { color: red; font-weight: bold; }
+.dVal { color: purple; font-weight: bold; }
+.eVal { color: orange; font-weight: bold; }
+.pVal { color: #e67e22; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="plateau">
+      <canvas id="canvas"></canvas>
+    </div>
+    <div class="reglages">
+      <button id="toggleView">👁️ Affichage</button>
+      <div id="reglagesPanel">
+        <h1>Réglages</h1>
+        <div id="controls">
+          <label>Séquence :</label>
+          <div id="seq" contenteditable="true" class="input-color">aaaa</div>
+          <label>Échelle :</label>
+          <input type="range" id="scaleRange" min="0.5" max="2" step="0.1" value="1">
+          <div id="scaleMarks"><span>0.5</span><span>1.0</span><span>2.0</span></div>
+          <button id="btnBuild">Construire</button>
+          <button id="btnDiag">➕ Diagonale</button>
+          <button id="btnToggle">🔄 Mode</button>
+        </div>
+   </div>
+      <div id="affichagePanel" style="display:none;">
+        <h1>Affichage</h1>
+        <div id="affichage">
+          <label class="aVal"><input type="checkbox" id="showA"> <span id="valA">a</span></label>
+          <label class="bVal"><input type="checkbox" id="showB"> <span id="valB">b</span></label>
+          <label class="cVal"><input type="checkbox" id="showC"> <span id="valC">c</span></label>
+          <label class="dVal"><input type="checkbox" id="showD"> <span id="valD">d</span></label>
+          <label class="eVal"><input type="checkbox" id="showE"> <span id="valE">e</span></label>
+
+          <label class="pVal"><input type="checkbox" id="showPerimetre"> <span id="perimetreVal">P</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  let mouseConstraint = null;
+    const { Engine, Render, Runner, Bodies, Composite, Constraint, Mouse, MouseConstraint, Events, Body } = Matter;
+
+    const engine = Engine.create();
+    engine.gravity.y = 0;
+    engine.constraintIterations = 20;
+    engine.positionIterations = 20;
+
+    const world = engine.world;
+    const canvas = document.getElementById("canvas");
+
+    // Rendu Matter.js
+    const render = Render.create({
+      canvas: canvas, engine: engine,
+      options: { wireframes: false, background: "#fefefe" }
+    });
+    Render.run(render); Runner.run(Runner.create(), engine);
+
+    // Ajuster le canvas avec contrainte verticale
+    function resizeCanvas() {
+      const h = canvas.clientHeight;      // hauteur = référence
+      render.canvas.height = h;
+      render.canvas.width  = canvas.clientWidth; // largeur libre
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const baseLengths = { a: 80, b: 120, c: 160, d: 200 , e : 250};
+    const colors  = { a: "green", b: "blue", c: "red", d: "purple" , e : "orange" };
+
+    let pivots = [], bars = [], seq = "", attached = false, fixedForDiag = [], renderMode = "physique";
+    let scaleFactor = 1;
+    let scaledLengths = {};
+
+    function updateScaledLengths() {
+      scaledLengths = {};
+      for (let key in baseLengths) {
+        scaledLengths[key] = Math.round(baseLengths[key] * scaleFactor);
+      }
+    }
+
+    function buildPolygon(s) {
+      Composite.clear(world, true);
+      seq = s; attached = false; fixedForDiag = []; bars = [];
+      updateScaledLengths();
+
+      const cx = render.canvas.width/2, cy = render.canvas.height/2;
+      let x = cx, y = cy, angle = 0;
+      const points = [[x,y]];
+let direction = 1;
+
+for (let ch of s) {
+  const L = scaledLengths[ch];
+  x += L * Math.cos(angle);
+  y += L * Math.sin(angle);
+  points.push([x,y]);
+
+  angle += direction * Math.PI/2;
+  direction *= -1;   // alterne +90° puis -90°
+}
+      pivots = points.map(([px,py]) => Bodies.circle(px, py, 10, { inertia: Infinity, frictionAir: 0.1, render: { visible: false } }));
+      for (let i=0;i<s.length;i++) {
+        const ch = s[i]; const L = scaledLengths[ch];
+        const bar = Constraint.create({ bodyA: pivots[i], bodyB: pivots[i+1], length: L, stiffness: 1,
+          render:{ strokeStyle: colors[ch], lineWidth: (renderMode==="physique")?14:2, lineCap:"round" } });
+        bar.baseColor = colors[ch]; bar.letter = ch; bars.push(bar);
+      }
+      Composite.add(world, [...pivots, ...bars]);
+
+if (mouseConstraint) {
+  Composite.remove(world, mouseConstraint);
+}
+
+const mouse = Mouse.create(render.canvas);
+mouseConstraint = MouseConstraint.create(engine, {
+  mouse: mouse,
+  constraint: { stiffness: 0.02, render:{ visible:false } }
+});
+
+Composite.add(world, mouseConstraint);
+render.mouse = mouse;
+    }
+
+    // aimant fermeture
+    Events.on(engine, "afterUpdate", ()=>{
+      if (attached || pivots.length < 3) return;
+      const first = pivots[0], last = pivots.at(-1), prev = pivots.at(-2);
+      const dx = first.position.x - last.position.x, dy = first.position.y - last.position.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist < 20) {
+        const lastBar = bars.at(-1); Composite.remove(world, lastBar);
+        const L = scaledLengths[ seq.at(-1) ];
+        const dx2 = first.position.x - prev.position.x, dy2 = first.position.y - prev.position.y;
+        const dpf = Math.sqrt(dx2*dx2+dy2*dy2);
+        let lx, ly;
+        if (dpf > 0.001) { lx = prev.position.x + (dx2/dpf)*L; ly = prev.position.y + (dy2/dpf)*L; }
+        else { lx = first.position.x; ly = first.position.y; }
+        Body.setPosition(last, {x: lx, y: ly});
+        const newBar = Constraint.create({ bodyA: prev, bodyB: first, length: L, stiffness: 1,
+          render:{ strokeStyle: colors[ seq.at(-1) ], lineWidth: (renderMode==="physique")?14:2, lineCap:"round" } });
+        newBar.baseColor = colors[ seq.at(-1) ]; newBar.letter = seq.at(-1);
+        Composite.add(world, newBar); bars.push(newBar);
+        Composite.remove(world, last); pivots.pop(); attached = true;
+      }
+    });
+
+    // clic droit fixer/défixer
+    const canvasElt = document.getElementById("canvas");
+    canvasElt.addEventListener("contextmenu", e => e.preventDefault());
+    canvasElt.addEventListener("mousedown", e => {
+      if (e.button === 2 && pivots.length > 0) {
+        const rect = canvasElt.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        for (let p of pivots) {
+          const dx = p.position.x - mx, dy = p.position.y - my;
+          if (dx*dx + dy*dy < 400) {
+            if (p.isStatic) {
+              Body.setStatic(p, false); Body.setInertia(p, Infinity);
+              fixedForDiag = fixedForDiag.filter(q => q !== p);
+            } else {
+              Body.setStatic(p, true);
+              fixedForDiag.push(p);
+            }
+            break;
+          }
+        }
+      }
+    });
+
+    // diagonale
+    document.getElementById("btnDiag").addEventListener("click", ()=>{
+      if (fixedForDiag.length === 2) {
+        const [P1, P2] = fixedForDiag;
+        const L = Math.sqrt((P2.position.x - P1.position.x)**2 + (P2.position.y - P1.position.y)**2);
+        const diag = Constraint.create({ bodyA: P1, bodyB: P2, length: L, stiffness: 1,
+          render:{ strokeStyle: "orange", lineWidth: (renderMode==="physique")?10:2, lineCap:"round" } });
+        diag.baseColor = "orange"; diag.letter = null;
+        Composite.add(world, diag); bars.push(diag);
+        Body.setStatic(P1, false); Body.setInertia(P1, Infinity);
+        Body.setStatic(P2, false); Body.setInertia(P2, Infinity);
+        fixedForDiag = [];
+      }
+    });
+
+    // dessin pivots + affichage zone texte
+    Events.on(render, "afterRender", () => {
+      const ctx = render.context; ctx.save();
+      for (let p of pivots) {
+        const x = p.position.x, y = p.position.y;
+        if (renderMode === "physique") {
+          ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI);
+          ctx.fillStyle = "white"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "black"; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = p.isStatic ? "orange" : "black"; ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI);
+          ctx.fillStyle = p.isStatic ? "orange" : "black"; ctx.fill();
+        }
+      }
+      ctx.restore();
+
+      // périmètre = somme des côtés de la séquence
+      let perim = 0;
+      for (let ch of seq) {
+        perim += scaledLengths[ch];
+      }
+
+      document.getElementById("valA").innerText = document.getElementById("showA").checked ? `a = ${scaledLengths.a}` : "a";
+      document.getElementById("valB").innerText = document.getElementById("showB").checked ? `b = ${scaledLengths.b}` : "b";
+      document.getElementById("valC").innerText = document.getElementById("showC").checked ? `c = ${scaledLengths.c}` : "c";
+      document.getElementById("valD").innerText = document.getElementById("showD").checked ? `d = ${scaledLengths.d}` : "d";
+      document.getElementById("valE").innerText = document.getElementById("showE").checked ? `e = ${scaledLengths.e}` : "e";
+
+      document.getElementById("perimetreVal").innerText = document.getElementById("showPerimetre").checked ? `P = ${perim}` : "P";
+    });
+
+    // séquence colorée sécurisée
+    const seqDiv = document.getElementById("seq");
+    function recolorSeq() {
+      const text = seqDiv.innerText.toLowerCase();
+      seqDiv.innerHTML = "";
+      for (let ch of text) {
+        if (!"abcde".includes(ch)) continue;
+        const span = document.createElement("span");
+        span.textContent = ch; span.className = ch;
+        seqDiv.appendChild(span);
+      }
+      placeCaretAtEnd(seqDiv);
+    }
+    function placeCaretAtEnd(el) {
+      const range = document.createRange(); const sel = window.getSelection();
+      range.selectNodeContents(el); range.collapse(false);
+      sel.removeAllRanges(); sel.addRange(range);
+    }
+    seqDiv.addEventListener("keydown", e => {
+      const allowed = ["a","b","c","d","e","Backspace","Delete","ArrowLeft","ArrowRight"];
+      if (!allowed.includes(e.key)) e.preventDefault();
+    });
+    seqDiv.addEventListener("input", recolorSeq);
+    recolorSeq();
+
+    // slider
+    document.getElementById("scaleRange").addEventListener("input", e => {
+      scaleFactor = parseFloat(e.target.value);
+      buildPolygon(seqDiv.innerText.trim().toLowerCase());
+    });
+
+    // init
+    buildPolygon(seqDiv.innerText.trim().toLowerCase());
+
+    document.getElementById("btnBuild").addEventListener("click",()=> buildPolygon(seqDiv.innerText.trim().toLowerCase()));
+    document.getElementById("btnToggle").addEventListener("click", () => {
+      renderMode = (renderMode==="physique")?"maths":"physique";
+      bars.forEach(bar => { bar.render.strokeStyle = bar.baseColor; bar.render.lineWidth = (renderMode==="physique")?14:2; });
+    });
+
+    // bascule affichage/réglages
+    const toggleBtn = document.getElementById("toggleView");
+    toggleBtn.addEventListener("click", () => {
+      const reg = document.getElementById("reglagesPanel");
+      const aff = document.getElementById("affichagePanel");
+      if (reg.style.display !== "none") {
+        reg.style.display = "none"; aff.style.display = "block"; toggleBtn.textContent = "🔧 Réglages";
+      } else {
+        aff.style.display = "none"; reg.style.display = "block"; toggleBtn.textContent = "👁️ Affichage";
+      }
+    });
+  </script>
+</body>
+</html>
