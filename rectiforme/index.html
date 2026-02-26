@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rectiformes Numériques</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="split-layout">
+
+  <!-- ===== COLONNE REGLAGES ===== -->
+  <div class="panel settings-panel">
+
+    <header class="app-header">
+      <h1>Rectiformes</h1>
+
+      <div class="game-mode-select">
+        <select id="modeSelect">
+          <option value="" selected disabled>Mode</option>
+          <option value="mixte">Mixte</option>
+          <option value="aire">Aire</option>
+          <option value="peri">Périmètre</option>
+        </select>
+
+        <button id="startControlBtn">
+          🎯 Contrôle
+        </button>
+      </div>
+
+      <div id="questionType">
+        Choisir un mode
+      </div>
+    </header>
+
+    <section class="interaction-section">
+
+<div class="input-wrapper">
+  <input type="text"
+         id="expressionInput"
+         placeholder="Ex : a*b + c^2" />
+</div>
+
+<div class="buttons-wrapper">
+  <button id="validateBtn">Valider</button>
+  <button id="nextBtn">Suivant</button>
+</div>
+
+      <div id="feedback"></div>
+
+    </section>
+
+  </div>
+
+  <!-- ===== COLONNE CANEVAS ===== -->
+  <div class="panel canvas-panel">
+
+    <section class="figure-section">
+<canvas id="figureCanvas" width="400" height="313"></canvas>
+      <div class="params">
+        <button id="toggleValuesBtn">👁️</button>
+        <div class="param a-color">
+          a = <strong id="valA"></strong>
+        </div>
+        <div class="param b-color">
+          b = <strong id="valB"></strong>
+        </div>
+        <div class="param c-color">
+          c = <strong id="valC"></strong>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</div>
+  <script src="rectis.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
