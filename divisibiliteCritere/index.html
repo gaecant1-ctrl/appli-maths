@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Critères de divisibilité</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- TITRE + SCORE -->
+  <h1>
+    Critères de divisibilité
+    <span class="score-haut">0/0</span>
+  </h1>
+
+  <!-- CARTE QUESTION -->
+  <div class="card">
+
+    <!-- Numéro de question -->
+    <div class="q-num">Question 1</div>
+
+    <!-- Enoncé clair -->
+    <div class="q-enonce">Le nombre … est divisible par :</div>
+
+    <!-- Boutons critères -->
+    <div class="boutons-rep">
+      <button class="critere" data-div="2">2</button>
+      <button class="critere" data-div="3">3</button>
+      <button class="critere" data-div="4">4</button>
+      <button class="critere" data-div="5">5</button>
+      <button class="critere" data-div="9">9</button>
+      <button class="critere" data-div="10">10</button>
+    </div>
+
+    <!-- Feedback -->
+    <div class="feedback"></div>
+
+    <!-- Boutons action -->
+    <button class="btn-valider">Valider</button>
+    <button class="btn-next" disabled>Nouvelle question</button>
+ <div class="final-panel" style="display:none;">
+    <div class="final-title">✨ Quiz terminé ! ✨</div>
+    <div class="final-score"></div>
+    <button class="btn-restart">Recommencer ✨</button>
+</div>
+
+  </div>
+
+  <!-- BANDEAU AUTEUR -->
+  <div class="footer-app">
+    Appli par G. Cantrelle
+  </div>
+
+  <script src="pas.js"></script>
+</body>
+</html>
