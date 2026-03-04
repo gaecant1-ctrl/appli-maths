@@ -1,0 +1,489 @@
+/* === Variables (tuning facile) === */
+:root{
+  /* Hauteurs & snapping */
+  --wrapper-h: 40px;                      /* hauteur exacte d’une ligne (.input-wrapper) */
+  --rows-visible: 4;                      /* nb de lignes visibles dans .reponse */
+  --reponse-h: calc(var(--wrapper-h) * var(--rows-visible));
+
+  /* Espacements wrapper / input */
+  --wrap-pad-v: 6px;                      /* padding vertical du wrapper */
+  --wrap-pad-h: 10px;                     /* padding horizontal du wrapper */
+  --input-v-gap: 6px;                     /* “air” vertical autour de l’input dans le wrapper */
+
+  /* Couleurs globales */
+  --text: #222;
+
+  /* Fond (2 clés + gradient prêt) */
+  --bg-grad-a: #c2e9fb;
+  --bg-grad-b: #a1c4fd;
+  --bg-gradient: linear-gradient(135deg, var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
+
+  /* Panneaux / bordures / ombres */
+  --panel-bg: rgba(255,255,255,.9);
+  --panel-border: #e5e7eb;
+  --muted: #e9eef8;                       /* fond discret pour score/niveau */
+  --shadow: 0 6px 20px rgba(0,0,0,.10);
+
+  /* Boutons & accents */
+  --primary: #1fa2ff;                     /* normal */
+  --primary-hover: #1666c1;               /* hover bien plus sombre (contraste) */
+  --primary-dark: var(--primary-hover);   /* compat éventuelle */
+  --accent: #7b2cbf;
+
+  /* États */
+  --success: #2d6a4f;
+  --error: #d00000;
+  --warning: #ffb703;
+  
+  --accent-rgb: 123 44 191;
+}
+
+/* === Base === */
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text);
+  background: var(--bg-gradient);
+}
+* { box-sizing: border-box; }
+
+/* === Layout principal === */
+#container {
+  display: grid;
+  grid-template-rows: auto auto 1fr;  /* #titre / #resultat / #exercice-container */
+  height: 100vh;
+  min-height: 0;
+}
+#titre, #resultat { flex: 0 0 auto; }
+
+/* === Header === */
+#titre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  color: #000;
+  padding: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+#score {
+  font-size: 15px;
+  color: #333;
+  text-align: center;
+  font-weight: 600;
+  line-height: 40px;
+  border: 1px solid var(--panel-border);
+  border-radius: .5rem;
+  background: var(--muted);
+  width: 160px;
+}
+
+/* === Bouton principal === */
+#nextButton {
+  width: 160px; height: 40px;
+  padding: .35rem .5rem;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background .25s, box-shadow .15s;
+  user-select: none;
+  appearance: none; -webkit-appearance: none;
+  background-image: none;
+}
+#nextButton:hover:not(:disabled) { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+#nextButton:active:not(:disabled) { box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+#nextButton:disabled { background: var(--muted); opacity:1; }
+#nextButton:focus { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+/* === Niveau (sélecteur) === */
+/* Slot aligné 160x40 comme #score et #nextButton */
+#niveau-slot{
+  flex: 0 0 160px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Wrapper du sélecteur : label visible + select blanc */
+.niveau-picker{
+  width: 100%;
+  height: 40px;
+  display: grid;
+  grid-template-columns: auto 1fr; /* label | select qui prend le reste */
+  align-items: center;
+  gap: .35rem;
+  padding: 0 .4rem;               /* un peu d’air */
+  border: 1px solid var(--panel-border);
+  border-radius: .5rem;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.niveau-picker > label{
+  font-size: 14px;
+  color: #111;
+  margin: 0;                      /* on garde le texte “Niveau :” */
+}
+
+.niveau-picker select{
+  min-width: 0;                   /* évite les débordements */
+  width: 100%;
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: .35rem;
+  background: #fff;               /* <-- select en blanc */
+  padding: 0 .5rem;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Focus cohérent */
+.niveau-picker select:focus{
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+
+/* === Zone exercice (panneau) === */
+#exercice-container {
+  width: 90%;
+  margin: 10px auto 16px;
+  padding: 20px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+
+  flex: 1 1 auto;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* === Titre / question === */
+.titre {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  text-align: center;
+  color: var(--accent);
+  letter-spacing: -0.4px;
+}
+.question {
+  margin: 0 0 12px;
+  font-weight: 600;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+/* === Wrappers communs (centrage + hauteur fixe) === */
+.initial-wrapper,
+.input-wrapper {
+  height: var(--wrapper-h);
+  padding: var(--wrap-pad-v) var(--wrap-pad-h);
+  display: flex;
+  align-items: center;
+  gap: .6em;
+  width: 100%;
+  margin: 0;
+
+  background: #fff;
+  border: 1px solid #e0e5ec;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,.08);
+  font-size: 16px;
+}
+
+/* Partie gauche : lettre + signe + expression/input */
+.left-part {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: .6em;
+  min-width: 0;                     /* autorise le rétrécissement */
+}
+
+/* Lettre éventuelle (A) */
+.lhs-letter {
+  flex: 0 0 auto;
+  display: inline-block;
+  min-width: 1ch;
+}
+
+/* Signe "=" (ou "?" / "≠") */
+.equal-sign {
+  flex: 0 0 auto;
+  display: inline-block;
+  min-width: 1ch;
+  text-align: center;
+  white-space: nowrap;               /* “A =” reste sur une ligne */
+  font-weight: bold;
+}
+.ghost-equal { opacity: 0; }         /* “= fantôme” */
+
+/* Expression en LaTeX / rendu */
+.latex-formula {
+  flex: 1 1 auto;
+  min-width: 0;                      /* clé anti-débordement en flex */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.latex-formula .mjx-container {
+  display: inline-block;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* Input (réponse) */
+.input-wrapper input {
+  height: calc(var(--wrapper-h) - (1 * var(--wrap-pad-v)) - var(--input-v-gap));
+  align-self: center;
+  line-height: 1.2;
+  padding: 0 14px;
+  flex: 0 1 var(--input-w, 280px);   /* largeur contrôlée et rétractable */
+  width: var(--input-w, 280px);
+  min-width: 100px;
+  font-size: 16px;
+  border: 2px solid #e0e5ec;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.input-wrapper input:focus {
+  border-color: var(--accent);
+  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52,152,219,.2);
+}
+.input-error { border-color:#e74c3c !important; background:#fdecea !important; }
+
+/* Commentaire (badge) */
+.comment {
+  margin-left: auto;
+  display:flex; align-items:center; justify-content:center;
+  text-align:center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  min-width: 20px;
+  font-size: 12px; font-weight: 500;
+  background: #f8f9fa;
+  align-self: center;
+}
+.comment:empty { display:none; }
+.comment.error   { background: rgba(231, 76, 60, .1); color:#e74c3c; }
+.comment.success { background: rgba(46, 204,113,.1); color:#2ecc71; }
+.comment.info    { background: rgba(46, 204,113,.1); color: rgba(0, 255, 0, .9); }
+
+/* === Bouton “croix” (close) — visible et centré) === */
+.close-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px; height:22px; min-width:22px;
+  border-radius:50%;
+  margin-left:6px;
+  background:#eee;
+  font-size:12px; line-height:1;
+  cursor:pointer; user-select:none;
+  align-self: center;
+}
+.close-button:hover{ background: rgba(255,100,100,0.5); }
+
+/* === Bouton correction === */
+
+/* === Bouton Correction (autonome) === */
+/* === Bouton Correction (autonome) === */
+.bouton-correction{
+  display:flex;
+  justify-content:center;
+  margin:18px 0 6px;
+}
+
+.btn-correction{
+  display:inline-block;
+  width:auto;
+  max-width:100%;
+  padding:10px 24px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:16px;
+  font-weight:600;
+  color:#fff;
+  background: var(--accent);
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+  transition: background .2s, transform .1s, box-shadow .2s;
+}
+.btn-correction:hover{ background:#6630a0; transform:translateY(-1px); }
+.btn-correction:active{ transform:translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.btn-correction:focus{ outline:3px solid rgba(123,44,191,.35); outline-offset:2px; }
+
+
+
+/* === Correction (ouverture animée + fond accent pâle) === */
+/* Correction : masquée si vide + ouverture simple (fade/slide) */
+/* ===== Correction — styles simples, robustes, SANS color-mix ===== */
+
+/* (optionnel) masquer quand vide */
+/* ===== Correction — simple, lisible, SANS transparence, SANS animation ===== */
+.correction-content:empty { display: none; }
+
+.correction-content{
+  background: var(--accent-pale, #f3e8ff);    /* plein, pas transparent */
+  border: 1px solid var(--accent-pale-border, #eadcff);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,.08);
+  margin-top: 12px;
+  padding: 14px;
+}
+
+/* Titres */
+.correction-content h3{
+  margin: 6px 0 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+/* Lignes d’étapes */
+.correction-content .etape{
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .15rem 0;
+}
+
+/* Préfixe (= ou A =) */
+.correction-content .etape-egal,
+.correction-content .equal-sign{
+  flex: 0 0 auto;
+  white-space: nowrap;   /* “A =” d’un seul tenant */
+  font-weight: 600;
+  opacity: .9;
+}
+.correction-content .etape-egal.is-hidden{ display: none; }
+
+/* Expression LaTeX */
+.correction-content .etape-expr{
+  flex: 1 1 auto;
+  min-width: 0;          /* anti-débordement en flex */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: left;
+}
+
+
+/* === Résultat (bandeau) === */
+#resultat {
+  width: 90%;
+  margin: 12px auto 0;
+  display: none;
+  align-items: center; justify-content: center; gap: .6rem;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #fff; color:#111827;
+  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  opacity: 0; transform: translateY(-4px);
+  transition: opacity .18s ease, transform .18s ease, background .25s, color .25s;
+}
+#resultat.show { display:flex; opacity:1; transform: translateY(0); }
+#resultat::before { content:"ℹ️"; font-size:1.05rem; }
+#resultat.correct   { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+#resultat.correct::before { content:"✅"; }
+#resultat.incorrect { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+#resultat.incorrect::before { content:"❌"; }
+#resultat.invalide  { background:#fffbeb; color:#92400e; border-color:#fde68a; }
+#resultat.invalide::before { content:"⚠️"; }
+
+/* === Zones scrollables et snapping === */
+/* IMPORTANT: on impose la hauteur exacte pour voir N wrappers entiers */
+.reponse {
+  width: 100%;
+  height: var(--reponse-h);      /* multiple exact de --wrapper-h */
+  flex: 0 0 auto;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0;                        /* pas d’espace entre lignes */
+}
+.reponse > .input-wrapper {
+  height: var(--wrapper-h);
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+/* Si tu as aussi une zone initiale scrollable, même logique */
+.initial-zone {
+  display:flex; flex-direction:column; gap:0; width:100%;
+  scroll-snap-type: y proximity;
+}
+.initial-zone .initial-wrapper {
+  height: var(--wrapper-h);
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+/* Optionnel: masquer visuellement les barres de scroll (garde l’accessibilité clavier) */
+.reponse::-webkit-scrollbar,
+#exercice-container::-webkit-scrollbar { width: 0; height: 0; }
+.reponse { scrollbar-width: none; } /* Firefox */
+
+/* === Mobile tweaks === */
+@media (max-width: 640px){
+  #exercice-container { padding: 16px; }
+  .initial-wrapper, .input-wrapper { flex-direction: column; align-items: stretch; }
+  .comment { align-self: flex-end; margin-left: 0; margin-top: 8px; }
+}
+
+/* === Patch : limiter la largeur de l’input dans .input-wrapper === */
+:root{
+  /* largeur responsive de l'input : mini / idéal / maxi */
+  --input-w: clamp(180px, 36vw, 360px);
+}
+
+.input-wrapper input{
+  /* au lieu de flex:1 */
+  flex: 0 1 var(--input-w) !important;
+  width: var(--input-w) !important;
+}
+
+/* Garder de la place à droite pour le badge & la croix */
+.input-wrapper .comment{ margin-left: 12px; } /* au lieu de auto si besoin */
+.input-wrapper .close-button{ margin-left: 8px; }
+
+/* Mobile : repasse en plein largeur quand on empile en colonne */
+@media (max-width: 640px){
+  .initial-wrapper, .input-wrapper{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .input-wrapper input{
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+  .comment, .close-button{
+    align-self: flex-end;
+    margin-top: 8px;
+    margin-left: 0;
+  }
+}
+
