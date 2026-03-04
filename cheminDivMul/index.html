@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>UI – Path multiples/diviseurs</title>
+  <style>
+    :root{
+      --path-border-color: red;
+      --grid-border-color: #ccc;
+      --bg: #002;
+    }
+    body{
+      margin:0; font-family: system-ui, Arial, sans-serif;
+      background:#002; color:#fff; display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px;
+    }
+    .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+    button{ background:#4a90e2; color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
+
+    #grid{ display:grid; gap:4px; margin-top:6px; }
+    .cell{
+      width:40px; height:40px; box-sizing:border-box;
+      display:flex; align-items:center; justify-content:center;
+      background:#fff; color:#000; border:1px solid var(--grid-border-color);
+      font-size:14px; user-select:none;
+    }
+    .decor{
+      background: radial-gradient(120px 80px at 30% 25%, #2b3240 0%, #1f2530 55%, #171b22 100%) !important;
+      border:2px solid #0b0f14; border-radius:9px;
+      box-shadow:
+        inset 0 2px 3px rgba(255,255,255,.06),
+        inset 0 -2px 4px rgba(0,0,0,.35),
+        0 1px 2px rgba(0,0,0,.25),
+        0 6px 14px rgba(0,0,0,.18);
+      font-size:22px; line-height:1; color:#fff;
+    }
+    
+    /* couleurs de suivi utilisateur */
+.path { background: #ffec80 !important; font-weight: bold; }   /* jaune doux */
+.last { background: #2196f3 !important; color: #fff !important; } /* bleu */
+.start{ background:#4caf50 !important; color:#fff; font-weight:700; }
+/* Cadre rouge pour la case d'arrivée, sans toucher aux vraies bordures */
+.end {
+   background: #2196f3 !important; color: #fff;
+}
+
+
+
+    .debug-path{ background: #ffec80 !important; color:#000; font-weight:700; }
+    .start.debug-path{ background:#4caf50 !important; color:#fff; }
+    .end.debug-path{   background:#2196f3 !important; color:#fff; }
+    #message{ min-height:1.2em; }
+    
+/* Résultat de validation par case */
+.ok-step  { background:#4caf50 !important; color:#fff !important; font-weight:700; } /* vert */
+.bad-step { background:#e53935 !important; color:#fff !important; font-weight:700; } /* rouge */
+
+  </style>
+</head>
+<body>
+  <h3>multiples/diviseurs</h3>
+  <div class="toolbar">
+    <button id="regen">Régénérer</button>
+    <button id="validate">Valider</button>
+    <button id="btnCorrection">Correction</button>
+
+    <span id="message"></span>
+  </div>
+  <div id="grid"></div>
+
+  <!-- Tes core classes -->
+  <script src="Cellule.js"></script>
+  <script src="Grille.js"></script>
+  <script src="RuleEngine.js"></script>
+
+  <!-- UI -->
+  <script src="Renderer.js"></script>
+  <script src="Jeu.js"></script>
+
+  <script>
+    // Config jeu
+    const rows = 10, cols = 10;
+const rule = new SequenceRule({
+  bounds:{minVal:2, maxVal:200},
+  length:20,
+  probs:{ mono1:0.6, mono2:0.25, bi1:0.15 },
+  rules:{ primeUp:true, halfDown:true },
+  strategy:"smooth"
+});
+
+
+    const jeu = new Jeu({
+      rows, cols,
+      bounds:{minVal:2, maxVal:120},
+      emojiRatio: 0.1,
+      halo: 1,
+      rule,
+      ui: {
+        gridEl: document.getElementById("grid"),
+        messageEl: document.getElementById("message")
+      }
+    });
+
+    jeu.bindUI({
+      btnRegen: document.getElementById("regen"),
+      btnValidate: document.getElementById("validate")
+    });
+    jeu.newGame();
+  </script>
+</body>
+</html>
