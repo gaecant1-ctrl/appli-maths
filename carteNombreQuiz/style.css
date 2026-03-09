@@ -1,0 +1,446 @@
+/* =====================================================
+BASE GENERALE
+===================================================== */
+
+body{
+  font-family: system-ui, sans-serif;
+  background:#f4f6fb;
+  padding:20px;
+}
+
+
+/* conteneur principal */
+
+.container{
+  max-width:1000px;
+  margin:auto;
+  background:white;
+  padding:28px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+
+#zoneAffichage{
+  max-width:1000px;
+  margin:auto;
+  background:white;
+  padding:28px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+
+
+/* titre principal */
+
+h1{
+  text-align:center;
+  margin-bottom:25px;
+}
+
+
+
+/* =====================================================
+BARRE DE SAISIE
+===================================================== */
+
+.form-bar{
+  display:flex;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+/* champ texte */
+
+.form-bar input{
+  flex:1;
+  font-size:1.1em;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+/* bouton valider */
+
+.form-bar button{
+  padding:10px 18px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(135deg,#4a6cf7,#6f8cff);
+  color:white;
+  cursor:pointer;
+}
+
+
+
+/* =====================================================
+BOUTON DE CHANGEMENT DE MODE (tableau / nuage)
+===================================================== */
+
+.view-bar{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+.view-bar button{
+  padding:6px 14px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  background:white;
+  cursor:pointer;
+}
+
+
+
+/* =====================================================
+AFFICHAGE MODE TABLEAU
+===================================================== */
+
+/* conteneur des deux colonnes */
+
+.resultats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:30px;
+}
+
+/* =========================
+CONTENEUR DE CARTES
+========================= */
+
+#rationnelBody,
+#decimalBody{
+
+  display:flex;
+  flex-direction:column;
+
+  gap:10px;
+
+}
+
+/* =========================
+COLONNES
+========================= */
+
+.col{
+  padding:18px;
+  border-radius:12px;
+
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.rationnel{
+  background:#eef2ff;
+}
+
+.decimal{
+  background:#e8fbf4;
+}
+
+/* titres colonnes */
+
+.col h2{
+  text-align:center;
+  margin-top:0;
+}
+
+
+
+/* =====================================================
+LIGNES DU TABLEAU
+===================================================== */
+
+.ligne{
+  display:grid;
+  grid-template-columns:200px 1fr;
+  align-items:center;
+  margin:6px 0;
+}
+
+/* description */
+
+.desc{
+  text-align:right;
+  padding-right:12px;
+  font-size:0.9em;
+}
+
+/* cellule math */
+
+.math{
+  text-align:center;
+}
+
+/* centrage MathJax */
+
+.math mjx-container{
+  display:block;
+  margin:auto;
+}
+
+.zone-cartes{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* =====================================================
+NUAGE D'ECRITURES
+===================================================== */
+
+.nuage{
+  position:relative;
+  width:100%;
+  height:620px;
+  overflow:hidden;
+}
+
+
+
+/* =====================================================
+PARAMETRES GENERAUX DES CARTES
+===================================================== */
+
+/* taille commune des cartes */
+
+:root{
+  --taille-carte:60px;
+}
+
+/* carte du nuage */
+
+.carte{
+
+  position:relative;   /* ← important */
+
+  width:100%;
+  height:80px;
+
+  border:1px solid #ccc;
+  background:white;
+
+  box-shadow:0 4px 10px rgba(0,0,0,0.12);
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  padding:6px;
+
+}
+
+.carte{
+  transition:box-shadow .2s;
+}
+
+
+
+.carte:hover{
+  box-shadow:0 8px 20px rgba(0,0,0,0.25);
+}
+
+.nuage .carte{
+
+  position:absolute;
+  transform: translate(-50%, -50%);
+
+  width:var(--taille-carte);
+  height:var(--taille-carte);
+
+}
+
+.nuage-toolbar{
+  display:flex;
+  justify-content:center;
+  margin-bottom:10px;
+}
+
+.nuage-toolbar button{
+  padding:6px 14px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  background:white;
+  cursor:pointer;
+}
+
+.nuage-toolbar button{
+  min-width:120px;
+}
+
+/* =====================================================
+FORME DES CARTES (statut mathématique)
+===================================================== */
+
+/* valeur exacte → rectangle */
+
+.carte.exact{
+  border-radius:50%;
+}
+
+/* valeur approchée → disque */
+
+.carte.approche{
+  border-radius:50%;
+}
+
+
+
+/* =====================================================
+COULEURS DES CARTES (type de nombre)
+===================================================== */
+
+/* rationnel */
+
+.carte.rationnel{
+  background:#eef2ff;
+  border-color:#5b6cf5;
+}
+
+/* décimal */
+
+.carte.decimal{
+  background:#e8fbf4;
+  border-color:#2aa981;
+}
+
+
+
+/* =====================================================
+REGLAGES MATHJAX
+===================================================== */
+
+.MathJax{
+  line-height:1.1;
+}
+
+/* centrage dans les cartes */
+
+.carte mjx-container{
+  margin:auto;
+}
+
+
+/* =========================
+MODE DOMINO
+========================= */
+
+/* =========================
+MODE DOMINO
+========================= */
+
+
+
+.carte.domino{
+
+  width:100%;
+  height:80px;
+
+  border-radius:10px;
+
+  display:grid;
+  grid-template-columns:1fr 1fr;
+
+  padding:0;
+
+}
+
+/* côté description */
+
+.domino-desc{
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  font-size:0.9em;
+
+  border-right:1px solid #ccc;
+
+  padding:6px;
+
+}
+
+
+/* côté écriture */
+
+.domino-math{
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+}
+
+.domino-math mjx-container{
+  margin:auto;
+}
+
+
+
+.domino-input-field {
+
+  display:block;
+  margin:auto;
+
+  padding:6px;
+  font-size:16px;
+  border-radius:6px;
+  border:2px solid #ccc;
+  transition:0.2s;
+
+}
+
+.domino-input-field.correct {
+
+  background:#d4f8d4;
+  border-color:#2ecc71;
+
+}
+
+.domino-input-field.incorrect {
+
+  background:#ffd6d6;
+  border-color:#e74c3c;
+
+}
+
+.domino-result{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  height:100%;
+}
+
+.domino-result mjx-container{
+  margin:auto;
+}
+
+
+#feedback{
+
+  min-height:24px;
+  margin-top:10px;
+
+  font-weight:600;
+  text-align:center;
+
+}
+
+#feedback.correct{
+  color:#2ecc71;
+}
+
+#feedback.error{
+  color:#e74c3c;
+}
+
+
+.segmented button{
+  transition:0.2s;
+}
+
+.segmented button:hover{
+  background:#eaeaea;
+}
