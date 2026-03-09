@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Écritures d’un nombre</title>
+
+<link rel="stylesheet" href="style.css">
+
+<!-- MathJax -->
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  },
+  chtml: {
+    displayAlign: "center"
+  }
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>Différentes écritures d’un nombre</h1>
+
+<!-- BARRE INFO -->
+
+<div class="topbar">
+
+  <div id="exerciceZone">
+    Exercice 1 :
+  </div>
+
+  <div id="scoreZone">
+    Score 0/0
+  </div>
+
+</div>
+
+<!-- FEEDBACK -->
+
+<div id="feedback"></div>
+
+<!-- ZONE EXERCICE -->
+
+<div id="zoneAffichage"></div>
+
+<!-- ACTIONS -->
+
+
+<div class="actions">
+  <button id="mainBtn" class="main-btn">Correction</button>
+</div>
+
+</div>
+
+<script type="module" src="./main.js"></script>
+
+</body>
+
+</html>
