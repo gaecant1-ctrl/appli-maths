@@ -14,7 +14,7 @@ const feedback = document.getElementById("feedback");
 /* =========================
 ETAT GLOBAL
 ========================= */
-const MAX_EXERCICES = 2;
+const MAX_EXERCICES = 10;
 
 let nombre;
 let ecritures;
