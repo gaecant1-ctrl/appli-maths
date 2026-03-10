@@ -174,7 +174,7 @@ fractionSimp(){
 
 return {
 format:"fractionSimp",
-description:"Fraction simplifiée",
+description:"Fraction irréductible",
 statut:"exact",
 type:"rationnel"
 };
