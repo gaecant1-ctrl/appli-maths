@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réduction d'expressions – Quiz interactif</title>
+
+<!-- MathJax -->
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<!-- À ajouter dans ton <head> juste avant ton script principal -->
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11/lib/browser/math.js"></script>
+
+<style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f0f4ff 50%, #fffde7 100%);
+  margin: 0;
+  text-align: center;
+}
+
+/* Préchargement */
+#loader {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; justify-content: center; align-items: center;
+  background: white; color: #1565c0; font-size: 1.3em;
+  z-index: 9999;
+  animation: fadeOut 0.8s ease forwards; animation-delay: 1.2s;
+}
+@keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+/* Barre titre */
+.title-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(90deg,#1976d2,#42a5f5);
+  color:white; padding:10px 18px; box-shadow:0 3px 6px rgba(0,0,0,0.3);
+}
+.title-bar h1 { font-size:1.3em; margin:0; }
+#score { font-weight:bold; }
+#mode-btn {
+  display:flex; align-items:center; justify-content:center;
+  background:white; color:#1565c0; border:none; border-radius:50%;
+  width:44px; height:44px; font-size:1.4em; cursor:pointer;
+  transition:0.3s; box-shadow:0 3px 6px rgba(0,0,0,0.25);
+}
+#mode-btn:hover { background:#e3f2fd; transform:scale(1.08); }
+#mode-btn.disabled { opacity:0.5; pointer-events:none; cursor:default; }
+
+/* Sections */
+.section {
+  border-radius:14px; width:92%; margin:10px auto;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  padding:10px; transition:opacity .3s, transform .3s;
+}
+.zone-visuelle { background:linear-gradient(145deg,#bbdefb,#90caf9); border:3px solid #1976d2; }
+.zone-total { background:linear-gradient(145deg,#fff59d,#fff176); border:3px solid #f9a825; }
+.zone-reduite { background:linear-gradient(145deg,#a5d6a7,#81c784); border:3px solid #388e3c; }
+.fade-out { opacity:0; transform:scale(0.97); }
+.fade-in { opacity:1; transform:scale(1); }
+
+/* Boîtes */
+.expression { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
+.box {
+  position:relative; width:70px; height:70px; background:#e3f2fd;
+  border:3px solid #1e88e5; border-radius:12px;
+  display:flex; justify-content:center; align-items:center;
+  box-shadow:0 4px 8px rgba(0,0,0,0.25); font-size:1.4em; color:#0d47a1;
+}
+.badge {
+  position:absolute; top:-10px; right:-10px; width:32px; height:32px;
+  border-radius:50%; display:flex; justify-content:center; align-items:center;
+  color:white; font-weight:bold; border:2px solid white;
+  box-shadow:0 2px 4px rgba(0,0,0,0.3);
+}
+.plus{background:#43a047;} .minus{background:#e53935;}
+
+/* Input + bouton */
+#input-row {
+  display:flex; justify-content:center; align-items:center;
+  gap:10px; margin-top:8px;
+}
+#answer {
+  font-size:1em; width:120px; padding:6px 10px;
+  border-radius:8px; border:2px solid #388e3c;
+  text-align:center; box-shadow:0 2px 5px rgba(56,142,60,0.4);
+}
+#check-btn {
+  background:linear-gradient(135deg,#2e8b57,#43a047);
+  color:white; border:none; border-radius:10px;
+  padding:7px 14px; cursor:pointer; transition:.2s;
+  box-shadow:0 3px 6px rgba(0,0,0,0.25);
+}
+#check-btn:hover{ background:linear-gradient(135deg,#388e3c,#66bb6a); }
+
+#feedback{ font-size:1.1em; margin-top:6px; font-weight:bold; }
+
+/* Bilan final */
+#bilan {
+  animation:fadeZoom .8s ease; border-radius:14px;
+  width:90%; margin:20px auto; padding:20px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.25);
+}
+@keyframes fadeZoom { from{opacity:0;transform:scale(0.9);} to{opacity:1;transform:scale(1);} }
+.recap{font-size:1.4em;letter-spacing:2px;margin-bottom:10px;}
+.msg{font-weight:bold;margin-bottom:4px;}
+.help{color:#555;font-size:0.9em;}
+.hidden{display:none;}
+
+#toggle-visu:hover {
+  background: linear-gradient(145deg, #42a5f5, #90caf9);
+}
+
+#expression-zone {
+
+  overflow: hidden;
+  padding-top: 6px;   /* ✅ espace interne doux */
+}
+
+.hidden-visu {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+</style>
+</head>
+<body>
+
+<div id="loader">Chargement des formules…</div>
+
+<!-- Barre titre -->
+<div class="title-bar" id="title-bar">
+  <h1>🎓 Réduction d'une expression littérale</h1>
+  <div id="score">🏆 Score : 0 / 10</div>
+  <button id="mode-btn">🔢</button>
+</div>
+
+<!-- Sections -->
+<div class="section zone-visuelle" id="visuelle">
+<button id="toggle-visu" style="
+  width:100%;
+  background:linear-gradient(145deg,#2196f3,#64b5f6);
+  color:white;
+  border:none;
+  border-radius:8px;
+  padding:8px 0;
+  font-size:1em;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  transition:background 0.3s;
+  margin-bottom:8px;
+
+">
+  🎨 Afficher la situation visuelle
+</button>
+
+<div id="expression-zone" class="expression hidden-visu" style="margin-top:10px;"></div>
+
+
+</div>
+
+<div class="section zone-total" id="total">
+  <h2>Expression du total</h2>
+  <div id="translation"></div>
+</div>
+
+<div class="section zone-reduite" id="reduite">
+  <h2>Expression réduite</h2>
+  <div id="input-row">
+    <input type="text" id="answer" placeholder="réponse">
+    <button id="check-btn">✅ Vérifier</button>
+  </div>
+  <div id="feedback"></div>
+</div>
+
+<script>
+/* === PARAMÈTRES === */
+const XNUM = 100;
+const QUIZ_LENGTH = 10;
+
+/* === VARIABLES === */
+let mode = "abc";
+let questionIndex = 0;
+let score = 0;
+let recap = [];
+let modeLocked = false;
+
+/* === UTILITAIRES === */
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function updateMath(){ if(window.MathJax) MathJax.typesetPromise(); }
+
+/* === GÉNÉRATION QUESTION === */
+function generateExpression() {
+  const nb = randInt(2, 4);
+  const allowRepeat = (questionIndex >= QUIZ_LENGTH / 2);
+  let visuals = "", terms = [], totalCoeff = 0, totalConst = 0;
+  window.currentData = [];
+
+  const motifCount = Math.min(2, nb);
+  const motifs = [];
+
+  for (let m = 0; m < motifCount; m++) {
+    const sign = Math.random() < 0.5 ? "+" : "-";
+    const val = randInt(1, 9);
+    motifs.push({ sign, val });
+  }
+
+  const repartition = [];
+  let remaining = nb;
+  for (let i = 0; i < motifCount - 1; i++) {
+    const count = randInt(1, remaining - (motifCount - i - 1));
+    repartition.push(count);
+    remaining -= count;
+  }
+  repartition.push(remaining);
+
+  // --- Génération visuelle et cumul des valeurs ---
+  for (let i = 0; i < motifCount; i++) {
+    const { sign, val } = motifs[i];
+    const repeat = allowRepeat && Math.random() < 0.5 ? randInt(1, 3) : 1;
+    const boxCount = repartition[i] * repeat;
+    const badgeColor = sign === "+" ? "plus" : "minus";
+
+    totalCoeff += boxCount;
+    totalConst += boxCount * (sign === "+" ? val : -val);
+
+    const expr = boxCount > 1 ? `${boxCount}\\times(x ${sign} ${val})` : `(x ${sign} ${val})`;
+    terms.push(expr);
+
+    for (let k = 0; k < boxCount; k++) {
+      const content = (mode === "abc") ? "\\(x\\)" : `\\(${XNUM}\\)`;
+      visuals += `<div class="box">${content}<div class="badge ${badgeColor}">\\(${sign}${val}\\)</div></div>`;
+    }
+
+    window.currentData.push({ repeat: boxCount, sign, val });
+  }
+
+  document.getElementById("expression-zone").innerHTML = visuals;
+
+  // --- Expression du total pour affichage (latex) ---
+  const totalText = (mode === "abc")
+    ? `\\[ ${terms.join(" + ")} \\]`
+    : terms.map(expr => {
+        const match = expr.match(/(\d*)\\times\(x ([+-]) (\d+)\)|\(x ([+-]) (\d+)\)/);
+        let repeat = 1, sign, val;
+        if (match) {
+          if (match[1]) { repeat = parseInt(match[1]); sign = match[2]; val = parseInt(match[3]); }
+          else { sign = match[4]; val = parseInt(match[5]); }
+        } else return expr;
+        const singleValue = sign === "+" ? XNUM + val : XNUM - val;
+        return (repeat > 1) ? `${repeat}×${singleValue}` : `${singleValue}`;
+      }).join(" + ");
+  document.getElementById("translation").innerHTML = totalText;
+  updateMath();
+
+  // --- Solution interne CAS ---
+  if (mode === "abc") {
+    const sign = totalConst >= 0 ? "+" : "-";
+    window.currentSolution = `${totalCoeff}*x${sign}${Math.abs(totalConst)}`;
+  } else {
+    window.currentSolution = (XNUM * totalCoeff + totalConst).toString();
+  }
+
+  console.log("📘 Généré :", { totalCoeff, totalConst, currentSolution: window.currentSolution });
+
+  // --- Réinitialisation de la zone réponse ---
+  const inputRow = document.getElementById("input-row");
+  inputRow.innerHTML = `
+    <input type="text" id="answer" placeholder="réponse">
+    <button id="check-btn">✅ Vérifier</button>
+  `;
+  document.getElementById("feedback").textContent = "";
+  const ans = document.getElementById("answer");
+  const btn = document.getElementById("check-btn");
+  btn.onclick = checkAnswer;
+  ans.onkeypress = e => { if (e.key === "Enter") checkAnswer(); };
+}
+
+
+/* === RENDU D'UNE QUESTION EXISTANTE (pour la bascule de mode) === */
+function renderExpressionFromCurrentData() {
+  if (!window.currentData) return;
+  const data = window.currentData;
+  let visuals = "", terms = [];
+  let totalCoeff = 0, totalConst = 0;
+
+  for (const { repeat, sign, val } of data) {
+    const badgeColor = sign === "+" ? "plus" : "minus";
+    totalCoeff += repeat;
+    totalConst += repeat * (sign === "+" ? val : -val);
+
+    const expr = repeat > 1 ? `${repeat}\\times(x ${sign} ${val})` : `(x ${sign} ${val})`;
+    terms.push(expr);
+
+    for (let k = 0; k < repeat; k++) {
+      const content = (mode === "abc") ? "\\(x\\)" : `\\(${XNUM}\\)`;
+      visuals += `<div class="box">${content}<div class="badge ${badgeColor}">\\(${sign}${val}\\)</div></div>`;
+    }
+  }
+
+  const totalText = (mode === "abc")
+    ? `\\[ ${terms.join(" + ")} \\]`
+    : terms.map(expr => {
+        const match = expr.match(/(\d*)\\times\(x ([+-]) (\d+)\)|\(x ([+-]) (\d+)\)/);
+        let repeat = 1, sign, val;
+        if (match) {
+          if (match[1]) { repeat = parseInt(match[1]); sign = match[2]; val = parseInt(match[3]); }
+          else { sign = match[4]; val = parseInt(match[5]); }
+        } else return expr;
+        const singleValue = sign === "+" ? XNUM + val : XNUM - val;
+        return (repeat > 1) ? `${repeat}×${singleValue}` : `${singleValue}`;
+      }).join(" + ");
+
+  document.getElementById("expression-zone").innerHTML = visuals;
+  document.getElementById("translation").innerHTML = totalText;
+  updateMath();
+
+  // --- Solution interne CAS ---
+  if (mode === "abc") {
+    const sign = totalConst >= 0 ? "+" : "-";
+    window.currentSolution = `${totalCoeff}*x${sign}${Math.abs(totalConst)}`;
+  } else {
+    window.currentSolution = (XNUM * totalCoeff + totalConst).toString();
+  }
+
+  console.log("📘 Rendu :", { totalCoeff, totalConst, currentSolution: window.currentSolution });
+
+  // --- Réinitialiser la zone réponse ---
+  const inputRow = document.getElementById("input-row");
+  inputRow.innerHTML = `
+    <input type="text" id="answer" placeholder="ex: réponse">
+    <button id="check-btn">✅ Vérifier</button>
+  `;
+  document.getElementById("feedback").textContent = "";
+  const ans = document.getElementById("answer");
+  const btn = document.getElementById("check-btn");
+  btn.onclick = checkAnswer;
+  ans.onkeypress = e => { if (e.key === "Enter") checkAnswer(); };
+}
+
+
+
+/* === FONCTIONS GÉNÉRALES === */
+
+// A ← parser la saisie élève vers un format CAS
+function toCAS(expr) {
+  return expr
+    .replace(/\\times/g, "*")
+    .replace(/·/g, "*")
+    .replace(/\s+/g, "")
+    .replace(/([0-9])([a-zA-Z])/g, "$1*$2") // 2x → 2*x
+    .replace(/([a-zA-Z])([0-9])/g, "$1*$2") // x2 → x*2 (rare)
+    .replace(/−/g, "-")
+    .trim();
+}
+
+// B ← rendu LaTeX pour affichage
+// B ← rendu LaTeX pour affichage
+function toTeX(exprCAS) {
+  return exprCAS
+    // 1️⃣ Transformer * en \times
+    .replace(/\*/g, "\\times ")
+    // 2️⃣ Supprimer visuellement le \times avant une lettre
+    .replace(/\\times ([a-zA-Z])/g, "$1")
+    // 3️⃣ Optionnel : unifier les espaces et signes
+    .replace(/\s+/g, "")
+    .replace(/\+\-/g, "-")
+    .replace(/\-\+/g, "-");
+}
+
+
+// === VALIDATION ===
+function checkAnswer() {
+  if (!modeLocked) { 
+    document.getElementById("mode-btn").classList.add("disabled");
+    modeLocked = true;
+  }
+
+  const rawAns = document.getElementById("answer").value.trim();
+  const exprUser = toCAS(rawAns);
+  const exprSol = toCAS(window.currentSolution);
+
+  console.group("=== Vérification d'expression ===");
+  console.log("🧑‍🎓 Saisie brute :", rawAns);
+  console.log("🔧 Expression élève (CAS) :", exprUser);
+  console.log("🎯 Solution attendue (CAS) :", exprSol);
+
+  let equiv = false, reduite = false;
+
+  try {
+    // 1️⃣ Vérification d'équivalence sur deux valeurs
+    const vals = [-2, 3];
+    const results = vals.map(v => ({
+      x: v,
+      user: math.evaluate(exprUser, {x: v}),
+      sol:  math.evaluate(exprSol, {x: v})
+    }));
+    console.table(results);
+
+    equiv = results.every(r => r.user === r.sol);
+    console.log("✅ Équivalence mathématique :", equiv);
+
+    // 2️⃣ Vérification de forme réduite (une seule fois 'x')
+// 2️⃣ Vérification de forme réduite — basée sur la saisie élève brute
+const rawCountX = (exprUser.match(/\bx\b|[0-9]*\*?x/g) || []).length;
+const simp = math.simplify(exprUser).toString();
+
+// La forme est considérée réduite si l'élève n'a écrit qu'un seul terme contenant x
+reduite = rawCountX <= 1;
+
+console.log("🧮 Forme simplifiée (CAS):", simp);
+console.log("🔢 Nombre de 'x' dans la saisie élève :", rawCountX);
+console.log("✅ Forme réduite (basée sur saisie élève):", reduite);
+
+  } catch (e) {
+    console.warn("⚠️ Erreur CAS :", e);
+  }
+
+  console.groupEnd();
+
+  const isCorrect = equiv && reduite;
+  recap.push(isCorrect ? "✅" : "❌");
+  if (isCorrect) score++;
+
+  // Rendu LaTeX pour affichage
+  const latexAns = toTeX(exprUser);
+
+  document.getElementById("feedback").innerHTML = isCorrect
+    ? "🎉 Bravo, expression correcte et bien réduite !"
+    : equiv
+      ? "⚠️ Bonne équivalence, mais forme non réduite."
+      : "❌ Faux"
+  document.getElementById("feedback").style.color = isCorrect ? "#2e7d32" : equiv ? "#f57c00" : "#c62828";
+
+  document.getElementById("input-row").innerHTML = `
+    <div id="latex-answer" style="
+      width:150px; height:34px; background:white;
+      border:2px solid #388e3c; border-radius:8px;
+      display:flex; justify-content:center; align-items:center;
+      box-shadow:0 2px 5px rgba(56,142,60,0.4);
+    ">
+      \\[ ${latexAns} \\]
+    </div>
+    <button id="check-btn" style="margin-left:10px;">➡️ Suivant</button>
+  `;
+
+  updateMath();
+  document.getElementById("check-btn").onclick = nextQuestion;
+  document.getElementById("score").textContent = `🏆 Score : ${score} / ${QUIZ_LENGTH}`;
+}
+
+
+
+
+
+/* === QUESTION SUIVANTE === */
+function nextQuestion(){
+  questionIndex++;
+  if(questionIndex<QUIZ_LENGTH) transition(()=>generateExpression());
+  else showBilan();
+}
+
+/* === TRANSITION === */
+function transition(cb){
+  const zones=document.querySelectorAll(".section");
+  zones.forEach(z=>z.classList.add("fade-out"));
+  setTimeout(()=>{
+    zones.forEach(z=>z.classList.remove("fade-out"));
+    cb();
+  },300);
+}
+
+/* === BILAN === */
+function showBilan(){
+  document.getElementById("title-bar").classList.add("hidden");
+  document.querySelectorAll(".section").forEach(s=>s.classList.add("hidden"));
+  let bg,msg;
+  if(score<=3){bg="linear-gradient(145deg,#ffecec,#ffcdd2)";msg="😅 Courage, on révise et on recommence !";}
+  else if(score<=6){bg="linear-gradient(145deg,#fffde7,#fff59d)";msg="💪 Bien joué, tu es en bonne voie !";}
+  else if(score<=8){bg="linear-gradient(145deg,#e8f5e9,#c8e6c9)";msg="🌟 Très bien ! Tu maîtrises presque tout !";}
+  else{bg="linear-gradient(145deg,#fff8e1,#fff59d)";msg="🏆 Excellent ! Tu es un pro des expressions !";}
+  const bilan=document.createElement("div");
+  bilan.id="bilan";
+  bilan.style.background=bg;
+  bilan.innerHTML=`<div class='recap'>${recap.join("")}</div>
+  <div>\\[ \\text{Score final : } ${score}/${QUIZ_LENGTH} \\]</div>
+  <div class='msg'>${msg}</div>
+  <button id='restart-btn'>🔄 Recommencer le quiz</button>`;
+  document.body.appendChild(bilan);
+  updateMath();
+  document.getElementById("restart-btn").onclick=restartQuiz;
+}
+
+/* === RESTART === */
+function restartQuiz(){
+  document.getElementById("bilan").remove();
+  document.getElementById("title-bar").classList.remove("hidden");
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("hidden"));
+  questionIndex=0; score=0; recap=[]; modeLocked=false;
+  document.getElementById("mode-btn").classList.remove("disabled");
+  document.getElementById("score").textContent=`🏆 Score : 0 / ${QUIZ_LENGTH}`;
+  transition(()=>generateExpression());
+}
+
+/* === BASCULE MODE === */
+document.getElementById("mode-btn").onclick=()=>{
+  if(modeLocked) return;
+  mode = (mode === "abc") ? "123" : "abc";
+  document.getElementById("mode-btn").textContent = (mode === "abc") ? "🔢" : "🔡";
+  transition(() => renderExpressionFromCurrentData());
+};
+
+/* === PLIER / DÉPLIER LA SITUATION VISUELLE === */
+/* === PLIER / DÉPLIER LA SITUATION VISUELLE === */
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("toggle-visu");
+  const zone = document.getElementById("expression-zone");
+  let visible = false;
+
+  btn.onclick = () => {
+    visible = !visible;
+    zone.classList.toggle("hidden-visu", !visible);
+    btn.textContent = visible ? "🎨 Cacher la situation visuelle" : "🎨 Afficher la situation visuelle";
+  };
+});
+
+
+/* === DÉMARRAGE === */
+window.onload=()=>setTimeout(()=>generateExpression(),1200);
+</script>
+
+</body>
+</html>
