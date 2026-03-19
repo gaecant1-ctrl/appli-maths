@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Volumes</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script>
+window.MathJax = {
+tex:{inlineMath:[['\\(','\\)']]}
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+</head>
+
+<body>
+
+<!-- panneau interface -->
+
+<div id="ui">
+
+<section class="panel">
+
+<h3>Solide</h3>
+<select id="solidSelect"></select>
+
+</section>
+
+
+<section class="panel">
+
+<h3>Paramètres</h3>
+<div id="sliders"></div>
+
+</section>
+
+
+<section class="panel">
+
+<h3>Variables</h3>
+<div id="variables"></div>
+
+</section>
+
+<div id="views">
+
+  <div id="viewToggle" class="segmented">
+    <button data-value="3d">3D</button>
+    <button data-value="front">Face</button>
+    <button data-value="top">Dessus</button>
+  </div>
+
+  <button id="toggleRotate"></button>
+
+</div>
+
+</div>
+
+<!-- panneau scène -->
+
+<div id="scene"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<script type="module" src="./main.js"></script>
+
+</body>
+
+</html>
