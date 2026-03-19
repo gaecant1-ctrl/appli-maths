@@ -1,0 +1,339 @@
+/* ======================================
+RESET
+====================================== */
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+}
+
+
+/* ======================================
+PAGE
+====================================== */
+
+body{
+
+height:100vh;
+display:flex;
+
+overflow:hidden;
+
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+background:#e6ebf2;
+
+color:#1f2937;
+
+}
+
+
+/* ======================================
+PANNEAU UI
+====================================== */
+
+#ui{
+
+width:320px;
+
+height:100vh;
+
+display:flex;
+flex-direction:column;
+
+gap:14px;
+
+padding:14px;
+
+background:#f3f6fb;
+
+border-right:1px solid #d6dde8;
+
+}
+
+
+/* ======================================
+SECTIONS
+====================================== */
+
+.panel{
+
+background:white;
+
+border-radius:12px;
+
+padding:12px;
+
+border:1px solid #d6dde8;
+
+display:flex;
+flex-direction:column;
+
+gap:8px;
+
+}
+
+
+/* titres */
+
+.panel h3{
+
+font-size:13px;
+
+letter-spacing:0.05em;
+
+text-transform:uppercase;
+
+color:#4b5563;
+
+border-bottom:1px solid #e5e7eb;
+
+padding-bottom:4px;
+
+}
+
+
+/* ======================================
+SECTION SOLIDE
+====================================== */
+
+.panel.solide{
+flex:0 0 auto;
+}
+
+
+/* select solide */
+
+#solidSelect{
+
+padding:6px 8px;
+
+border-radius:6px;
+
+border:1px solid #cfd6e2;
+
+background:white;
+
+font-size:14px;
+
+}
+
+
+/* ======================================
+SECTION PARAMETRES
+====================================== */
+
+.panel.param{
+
+flex:1 1 auto;
+
+overflow-y:auto;
+
+}
+
+
+/* sliders */
+
+#sliders{
+
+display:grid;
+
+grid-template-columns:70px 1fr;
+
+column-gap:8px;
+row-gap:6px;
+
+align-items:center;
+
+}
+
+
+/* label slider */
+
+#sliders label{
+
+font-weight:600;
+
+color:#374151;
+
+}
+
+
+/* slider */
+
+input[type="range"]{
+
+width:100%;
+
+cursor:pointer;
+
+}
+
+
+/* ======================================
+SECTION VARIABLES
+====================================== */
+
+.panel.vars{
+flex:0 0 auto;
+}
+
+
+/* grille variables */
+
+#variables{
+
+display:grid;
+
+grid-template-columns:80px 1fr;
+
+column-gap:10px;
+row-gap:6px;
+
+align-items:center;
+
+}
+
+
+/* boutons variables */
+
+#variables button{
+
+width:80px;
+height:28px;
+
+border-radius:6px;
+
+border:1px solid #cfd6e2;
+
+background:#eef2f7;
+
+cursor:pointer;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-weight:600;
+
+transition:all 0.15s ease;
+
+}
+
+
+/* hover */
+
+#variables button:hover{
+
+background:#e2e8f0;
+
+}
+
+
+/* actif */
+
+#variables button.active{
+
+background:#2563eb;
+
+color:white;
+
+border-color:#2563eb;
+
+}
+
+
+/* valeur */
+
+#variables span{
+
+min-height:22px;
+
+display:flex;
+align-items:center;
+
+font-size:16px;
+
+}
+
+.variable-value{
+opacity:0;
+transition:opacity 0.2s;
+}
+
+.variable-value.visible{
+opacity:1;
+}
+
+
+/* ======================================
+SCENE 3D
+====================================== */
+
+#scene{
+flex:1;
+display:flex;
+justify-content:center;
+align-items:center;
+overflow:hidden;
+}
+
+
+
+/* =========================
+VIEWS CONTAINER
+========================= */
+
+#views{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:10px;
+}
+
+/* =========================
+SEGMENTED BUTTON
+========================= */
+
+.segmented{
+  display:flex;
+  background:#e5e7eb;
+  border-radius:10px;
+  padding:4px;
+}
+
+.segmented button{
+  flex:1;
+  border:none;
+  background:transparent;
+  padding:8px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:500;
+  transition:all 0.2s;
+}
+
+.segmented button.active{
+  background:white;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* =========================
+TOGGLE BUTTON
+========================= */
+
+.toggle{
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:#ddd;
+  font-weight:600;
+  transition:all 0.2s;
+}
+
+.toggle.active{
+  background:#4caf50;
+  color:white;
+}
