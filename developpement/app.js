@@ -11,7 +11,7 @@ const BANQUE_DE_TYPES = [
     { id: "Moins", pattern: 'ux-(vx?w)', constants: ['u', 'v', 'w'], forced: [] },
     { id: "Prio", pattern: 'w?u(vx?s)', constants: ['u', 'v', 'w', 's'], forced: ['u'] },
     { id: "Double1", pattern: 'u(vx?w)+r(tx?s)', constants: ['u', 'v', 'r', 't', 'w', 's'], forced: ['u', 'r'] },
-    { id: "Double2", pattern: 'ux(vx?w)?rx(tx?s)', constants: ['u', 'v', 'r', 't', 'w', 's'], forced: ['u', 'r'] },
+    { id: "Double2", pattern: 'ux(vx?w)+rx(tx?s)', constants: ['u', 'v', 'r', 't', 'w', 's'], forced: ['u', 'r'] },
     { id: "Mixte", pattern: 'ux(vx?w)?(tx?s)', constants: ['u', 'v', 't', 'w', 's'], forced: ['u'] }
 ];
 
