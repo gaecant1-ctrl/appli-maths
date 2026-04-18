@@ -1,38 +1,28 @@
+ 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Factorisation d'expressions littérales</title>
+  <title>Factorisation</title>
   <link rel="stylesheet" href="style.css">
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
-
 </head>
 <body>
 
   <h1>Factorisation d'expressions littérales</h1>
   
   <div id="score-container">
-   <div id="score">Score : 0/0</div>
+    <div id="score">Score : 0/0</div>
     <button id="skipButton" class="styled-button">Renoncer</button>
   </div>
 
-  <div id="expression" class="expression">Chargement...</div>
-  
- <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 
-<script>
-  window.addEventListener('load', function () {
-    if (typeof confetti === 'function') {
-      console.log("La bibliothèque confetti est chargée !");
-    } else {
-      console.error("La bibliothèque confetti n'est pas définie.");
-    }
-  });
-</script>
+  <div id="inputContainer"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
   <script src="app.js"></script>
 
 </body>
