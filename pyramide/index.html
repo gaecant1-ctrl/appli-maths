@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyramides : Algèbre et Numérique</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+
+<div id="feedback" class="feedback-neutral">
+    Règle : Chaque case est la somme des deux du dessous.
+</div>
+
+<div class="exercice-container">
+    
+        <div class="colonne">
+        <h3> Pyramide à compléter</h3>
+        <div id="container-verif"class="zone-jeu"></div>
+        <p class="consigne">Trouve la valeur de <strong>x</strong> pour atteindre le sommet.</p>
+    </div>
+
+    <div class="colonne">
+        <h3>1. Modélisation (x)</h3>
+        <div id="container-equation" class="zone-jeu"></div>
+        <p class="consigne">Exprime chaque case en fonction de  <strong>x</strong>.</p>
+    </div>
+    
+
+
+    <div class="colonne solveur-col">
+        <h3>2. Équation et résolution</h3>
+        <div id="solveur-espace" class="zone-jeu">
+            </div>
+        <p class="consigne">Taduire la contrainte du <strong>sommet</strong> par une équation.</p>
+    </div>
+
+
+
+</div>
+
+<div class="controles">
+    <div class="toggles">
+        <button id="toggle-relatifs" class="toggle-btn" data-active="false" onclick="toggleState(this)">
+            Nombres : Positifs
+        </button>
+        <button id="toggle-grands" class="toggle-btn" data-active="false" onclick="toggleState(this)">
+            Taille : Petits
+        </button>
+    </div>
+<button class="btn-main" onclick="nouvelExercice()">Nouvel Exercice</button>
+</div>
+    <script src="app.js"></script>
+    <script src="pas.js"></script>
+
+</body>
+</html>
