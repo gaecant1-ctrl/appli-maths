@@ -295,8 +295,8 @@ constructor(opts = {}) {
   
 
 genVariant(index) {
-//const type = this.rng.int(1, 25);
-const type=21; 
+const type = this.rng.int(1, 25);
+//const type=21; 
     let sit = "", quest = "", expr = "";
     let variantGrandeur = null;
     let variantOptions = {}; // Contiendra uniquement les modifs du cas
