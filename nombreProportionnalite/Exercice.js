@@ -280,7 +280,7 @@ _render() {
     this.container.appendChild(this.actionsDiv);
 
     this.btnCorrection = document.createElement('button');
-    this.btnCorrection.textContent = 'Correction';
+    this.btnCorrection.textContent = 'Abandon';
     this.btnCorrection.className = 'btn-correction';
     this.btnCorrection.addEventListener('click', () => {
         this._correction();
