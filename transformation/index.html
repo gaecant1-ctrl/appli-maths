@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Transformations Géométriques</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 { color: #2c3e50; margin: 0 0 5px 0; }
+        .mode-indicator {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .mode-concept { background-color: #e2e8f0; color: #4a5568; }
+        .mode-test { background-color: #feebc8; color: #c05621; }
+        
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+            box-sizing: border-box;
+        }
+
+        .panneau-controle {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 280px;
+            min-width: 280px;
+            box-sizing: border-box;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .params-box { display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px; width: 100%; }
+        .param-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+        label { font-weight: bold; font-size: 0.85em; color: #4a5568; }
+
+        select, input {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 0.95em;
+            box-sizing: border-box;
+        }
+
+        select:focus, input:focus { outline: none; border-color: #3498db; }
+        .select-full { width: 100%; }
+        input[type="text"] { width: 65px; text-align: center; }
+        input[type="number"] { width: 65px; text-align: center; }
+
+        .animation-settings {
+            border-top: 1px dashed #cbd5e0;
+            padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .slider-row input[type="range"] { flex: 1; padding: 0; }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button.random { background-color: #2ecc71; }
+        button.random:hover { background-color: #27ae60; }
+        button.animate { background-color: #9b59b6; }
+        button.animate:hover { background-color: #8e44ad; }
+        button.animate:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        button.reset { background-color: #e74c3c; }
+        button.reset:hover { background-color: #c0392b; }
+        button.mode-toggle-btn { background-color: #2d3748; }
+        button.mode-toggle-btn:hover { background-color: #1a202c; }
+        button.validate-btn { background-color: #dd6b20; }
+        button.validate-btn:hover { background-color: #c05621; }
+
+        .canvas-panel {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas { border: 1px solid #ccc; background-color: #fafafa; }
+
+        .error {
+            color: #e74c3c;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 5px;
+            display: none;
+            text-align: center;
+            max-width: 100%;
+            word-break: break-word;
+        }
+
+        .result-box {
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            font-size: 0.95em;
+        }
+        .result-success { background-color: #c6f6d5; color: #22543d; }
+        .result-wrong { background-color: #fed7d7; color: #742a2a; }
+    </style>
+</head>
+<body>
+
+    <h2>Transformations Géométriques</h2>
+    <div id="modeIndicator" class="mode-indicator mode-concept">Mode Concepteur</div>
+    
+    <div class="main-container">
+
+        <div id="panneauConcepteur" class="panneau-controle">
+            <button id="btn-mode-interro" class="mode-toggle-btn">Passer en Mode Interro 🎯</button>
+            <hr style="width:100%; border:0; border-top:1px solid #edf2f7; margin:5px 0;">
+            <button id="btn-aleatoire" class="random">Hasard !</button>
+            <button id="btn-toggle-form" style="background-color: #4a5568;">Masquer les contrôles</button>
+            
+            <div id="zone-transformation">
+                <div class="form-group">
+                    <label for="typeTransform">Transformation :</label>
+                    <select id="typeTransform" class="select-full">
+                        <option value="sym_centrique">Symétrie centrale</option>
+                        <option value="sym_axiale">Symétrie axiale</option>
+                        <option value="translation">Translation</option>
+                        <option value="rotation">Rotation (libre)</option>
+                    </select>
+                </div>
+                <div id="params-container" class="params-box"></div>
+            </div>
+
+            <div id="error-msg" class="error"></div>
+            <button id="btn-toggle-labels" style="background-color: #718096;">Masquer les noms (A', B'...)</button>
+            <button id="btn-appliquer">Appliquer</button>
+            
+            <div class="animation-settings">
+                <button id="btn-animer" class="animate" disabled>Animer la transformation</button>
+                <div class="slider-row">
+                    <label for="animVitesse">Vitesse :</label>
+                    <input type="range" id="animVitesse" min="0.01" max="0.08" step="0.01" value="0.03">
+                </div>
+            </div>
+            <button id="btn-reset" class="reset">Réinitialiser</button>
+        </div>
+
+        <div id="panneauInterro" class="panneau-controle" style="display: none;">
+            <button id="btn-mode-concept" class="mode-toggle-btn">Retour au Concepteur 🛠️</button>
+            <hr style="width:100%; border:0; border-top:1px solid #edf2f7; margin:5px 0;">
+            
+            <div style="font-size: 0.9em; background:#ebf8ff; color:#2b6cb0; padding:10px; border-radius:5px; line-height:1.4;">
+                <strong>Consigne :</strong> Analysez le déplacement entre le motif bleu et le motif rouge anonyme. Retrouvez la transformation exacte ! Les points repères fixes <strong>O(0,0)</strong>, <strong>X(1,0)</strong> et <strong>Y(0,1)</strong> sont à votre disposition.
+            </div>
+
+            <button id="btn-nouvelle-question" class="random">Nouvelle énigme</button>
+            
+            <div class="form-group" style="border-top:1px dashed #cbd5e0; padding-top:10px;">
+                <label for="typeTransformInterro">Votre réponse :</label>
+                <select id="typeTransformInterro" class="select-full">
+                    <option value="sym_centrique">Symétrie centrale</option>
+                    <option value="sym_axiale">Symétrie axiale</option>
+                    <option value="translation">Translation</option>
+                    <option value="rotation">Rotation (libre)</option>
+                </select>
+            </div>
+            
+            <div id="params-container-interro" class="params-box"></div>
+            <div id="error-msg-interro" class="error"></div>
+            
+            <button id="btn-valider" class="validate-btn">Valider ma réponse</button>
+            <div id="feedback-interro" class="result-box"></div>
+
+            <div class="animation-settings">
+                <button id="btn-animer-interro" class="animate">Lancer l'animation d'aide</button>
+                <div class="slider-row">
+                    <label for="animVitesseInterro">Vitesse :</label>
+                    <input type="range" id="animVitesseInterro" min="0.01" max="0.08" step="0.01" value="0.03">
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-panel">
+            <canvas id="grilleCanvas" width="600" height="600"></canvas>
+        </div>
+
+    </div>
+
+<script>
+    const canvas = document.getElementById('grilleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const gridScale = 30; 
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const figureDefaut = [
+        { label: 'A', x: 1, y: 1 }, { label: 'B', x: 5, y: 1 }, { label: 'C', x: 5, y: 3 },
+        { label: 'D', x: 3, y: 3 }, { label: 'E', x: 3, y: 5 }, { label: 'F', x: 1, y: 3 }
+    ];
+
+    let figureActuelle = JSON.parse(JSON.stringify(figureDefaut));
+    let figureTransformee = null;
+    let figureCibleInterro = null; 
+    let transformationActive = false; 
+
+    let sommetSelectionne = null;
+    let segmentSelectionneBleu = null;  
+    let segmentSelectionneRouge = null; 
+
+    const rayonClic = 12;
+    let afficherLabelsTransformes = true;
+    let formEstVisible = true;
+
+    let modeInterroActif = false;
+    let solutionSecrete = null; 
+
+    let enAnimation = false;
+    let tAnimation = 0; 
+    let pasAnimation = 0.03; 
+    let angleAnimationMax = 0; 
+    let centreAnimationPolaire = { x: 0, y: 0 }; 
+    let animationCallback = null; 
+    let typeAnimeEnCours = ''; 
+
+    // GESTION DES MODES
+    document.getElementById('btn-mode-interro').addEventListener('click', () => basculerMode(true));
+    document.getElementById('btn-mode-concept').addEventListener('click', () => basculerMode(false));
+
+    function basculerMode(activerInterro) {
+        modeInterroActif = activerInterro;
+        annulerAnimation();
+        figureTransformee = null;
+        figureCibleInterro = null;
+        segmentSelectionneBleu = null;
+        segmentSelectionneRouge = null;
+        transformationActive = false;
+
+        const ind = document.getElementById('modeIndicator');
+        if (activerInterro) {
+            document.getElementById('panneauConcepteur').style.display = 'none';
+            document.getElementById('panneauInterro').style.display = 'flex';
+            ind.innerText = "Mode Interro 🎯";
+            ind.className = "mode-indicator mode-test";
+            genererQuestionInterro();
+        } else {
+            document.getElementById('panneauConcepteur').style.display = 'flex';
+            document.getElementById('panneauInterro').style.display = 'none';
+            ind.innerText = "Mode Concepteur 🛠️";
+            ind.className = "mode-indicator mode-concept";
+            afficherLabelsTransformes = true;
+            updateFormFields();
+            dessiner();
+        }
+    }
+
+    // ÉVÉNEMENTS MODE CONCEPTEUR
+    document.getElementById('btn-toggle-form').addEventListener('click', function() {
+        formEstVisible = !formEstVisible;
+        const zoneTransform = document.getElementById('zone-transformation');
+        if (formEstVisible) { zoneTransform.style.display = "block"; this.innerText = "Masquer les contrôles"; }
+        else { zoneTransform.style.display = "none"; this.innerText = "Afficher les contrôles"; }
+    });
+
+    document.getElementById('typeTransform').addEventListener('change', function() {
+        annulerAnimation(); transformationActive = false; figureTransformee = null;
+        document.getElementById('btn-animer').disabled = true;
+        updateFormFields(); dessiner(); 
+    });
+    
+    document.getElementById('btn-appliquer').addEventListener('click', function() {
+        annulerAnimation(); transformationActive = true;
+        appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+        dessiner(); 
+        if (figureTransformee) document.getElementById('btn-animer').disabled = false;
+    });
+    
+    document.getElementById('btn-aleatoire').addEventListener('click', () => { annulerAnimation(); genererTransformationAleatoire(); });
+    document.getElementById('btn-reset').addEventListener('click', () => { annulerAnimation(); resetApplication(); });
+    document.getElementById('btn-animer').addEventListener('click', () => preparerEtLancerAnimation(false));
+    document.getElementById('animVitesse').addEventListener('input', function() { pasAnimation = parseFloat(this.value); });
+
+    // ÉVÉNEMENTS MODE INTERRO
+    document.getElementById('typeTransformInterro').addEventListener('change', function() {
+        updateFormFieldsInterro();
+        document.getElementById('feedback-interro').style.display = 'none';
+    });
+    document.getElementById('btn-nouvelle-question').addEventListener('click', () => { annulerAnimation(); genererQuestionInterro(); });
+    document.getElementById('btn-valider').addEventListener('click', demarrerValidationAvecAnimation);
+    document.getElementById('btn-animer-interro').addEventListener('click', () => preparerEtLancerAnimation(true));
+    document.getElementById('animVitesseInterro').addEventListener('input', function() { pasAnimation = parseFloat(this.value); });
+
+    document.getElementById('btn-toggle-labels').addEventListener('click', function() {
+        afficherLabelsTransformes = !afficherLabelsTransformes;
+        this.innerText = afficherLabelsTransformes ? "Masquer les noms (A', B'...)" : "Afficher les noms (A', B'...)";
+        dessiner();
+    });
+
+    // SOURIS ET TOUCH
+    canvas.addEventListener('mousedown', pointerDown);
+    canvas.addEventListener('mousemove', pointerMove);
+    window.addEventListener('mouseup', pointerUp);
+    canvas.addEventListener('touchstart', pointerDown, {passive: false});
+    canvas.addEventListener('touchmove', pointerMove, {passive: false});
+    window.addEventListener('touchend', pointerUp);
+
+    // Initialisation au démarrage
+    updateFormFields();
+    dessiner();
+
+ function genererQuestionInterro() {
+        document.getElementById('feedback-interro').style.display = 'none';
+        document.getElementById('error-msg-interro').style.display = 'none';
+        transformationActive = true;
+        afficherLabelsTransformes = false; 
+        segmentSelectionneBleu = null;
+        segmentSelectionneRouge = null;
+
+        // 1. Choix de la transformation parmi nos 4 familles fondamentales
+        const types = ['sym_centrique', 'sym_axiale', 'translation', 'rotation'];
+        const typeChoisi = types[Math.floor(Math.random() * types.length)];
+        
+        // Banque de sommets réels de la figure bleue (A, B, C...)
+        const sommetsFigure = figureActuelle.map(p => p.label);
+        // Banque globale incluant les points fixes propres (O, X, Y)
+        const tousReperes = [...sommetsFigure];
+
+        // Initialisation des variables de paramètres de la solution
+        let p1 = 'O', p2 = 'X'; 
+        let angleChoisi = 90;
+
+        // 2. Génération ciblée et propre selon la transformation
+        if (typeChoisi === 'sym_centrique') {
+            // Le centre peut être n'importe quel point propre (O, X, Y) ou un sommet
+            p1 = tousReperes[Math.floor(Math.random() * tousReperes.length)];
+
+        } else if (typeChoisi === 'sym_axiale') {
+            // PROTECTION ANTI-PIÈGE (Pas de mélanges comme CX)
+            // On tire à pile ou face le scénario de l'axe
+            if (Math.random() > 0.5) {
+                // SCÉNARIO A : Les axes parfaits du repère
+                const axesReperes = [
+                    { a1: 'O', a2: 'X' }, // Axe Ox
+                    { a1: 'O', a2: 'Y' }, // Axe Oy
+                    { a1: 'X', a2: 'Y' }  // Diagonale à 45°
+                ];
+                const choix = axesReperes[Math.floor(Math.random() * axesReperes.length)];
+                p1 = choix.a1;
+                p2 = choix.a2;
+            } else {
+                // SCÉNARIO B : Les bords de la figure elle-même
+                p1 = sommetsFigure[Math.floor(Math.random() * sommetsFigure.length)];
+                p2 = sommetsFigure[Math.floor(Math.random() * sommetsFigure.length)];
+                while (p1 === p2) { 
+                    p2 = sommetsFigure[Math.floor(Math.random() * sommetsFigure.length)]; 
+                }
+            }
+
+        } else if (typeChoisi === 'translation') {
+            // Le vecteur peut relier n'est-ce pas n'importe quels repères cleans
+            p1 = tousReperes[Math.floor(Math.random() * tousReperes.length)];
+            p2 = tousReperes[Math.floor(Math.random() * tousReperes.length)];
+            while (p1 === p2) { 
+                p2 = tousReperes[Math.floor(Math.random() * tousReperes.length)]; 
+            }
+
+        } else if (typeChoisi === 'rotation') {
+            // Le centre peut être n'importe quel point clé
+            p1 = tousReperes[Math.floor(Math.random() * tousReperes.length)];
+            // Angles propres et académiques
+            const anglesCommuns = [90, 180, -90, 45, -45, 135,-135];
+            angleChoisi = anglesCommuns[Math.floor(Math.random() * anglesCommuns.length)];
+        }
+
+        // 3. Stockage de la solution secrète nettoyée
+        solutionSecrete = {
+            type: typeChoisi,
+            centreSym: p1, 
+            axeP1: p1, 
+            axeP2: p2, 
+            transOrigine: p1, 
+            transFin: p2,
+            rotCentre: p1, 
+            rotAngle: angleChoisi
+        };
+
+        // 4. Application transparente en coulisses pour générer le motif rouge
+        document.getElementById('typeTransform').value = typeChoisi; 
+        updateFormFields(solutionSecrete);
+        appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+        
+        figureCibleInterro = figureTransformee; 
+        figureTransformee = null; // On vide pour que l'élève reparte d'une feuille blanche
+
+        // 5. On réinitialise le formulaire de l'élève sur la première option
+        document.getElementById('typeTransformInterro').value = 'sym_centrique';
+        updateFormFieldsInterro();
+        dessiner();
+    }
+
+    function demarrerValidationAvecAnimation() {
+        if (enAnimation) return;
+        document.getElementById('feedback-interro').style.display = 'none';
+        document.getElementById('error-msg-interro').style.display = 'none';
+
+        appliquerTransformation('typeTransformInterro', 'params-container-interro', 'error-msg-interro');
+        if (document.getElementById('error-msg-interro').style.display === 'block') return;
+
+        const typeUser = document.getElementById('typeTransformInterro').value;
+        typeAnimeEnCours = typeUser;
+
+        if (typeUser === 'sym_centrique') {
+            const labelCentre = document.getElementById('centreSymInterro').value;
+            centreAnimationPolaire = trouverSommet(labelCentre);
+            angleAnimationMax = 180;
+        } else if (typeUser === 'rotation') {
+            const labelCentre = document.getElementById('rotCentreInterro').value;
+            centreAnimationPolaire = trouverSommet(labelCentre);
+            angleAnimationMax = parseFloat(document.getElementById('rotAngleInterro').value);
+        }
+
+        animationCallback = finaliserValidationInterro;
+        enAnimation = true; tAnimation = 0;
+        boucleAnimation();
+    }
+
+    function finaliserValidationInterro() {
+        const feedbackDiv = document.getElementById('feedback-interro');
+        const figureCalculeeUser = figureTransformee; 
+
+        function verifierCorrespondanceGeometrique(polyA, polyB) {
+            if (polyA.length !== polyB.length) return false;
+            const N = polyA.length; const epsilon = 0.02; 
+            const pointsSontProches = (p1, p2) => Math.abs(p1.x - p2.x) < epsilon && Math.abs(p1.y - p2.y) < epsilon;
+
+            for (let i = 0; i < N; i++) {
+                if (pointsSontProches(polyA[0], polyB[i])) {
+                    let correspondanceSens1 = true;
+                    for (let j = 0; j < N; j++) {
+                        let indexB = (i + j) % N;
+                        if (!pointsSontProches(polyA[j], polyB[indexB])) { correspondanceSens1 = false; break; }
+                    }
+                    if (correspondanceSens1) return true;
+
+                    let correspondanceSens2 = true;
+                    for (let j = 0; j < N; j++) {
+                        let indexB = (i - j + N) % N;
+                        if (!pointsSontProches(polyA[j], polyB[indexB])) { correspondanceSens2 = false; break; }
+                    }
+                    if (correspondanceSens2) return true;
+                }
+            }
+            return false;
+        }
+
+        const valide = verifierCorrespondanceGeometrique(figureCalculeeUser, figureCibleInterro);
+
+        if (valide) {
+            feedbackDiv.innerText = "🎉 Bravo ! Votre transformation est géométriquement parfaite et superpose les figures !";
+            feedbackDiv.className = "result-box result-success";
+            feedbackDiv.style.display = "block";
+        } else {
+            const typeUser = document.getElementById('typeTransformInterro').value;
+            marquerFaux("La figure obtenue par votre " + typeUser + " ne se superpose pas sur le motif rouge cible.");
+        }
+        afficherLabelsTransformes = false; 
+        dessiner();
+    }
+
+    function marquerFaux(msg) {
+        const fb = document.getElementById('feedback-interro');
+        fb.innerText = "❌ " + msg;
+        fb.className = "result-box result-wrong";
+        fb.style.display = "block";
+    }
+
+    function distancePointSegment(p, a, b) {
+        const l2 = (a.x - b.x)**2 + (a.y - b.y)**2;
+        if (l2 === 0) return Math.sqrt((p.x - a.x)**2 + (p.y - a.y)**2);
+        let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.sqrt((p.x - (a.x + t * (b.x - a.x)))**2 + (p.y - (a.y + t * (b.y - a.y)))**2);
+    }
+
+    function pointerDown(e) {
+        if (enAnimation) return; 
+        const pos = obtenirPositionEvt(e);
+        const coordGrille = canvasVersGrid(pos.x, pos.y);
+        
+        let surSommet = false;
+        for (let p of figureActuelle) {
+            let ptCanvas = deToCanvas(p.x, p.y);
+            let distance = Math.sqrt((pos.x - ptCanvas.x)**2 + (pos.y - ptCanvas.y)**2);
+            if (distance <= rayonClic) {
+                if (!modeInterroActif) { sommetSelectionne = p; canvas.style.cursor = 'grabbing'; }
+                surSommet = true;
+                segmentSelectionneBleu = null; segmentSelectionneRouge = null;
+                if(e.cancelable) e.preventDefault();
+                break;
+            }
+        }
+        
+        if (!surSommet) {
+            const N = figureActuelle.length; const toleranceSegment = 0.25; let clicAttribue = false;
+
+            for (let i = 0; i < N; i++) {
+                if (distancePointSegment(coordGrille, figureActuelle[i], figureActuelle[(i + 1) % N]) < toleranceSegment) {
+                    segmentSelectionneBleu = (segmentSelectionneBleu === i) ? null : i;
+                    clicAttribue = true; break;
+                }
+            }
+
+            const figureRougeActive = modeInterroActif ? figureCibleInterro : figureTransformee;
+            if (!clicAttribue && figureRougeActive) {
+                for (let i = 0; i < N; i++) {
+                    if (distancePointSegment(coordGrille, figureRougeActive[i], figureRougeActive[(i + 1) % N]) < toleranceSegment) {
+                        segmentSelectionneRouge = (segmentSelectionneRouge === i) ? null : i;
+                        clicAttribue = true; break;
+                    }
+                }
+            }
+            if (!clicAttribue) { segmentSelectionneBleu = null; segmentSelectionneRouge = null; }
+        }
+        dessiner();
+    }
+
+    function pointerMove(e) {
+        if (enAnimation || modeInterroActif) return;
+        const pos = obtenirPositionEvt(e);
+        if (sommetSelectionne) {
+            if(e.cancelable) e.preventDefault();
+            let coordGrilleBrute = canvasVersGrid(pos.x, pos.y);
+            sommetSelectionne.x = Math.round(coordGrilleBrute.x);
+            sommetSelectionne.y = Math.round(coordGrilleBrute.y);
+            if (transformationActive) appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+            else dessiner();
+        } else {
+            let survol = false;
+            for (let p of figureActuelle) {
+                let ptCanvas = deToCanvas(p.x, p.y);
+                let distance = Math.sqrt((pos.x - ptCanvas.x)**2 + (pos.y - ptCanvas.y)**2);
+                if (distance <= rayonClic) { survol = true; break; }
+            }
+            canvas.style.cursor = survol ? 'pointer' : 'default';
+        }
+    }
+
+    function pointerUp() { if (sommetSelectionne) { sommetSelectionne = null; canvas.style.cursor = 'default'; } }
+
+    function dessinerGrille() {
+        ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 1;
+        for (let x = 0; x < width; x += gridScale) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+        for (let y = 0; y < height; y += gridScale) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+        ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, height); ctx.moveTo(0, centerY); ctx.lineTo(width, centerY); ctx.stroke();
+        
+        // DESSIN DES POINTS FIXES DU REPERE (O, X, Y)
+        const ptO = deToCanvas(0, 0);
+        const ptX = deToCanvas(9, 0);
+        const ptY = deToCanvas(0, 9);
+        
+        ctx.fillStyle = '#1a202c'; 
+        ctx.beginPath(); ctx.arc(ptO.x, ptO.y, 4, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(ptX.x, ptX.y, 4, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(ptY.x, ptY.y, 4, 0, 2 * Math.PI); ctx.fill();
+        
+        ctx.font = "bold 13px sans-serif"; 
+        ctx.fillText("O", ptO.x - 14, ptO.y + 16);
+        ctx.fillText("X", ptX.x - 5, ptX.y + 16);
+        ctx.fillText("Y", ptY.x - 15, ptY.y - 6);
+    }
+
+    function dessinerPolygone(points, couleur, style = 'normal') {
+        if (!points || points.length === 0) return;
+        ctx.fillStyle = couleur + "18"; ctx.strokeStyle = couleur;
+        ctx.lineWidth = (style === 'initial_fixe' || style === 'intermediaire') ? 2 : 3;
+        if (style === 'initial_fixe') ctx.setLineDash([6, 4]); 
+        else if (style === 'intermediaire') ctx.setLineDash([2, 2]);
+        else ctx.setLineDash([]);
+        
+        ctx.beginPath();
+        let p0 = deToCanvas(points[0].x, points[0].y); ctx.moveTo(p0.x, p0.y);
+        for (let i = 1; i < points.length; i++) { let p = deToCanvas(points[i].x, points[i].y); ctx.lineTo(p.x, p.y); }
+        ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+
+        // ALLUMAGE DES INDEX DE SURBRILLANCE (VÉRITABLE EFFET NÉON)
+        const N = points.length; let indexSegmentAAllumer = null;
+        if (points === figureActuelle) indexSegmentAAllumer = segmentSelectionneBleu;
+        else if (points === figureTransformee || points === figureCibleInterro) indexSegmentAAllumer = segmentSelectionneRouge;
+
+        if (indexSegmentAAllumer !== null) {
+            const pA = deToCanvas(points[indexSegmentAAllumer].x, points[indexSegmentAAllumer].y);
+            const pB = deToCanvas(points[(indexSegmentAAllumer + 1) % N].x, points[(indexSegmentAAllumer + 1) % N].y);
+            
+            ctx.save();
+            ctx.strokeStyle = couleur; ctx.lineWidth = 14; ctx.globalAlpha = 0.4;
+            ctx.shadowColor = couleur; ctx.shadowBlur = 10; ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+            
+            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3; ctx.globalAlpha = 1.0; ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+            ctx.restore();
+        }
+
+        points.forEach(p => {
+            let pt = deToCanvas(p.x, p.y);
+            ctx.fillStyle = (style === 'initial_fixe') ? '#2980b9' : ((style === 'transforme') ? '#e74c3c' : ((style === 'intermediaire') ? '#9b59b6' : '#2d3436'));
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, (style === 'initial_fixe' || style === 'intermediaire') ? 5 : 6, 0, 2 * Math.PI); ctx.fill();
+            if (style !== 'initial_fixe' && style !== 'intermediaire') { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke(); }
+            
+            if (style === 'intermediaire') return; 
+
+            if (modeInterroActif) {
+                if (style !== 'initial_fixe') return;
+            } else {
+                if (style === 'transforme' && !afficherLabelsTransformes) return;
+            }
+            
+            ctx.font = "bold 13px sans-serif";
+            let labelAffiche = p.label + (style === 'transforme' ? "'" : "");
+            ctx.fillText(labelAffiche, pt.x + 9, pt.y - 6);
+        });
+    }
+
+    function dessiner() {
+        ctx.clearRect(0, 0, width, height);
+        dessinerGrille();
+        
+        if (modeInterroActif) {
+            if (figureCibleInterro) dessinerPolygone(figureCibleInterro, '#e74c3c', 'transforme');
+            dessinerPolygone(figureActuelle, '#2980b9', 'initial_fixe');
+
+            if (enAnimation) {
+                let figureIntermediaire;
+                if (typeAnimeEnCours === 'rotation' || typeAnimeEnCours === 'sym_centrique') {
+                    let angleCourantRad = (angleAnimationMax * tAnimation * Math.PI) / 180;
+                    let cos = Math.cos(angleCourantRad); let sin = Math.sin(angleCourantRad);
+                    figureIntermediaire = figureActuelle.map(p => {
+                        let xM = p.x - centreAnimationPolaire.x; let yM = p.y - centreAnimationPolaire.y;
+                        return { label: p.label, x: xM * cos - yM * sin + centreAnimationPolaire.x, y: xM * sin + yM * cos + centreAnimationPolaire.y };
+                    });
+                } else {
+                    figureIntermediaire = figureActuelle.map((p, i) => {
+                        return { label: p.label, x: p.x + (figureTransformee[i].x - p.x) * tAnimation, y: p.y + (figureTransformee[i].y - p.y) * tAnimation };
+                    });
+                }
+                dessinerPolygone(figureIntermediaire, '#9b59b6', 'intermediaire');
+            } else if (figureTransformee) {
+                dessinerPolygone(figureTransformee, '#9b59b6', 'normal');
+            }
+        } else {
+            if (enAnimation) {
+                dessinerPolygone(figureActuelle, '#2980b9', 'initial_fixe');
+                dessinerPolygone(figureTransformee, '#e74c3c', 'transforme');
+                
+                let figureIntermediaire;
+                if (typeAnimeEnCours === 'rotation' || typeAnimeEnCours === 'sym_centrique') {
+                    let angleCourantRad = (angleAnimationMax * tAnimation * Math.PI) / 180;
+                    let cos = Math.cos(angleCourantRad); let sin = Math.sin(angleCourantRad);
+                    figureIntermediaire = figureActuelle.map(p => {
+                        let xM = p.x - centreAnimationPolaire.x; let yM = p.y - centreAnimationPolaire.y;
+                        return { label: p.label, x: xM * cos - yM * sin + centreAnimationPolaire.x, y: xM * sin + yM * cos + centreAnimationPolaire.y };
+                    });
+                } else {
+                    figureIntermediaire = figureActuelle.map((p, i) => {
+                        return { label: p.label, x: p.x + (figureTransformee[i].x - p.x) * tAnimation, y: p.y + (figureTransformee[i].y - p.y) * tAnimation };
+                    });
+                }
+                dessinerPolygone(figureIntermediaire, '#9b59b6', 'intermediaire');
+            } else if (transformationActive && figureTransformee) {
+                dessinerPolygone(figureActuelle, '#2980b9', 'initial_fixe');
+                dessinerPolygone(figureTransformee, '#e74c3c', 'transforme');
+            } else {
+                dessinerPolygone(figureActuelle, '#2c3e50', 'normal');
+            }
+        }
+    }
+
+    function preparerEtLancerAnimation(depuisInterro = false) {
+        if (enAnimation) return;
+        
+        if (depuisInterro) {
+            figureTransformee = null;
+            document.getElementById('typeTransform').value = solutionSecrete.type;
+            updateFormFields(solutionSecrete);
+            appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+            typeAnimeEnCours = solutionSecrete.type;
+
+            if (typeAnimeEnCours === 'sym_centrique') {
+                centreAnimationPolaire = trouverSommet(solutionSecrete.centreSym); angleAnimationMax = 180;
+            } else if (typeAnimeEnCours === 'rotation') {
+                centreAnimationPolaire = trouverSommet(solutionSecrete.rotCentre); angleAnimationMax = solutionSecrete.rotAngle;
+            }
+            animationCallback = () => { figureTransformee = null; dessiner(); }; 
+        } else {
+            typeAnimeEnCours = document.getElementById('typeTransform').value;
+            if (typeAnimeEnCours === 'sym_centrique') {
+                centreAnimationPolaire = trouverSommet(document.getElementById('centreSym').value); angleAnimationMax = 180;
+            } else if (typeAnimeEnCours === 'rotation') {
+                centreAnimationPolaire = trouverSommet(document.getElementById('rotCentre').value); angleAnimationMax = parseFloat(document.getElementById('rotAngle').value);
+            }
+            animationCallback = null;
+        }
+
+        enAnimation = true; tAnimation = 0;
+        boucleAnimation();
+    }
+
+    function boucleAnimation() {
+        if (!enAnimation) return;
+        tAnimation += pasAnimation;
+        if (tAnimation >= 1) { 
+            tAnimation = 1; enAnimation = false; transformationActive = true; dessiner(); 
+            if (animationCallback) animationCallback();
+            return; 
+        }
+        dessiner();
+        requestAnimationFrame(boucleAnimation);
+    }
+
+    function annulerAnimation() { enAnimation = false; tAnimation = 0; animationCallback = null; }
+
+    function resetApplication() {
+        figureActuelle = JSON.parse(JSON.stringify(figureDefaut));
+        figureTransformee = null; transformationActive = false;
+        segmentSelectionneBleu = null; segmentSelectionneRouge = null;
+        document.getElementById('btn-animer').disabled = true;
+        document.getElementById('typeTransform').value = 'sym_centrique';
+        document.getElementById('error-msg').style.display = 'none';
+        updateFormFields(); dessiner();
+    }
+
+    function trouverSommet(label) {
+        const clean = label.trim().toUpperCase();
+        if (clean === 'O') return { label: 'O', x: 0, y: 0 };
+        if (clean === 'X') return { label: 'X', x: 9, y: 0 };
+        if (clean === 'Y') return { label: 'Y', x: 0, y: 9 };
+        return figureActuelle.find(p => p.label.toUpperCase() === clean);
+    }
+
+    function updateFormFields(forcedValues = null) { gererGenerationChamps('typeTransform', 'params-container', '', forcedValues); }
+    function updateFormFieldsInterro() { gererGenerationChamps('typeTransformInterro', 'params-container-interro', 'Interro', null); }
+
+    function deToCanvas(x, y) { return { x: centerX + x * gridScale, y: centerY - y * gridScale }; }
+    function canvasVersGrid(canvasX, canvasY) { return { x: (canvasX - centerX) / gridScale, y: (centerY - canvasY) / gridScale }; }
+    function obtenirPositionEvt(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function gererGenerationChamps(idSelect, idContainer, suffix, forcedValues) {
+        const type = document.getElementById(idSelect).value;
+        const container = document.getElementById(idContainer);
+        
+        const oldVals = {
+            centreSym: document.getElementById('centreSym'+suffix)?.value || 'A',
+            axeP1: document.getElementById('axeP1'+suffix)?.value || 'O',
+            axeP2: document.getElementById('axeP2'+suffix)?.value || 'X',
+            transOrigine: document.getElementById('transOrigine'+suffix)?.value || 'A',
+            transFin: document.getElementById('transFin'+suffix)?.value || 'B',
+            rotCentre: document.getElementById('rotCentre'+suffix)?.value || 'O',
+            rotAngle: document.getElementById('rotAngle'+suffix)?.value || '90'
+        };
+
+        let html = '';
+        if (type === 'sym_centrique') {
+            html = `<div class="param-row"><label for="centreSym${suffix}">Centre :</label><input type="text" id="centreSym${suffix}" value="${forcedValues ? forcedValues.centreSym : oldVals.centreSym}"></div>`;
+        } else if (type === 'sym_axiale') {
+            html = `
+                <div class="param-row"><label for="axeP1${suffix}">Axe - Pt 1 :</label><input type="text" id="axeP1${suffix}" value="${forcedValues ? forcedValues.axeP1 : oldVals.axeP1}"></div>
+                <div class="param-row"><label for="axeP2${suffix}">Axe - Pt 2 :</label><input type="text" id="axeP2${suffix}" value="${forcedValues ? forcedValues.axeP2 : oldVals.axeP2}"></div>`;
+        } else if (type === 'translation') {
+            html = `
+                <div class="param-row"><label for="transOrigine${suffix}">Origine :</label><input type="text" id="transOrigine${suffix}" value="${forcedValues ? forcedValues.transOrigine : oldVals.transOrigine}"></div>
+                <div class="param-row"><label for="transFin${suffix}">Extrémité :</label><input type="text" id="transFin${suffix}" value="${forcedValues ? forcedValues.transFin : oldVals.transFin}"></div>`;
+        } else if (type === 'rotation') {
+            html = `
+                <div class="param-row"><label for="rotCentre${suffix}">Centre :</label><input type="text" id="rotCentre${suffix}" value="${forcedValues ? forcedValues.rotCentre : oldVals.rotCentre}"></div>
+                <div class="param-row"><label for="rotAngle${suffix}">Angle (°) :</label><input type="number" id="rotAngle${suffix}" value="${forcedValues ? forcedValues.rotAngle : oldVals.rotAngle}"></div>`;
+        }
+
+        container.innerHTML = html;
+        if(suffix === '') {
+            container.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', () => { 
+                    annulerAnimation(); transformationActive = false; figureTransformee = null;
+                    document.getElementById('btn-animer').disabled = true; dessiner();
+                });
+            });
+        }
+    }
+
+    function genererTransformationAleatoire() {
+        transformationActive = false; figureTransformee = null;
+        document.getElementById('btn-animer').disabled = true;
+        const types = ['sym_centrique', 'sym_axiale', 'translation', 'rotation'];
+        const typeChoisi = types[Math.floor(Math.random() * types.length)];
+        
+        const reperes = [...figureActuelle.map(p => p.label), 'O', 'X', 'Y'];
+        const p1 = reperes[Math.floor(Math.random() * reperes.length)];
+        let p2 = reperes[Math.floor(Math.random() * reperes.length)];
+        while (p1 === p2) { p2 = reperes[Math.floor(Math.random() * reperes.length)]; }
+        const anglesCommuns = [30, 45, 60, 90, 120, 180, -45, -60, -90];
+        const angleChoisi = anglesCommuns[Math.floor(Math.random() * anglesCommuns.length)];
+
+        document.getElementById('typeTransform').value = typeChoisi;
+        const valeursAleatoires = { centreSym: p1, axeP1: p1, axeP2: p2, transOrigine: p1, transFin: p2, rotCentre: p1, rotAngle: angleChoisi };
+        updateFormFields(valeursAleatoires);
+        dessiner();
+    }
+
+    function appliquerTransformation(idSelect, idContainer, idError) {
+        const type = document.getElementById(idSelect).value;
+        document.getElementById(idError).style.display = 'none';
+        let nouvelleFigure = JSON.parse(JSON.stringify(figureActuelle));
+        const suffix = (idSelect === 'typeTransformInterro') ? 'Interro' : '';
+
+        if (type === 'sym_centrique') {
+            const labelCentre = document.getElementById('centreSym'+suffix).value;
+            const centre = trouverSommet(labelCentre);
+            if (!centre) { document.getElementById(idError).innerText = `Point "${labelCentre}" introuvable.`; document.getElementById(idError).style.display = 'block'; return; }
+            nouvelleFigure.forEach(p => { p.x = 2 * centre.x - p.x; p.y = 2 * centre.y - p.y; });
+            
+        } else if (type === 'sym_axiale') {
+            const l1 = document.getElementById('axeP1'+suffix).value; const l2 = document.getElementById('axeP2'+suffix).value;
+            const p1 = trouverSommet(l1); const p2 = trouverSommet(l2);
+            if (!p1 || !p2) { document.getElementById(idError).innerText = "Point de l'axe introuvable."; document.getElementById(idError).style.display = 'block'; return; }
+            if (p1.x === p2.x && p1.y === p2.y) { document.getElementById(idError).innerText = "L'axe requiert deux points distincts."; document.getElementById(idError).style.display = 'block'; return; }
+            const A = p2.y - p1.y; const B = p1.x - p2.x; const C = p2.x * p1.y - p1.x * p2.y; const AB2 = A*A + B*B;
+            nouvelleFigure.forEach(p => {
+                let d = (A * p.x + B * p.y + C) / AB2;
+                p.x = Math.round((p.x - 2 * A * d) * 100) / 100; 
+                p.y = Math.round((p.y - 2 * B * d) * 100) / 100;
+            });
+            
+        } else if (type === 'translation') {
+            const lOrigine = document.getElementById('transOrigine'+suffix).value; const lFin = document.getElementById('transFin'+suffix).value;
+            const pOrigine = trouverSommet(lOrigine); const pFin = trouverSommet(lFin);
+            if (!pOrigine || !pFin) { document.getElementById(idError).innerText = "Point du vecteur introuvable."; document.getElementById(idError).style.display = 'block'; return; }
+            const dx = pFin.x - pOrigine.x; const dy = pFin.y - pOrigine.y;
+            nouvelleFigure.forEach(p => { p.x += dx; p.y += dy; });
+            
+        } else if (type === 'rotation') {
+            const labelCentre = document.getElementById('rotCentre'+suffix).value; 
+            const angleDeg = parseFloat(document.getElementById('rotAngle'+suffix).value);
+            if (isNaN(angleDeg)) { document.getElementById(idError).innerText = "L'angle doit être un nombre."; document.getElementById(idError).style.display = 'block'; return; }
+            
+            const centre = trouverSommet(labelCentre); if (!centre) { document.getElementById(idError).innerText = `Point "${labelCentre}" introuvable.`; document.getElementById(idError).style.display = 'block'; return; }
+            const angleRad = (angleDeg * Math.PI) / 180; const cos = Math.cos(angleRad); const sin = Math.sin(angleRad);
+            nouvelleFigure.forEach(p => {
+                let xM = p.x - centre.x; let yM = p.y - centre.y;
+                let xNew = xM * cos - yM * sin; let yNew = xM * sin + yM * cos;
+                p.x = Math.round((xNew + centre.x) * 100) / 100; p.y = Math.round((yNew + centre.y) * 100) / 100;
+            });
+        }
+        figureTransformee = nouvelleFigure;
+        dessiner(); 
+    }
+</script>
+</body>
+</html>
