@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Anamorphoseur Mathématique - V6</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/14.0.1/math.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 15px;
+            background-color: #f0f2f5;
+            font-family: system-ui, sans-serif;
+            display: flex; justify-content: center; align-items: start;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 320px 750px;
+            gap: 15px;
+            width: 1085px;
+        }
+
+        .sidebar-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .render-block {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 750px;
+        }
+
+        #canvas-container {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            background: white; border-radius: 4px;
+            width: 750px; height: 400px;
+        }
+
+        .panel {
+            background: #fff; padding: 12px; border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .formula-row {
+            display: flex; gap: 10px; margin-bottom: 10px;
+        }
+        .input-group {
+            flex: 1; display: flex; align-items: center; gap: 5px;
+        }
+        .input-group label { font-weight: bold; color: #333; }
+        .input-group input {
+            flex: 1; padding: 6px; font-family: monospace; font-size: 14px;
+            border: 1px solid #ccc; border-radius: 4px;
+        }
+
+/* 1. L'état de base de tous les boutons */
+        button, select {
+            padding: 6px 10px; font-size: 13px; border: 1px solid #cbd5e1;
+            border-radius: 4px; background: #f8fafc; color: #333; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        /* 2. Le survol d'un bouton normal (Gris neutre) */
+        button:hover { 
+            background: #cbd5e1; 
+            color: #0f172a;
+        }
+
+        /* 3. L'état ACTIF / ALLUMÉ (Bleu très reconnaissable + Texte blanc) */
+        .btn-active { 
+            background: #2563eb !important; 
+            border-color: #1d4ed8 !important; 
+            color: white !important; 
+        }
+
+        /* 4. Le survol d'un bouton déjà actif (Bleu encore plus foncé pour le retour d'effort) */
+        .btn-active:hover {
+            background: #1e40af !important;
+            color: white !important;
+        }
+        
+        /* 5. Les boutons spéciaux (Calculer et Reset) */
+        .btn-run { background: #22c55e; color: white; border: none; font-weight: bold; }
+        .btn-run:hover { background: #16a34a; }
+        .btn-reset { background: #ef4444; color: white; border: none; }
+        .btn-reset:hover { background: #dc2626; }
+        .slider-group {
+            display: flex; align-items: center; gap: 5px; font-size: 13px; color: #475569;
+        }
+        .slider-group input { cursor: pointer; width: 70px; }
+
+        .error-msg {
+            color: #b91c1c; background: #fee2e2; padding: 6px;
+            border-radius: 4px; font-size: 12px; margin-top: 6px; display: none;
+        }
+
+        #img-btn-3 {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #333 !important;
+        }
+        #img-btn-3.btn-active {
+            background: #bae6fd !important;
+            border-color: #3b82f6 !important;
+            color: #1e3a8a !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+        
+        <div class="sidebar-controls">
+            
+            <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">🖼️ Image source :</span>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; align-items: center; width: 100%;">
+                    <button id="img-btn-0" onclick="choisirImage(0)">👦</button>
+                    <button id="img-btn-1" onclick="choisirImage(1)">🏁</button>
+                    <button class="btn-active" id="img-btn-2" onclick="choisirImage(2)">📐</button>
+                    <button id="img-btn-3" onclick="document.getElementById('file-loader').click()" title="Importer une image">📁</button>
+                    <input type="file" id="file-loader" accept="image/*" onchange="chargerImagePerso(event)" style="display: none;">
+                </div>
+            </div>
+
+            <div class="panel toolbar" style="display: flex; flex-direction: column; gap: 10px; align-items: stretch;margin-top: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 8px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; ">
+                    <span style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">⚙️ Généraux :</span>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <button id="btn-pause" onclick="basculerPause()" title="Mettre en Pause / Relancer" style="width: 100%;">⏯️ Action</button>
+                         <select id="select-repere" onchange="changerRepere(this.value)" title="Système de coordonnées" style="width: 100%;">
+                            <option value="0" selected>🎯 Centré (0,0)</option>
+                            <option value="1">📐 Bas-Gauche</option>
+                            <option value="2">📐 Haut-Gauche</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                       <button id="btn-grille" onclick="basculerGrille()" title="Afficher / Masquer la Grille" style="width: 100%;">🌐 Grille</button>
+                        <select id="select-pas-grille" onchange="changerPasGrilleVisuelle(this.value)" title="Espacement de la grille" style="width: 100%;">
+                            <option value="10">🌐 10px</option>
+                            <option value="15">🌐 15px</option>
+                            <option value="25">🌐 25px</option>
+                            <option value="30">🌐 30px</option>
+                            <option value="50" selected>🌐 50px</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                        <button id="btn-affichage" onclick="basculerAffichage()" title="Basculer Affichage Droite" style="width: 100%;">🖼️ Initial</button>
+                        <div class="slider-group" title="Opacité du filigrane" style="display: flex; align-items: center; justify-content: space-between; margin: 0; padding: 0;">
+                            <label for="slider-opacite" style="font-weight: bold; font-size: 12px; color: #475569;">👁️</label>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <input type="range" id="slider-opacite" min="0" max="255" value="80" oninput="changerOpaciteFiligrane(this.value)" style="width: 65px;">
+                                <span id="valeur-opacity" style="font-family: monospace; font-weight: bold; font-size: 12px; width: 22px; text-align: right;">80</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn-reset" onclick="resetCanvas()" style="width: 100%;">Remise à zéro 🧹</button>
+                
+                <div id="conteneur-outils-mode" style="display: flex; flex-direction: column; gap: 8px; background: #f0fdf4; padding: 8px; border-radius: 4px; border: 1px solid #bbf7d0;">
+                    <span style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">🔄 Mode de Rendu :</span>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+                        <button id="toggle-rendu-0" class="btn-active" onclick="changerTypeRendu(0)">🔄 Aléatoire</button>
+                        <button id="toggle-rendu-1" onclick="changerTypeRendu(1)">⏹️ Séquentiel</button>
+                        <button id="toggle-rendu-2" onclick="changerTypeRendu(2)">🎯 ParCase</button>
+                    </div>
+                    
+                    <div style="height: 1px; background: rgba(0,0,0,0.08); margin: 2px 0;"></div>
+
+                    <span id="outils-aleatoire" style="display: flex; flex-direction: row; gap: 6px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                        <button id="btn-zone" onclick="basculerModeZone()" style="width: 100%;">🎯 Zone active</button>
+                        <div class="slider-group" id="ui-taille-zone" style="display: flex; justify-content: space-between; align-items: center;">
+                            <label for="slider-rayon">Rayon :</label>
+                            <input type="range" id="slider-rayon" min="15" max="120" value="50" oninput="ajusterTailleZone(this.value)">
+                            
+                        </div>
+                        </div>
+                    </span>
+
+                    <span id="outils-sequentiel" style="display: none; flex-direction: column; gap: 6px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                            <label for="select-vitesse" style="font-size: 13px; white-space: nowrap;">⚡ Pas scan :</label>
+                            <select id="select-vitesse" onchange="changerTailleBlocSeq(this.value)" style="width: 100%;">
+                                <option value="10">10 px</option>
+                                <option value="15">15 px</option>
+                                <option value="25">25 px</option>
+                                <option value="30">30 px</option>
+                                <option value="50" selected>50px</option>
+                            </select>
+                        </div>
+                    </span>
+
+                    <span id="outils-manuel" style="display: none; flex-direction: column; gap: 6px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                            <label for="select-taille-case" style="color: #4338ca; font-weight: bold; font-size: 13px; white-space: nowrap;">📐 Taille case :</label>
+                            <select id="select-taille-case" onchange="changerTailleCaseManuel(this.value)" style="border-color: #ddd6fe; background: #fdfdfd; width: 100%;">
+                                <option value="10">10 px</option>
+                                <option value="15">15 px</option>
+                                <option value="25">25 px</option>
+                                <option value="30">30 px</option>
+                                <option value="50" selected>50 px</option>
+                            </select>
+                        </div>
+                       
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="render-block">
+            <div id="canvas-container"></div>
+            <div class="panel">
+                <div class="formula-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                    <div class="input-group" style="display: flex; align-items: center; gap: 4px;">
+                        <label for="input-x" style="font-weight: bold;">X'=</label>
+                        <input type="text" id="input-x" style="flex: 1; width: 100%;">
+                    </div>
+                    <div class="input-group" style="display: flex; align-items: center; gap: 4px;">
+                        <label for="input-y" style="font-weight: bold;">Y'=</label>
+                        <input type="text" id="input-y" style="flex: 1; width: 100%;">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; width: 100%;">
+                    <button class="btn-run" style="margin: 0; width: 100%;" onclick="appliquerFormules()">⚙️ Calculer</button>
+                    <button type="button" style="margin: 0; width: 100%; background: #3b82f6; color: white; border: none; font-weight: bold; border-radius: 4px;" onclick="formuleSuivante()">🧭 Suivante</button>
+                </div>
+                <div id="error-box" class="error-msg"></div>
+            </div>
+        </div>
+</div>
+
+<script>
+        // --- VARIABLES DE CONFIGURATION ET D'ETATS ---
+        let estEnPause = true;  
+        let modeZoneActif = false; 
+        let typeRendu = 0; 
+        
+        let mode = 0, moode = 0, temps = 0, affiche = false; 
+        let im, imm, calqueGrille, imgVisa, imgPerso = null;
+        let a = 300, b = 300; 
+        
+        let formuleX = "x * (1 + 0.1 * cos(x / 10))", formuleY = "y * (1 + 0.1 * cos(x / 10))";
+
+        let disqueX = 150, disqueY = 150, disqueRayon = 50;
+        let imageActiveIndex = 0; 
+        
+        let seqX = 0, seqY = 0;
+        let tailleBlocSeq = 50; 
+
+        let zoneCaseX = 0;
+        let zoneCaseY = 0;
+        let tailleCaseManuel = 50;   
+        let pasGrilleVisuelle = 50;  
+        let pasLissageCourbe = 5;    
+        let pasEchantillonnage = 0.5; 
+
+        let calculXCompiled = math.compile("x");
+        let calculYCompiled = math.compile("y");
+
+        let opaciteFiligrane = 80;  
+
+        // --- BANQUE DE FORMULES PÉDAGOGIQUES ---
+        let listeFormules = [
+            { x: "x + 0.5 * y", y: "y" },
+            { x: "x * (1 + 0.1 * cos(x / 10))", y: "y * (1 + 0.1 * cos(y / 10))" },
+            { x: "x * (1 + 0.05 * cos(y / 10))", y: "y * (1 + 0.05 * cos(x / 10))" },
+            { x: "x*(1+abs(x)/50)*0.5", y: "y" },
+            { x: "x", y: "y*(1-exp(-(y/30)^2))" },
+            { x: "x", y: "y*(1-0.5*exp(-(x/30)^2))" },
+            { x: "x*(1+0.3*exp(-(x/60)^2-(y/60)^2))", y: "y*(1+0.3*exp(-(x/60)^2-(y/60)^2))" },      
+            { x: "x * (1.5 - 0.5 * exp(-(y / 100)^2))", y: "y" },
+            { x: "x + 50", y: "y + 30" }, 
+            { x: "x * 1.5", y: "y * 1" }, 
+            { x: "x * (1 + y / 300)", y: "y * 1" },
+            { x: "x * sqrt(x^2 + y^2) / 150", y: "y * sqrt(x^2 + y^2) / 150" },
+            { x: "x", y: "y + 20*sin(x/40)*exp(-(y^2)/3000)" },
+            { x: "x*(1+0.4*exp(-(y^2)/2000))", y: "y*(1-0.2*exp(-(x^2)/3000))" }
+        ];
+        let indexFormuleActuelle = 0;
+
+        // Force l'attribut 'willReadFrequently' sur TOUS les contextes 2D créés par le navigateur
+        (function() {
+            const origineGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, attributes) {
+                if (type === '2d') {
+                    attributes = attributes || {};
+                    attributes.willReadFrequently = true;
+                }
+                return origineGetContext.call(this, type, attributes);
+            };
+        })();
+
+        function formuleSuivante() {
+            indexFormuleActuelle = (indexFormuleActuelle + 1) % listeFormules.length;
+            let prochaineFormule = listeFormules[indexFormuleActuelle];
+            document.getElementById("input-x").value = prochaineFormule.x;
+            document.getElementById("input-y").value = prochaineFormule.y;
+            appliquerFormules();
+        }
+
+        function preload() {
+            imgVisa = loadImage('visa.png'); 
+        }
+
+        function setup() {
+            let canvas = createCanvas(750,400);
+            canvas.parent('canvas-container');
+
+            document.getElementById("input-x").value = formuleX;
+            document.getElementById("input-y").value = formuleY;
+
+            textAlign(CENTER, CENTER);
+            
+            try {
+                calculXCompiled = math.compile(formuleX);
+                calculYCompiled = math.compile(formuleY);
+            } catch(e) { console.error(e); }
+
+            choisirImage(0); 
+        }
+
+        function resetCanvas() {
+            background(150);
+            fill(0); noStroke();
+            rect(50, 50, 300, 300);
+            rect(400, 50, 300, 300);
+            
+            temps = 0;
+            seqX = 0;
+            seqY = 0;
+            
+            initImage();
+        }
+
+        function effacerZoneDroiteOnly() {
+            temps = 0;
+            seqX = 0;
+            seqY = 0;
+            imm.loadPixels();
+            for (let i = 0; i < imm.pixels.length; i += 4) {
+                imm.pixels[i]     = 0;   
+                imm.pixels[i + 1] = 0;   
+                imm.pixels[i + 2] = 0;   
+                imm.pixels[i + 3] = 255; 
+            }
+            imm.updatePixels();
+        }
+
+        function initImage() {
+            im = createImage(a, b);
+            im.loadPixels();
+            
+            for (let i = 0; i < im.pixels.length; i += 4) {
+                im.pixels[i]     = 0; 
+                im.pixels[i + 1] = 0; 
+                im.pixels[i + 2] = 0; 
+                im.pixels[i + 3] = 0; 
+            }
+
+            if (imageActiveIndex === 1) {
+                for (let i = 0; i < a; i++) {
+                    for (let j = 0; j < b; j++) {
+                        let c = color(15, 23, 42); 
+                        if (j >= 150) {
+                            let alternance = (floor(i / 30) + floor(j / 30)) % 2;
+                            c = alternance === 0 ? color(244, 63, 94) : color(159, 18, 57); 
+                        }
+                        let distSoleil = sq(i - 150) + sq(j - 150);
+                        if (distSoleil < sq(80) && j < 150) {
+                            c = color(251, 146, 60); 
+                            if (j > 100 && j % 10 < 4) c = color(15, 23, 42); 
+                        }
+                        if (j < 150 && i <= 150 && (i + j) >= 150) {
+                            if (distSoleil >= sq(80)) c = color(56, 189, 248); 
+                        }
+                        if (j < 150 && i > 150 && (i - j) <= 150) {
+                            if (distSoleil >= sq(80)) c = color(3, 105, 161); 
+                        }
+                        if (i >= 40 && i <= 80 && j >= 45 && j <= 55) c = color(168, 85, 247); 
+                        if (i >= 50 && i <= 70 && j >= 35 && j < 45 && sq(i-60)+sq(j-45) < sq(12)) c = color(34, 211, 238); 
+                        im.set(i, j, c);
+                    }
+                }
+            } else if (imageActiveIndex === 0) {
+                if (imgVisa && imgVisa.width > 0) {
+                    imgVisa.loadPixels();
+                    for (let i = 0; i < imgVisa.pixels.length; i++) im.pixels[i] = imgVisa.pixels[i];
+                } else {
+                    for (let i = 0; i < a; i++) {
+                        for (let j = 0; j < b; j++) im.set(i, j, (abs(j - 150) < 5) ? color(255) : color(30, 80, 180));
+                    }
+                }
+            } else if (imageActiveIndex === 2) {
+                for (let i = 0; i < a; i++) {
+                    for (let j = 0; j < b; j++) {
+                        let c = color(0); 
+                        if (i >= 150 && i <= 300 && j >= 0 && j <= 150) {
+                            c = color(15, 23, 42); 
+                            let distColline = sq(i - 225) + sq(j - 150);
+                            if (distColline < sq(60)) c = color(34, 197, 94); 
+                            if (j >= 60 && j <= 100 && i >= 215 && i <= 235) {
+                                if (i <= 225 && (j + i) >= 285) c = color(251, 191, 36); 
+                                if (i > 225 && (j - i) >= -135) c = color(245, 158, 11); 
+                            }
+                            if (j >= 45 && j < 60 && i >= 220 && i <= 230) {
+                                if (i <= 225 && (j + i) >= 270) c = color(239, 68, 68); 
+                                if (i > 225 && (j - i) >= -150) c = color(185, 28, 28); 
+                            }
+                            let distLune = sq(i - 270) + sq(j - 40);
+                            if (distLune < sq(12)) c = color(254, 240, 138); 
+                        }
+                        if ((i === 0 || i === a - 1 || j === 0 || j === b - 1) && c.toString() !== color(239, 68, 68).toString()) {
+                            c = color(15, 23, 42);
+                        }
+                        im.set(i, j, c);
+                    }
+                }
+            } else if (imageActiveIndex === 3) {
+                if (imgPerso && imgPerso.width > 0) {
+                    imgPerso.loadPixels();
+                    for (let i = 0; i < imgPerso.pixels.length; i += 4) {
+                        if (imgPerso.pixels[i + 3] > 0) {
+                            im.pixels[i] = imgPerso.pixels[i]; im.pixels[i + 1] = imgPerso.pixels[i + 1]; im.pixels[i + 2] = imgPerso.pixels[i + 2]; im.pixels[i + 3] = 255;
+                        }
+                    }
+                }
+            }
+            im.updatePixels();
+
+            imm = createImage(a, b); 
+            imm.loadPixels();
+            for (let i = 0; i < imm.pixels.length; i += 4) {
+                imm.pixels[i] = 0; imm.pixels[i + 1] = 0; imm.pixels[i + 2] = 0; imm.pixels[i + 3] = im.pixels[i + 3]; 
+            }
+            imm.updatePixels();
+            
+            calculerGrilleTransformee(); 
+            lierBoutonPauseUI();
+        }
+
+        function draw() {
+            noTint(); 
+
+            if (mouseIsPressed && mouseX >= 50 && mouseX <= 350 && mouseY >= 50 && mouseY <= 350) {
+                let cibleX = mouseX - 50;
+                let cibleY = mouseY - 50;
+                if (typeRendu === 2) {
+                    zoneCaseX = floor(cibleX / tailleCaseManuel) * tailleCaseManuel;
+                    zoneCaseY = floor(cibleY / tailleCaseManuel) * tailleCaseManuel;
+                } else if (typeRendu === 0 && modeZoneActif) {
+                    disqueX = constrain(cibleX, disqueRayon, a - disqueRayon);
+                    disqueY = constrain(cibleY, disqueRayon, b - disqueRayon);
+                }
+            }
+
+            background(150);
+            
+            // Étiquettes AVANT / APRÈS harmonisées
+            fill(255); textStyle(BOLD); fontSize = 14;
+            text("AVANT", 200, 30); text("APRES", 550, 30);
+
+            noStroke(); fill(0); rect(50, 50, 300, 300);
+            image(im, 50, 50);
+            
+            if (mode === 1) drawGrilleSource();
+
+            if (typeRendu === 2) {
+                stroke(99, 102, 241); strokeWeight(2.5); noFill();
+                rect(50 + zoneCaseX, 50 + zoneCaseY, tailleCaseManuel, tailleCaseManuel);
+                fill(99, 102, 241, 20); noStroke();
+                rect(50 + zoneCaseX, 50 + zoneCaseY, tailleCaseManuel, tailleCaseManuel);
+            } else if (typeRendu === 0 && modeZoneActif) {
+                stroke(255, 0, 0, 200); strokeWeight(1.5); fill(255, 0, 0, 30);
+                ellipse(50 + disqueX, 50 + disqueY, disqueRayon * 2);
+            }
+
+            if (!estEnPause) {
+                temps++;
+                if (typeRendu === 0) {
+                    if (temps < 50000) {
+                        imm.loadPixels();
+                        let nbIterations = pasEchantillonnage === 0.5 ? 400 : 100;
+                        
+                        for (let i = 0; i < nbIterations; i++) { 
+                            let u, v;
+                            if (modeZoneActif) {
+                                let r = sqrt(random()) * disqueRayon; 
+                                let theta = random() * TWO_PI;
+                                u = disqueX + r * cos(theta); 
+                                v = disqueY + r * sin(theta);
+                            } else {
+                                u = random() * 300; 
+                                v = random() * 300;
+                            }
+                            
+                            let iu = floor(u); 
+                            let iv = floor(v);
+
+                            if (iu >= 0 && iu < a && iv >= 0 && iv < b) {
+                                let idx = (iu + iv * a) * 4; 
+                                let pos = f(u, v);
+                                let destX = round(pos[0]); 
+                                let destY = round(pos[1]);
+
+                                if (destX >= 0 && destX < a && destY >= 0 && destY < b) {
+                                    let idxDest = (destX + destY * a) * 4;
+                                    imm.pixels[idxDest]     = im.pixels[idx];
+                                    imm.pixels[idxDest + 1] = im.pixels[idx + 1];
+                                    imm.pixels[idxDest + 2] = im.pixels[idx + 2];
+                                    imm.pixels[idxDest + 3] = im.pixels[idx + 3];
+
+                                    if (modeZoneActif) {
+                                        stroke(0); fill(0); strokeWeight(1); 
+                                        ellipse(50 + iu, 50 + iv, 1, 1);
+                                    }
+                                }
+                            }
+                        }
+                        imm.updatePixels();
+                    }
+                } else if (typeRendu === 1) {
+                    imm.loadPixels();
+
+                    for (let blkY = 0; blkY < tailleBlocSeq; blkY += pasEchantillonnage) {
+                        for (let blkX = 0; blkX < tailleBlocSeq; blkX += pasEchantillonnage) {
+                            let u = seqX + blkX; 
+                            let v = seqY + blkY;
+                            
+                            if (u < a && v < b) {
+                                let iu = floor(u); 
+                                let iv = floor(v);
+                                let idx = (iu + iv * a) * 4;
+                                
+                                let pos = f(u, v);
+                                let destX = round(pos[0]);
+                                let destY = round(pos[1]);
+
+                                if (destX >= 0 && destX < a && destY >= 0 && destY < b) {
+                                    let etendue = pasEchantillonnage < 1 ? 2 : 1; 
+
+                                    for (let dy = 0; dy < etendue; dy++) {
+                                        for (let dx = 0; dx < etendue; dx++) {
+                                            let nx = destX + dx;
+                                            let ny = destY + dy;
+                                            
+                                            if (nx < a && ny < b) {
+                                                let idxDest = (nx + ny * a) * 4;
+                                                imm.pixels[idxDest]     = im.pixels[idx];
+                                                imm.pixels[idxDest + 1] = im.pixels[idx + 1];
+                                                imm.pixels[idxDest + 2] = im.pixels[idx + 2];
+                                                imm.pixels[idxDest + 3] = 255;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    imm.updatePixels();
+
+                    stroke(255, 0, 0); strokeWeight(1.5); noFill();
+                    rect(50 + seqX, 50 + seqY, tailleBlocSeq, tailleBlocSeq);
+
+                    seqX += tailleBlocSeq;
+                    if (seqX >= a) {
+                        seqX = 0;
+                        seqY += tailleBlocSeq;
+                        if (seqY >= b) {
+                            seqY = 0;
+                            forcePause(true);
+                        }
+                    }
+                }
+            }
+
+            noStroke(); fill(0); rect(400, 50, 300, 300); 
+            
+            // GESTION DU FILIGRANE (Affiche ou cache le fond initial à droite)
+            if (!affiche) {
+                image(imm, 400, 50);
+                if (mode === 1) drawGrilleTransformee(); 
+            } else {
+                image(imm, 400, 50);
+                tint(255, opaciteFiligrane); 
+                image(im, 400, 50); 
+                noTint(); 
+                if (mode === 1) drawGrilleTransformee(); 
+            }
+        }
+
+        function keyPressed() {
+            if (typeRendu === 2) {
+                if (keyCode === LEFT_ARROW) zoneCaseX = max(0, zoneCaseX - tailleCaseManuel);
+                else if (keyCode === RIGHT_ARROW) zoneCaseX = min(a - tailleCaseManuel, zoneCaseX + tailleCaseManuel);
+                else if (keyCode === UP_ARROW) zoneCaseY = max(0, zoneCaseY - tailleCaseManuel);
+                else if (keyCode === DOWN_ARROW) zoneCaseY = min(b - tailleCaseManuel, zoneCaseY + tailleCaseManuel);
+                if (keyCode === ENTER || key === ' ') projeterCaseActive();
+            }
+        }
+
+        function projeterCaseActive() {
+            imm.loadPixels();
+            for (let localY = 0; localY < tailleCaseManuel; localY += pasEchantillonnage) {
+                for (let localX = 0; localX < tailleCaseManuel; localX += pasEchantillonnage) {
+                    let u = zoneCaseX + localX; let v = zoneCaseY + localY;
+                    if (u < a && v < b) {
+                        let iu = floor(u); let iv = floor(v); let idx = (iu + iv * a) * 4;
+                        let pos = f(u, v);
+                        let destX = round(pos[0]); let destY = round(pos[1]);
+                        if (destX >= 0 && destX < a && destY >= 0 && destY < b) {
+                            let idxDest = (destX + destY * a) * 4;
+                            imm.pixels[idxDest]     = im.pixels[idx];
+                            imm.pixels[idxDest + 1] = im.pixels[idx + 1];
+                            imm.pixels[idxDest + 2] = im.pixels[idx + 2];
+                            imm.pixels[idxDest + 3] = 255;
+                        }
+                    }
+                }
+            }
+            imm.updatePixels();
+            if (estEnPause) redraw();
+        }
+
+        function changerTypeRendu(nouveauMode) {
+            typeRendu = nouveauMode;
+            let panelAleatoire = document.getElementById("outils-aleatoire");
+            let panelSequentiel = document.getElementById("outils-sequentiel");
+            let panelManuel = document.getElementById("outils-manuel");
+            let conteneurMode = document.getElementById("conteneur-outils-mode");
+
+            for (let i = 0; i <= 2; i++) document.getElementById("toggle-rendu-" + i).classList.remove("btn-active");
+            document.getElementById("toggle-rendu-" + nouveauMode).classList.add("btn-active");
+
+            if (modeZoneActif) basculerModeZone();
+
+            if (typeRendu === 0) {
+                panelAleatoire.style.display = "flex"; panelSequentiel.style.display = "none"; panelManuel.style.display = "none";
+                conteneurMode.style.background = "#f0fdf4"; conteneurMode.style.borderColor = "#bbf7d0";
+            } else if (typeRendu === 1) {
+                panelAleatoire.style.display = "none"; panelSequentiel.style.display = "flex"; panelManuel.style.display = "none";
+                conteneurMode.style.background = "#fffbeb"; conteneurMode.style.borderColor = "#fef3c7";
+            } else if (typeRendu === 2) {
+                panelAleatoire.style.display = "none"; panelSequentiel.style.display = "none"; panelManuel.style.display = "flex";
+                conteneurMode.style.background = "#f5f3ff"; conteneurMode.style.borderColor = "#ddd6fe";
+            }
+            resetCanvas();
+            forcePause(true); 
+        }
+
+        function drawGrilleSource() {
+            stroke(0, 200, 0, 100); strokeWeight(1);
+            for (let g = 0; g <= 300; g += pasGrilleVisuelle) {
+                line(50 + g, 50, 50 + g, 350); line(50, 50 + g, 350, 50 + g);
+            }
+            stroke(239, 68, 68); strokeWeight(2); 
+            
+            if (moode === 1) { 
+                line(50, 50, 50, 350); line(50, 350, 350, 350); 
+            } else if (moode === 0) { 
+                line(200, 50, 200, 350); line(50, 200, 350, 200); 
+            } else if (moode === 2) { 
+                line(50, 50, 50, 350); line(50, 50, 350, 50);  
+            }
+        }
+
+        function calculerGrilleTransformee() {
+            calqueGrille = createGraphics(a, b);
+            calqueGrille.clear(); 
+            calqueGrille.stroke(0, 200, 0, 120); calqueGrille.strokeWeight(1); calqueGrille.noFill();
+
+            for (let u = 0; u <= 300; u += pasGrilleVisuelle) { 
+                calqueGrille.beginShape(); 
+                for (let v = 0; v <= 300; v += pasLissageCourbe) { 
+                    let pos = f(u, v);
+                    if (pos[0] >= 0 && pos[0] <= a && pos[1] >= 0 && pos[1] <= b) calqueGrille.vertex(pos[0], pos[1]); 
+                }
+                calqueGrille.endShape(); 
+            }
+            for (let v = 0; v <= 300; v += pasGrilleVisuelle) { 
+                calqueGrille.beginShape(); 
+                for (let u = 0; u <= 300; u += pasLissageCourbe) { 
+                    let pos = f(u, v);
+                    if (pos[0] >= 0 && pos[0] <= a && pos[1] >= 0 && pos[1] <= b) calqueGrille.vertex(pos[0], pos[1]); 
+                }
+                calqueGrille.endShape(); 
+            }
+        }
+
+        function drawGrilleTransformee() {
+            if (calqueGrille) image(calqueGrille, 400, 50);
+        }
+
+        function f(u, v) {
+            let xInput, yInput;
+            if (moode === 0) { 
+                xInput = u - 150; yInput = 150 - v; 
+            } else if (moode === 1) { 
+                xInput = u; yInput = 300 - v; 
+            } else if (moode === 2) { 
+                xInput = u; yInput = v;
+            }
+
+            let contexte = { x: xInput, y: yInput, X: xInput, Y: yInput };
+            let xPris = calculXCompiled.evaluate(contexte);
+            let yPris = calculYCompiled.evaluate(contexte);
+            
+            let xOut, yOut;
+            if (moode === 0) {
+                xOut = xPris + 150; yOut = 150 - yPris;
+            } else if (moode === 1) {
+                xOut = xPris; yOut = 300 - yPris;
+            } else if (moode === 2) {
+                xOut = xPris; yOut = yPris;
+            }
+            return [xOut, yOut];
+        }
+
+        function chargerImagePerso(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadImage(e.target.result, img => {
+                        imgPerso = img; imgPerso.resize(300, 300); imgPerso.loadPixels(); choisirImage(3);
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function choisirImage(index) {
+            imageActiveIndex = index;
+            if (index === 3 && imgPerso) imgPerso.loadPixels();
+            for (let i = 0; i <= 3; i++) {
+                let btn = document.getElementById("img-btn-" + i);
+                if (btn) {
+                    if (i === index) btn.classList.add("btn-active");
+                    else btn.classList.remove("btn-active");
+                }
+            }
+            forcePause(true); resetCanvas();
+        }
+
+        function ajusterTailleZone(valeur) {
+            disqueRayon = parseInt(valeur);
+            document.getElementById("valeur-rayon").innerText = valeur + "px";
+            disqueX = constrain(disqueX, disqueRayon, a - disqueRayon);
+            disqueY = constrain(disqueY, disqueRayon, b - disqueRayon);
+            if (estEnPause) redraw();
+        }
+
+        function basculerModeZone() {
+            modeZoneActif = !modeZoneActif;
+            let btn = document.getElementById("btn-zone");
+            let slider = document.getElementById("ui-taille-zone");
+            if (modeZoneActif) {
+                btn.classList.add("btn-active"); slider.style.display = "flex"; forcePause(true); 
+            } else {
+                btn.classList.remove("btn-active"); slider.style.display = "none"; 
+            }
+        }
+
+        function changerRepere(v) { moode = parseInt(v); appliquerFormules(); }
+
+        function basculerPause() { 
+            if (typeRendu === 2) {
+                // En mode ParCase, le bouton Action projette la case sélectionnée
+                projeterCaseActive();
+            } else {
+                // Pour les modes Aléatoire et Séquentiel, comportement normal de Play/Pause
+                estEnPause = !estEnPause; 
+                lierBoutonPauseUI(); 
+            }
+        }
+        function forcePause(statutMiroir) { estEnPause = statutMiroir; lierBoutonPauseUI(); }
+
+function lierBoutonPauseUI() {
+            let btn = document.getElementById("btn-pause");
+            if (typeRendu === 2) {
+                btn.classList.remove("btn-active"); // Reste neutre en mode case par case
+            } else {
+                if (!estEnPause) btn.classList.add("btn-active");
+                else btn.classList.remove("btn-active");
+            }
+        }
+        
+        function basculerAffichage() { 
+            affiche = !affiche; 
+            let btn = document.getElementById("btn-affichage");
+            
+            // HOMOGÉNÉISATION DU STYLE COMME POUR LA GRILLE :
+            // Si 'affiche' est 'true' (Comportement de base), le bouton s'allume en bleu
+            if (affiche) btn.classList.add("btn-active");
+            else btn.classList.remove("btn-active");
+            
+            if (estEnPause) redraw();
+        }
+        
+        function basculerGrille() { 
+            mode = (mode + 1) % 2; 
+            let btn = document.getElementById("btn-grille");
+            if (mode === 1) btn.classList.add("btn-active");
+            else btn.classList.remove("btn-active");
+            if (estEnPause) redraw();
+        }
+
+        function appliquerFormules() {
+            let fx = document.getElementById("input-x").value;
+            let fy = document.getElementById("input-y").value;
+            let errorBox = document.getElementById("error-box");
+
+            fx = fx.replace(/x\(/gi, "x*(").replace(/y\(/gi, "y*(");
+            fy = fy.replace(/x\(/gi, "x*(").replace(/y\(/gi, "y*(");
+
+            try {
+                let testCompileX = math.compile(fx);
+                let testCompileY = math.compile(fy);
+
+                let contexteTest = { x: 0, y: 0, X: 0, Y: 0 };
+                testCompileX.evaluate(contexteTest);
+                testCompileY.evaluate(contexteTest);
+
+                calculXCompiled = testCompileX; calculYCompiled = testCompileY;
+                formuleX = fx; formuleY = fy;
+
+                if (fx.includes("/") || fy.includes("/") || fx.includes("*") || fy.includes("*") || fx.toLowerCase().includes("cos") || fx.toLowerCase().includes("exp")) {
+                    pasEchantillonnage = 0.5; 
+                } else {
+                    pasEchantillonnage = 1.0; 
+                }
+
+                errorBox.style.display = "none";
+                effacerZoneDroiteOnly();
+                calculerGrilleTransformee(); 
+                forcePause(true); 
+
+            } catch (err) {
+                errorBox.innerText = "⚠️ Erreur de syntaxe : " + err.message;
+                errorBox.style.display = "block";
+            }
+        }
+
+        function changerPasGrilleVisuelle(nouvelleValeur) {
+            pasGrilleVisuelle = parseInt(nouvelleValeur); calculerGrilleTransformee();
+            if (estEnPause) redraw();
+        }
+
+        function changerTailleBlocSeq(nouvelleValeur) {
+            tailleBlocSeq = parseInt(nouvelleValeur); resetCanvas(); forcePause(true);
+        }
+
+        function changerOpaciteFiligrane(valeur) {
+            opaciteFiligrane = parseInt(valeur);
+            let badge = document.getElementById("valeur-opacity");
+            if (badge) badge.innerText = valeur;
+            if (estEnPause) redraw();
+        }
+
+        function changerTailleCaseManuel(nouvelleValeur) {
+            tailleCaseManuel = parseInt(nouvelleValeur);
+            zoneCaseX = floor(zoneCaseX / tailleCaseManuel) * tailleCaseManuel;
+            zoneCaseY = floor(zoneCaseY / tailleCaseManuel) * tailleCaseManuel;
+            if (estEnPause) redraw();
+        }
+</script>
+</body>
+</html>
