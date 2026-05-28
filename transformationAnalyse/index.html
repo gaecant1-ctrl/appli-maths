@@ -203,7 +203,7 @@
     });
 
     document.getElementById('btn-valider').addEventListener('click', () => {
-        calculerFormules('formuleXInterro', 'formuleYInterro', 'error-msg-interro');
+        calculerFormule('formuleXInterro', 'formuleYInterro', 'error-msg-interro');
         if(!figureTransformee) return;
         document.getElementById('btn-valider').disabled = true;
         afficherAideFixe = false; 
