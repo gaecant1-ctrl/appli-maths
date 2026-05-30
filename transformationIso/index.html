@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformations - Grille Isométrique Finale</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .mode-indicator {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .mode-concept { background-color: #e2e8f0; color: #4a5568; }
+        .mode-test { background-color: #feebc8; color: #c05621; }
+        
+        .stats-prof-box {
+            background-color: #2d3748;
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.05em;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-item { display: flex; align-items: center; gap: 8px; }
+        .stat-val { background: #4a5568; padding: 2px 8px; border-radius: 4px; font-family: monospace; }
+        .stat-val.score { color: #68d391; }
+        .stat-val.aide { color: #f6ad55; }
+
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+            box-sizing: border-box;
+        }
+
+        .panneau-controle {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 280px;
+            min-width: 280px;
+            box-sizing: border-box;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .params-box { display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px; width: 100%; }
+        .param-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+        label { font-weight: bold; font-size: 0.85em; color: #4a5568; }
+
+        select, input {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 0.95em;
+            box-sizing: border-box;
+        }
+
+        select:focus, input:focus { outline: none; border-color: #3498db; }
+        .select-full { width: 100%; }
+        input[type="text"] { width: 65px; text-align: center; }
+
+        .animation-settings {
+            border-top: 1px dashed #cbd5e0;
+            padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .slider-row input[type="range"] { flex: 1; padding: 0; }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button.random { background-color: #2ecc71; }
+        button.random:hover { background-color: #27ae60; }
+        button.animate { background-color: #9b59b6; }
+        button.animate:hover { background-color: #8e44ad; }
+        button.animate:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        button.reset { background-color: #e74c3c; }
+        button.reset:hover { background-color: #c0392b; }
+        button.mode-toggle-btn { background-color: #2d3748; }
+        button.mode-toggle-btn:hover { background-color: #1a202c; }
+        button.validate-btn { background-color: #dd6b20; }
+        button.validate-btn:hover { background-color: #c05621; }
+        button:disabled { background-color: #cbd5e0 !important; cursor: not-allowed; color: #718096; }
+
+        .canvas-panel {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas { border: 1px solid #ccc; background-color: #fafafa; }
+
+        .error {
+            color: #e74c3c;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 5px;
+            display: none;
+            text-align: center;
+            max-width: 100%;
+            word-break: break-word;
+        }
+
+        .result-box {
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            font-size: 0.95em;
+        }
+        .result-success { background-color: #c6f6d5; color: #22543d; }
+        .result-wrong { background-color: #fed7d7; color: #742a2a; }
+    </style>
+</head>
+<body>
+
+<div id="modeIndicator" class="mode-indicator mode-concept">
+    <span>— Mode Concepteur</span>
+</div>
+
+    <div class="main-container">
+
+        <div id="panneauConcepteur" class="panneau-controle">
+            <button id="btn-mode-interro" class="mode-toggle-btn">Passer en Mode Interro 🎯</button>
+            <hr style="width:100%; border:0; border-top:1px solid #edf2f7; margin:5px 0;">
+            <button id="btn-aleatoire" class="random">Hasard !</button>
+            <button id="btn-toggle-form" style="background-color: #4a5568;">Masquer les contrôles</button>
+            
+            <div id="zone-transformation">
+                <div class="form-group">
+                    <label for="typeTransform">Transformation :</label>
+                    <select id="typeTransform" class="select-full">
+                        <option value="sym_centrique">Symétrie centrale</option>
+                        <option value="sym_axiale">Symétrie axiale</option>
+                        <option value="translation">Translation</option>
+                        <option value="rotation">Rotation (Réseau triangulaire)</option>
+                    </select>
+                </div>
+                <div id="params-container" class="params-box"></div>
+            </div>
+
+            <div id="error-msg" class="error"></div>
+            <button id="btn-toggle-labels" style="background-color: #718096;">Masquer les noms (A', B'...)</button>
+            <button id="btn-appliquer">Appliquer</button>
+            
+            <div class="animation-settings">
+                <button id="btn-animer" class="animate" disabled>Animer la transformation</button>
+                <div class="slider-row">
+                    <label for="animVitesse">Vitesse :</label>
+                    <input type="range" id="animVitesse" min="0.01" max="0.08" step="0.01" value="0.03">
+                </div>
+            </div>
+
+            <div class="form-group" style="border-top: 1px dashed #cbd5e0; padding-top: 12px;">
+                <div class="slider-row">
+                    <label for="grilleOpacite">Intensité grille :</label>
+                    <input type="range" id="grilleOpacite" min="0.1" max="0.9" step="0.1" value="0.25">
+                </div>
+            </div>
+
+            <button id="btn-reset" class="reset">Réinitialiser</button>
+        </div>
+
+        <div id="panneauInterro" class="panneau-controle" style="display: none;">
+            <button id="btn-mode-concept" class="mode-toggle-btn">Retour au Concepteur 🛠️</button>
+            <hr style="width:100%; border:0; border-top:1px solid #edf2f7; margin:5px 0;">
+            
+            <div class="stats-prof-box">
+                <div class="stat-item">Score : <span id="valScore" class="stat-val score">0 / 0</span></div>
+                <div class="stat-item">Aides : <span id="valAide" class="stat-val aide">0</span></div>
+            </div>
+
+            <div style="font-size: 0.9em; background:#ebf8ff; color:#2b6cb0; padding:10px; border-radius:5px; line-height:1.4;">
+                <strong>Consigne :</strong> Retrouvez la transformation exacte ! Utilisez <strong>O, X, Y, Z</strong> ou les sommets adjacents du motif bleu.
+            </div>
+
+            <div class="form-group" style="border-top:1px dashed #cbd5e0; padding-top:10px;">
+                <label for="typeTransformInterro">Votre réponse :</label>
+                <select id="typeTransformInterro" class="select-full">
+                    <option value="sym_centrique">Symétrie centrale</option>
+                    <option value="sym_axiale">Symétrie axiale</option>
+                    <option value="translation">Translation</option>
+                    <option value="rotation">Rotation (Réseau triangulaire)</option>
+                </select>
+            </div>
+            
+            <div id="params-container-interro" class="params-box"></div>
+            <div id="error-msg-interro" class="error"></div>
+            
+            <button id="btn-valider" class="validate-btn">Valider ma réponse</button>
+            <button id="btn-nouvelle-question" class="random">Nouvelle énigme</button>
+            <div id="feedback-interro" class="result-box"></div>
+
+            <div class="animation-settings">
+                <button id="btn-animer-interro" class="animate">Lancer l'animation d'aide</button>
+                <div class="slider-row">
+                    <label for="animVitesseInterro">Vitesse :</label>
+                    <input type="range" id="animVitesseInterro" min="0.01" max="0.08" step="0.01" value="0.03">
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-panel">
+            <canvas id="grilleCanvas" width="600" height="600"></canvas>
+        </div>
+
+    </div>
+
+<script>
+    const canvas = document.getElementById('grilleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const gridScale = 48; 
+    const maxLignes = 6; 
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+   const figureDefaut = [
+    { label: 'A', x: 0, y: 0 }, 
+    { label: 'B', x: 0, y: 3 }, 
+    { label: 'C', x: -2, y: 3 },
+    { label: 'D', x: -1, y: 2 },
+    { label: 'E', x: -3, y: 2 },
+    { label: 'F', x: -4, y: 0 }
+];
+
+    let figureActuelle = JSON.parse(JSON.stringify(figureDefaut));
+    let figureTransformee = null;
+    let figureCibleInterro = null; 
+    let transformationActive = false; 
+    let afficherAideVerteInterro = false;
+
+    let sommetSelectionne = null;
+    let segmentSelectionneBleu = null;  
+    let segmentSelectionneRouge = null; 
+
+    const rayonClic = 18; 
+    let afficherLabelsTransformes = true;
+    let formEstVisible = true;
+
+    let modeInterroActif = false;
+    let solutionSecrete = null; 
+
+    let totalQuestions = 0;
+    let bonnesReponses = 0;
+    let totalAides = 0;
+    let aideUtiliseePourEnigmeEnCours = false;
+
+    let enAnimation = false;
+    let tAnimation = 0; 
+    let pasAnimation = 0.03; 
+    let angleAnimationMax = 0; 
+    let centreAnimationPolaire = { x: 0, y: 0 }; 
+    let animationCallback = null; 
+    let typeAnimeEnCours = ''; 
+
+    // GESTION DES MODES
+    document.getElementById('btn-mode-interro').addEventListener('click', () => basculerMode(true));
+    document.getElementById('btn-mode-concept').addEventListener('click', () => basculerMode(false));
+
+    function basculerMode(activerInterro) {
+        modeInterroActif = activerInterro;
+        annulerAnimation();
+        figureTransformee = null;
+        figureCibleInterro = null;
+        segmentSelectionneBleu = null;
+        segmentSelectionneRouge = null;
+        transformationActive = false;
+        afficherAideVerteInterro = false;
+
+        totalQuestions = 0;
+        bonnesReponses = 0;
+        totalAides = 0;
+        aideUtiliseePourEnigmeEnCours = false;
+        document.getElementById('valScore').innerText = "0 / 0";
+        document.getElementById('valAide').innerText = "0";
+        document.getElementById('btn-valider').disabled = false;
+
+        const ind = document.getElementById('modeIndicator');
+        if (activerInterro) {
+            document.getElementById('panneauConcepteur').style.display = 'none';
+            document.getElementById('panneauInterro').style.display = 'flex';
+            ind.innerText = "Mode Interro 🎯";
+            ind.className = "mode-indicator mode-test";
+            genererQuestionInterro();
+        } else {
+            document.getElementById('panneauConcepteur').style.display = 'flex';
+            document.getElementById('panneauInterro').style.display = 'none';
+            ind.innerText = "Mode Concepteur 🛠️";
+            ind.className = "mode-indicator mode-concept";
+            afficherLabelsTransformes = true;
+            document.getElementById('btn-toggle-labels').innerText = "Masquer les noms (A', B'...)";
+            updateFormFields();
+            dessiner();
+        }
+    }
+
+    // ÉVÉNEMENTS
+    document.getElementById('btn-toggle-form').addEventListener('click', function() {
+        formEstVisible = !formEstVisible;
+        const zoneTransform = document.getElementById('zone-transformation');
+        if (formEstVisible) { zoneTransform.style.display = "block"; this.innerText = "Masquer les contrôles"; }
+        else { zoneTransform.style.display = "none"; this.innerText = "Afficher les contrôles"; }
+    });
+
+    document.getElementById('btn-toggle-labels').addEventListener('click', function() {
+    afficherLabelsTransformes = !afficherLabelsTransformes;
+    if (afficherLabelsTransformes) { this.innerText = "Masquer les noms (A', B'...)"; } 
+    else { this.innerText = "Afficher les noms (A', B'...)"; }
+    dessiner();});
+
+    document.getElementById('typeTransform').addEventListener('change', function() {
+        annulerAnimation(); transformationActive = false; figureTransformee = null;
+        document.getElementById('btn-animer').disabled = true;
+        updateFormFields(); dessiner(); 
+    });
+    
+    document.getElementById('btn-appliquer').addEventListener('click', function() {
+        annulerAnimation(); transformationActive = true;
+        appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+        dessiner(); 
+        if (figureTransformee) document.getElementById('btn-animer').disabled = false;
+    });
+    
+    document.getElementById('btn-aleatoire').addEventListener('click', () => { annulerAnimation(); genererTransformationAleatoire(); });
+    document.getElementById('btn-reset').addEventListener('click', () => { annulerAnimation(); resetApplication(); });
+    document.getElementById('btn-animer').addEventListener('click', () => preparerEtLancerAnimation(false));
+    document.getElementById('animVitesse').addEventListener('input', function() { pasAnimation = parseFloat(this.value); });
+    document.getElementById('grilleOpacite').addEventListener('input', dessiner);
+
+    document.getElementById('typeTransformInterro').addEventListener('change', function() {
+        updateFormFieldsInterro();
+        document.getElementById('feedback-interro').style.display = 'none';
+    });
+    document.getElementById('btn-nouvelle-question').addEventListener('click', () => { annulerAnimation(); genererQuestionInterro(); });
+    document.getElementById('btn-valider').addEventListener('click', demarrerValidationAvecAnimation);
+    document.getElementById('btn-animer-interro').addEventListener('click', () => {
+        if (!aideUtiliseePourEnigmeEnCours) {
+            totalAides++;
+            document.getElementById('valAide').innerText = totalAides;
+            aideUtiliseePourEnigmeEnCours = true;
+        }
+        afficherAideVerteInterro = true; 
+        preparerEtLancerAnimation(true);
+    });
+    document.getElementById('animVitesseInterro').addEventListener('input', function() { pasAnimation = parseFloat(this.value); });
+
+    canvas.addEventListener('mousedown', pointerDown);
+    canvas.addEventListener('mousemove', pointerMove);
+    window.addEventListener('mouseup', pointerUp);
+    canvas.addEventListener('touchstart', pointerDown, {passive: false});
+    canvas.addEventListener('touchmove', pointerMove, {passive: false});
+    window.addEventListener('touchend', pointerUp);
+
+    function obtenirPositionEvt(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    // PASSERELLES GÉOMÉTRIQUES STANDARD (Système Axial Pure)
+    function deToCanvas(q, r) {
+        return {
+            x: centerX + (q + r * 0.5) * gridScale,
+            y: centerY - (r * 0.8660254) * gridScale
+        };
+    }
+
+    function canvasVersGrid(canvasX, canvasY) {
+        let r = (centerY - canvasY) / (gridScale * 0.8660254);
+        let q = ((canvasX - centerX) / gridScale) - (r * 0.5);
+        return { x: q, y: r };
+    }
+
+    function gridToEuclid(pt) {
+        return { x: pt.x + pt.y * 0.5, y: pt.y * 0.8660254 };
+    }
+
+    function euclidToGrid(x, y) {
+        let r = y / 0.8660254;
+        let q = x - r * 0.5;
+        return { x: q, y: r };
+    }
+
+    // TRACÉ DE LA GRILLE SATURÉE
+    function dessinerGrille() {
+        const opacite = document.getElementById('grilleOpacite')?.value || 0.25;
+        ctx.strokeStyle = `rgba(0, 0, 0, ${opacite})`; 
+        ctx.lineWidth = 1;
+        const saturation = 15; 
+
+        for (let r = -saturation; r <= saturation; r++) {
+            let pStart = deToCanvas(-saturation - r, r);
+            let pEnd = deToCanvas(saturation - r, r);
+            ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
+        }
+
+        for (let q = -saturation; q <= saturation; q++) {
+            let pStart = deToCanvas(q, -saturation);
+            let pEnd = deToCanvas(q, saturation);
+            ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
+        }
+
+        for (let s = -saturation * 2; s <= saturation * 2; s++) {
+            let pStart = deToCanvas(s - (-saturation), -saturation);
+            let pEnd = deToCanvas(s - saturation, saturation);
+            ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
+        }
+        
+        const ptO = deToCanvas(0, 0);
+        const ptX = deToCanvas(maxLignes, 0);
+        const ptY = deToCanvas(0, maxLignes);
+        const ptZ = deToCanvas(-maxLignes, maxLignes); 
+        
+        ctx.fillStyle = '#1a202c'; 
+        [ptO, ptX, ptY, ptZ].forEach(pt => {
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, 2 * Math.PI); ctx.fill();
+        });
+        
+        ctx.font = "bold 14px sans-serif"; 
+        ctx.fillText("O", ptO.x - 14, ptO.y + 16);
+        ctx.fillText("X", ptX.x - 4, ptX.y + 18);
+        ctx.fillText("Y", ptY.x + 10, ptY.y - 2);
+        ctx.fillText("Z", ptZ.x - 15, ptZ.y - 4);
+    }
+
+    // DESSIN DES INDICES VERTS (OSSATURE)
+    function dessinerElementsTransformation(idSelect) {
+        const type = document.getElementById(idSelect).value;
+        const suffix = (idSelect === 'typeTransformInterro') ? 'Interro' : '';
+        
+        ctx.save();
+        ctx.strokeStyle = '#2ecc71'; 
+        ctx.fillStyle = '#2ecc71'; 
+        ctx.lineWidth = 3.5;
+
+        if (type === 'sym_centrique') {
+            const lbl = document.getElementById('centreSym'+suffix)?.value;
+            const pt = trouverSommet(lbl);
+            if (pt) {
+                let c = deToCanvas(pt.x, pt.y);
+                ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, 2 * Math.PI); ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+            }
+        } else if (type === 'sym_axiale') {
+            const l1 = document.getElementById('axeP1'+suffix)?.value;
+            const l2 = document.getElementById('axeP2'+suffix)?.value;
+            const p1 = trouverSommet(l1); const p2 = trouverSommet(l2);
+            if (p1 && p2 && (p1.x !== p2.x || p1.y !== p2.y)) {
+                let e1 = gridToEuclid(p1); let e2 = gridToEuclid(p2);
+                let dx = e2.x - e1.x; let dy = e2.y - e1.y;
+                
+                let pStartEuclid = { x: e1.x - dx * 15, y: e1.y - dy * 15 };
+                let pEndEuclid = { x: e1.x + dx * 15, y: e1.y + dy * 15 };
+                
+                let pStartGrid = euclidToGrid(pStartEuclid.x, pStartEuclid.y);
+                let pEndGrid = euclidToGrid(pEndEuclid.x, pEndEuclid.y);
+                
+                let cStart = deToCanvas(pStartGrid.x, pStartGrid.y);
+                let cEnd = deToCanvas(pEndGrid.x, pEndGrid.y);
+                
+                ctx.beginPath(); ctx.moveTo(cStart.x, cStart.y); ctx.lineTo(cEnd.x, cEnd.y); ctx.stroke();
+                
+                [deToCanvas(p1.x, p1.y), deToCanvas(p2.x, p2.y)].forEach(c => {
+                    ctx.beginPath(); ctx.arc(c.x, c.y, 5, 0, 2 * Math.PI); ctx.fill();
+                });
+            }
+        } else if (type === 'translation') {
+            const lOrigine = document.getElementById('transOrigine'+suffix)?.value;
+            const lFin = document.getElementById('transFin'+suffix)?.value;
+            const pOrigine = trouverSommet(lOrigine); const pFin = trouverSommet(lFin);
+            if (pOrigine && pFin) {
+                let cOrigine = deToCanvas(pOrigine.x, pOrigine.y);
+                let cFin = deToCanvas(pFin.x, pFin.y);
+                
+                ctx.beginPath(); ctx.moveTo(cOrigine.x, cOrigine.y); ctx.lineTo(cFin.x, cFin.y); ctx.stroke();
+                
+                let angle = Math.atan2(cFin.y - cOrigine.y, cFin.x - cOrigine.x);
+                ctx.beginPath();
+                ctx.moveTo(cFin.x, cFin.y);
+                ctx.lineTo(cFin.x - 12 * Math.cos(angle - Math.PI/6), cFin.y - 12 * Math.sin(angle - Math.PI/6));
+                ctx.lineTo(cFin.x - 12 * Math.cos(angle + Math.PI/6), cFin.y - 12 * Math.sin(angle + Math.PI/6));
+                ctx.closePath(); ctx.fill();
+            }
+        } else if (type === 'rotation') {
+            const lbl = document.getElementById('rotCentre'+suffix)?.value;
+            const pt = trouverSommet(lbl);
+            if (pt) {
+                let c = deToCanvas(pt.x, pt.y);
+                ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, 2 * Math.PI); ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    // PILIER 2 : CALIBRAGE ET GÉNÉRATION STRICT DU MODE INTERRO
+    function genererQuestionInterro() {
+        document.getElementById('feedback-interro').style.display = 'none';
+        document.getElementById('error-msg-interro').style.display = 'none';
+        document.getElementById('btn-valider').disabled = false;
+        transformationActive = true;
+        afficherAideVerteInterro = false;
+        segmentSelectionneBleu = null; segmentSelectionneRouge = null;
+        aideUtiliseePourEnigmeEnCours = false;
+
+        totalQuestions++;
+        document.getElementById('valScore').innerText = `${bonnesReponses} / ${totalQuestions}`;
+
+        const types = ['sym_centrique', 'sym_axiale', 'translation', 'rotation'];
+        const typeChoisi = types[Math.floor(Math.random() * types.length)];
+        
+        const familleChoisie = Math.random() > 0.5 ? 'reperes' : 'motif';
+        const anglesIso = [60, 120, 180, -60, -120];
+
+        let p1 = '', p2 = '', angleChoisi = 60;
+
+        if (familleChoisie === 'reperes') {
+            if (typeChoisi === 'sym_centrique' || typeChoisi === 'rotation') {
+                p1 = 'O'; 
+                angleChoisi = anglesIso[Math.floor(Math.random() * anglesIso.length)];
+            } else if (typeChoisi === 'sym_axiale') {
+                const axes = [{a1:'O', a2:'X'}, {a1:'O', a2:'Y'}, {a1:'O', a2:'Z'}];
+                const c = axes[Math.floor(Math.random() * axes.length)];
+                p1 = c.a1; p2 = c.a2;
+            } else if (typeChoisi === 'translation') {
+                p1 = 'O'; p2 = ['X', 'Y', 'Z'][Math.floor(Math.random() * 3)];
+            }
+        } else {
+            // Configuration Motif : Sommets adjacents consécutifs
+            const N = figureActuelle.length;
+            const idx1 = Math.floor(Math.random() * N);
+            const idx2 = (idx1 + 1) % N;
+            p1 = figureActuelle[idx1].label;
+            p2 = figureActuelle[idx2].label;
+            angleChoisi = anglesIso[Math.floor(Math.random() * anglesIso.length)];
+        }
+
+        solutionSecrete = {
+            type: typeChoisi, famille: familleChoisie,
+            centreSym: p1, axeP1: p1, axeP2: p2, 
+            transOrigine: p1, transFin: p2,
+            rotCentre: p1, rotAngle: angleChoisi
+        };
+
+        document.getElementById('typeTransform').value = typeChoisi; 
+        updateFormFields(solutionSecrete);
+        appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+        
+        figureCibleInterro = figureTransformee; 
+        figureTransformee = null; 
+
+        document.getElementById('typeTransformInterro').value = 'sym_centrique';
+        updateFormFieldsInterro();
+        dessiner();
+    }
+
+    function demarrerValidationAvecAnimation() {
+        if (enAnimation) return;
+        document.getElementById('feedback-interro').style.display = 'none';
+        document.getElementById('error-msg-interro').style.display = 'none';
+
+        appliquerTransformation('typeTransformInterro', 'params-container-interro', 'error-msg-interro');
+        if (document.getElementById('error-msg-interro').style.display === 'block') return;
+
+        document.getElementById('btn-valider').disabled = true;
+        const typeUser = document.getElementById('typeTransformInterro').value;
+        typeAnimeEnCours = typeUser;
+
+        if (typeUser === 'sym_centrique') {
+            centreAnimationPolaire = trouverSommet(document.getElementById('centreSymInterro').value);
+            angleAnimationMax = 180;
+        } else if (typeUser === 'rotation') {
+            centreAnimationPolaire = trouverSommet(document.getElementById('rotCentreInterro').value);
+            angleAnimationMax = parseFloat(document.getElementById('rotAngleInterro').value);
+        }
+
+        animationCallback = finaliserValidationInterro;
+        enAnimation = true; tAnimation = 0;
+        boucleAnimation();
+    }
+
+    function finaliserValidationInterro() {
+        const feedbackDiv = document.getElementById('feedback-interro');
+        const figureCalculeeUser = figureTransformee; 
+
+        function verifierCorrespondanceGeometrique(polyA, polyB) {
+            if (!polyA || !polyB || polyA.length !== polyB.length) return false;
+            const N = polyA.length; const epsilon = 0.05; 
+            const ptProches = (p1, p2) => Math.abs(p1.x - p2.x) < epsilon && Math.abs(p1.y - p2.y) < epsilon;
+
+            for (let i = 0; i < N; i++) {
+                if (ptProches(polyA[0], polyB[i])) {
+                    let c1 = true; for (let j = 0; j < N; j++) { if (!ptProches(polyA[j], polyB[(i + j) % N])) { c1 = false; break; } }
+                    if (c1) return true;
+                    let c2 = true; for (let j = 0; j < N; j++) { if (!ptProches(polyA[j], polyB[(i - j + N) % N])) { c2 = false; break; } }
+                    if (c2) return true;
+                }
+            }
+            return false;
+        }
+
+        if (verifierCorrespondanceGeometrique(figureCalculeeUser, figureCibleInterro)) {
+            feedbackDiv.innerText = "🎉 Bravo ! Superposition géométrique parfaite !";
+            feedbackDiv.className = "result-box result-success";
+            feedbackDiv.style.display = "block";
+            bonnesReponses++;
+        } else {
+            feedbackDiv.innerText = "❌ Le motif construit ne se superpose pas sur la cible rouge.";
+            feedbackDiv.className = "result-box result-wrong";
+            feedbackDiv.style.display = "block";
+        }
+        
+        document.getElementById('valScore').innerText = `${bonnesReponses} / ${totalQuestions}`;
+        dessiner();
+    }
+
+    function distancePointSegment(p, a, b) {
+        const l2 = (a.x - b.x)**2 + (a.y - b.y)**2;
+        if (l2 === 0) return Math.sqrt((p.x - a.x)**2 + (p.y - a.y)**2);
+        let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.sqrt((p.x - (a.x + t * (b.x - a.x)))**2 + (p.y - (a.y + t * (b.y - a.y)))**2);
+    }
+
+    function pointerDown(e) {
+        if (enAnimation) return; 
+        const pos = obtenirPositionEvt(e);
+        const coordGrille = canvasVersGrid(pos.x, pos.y);
+        
+        let surSommet = false;
+        for (let p of figureActuelle) {
+            let ptCanvas = deToCanvas(p.x, p.y);
+            let distance = Math.sqrt((pos.x - ptCanvas.x)**2 + (pos.y - ptCanvas.y)**2);
+            if (distance <= rayonClic) {
+                if (!modeInterroActif) { sommetSelectionne = p; canvas.style.cursor = 'grabbing'; }
+                surSommet = true;
+                segmentSelectionneBleu = null; segmentSelectionneRouge = null;
+                if(e.cancelable) e.preventDefault();
+                break;
+            }
+        }
+        
+        if (!surSommet) {
+            const N = figureActuelle.length; const toleranceSegment = 0.3; let clicAttribue = false;
+
+            for (let i = 0; i < N; i++) {
+                if (distancePointSegment(coordGrille, figureActuelle[i], figureActuelle[(i + 1) % N]) < toleranceSegment) {
+                    segmentSelectionneBleu = (segmentSelectionneBleu === i) ? null : i;
+                    clicAttribue = true; break;
+                }
+            }
+
+            const figureRougeActive = modeInterroActif ? figureCibleInterro : figureTransformee;
+            if (!clicAttribue && figureRougeActive) {
+                for (let i = 0; i < N; i++) {
+                    if (distancePointSegment(coordGrille, figureRougeActive[i], figureRougeActive[(i + 1) % N]) < toleranceSegment) {
+                        segmentSelectionneRouge = (segmentSelectionneRouge === i) ? null : i;
+                        clicAttribue = true; break;
+                    }
+                }
+            }
+            if (!clicAttribue) { segmentSelectionneBleu = null; segmentSelectionneRouge = null; }
+        }
+        dessiner();
+    }
+
+    function pointerMove(e) {
+        if (enAnimation || modeInterroActif) return;
+        const pos = obtenirPositionEvt(e);
+        if (sommetSelectionne) {
+            if(e.cancelable) e.preventDefault();
+            let coordGrilleBrute = canvasVersGrid(pos.x, pos.y);
+            sommetSelectionne.x = Math.round(coordGrilleBrute.x);
+            sommetSelectionne.y = Math.round(coordGrilleBrute.y);
+            if (transformationActive) appliquerTransformation('typeTransform', 'params-container', 'error-msg');
+            else dessiner();
+        } else {
+            let survol = false;
+            for (let p of figureActuelle) {
+                let ptCanvas = deToCanvas(p.x, p.y);
+                let distance = Math.sqrt((pos.x - ptCanvas.x)**2 + (pos.y - ptCanvas.y)**2);
+                if (distance <= rayonClic) { survol = true; break; }
+            }
+            canvas.style.cursor = survol ? 'pointer' : 'default';
+        }
+    }
+
+    function pointerUp() { if (sommetSelectionne) { sommetSelectionne = null; canvas.style.cursor = 'default'; } }
+
+    function dessinerPolygone(points, couleur, style = 'normal') {
+        if (!points || points.length === 0) return;
+        ctx.fillStyle = couleur + "18"; ctx.strokeStyle = couleur;
+        ctx.lineWidth = (style === 'initial_fixe' || style === 'intermediaire') ? 2 : 3;
+        if (style === 'initial_fixe') ctx.setLineDash([6, 4]); 
+        else if (style === 'intermediaire') ctx.setLineDash([2, 2]);
+        else ctx.setLineDash([]);
+        
+        ctx.beginPath();
+        let p0 = deToCanvas(points[0].x, points[0].y); ctx.moveTo(p0.x, p0.y);
+        for (let i = 1; i < points.length; i++) { let p = deToCanvas(points[i].x, points[i].y); ctx.lineTo(p.x, p.y); }
+        ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+
+        const N = points.length; let indexSegmentAAllumer = null;
+        if (points === figureActuelle) indexSegmentAAllumer = segmentSelectionneBleu;
+        else if (points === figureTransformee || points === figureCibleInterro) indexSegmentAAllumer = segmentSelectionneRouge;
+
+        if (indexSegmentAAllumer !== null) {
+            const pA = deToCanvas(points[indexSegmentAAllumer].x, points[indexSegmentAAllumer].y);
+            const pB = deToCanvas(points[(indexSegmentAAllumer + 1) % N].x, points[(indexSegmentAAllumer + 1) % N].y);
+            ctx.save();
+            ctx.strokeStyle = couleur; ctx.lineWidth = 14; ctx.globalAlpha = 0.4; ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3; ctx.globalAlpha = 1.0;
+            ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+            ctx.restore();
+        }
+
+        points.forEach(p => {
+            let pt = deToCanvas(p.x, p.y);
+            ctx.fillStyle = (style === 'initial_fixe') ? '#2980b9' : ((style === 'transforme') ? '#e74c3c' : ((style === 'intermediaire') ? '#9b59b6' : '#2d3436'));
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, (style === 'initial_fixe' || style === 'intermediaire') ? 5 : 6, 0, 2 * Math.PI); ctx.fill();
+            if (style !== 'initial_fixe' && style !== 'intermediaire') { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke(); }
+            
+            if (style === 'intermediaire') return; 
+            
+            // RESPECT DU BOUTON MASQUER LES NOMS POUR LA FIGURE TRANSFORMÉE
+            if (style === 'transforme' && !afficherLabelsTransformes) return;
+            if (modeInterroActif && style === 'transforme') return; // En interro, le motif rouge n'a jamais de lettres
+            
+            ctx.font = "bold 13px sans-serif";
+            let labelAffiche = p.label + (style === 'transforme' ? "'" : "");
+            ctx.fillText(labelAffiche, pt.x + 9, pt.y - 6);
+        });
+    }
+
+function dessiner() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // 1. On dessine la grille en fond
+    dessinerGrille();
+    
+    let pivotCanvas = { x: centerX, y: centerY };
+    if (enAnimation && centreAnimationPolaire) {
+        pivotCanvas = deToCanvas(centreAnimationPolaire.x, centreAnimationPolaire.y);
+    }
+
+    // 2. On dessine les polygones (bleu, rouge, violet d'animation)
+    if (modeInterroActif) {
+        if (figureCibleInterro) dessinerPolygone(figureCibleInterro, '#e74c3c', 'transforme');
+        dessinerPolygone(figureActuelle, '#2980b9', 'initial_fixe');
+
+        if (enAnimation) {
+            ctx.save();
+            ctx.translate(pivotCanvas.x, pivotCanvas.y);
+            ctx.rotate((-angleAnimationMax * tAnimation * Math.PI) / 180);
+            ctx.translate(-pivotCanvas.x, -pivotCanvas.y);
+            
+            let figIntermediaireDrawn = (typeAnimeEnCours === 'rotation' || typeAnimeEnCours === 'sym_centrique') ? figureActuelle : figureActuelle.map((p, i) => {
+                return { label: p.label, x: p.x + (figureTransformee[i].x - p.x) * tAnimation, y: p.y + (figureTransformee[i].y - p.y) * tAnimation };
+            });
+            
+            if (typeAnimeEnCours === 'rotation' || typeAnimeEnCours === 'sym_centrique') {
+                dessinerPolygone(figureActuelle, '#9b59b6', 'intermediaire');
+            } else {
+                ctx.restore();
+                dessinerPolygone(figIntermediaireDrawn, '#9b59b6', 'intermediaire');
+                ctx.save();
+            }
+            ctx.restore();
+        } else if (figureTransformee) {
+            dessinerPolygone(figureTransformee, '#9b59b6', 'normal');
+        }
+    } else {
+        if (enAnimation) {
+            dessinerPolygone(figureActuelle, '#2980b9', 'initial_fixe');
+            dessinerPolygone(figureTransformee, '#e74c3c', 'transforme');
+            
+            ctx.save();
+            if (typeAnimeEnCours === 'rotation' || typeAnimeEnCours === 'sym_centrique') {
+                ctx.translate(pivotCanvas.x, pivotCanvas.y);
+                ctx.rotate((-angleAnimationMax * tAnimation * Math.PI) / 180);
+                ctx.translate(-pivotCanvas.x, -pivotCanvas.y);
+                dessinerPolygone(figureActuelle, '#9b59b6', 'intermediaire');
+            } else {
+                let figIntermediaireLinear = figureActuelle.map((p, i) => {
+                    return { label: p.label, x: p.x + (figureTransformee[i].x - p.x) * tAnimation, y: p.y + (figureTransformee[i].y - p.y) * tAnimation };
+                });
+                dessinerPolygone(figIntermediaireLinear, '#9b59b6', 'intermediaire');
+            }
+            ctx.restore();
+        } else if (transformationActive && figureTransformee) {
+            dessinerPolygone(figureActuelle, '#2980b9', 'initial_fixe');
+            dessinerPolygone(figureTransformee, '#e74c3c', 'transforme');
+        } else {
+            dessinerPolygone(figureActuelle, '#2c3e50', 'normal');
+        }
+    }
+
+    // 3. TOUT EN DERNIER : On dessine l'ossature verte au premier plan
+    if (modeInterroActif) {
+        if (afficherAideVerteInterro) {
+            dessinerElementsTransformation('typeTransformInterro');
+        }
+    } else {
+        dessinerElementsTransformation('typeTransform');
+    }
+}
+
+    function preparerEtLancerAnimation(depuisInterro = false) {
+        if (enAnimation) return;
+        
+        if (depuisInterro) {
+            figureTransformee = null;
+            typeAnimeEnCours = solutionSecrete.type;
+            appliquerTransformation('typeTransformInterro', 'params-container-interro', 'error-msg-interro');
+
+            if (typeAnimeEnCours === 'sym_centrique') {
+                centreAnimationPolaire = trouverSommet(document.getElementById('centreSymInterro').value); angleAnimationMax = 180;
+            } else if (typeAnimeEnCours === 'rotation') {
+                centreAnimationPolaire = trouverSommet(document.getElementById('rotCentreInterro').value); angleAnimationMax = parseFloat(document.getElementById('rotAngleInterro').value);
+            }
+            animationCallback = () => { dessiner(); }; 
+        } else {
+            typeAnimeEnCours = document.getElementById('typeTransform').value;
+            if (typeAnimeEnCours === 'sym_centrique') {
+                centreAnimationPolaire = trouverSommet(document.getElementById('centreSym').value); angleAnimationMax = 180;
+            } else if (typeAnimeEnCours === 'rotation') {
+                centreAnimationPolaire = trouverSommet(document.getElementById('rotCentre').value); angleAnimationMax = parseFloat(document.getElementById('rotAngle').value);
+            }
+            animationCallback = null;
+        }
+
+        enAnimation = true; tAnimation = 0;
+        boucleAnimation();
+    }
+
+    function boucleAnimation() {
+        if (!enAnimation) return;
+        tAnimation += pasAnimation;
+        if (tAnimation >= 1) { 
+            tAnimation = 1; enAnimation = false; transformationActive = true; dessiner(); 
+            if (animationCallback) animationCallback();
+            return; 
+        }
+        dessiner();
+        requestAnimationFrame(boucleAnimation);
+    }
+
+    function annulerAnimation() { enAnimation = false; tAnimation = 0; animationCallback = null; }
+
+    function resetApplication() {
+        figureActuelle = JSON.parse(JSON.stringify(figureDefaut));
+        figureTransformee = null; transformationActive = false;
+        segmentSelectionneBleu = null; segmentSelectionneRouge = null;
+        document.getElementById('btn-animer').disabled = true;
+        document.getElementById('typeTransform').value = 'sym_centrique';
+        document.getElementById('error-msg').style.display = 'none';
+        updateFormFields(); dessiner();
+    }
+
+    // PILIER 1 : FONCTION TROUVER SOMMET SANS ÉTANCHÉITÉ EN MODE CONCEPTEUR
+    function trouverSommet(label) {
+        if (!label) return null;
+        const clean = label.trim().toUpperCase();
+        
+        // Recherche prioritaire globale
+        if (clean === 'O') return { label: 'O', x: 0, y: 0 };
+        if (clean === 'X') return { label: 'X', x: maxLignes, y: 0 };
+        if (clean === 'Y') return { label: 'Y', x: 0, y: maxLignes };
+        if (clean === 'Z') return { label: 'Z', x: -maxLignes, y: maxLignes }; 
+        
+        return figureActuelle.find(p => p.label.toUpperCase() === clean);
+    }
+
+    function updateFormFields(forcedValues = null) { gererGenerationChamps('typeTransform', 'params-container', '', forcedValues); }
+    function updateFormFieldsInterro() { gererGenerationChamps('typeTransformInterro', 'params-container-interro', 'Interro', null); }
+
+    function gererGenerationChamps(idSelect, idContainer, suffix, forcedValues) {
+        const type = document.getElementById(idSelect).value;
+        const container = document.getElementById(idContainer);
+        
+        const oldVals = {
+            centreSym: document.getElementById('centreSym'+suffix)?.value || (suffix === 'Interro' ? 'O' : 'A'),
+axeP1: document.getElementById('axeP1'+suffix)?.value || (suffix === 'Interro' ? 'O' : 'A'),
+axeP2: document.getElementById('axeP2'+suffix)?.value || (suffix === 'Interro' ? 'X' : 'B'),
+transOrigine: document.getElementById('transOrigine'+suffix)?.value || (suffix === 'Interro' ? 'O' : 'A'),
+transFin: document.getElementById('transFin'+suffix)?.value || (suffix === 'Interro' ? 'X' : 'E'),
+        };
+
+        let htmlInputs = '';
+        if (type === 'sym_centrique') {
+            htmlInputs = `<div class="param-row"><label for="centreSym${suffix}">Centre :</label><input type="text" id="centreSym${suffix}" value="${forcedValues ? forcedValues.centreSym : oldVals.centreSym}"></div>`;
+        } else if (type === 'sym_axiale') {
+            htmlInputs = `
+                <div class="param-row"><label for="axeP1${suffix}">Axe - Pt 1 :</label><input type="text" id="axeP1${suffix}" value="${forcedValues ? forcedValues.axeP1 : oldVals.axeP1}"></div>
+                <div class="param-row"><label for="axeP2${suffix}">Axe - Pt 2 :</label><input type="text" id="axeP2${suffix}" value="${forcedValues ? forcedValues.axeP2 : oldVals.axeP2}"></div>`;
+        } else if (type === 'translation') {
+            htmlInputs = `
+                <div class="param-row"><label for="transOrigine${suffix}">Origine :</label><input type="text" id="transOrigine${suffix}" value="${forcedValues ? forcedValues.transOrigine : oldVals.transOrigine}"></div>
+                <div class="param-row"><label for="transFin${suffix}">Extrémité :</label><input type="text" id="transFin${suffix}" value="${forcedValues ? forcedValues.transFin : oldVals.transFin}"></div>`;
+        } else if (type === 'rotation') {
+            let currentAngle = forcedValues ? forcedValues.rotAngle : oldVals.rotAngle;
+            htmlInputs = `
+                <div class="param-row"><label for="rotCentre${suffix}">Centre :</label><input type="text" id="rotCentre${suffix}" value="${forcedValues ? forcedValues.rotCentre : oldVals.rotCentre}"></div>
+                <div class="param-row">
+                    <label for="rotAngle${suffix}">Angle :</label>
+                    <select id="rotAngle${suffix}">
+                        <option value="60" ${currentAngle == 60 ? 'selected' : ''}>60° antihoraire</option>
+                        <option value="120" ${currentAngle == 120 ? 'selected' : ''}>120° antihoraire</option>
+                        <option value="180" ${currentAngle == 180 ? 'selected' : ''}>180° (1/2 tour)</option>
+                        <option value="-60" ${currentAngle == -60 ? 'selected' : ''}>-60° horaire</option>
+                        <option value="-120" ${currentAngle == -120 ? 'selected' : ''}>-120° horaire</option>
+                    </select>
+                </div>`;
+        }
+
+        container.innerHTML = htmlInputs;
+        
+        container.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('input', () => { 
+                if(suffix === '') {
+                    annulerAnimation(); transformationActive = false; figureTransformee = null;
+                    document.getElementById('btn-animer').disabled = true;
+                }
+                dessiner();
+            });
+        });
+    }
+
+    function genererTransformationAleatoire() {
+        transformationActive = false; figureTransformee = null;
+        document.getElementById('btn-animer').disabled = true;
+        const types = ['sym_centrique', 'sym_axiale', 'translation', 'rotation'];
+        const typeChoisi = types[Math.floor(Math.random() * types.length)];
+        
+        const reperes = [...figureActuelle.map(p => p.label), 'O', 'X', 'Y', 'Z'];
+        const p1 = reperes[Math.floor(Math.random() * reperes.length)];
+        let p2 = reperes[Math.floor(Math.random() * reperes.length)];
+        while (p1 === p2) { p2 = reperes[Math.floor(Math.random() * reperes.length)]; }
+        
+        const anglesIso = [60, 120, 180, -60, -120];
+        const angleChoisi = anglesIso[Math.floor(Math.random() * anglesIso.length)];
+
+        document.getElementById('typeTransform').value = typeChoisi;
+        const valeursAleatoires = { centreSym: p1, axeP1: p1, axeP2: p2, transOrigine: p1, transFin: p2, rotCentre: p1, rotAngle: angleChoisi };
+        updateFormFields(valeursAleatoires);
+        dessiner();
+    }
+
+    function appliquerTransformation(idSelect, idContainer, idError) {
+        const type = document.getElementById(idSelect).value;
+        document.getElementById(idError).style.display = 'none';
+        let nouvelleFigure = JSON.parse(JSON.stringify(figureActuelle));
+        const suffix = (idSelect === 'typeTransformInterro') ? 'Interro' : '';
+
+        if (type === 'sym_centrique') {
+            const labelCentre = document.getElementById('centreSym'+suffix).value;
+            const centre = trouverSommet(labelCentre);
+            if (!centre) { document.getElementById(idError).innerText = `Point "${labelCentre}" introuvable.`; document.getElementById(idError).style.display = 'block'; return; }
+            nouvelleFigure.forEach(p => { p.x = 2 * centre.x - p.x; p.y = 2 * centre.y - p.y; });
+            
+        } else if (type === 'sym_axiale') {
+            const l1 = document.getElementById('axeP1'+suffix).value; const l2 = document.getElementById('axeP2'+suffix).value;
+            const p1 = trouverSommet(l1); const p2 = trouverSommet(l2);
+            if (!p1 || !p2) { document.getElementById(idError).innerText = "Point de l'axe introuvable."; document.getElementById(idError).style.display = 'block'; return; }
+            if (p1.x === p2.x && p1.y === p2.y) { document.getElementById(idError).innerText = "L'axe requiert deux points distincts."; document.getElementById(idError).style.display = 'block'; return; }
+            
+            let e1 = gridToEuclid(p1); let e2 = gridToEuclid(p2);
+            let dx = e2.x - e1.x; let dy = e2.y - e1.y;
+            let mag = Math.sqrt(dx*dx + dy*dy);
+            if (mag === 0) return;
+            let ux = dx / mag; let uy = dy / mag;
+            
+            nouvelleFigure.forEach(p => {
+                let eP = gridToEuclid(p);
+                let vx = eP.x - e1.x; let vy = eP.y - e1.y;
+                let projetelongeur = vx * ux + vy * uy;
+                let projX = e1.x + projetelongeur * ux;
+                let projY = e1.y + projetelongeur * uy;
+                
+                let symEuclidX = 2 * projX - eP.x;
+                let symEuclidY = 2 * projY - eP.y;
+                
+                let gPt = euclidToGrid(symEuclidX, symEuclidY);
+                p.x = Math.round(gPt.x); p.y = Math.round(gPt.y); 
+            });
+            
+        } else if (type === 'translation') {
+            const lOrigine = document.getElementById('transOrigine'+suffix).value; const lFin = document.getElementById('transFin'+suffix).value;
+            const pOrigine = trouverSommet(lOrigine); const pFin = trouverSommet(lFin);
+            if (!pOrigine || !pFin) { document.getElementById(idError).innerText = "Point du vecteur introuvable."; document.getElementById(idError).style.display = 'block'; return; }
+            const dx = pFin.x - pOrigine.x; const dy = pFin.y - pOrigine.y;
+            nouvelleFigure.forEach(p => { p.x += dx; p.y += dy; });
+            
+        } else if (type === 'rotation') {
+            const labelCentre = document.getElementById('rotCentre'+suffix).value; 
+            const angleDeg = parseFloat(document.getElementById('rotAngle'+suffix).value);
+            const centre = trouverSommet(labelCentre); if (!centre) { document.getElementById(idError).innerText = `Point "${labelCentre}" introuvable.`; document.getElementById(idError).style.display = 'block'; return; }
+            
+            let eCentre = gridToEuclid(centre);
+            const angleRad = (angleDeg * Math.PI) / 180; const cos = Math.cos(angleRad); const sin = Math.sin(angleRad);
+            
+            nouvelleFigure.forEach(p => {
+                let eP = gridToEuclid(p);
+                let xM = eP.x - eCentre.x; let yM = eP.y - eCentre.y;
+                let gPt = euclidToGrid(xM * cos - yM * sin + eCentre.x, xM * sin + yM * cos + eCentre.y);
+                p.x = Math.round(gPt.x); p.y = Math.round(gPt.y); 
+            });
+        }
+        figureTransformee = nouvelleFigure;
+        dessiner(); 
+    }
+
+    // INITIALISATION PAR DÉFAUT
+    updateFormFields();
+    dessiner();
+</script>
+</body>
+</html>
