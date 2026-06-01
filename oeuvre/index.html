@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio d'Art Numérique - Version Dominante RGB</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      display: flex;
+      background-color: #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      max-width: 1100px;
+      width: 100%;
+      align-items: stretch;
+    }
+
+    .control-panel {
+      width: 450px;
+      background-color: #0f172a;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 5px;
+    }
+
+    .section-bloc { display: flex; flex-direction: column; }
+
+    button {
+      background-color: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    button:hover { background-color: #334155; border-color: #475569; }
+    button.active { background-color: #0284c7; border-color: #38bdf8; }
+
+    .thumbnail-grid { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+    .btn-thumb {
+      width: 80px;
+      height: 80px;
+      padding: 0;
+      overflow: hidden;
+      border: 2px solid #334155;
+      background-color: #1e293b;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+      gap: 4px;
+    }
+
+    .btn-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .badge-perso {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background-color: #7f1d1d; color: #fca5a5;
+      font-weight: bold; font-size: 10px;
+      text-transform: uppercase; padding: 2px 0;
+      text-align: center; letter-spacing: 0.5px;
+      border-top: 1px solid #ef4444;
+    }
+
+    .btn-delete-import {
+      background-color: #7f1d1d; border: 1px solid #ef4444; color: #fca5a5;
+      padding: 8px 12px; font-size: 12px; border-radius: 6px;
+      cursor: pointer; display: none; margin-top: 10px;
+    }
+    .btn-delete-import:hover { background-color: #991b1b; }
+
+    #file-loader { display: none; }
+    .filter-list { display: flex; flex-direction: column; gap: 8px; }
+    .filter-list button { justify-content: flex-start; }
+
+    .contextual-controls {
+      background-color: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      min-height: 110px; 
+      visibility: hidden; 
+    }
+
+    .dynamic-ui-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .dynamic-label {
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: bold;
+      color: #38bdf8;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    /* Calage fixe anti-saut du canvas */
+    .canvas-zone {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start; 
+      align-items: center;
+      padding: 40px;
+      background-color: #1e293b;
+    }
+
+    #canvas-holder {
+      width: 500px;
+      height: 500px;
+      background-color: #000000;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      margin-top: 32px; 
+    }
+
+    .canvas-info { margin-top: 15px; font-size: 14px; color: #94a3b8; }
+
+    @media (max-width: 1024px) {
+      .app-container { flex-direction: column; }
+      .control-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="control-panel">
+      
+      <div class="section-bloc">
+        <h2>1. Image Source</h2>
+        <div class="thumbnail-grid">
+          <button class="btn-thumb active" id="btn-img-joconde">
+            <img src="joconde.png" id="thumb-joconde" alt="Joconde">
+          </button>
+          <button class="btn-thumb btn-import-action" id="btn-trigger-upload">
+            <i class="fa-solid fa-plus"></i>
+            <span>Importer</span>
+          </button>
+          <button class="btn-thumb" id="btn-img-user" style="display: none;">
+            <div class="badge-perso">PERSO</div>
+          </button>
+          <input type="file" id="file-loader" accept="image/*">
+        </div>
+        <button class="btn-delete-import" id="btn-clear-import"><i class="fa-solid fa-trash-can"></i> Purger l'import</button>
+      </div>
+
+      <div class="section-bloc">
+        <h2>2. Type d'Œuvre</h2>
+        <div class="filter-list" id="ui-filter-list"></div>
+      </div>
+
+      <div class="section-bloc">
+        <h2>3. Contrôle Global</h2>
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-global-pause" style="flex: 1;"><i class="fa-solid fa-pause"></i> Pause / Lecture</button>
+          <button id="btn-global-reset" style="background-color: #991b1b; border-color: #f87171;">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="section-bloc contextual-controls" id="panel-contextual-settings">
+        <h2 id="contextual-title">4. Réglages</h2>
+        <div id="dynamic-ui-content"></div>
+      </div>
+
+    </div>
+
+    <div class="canvas-zone">
+      <div id="canvas-holder"></div>
+      <div class="canvas-info">Zone d'affichage numérique (500x500px)</div>
+    </div>
+  </div>
+
+  <script>
+    let imgSource;
+    let imgUserSaved = null; 
+    let filtreActif;
+    let modeAnimation = "marche"; 
+    let uiManager;
+    let CATALOGUE_FILTRES;
+
+    function preload() {
+      imgSource = loadImage('joconde.png');
+    }
+
+    function setup() {
+      let canvas = createCanvas(500, 500);
+      canvas.parent('canvas-holder');
+      canvas.elt.getContext('2d', { willReadFrequently: true });
+      
+      let fPointillisme  = new FiltrePointillisme();
+      let fEmoji         = new FiltreEmoji();
+      let fDominanteRGB  = new FiltreDominanteRGB(); // Nouvelle instance
+      let fPixelArt      = new FiltrePixelArt();
+      let fLettres       = new FiltreLettres();
+      let fTexteEclate   = new FiltreTexteEclate();
+      let fCMJN          = new FiltreCMJN();
+
+      CATALOGUE_FILTRES = [
+        {
+          id: "pointillisme", nom: "Pointillisme", icone: "fa-circle-dot", instance: fPointillisme,
+          controles: [
+            { type: "row", elements: [
+              { element: "button", action: "diminuer_taille", icone: "fa-minus" },
+              { element: "label",  property: "taillePinceau" },
+              { element: "button", action: "augmenter_taille", icone: "fa-plus" }
+            ]}
+          ]
+        },
+{
+          id: "emoji", nom: "Mosaïque Emoji", icone: "fa-face-smile", instance: fEmoji,
+          controles: [
+            { type: "row", elements: [
+              { element: "button", action: "diminuer_taille", icone: "fa-minus" },
+              { element: "label",  property: "step" }, 
+              { element: "button", action: "augmenter_taille", icone: "fa-plus" }
+            ]}
+          ]
+        },
+        {
+          id: "dominante_rgb", nom: "Analyse Dominante RGB", icone: "fa-eye-dropper", instance: fDominanteRGB,
+          controles: [
+            { type: "row", elements: [
+              { element: "button", action: "diminuer_taille", icone: "fa-minus" },
+              { element: "label",  property: "taillePixel" }, 
+              { element: "button", action: "augmenter_taille", icone: "fa-plus" }
+            ]}
+          ]
+        },
+        { 
+          id: "pixelart", nom: "Pixel Art fixe", icone: "fa-table-cells", instance: fPixelArt, 
+          controles: [
+            { type: "row", elements: [
+              { element: "button", action: "diminuer_taille", icone: "fa-minus" },
+              { element: "label",  property: "taillePixel" }, 
+              { element: "button", action: "augmenter_taille", icone: "fa-plus" }
+            ]}
+          ] 
+        },
+        { id: "lettres", nom: "Lettres (Matrice)", icone: "fa-font", instance: fLettres, controles: [] },
+        { id: "texte_eclate", nom: "Texte éclaté", icone: "fa-t", instance: fTexteEclate, controles: [] },
+        {
+          id: "cmyk", nom: "Trame CMJN (Statique)", icone: "fa-print", instance: fCMJN,
+          controles: [
+            { type: "row", elements: [
+              { element: "button", action: "diminuer_maille", icone: "fa-minus" },
+              { element: "label",  property: "step" },
+              { element: "button", action: "augmenter_maille", icone: "fa-plus" }
+            ]},
+            { type: "button-large", action: "maille_aleatoire", icone: "fa-dice", texte: "Maille aléatoire" }
+          ]
+        }
+      ];
+
+      uiManager = new UIManager();
+      uiManager.construireMenuFiltres(CATALOGUE_FILTRES);
+      uiManager.activerFiltreParIndex(0);
+
+      setupControlesFixes();
+    }
+
+    function draw() {
+      if (modeAnimation === "marche" || filtreActif.instance.actionDeclenchee) {
+        filtreActif.instance.render(imgSource);
+        uiManager.rafraichirValeurs(filtreActif);
+      }
+      
+      if (imgSource === imgUserSaved && imgUserSaved !== null) {
+        fill(239, 68, 68); rect(0, 0, 500, 50); fill(255);
+        textAlign(CENTER, CENTER); textSize(14);
+        text("⚠️ CONTENU IMPORTÉ PAR L'UTILISATEUR (ESPACE PERSO PRIVÉ)", 250, 25);
+      } else {
+        fill(0); rect(0, 0, 500, 50);
+      }
+
+      fill(0); noStroke();
+      rect(0, 440, 500, 60); rect(0, 0, 50, 500); rect(450, 0, 50, 500);
+
+      if (!filtreActif.instance.estDynamique) {
+        noLoop();
+      }
+    }
+
+    /* =========================================================================
+       INTERFACE DYNAMIQUE (UI MANAGER)
+       ========================================================================= */
+    class UIManager {
+      constructor() {
+        this.menuConteneur = select('#ui-filter-list');
+        this.panneauParticularite = select('#panel-contextual-settings');
+        this.conteneurDynamique = select('#dynamic-ui-content');
+        this.titreParticularite = select('#contextual-title');
+        this.elementsAObserver = []; 
+      }
+
+      construireMenuFiltres(catalogue) {
+        catalogue.forEach((item, index) => {
+          let btn = createButton(`<i class="fa-solid ${item.icone}"></i> ${item.nom}`);
+          btn.parent(this.menuConteneur);
+          btn.id(`btn-dyn-filter-${index}`);
+          btn.mousePressed(() => this.activerFiltreParIndex(index));
+        });
+      }
+
+      activerFiltreParIndex(index) {
+        CATALOGUE_FILTRES.forEach((item, i) => select(`#btn-dyn-filter-${i}`).removeClass('active'));
+        select(`#btn-dyn-filter-${index}`).addClass('active');
+
+        filtreActif = CATALOGUE_FILTRES[index];
+        filtreActif.instance.init();
+        
+        if (filtreActif.instance.estDynamique && modeAnimation === "marche") {
+          loop();
+        } else {
+          redraw();
+        }
+        this.genererControlesParticuliers(filtreActif);
+      }
+
+      genererControlesParticuliers(filtreConfig) {
+        this.conteneurDynamique.html(""); 
+        this.elementsAObserver = [];     
+
+        if (filtreConfig.controles.length === 0) {
+          this.panneauParticularite.style('visibility', 'hidden'); 
+          return;
+        }
+
+        this.titreParticularite.html(`4. Réglages ${filtreConfig.nom}`);
+        this.panneauParticularite.style('visibility', 'visible'); 
+
+        filtreConfig.controles.forEach(bloc => {
+          if (bloc.type === "row") {
+            let rowDiv = createDiv().addClass('dynamic-ui-row').parent(this.conteneurDynamique);
+
+            bloc.elements.forEach(el => {
+              if (el.element === "button") {
+                let btn = createButton(`<i class="fa-solid ${el.icone}"></i>`).parent(rowDiv);
+                btn.mousePressed(() => filtreConfig.instance.declencherAction(el.action));
+              } 
+              else if (el.element === "label") {
+                let span = createSpan(filtreConfig.instance[el.property]).addClass('dynamic-label').parent(rowDiv);
+                this.elementsAObserver.push({ htmlEl: span, prop: el.property });
+              }
+              else if (el.element === "input") {
+                let inp = createInput(filtreConfig.instance[el.property]).parent(rowDiv).addClass('control-input-text');
+                let gererSaisie = () => {
+                  let brute = inp.value(); let securisee = "";
+                  if (brute.length > 0) { let tab = [...brute]; securisee = tab[0]; inp.value(securisee); }
+                  filtreConfig.instance.actionDeclenchee = true;
+                  filtreConfig.instance[el.property] = securisee;
+                  if (typeof filtreConfig.instance.actualiserTampon === 'function') { filtreConfig.instance.actualiserTampon(); }
+                  filtreConfig.instance.init(); redraw();
+                };
+                inp.input(gererSaisie); inp.changed(gererSaisie);
+              }
+            });
+          } 
+        });
+      }
+
+      rafraichirValeurs(filtreConfig) {
+        this.elementsAObserver.forEach(item => { item.htmlEl.html(filtreConfig.instance[item.prop]); });
+      }
+    }
+
+    function setupControlesFixes() {
+      select('#btn-global-pause').mousePressed(() => {
+        modeAnimation = (modeAnimation === "marche") ? "pause" : "marche";
+        let icon = modeAnimation === "marche" ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+        select('#btn-global-pause').html(icon + " Pause / Lecture");
+        if (modeAnimation === "marche" && filtreActif.instance.estDynamique) { loop(); } else { noLoop(); }
+      });
+
+      select('#btn-global-reset').mousePressed(() => {
+        filtreActif.instance.actionDeclenchee = true; 
+        filtreActif.instance.init(); 
+        redraw(); 
+      });
+
+      select('#btn-img-joconde').mousePressed(() => {
+        select('#btn-img-user').removeClass('active'); select('#btn-img-joconde').addClass('active');
+        preload(); filtreActif.instance.init(); redraw();
+      });
+
+      select('#btn-trigger-upload').mousePressed(() => {
+        imgUserSaved = null; select('#btn-img-user').style('display', 'none').removeClass('active');
+        select('#btn-clear-import').style('display', 'none'); select('#btn-img-joconde').addClass('active');
+        preload(); filtreActif.instance.init(); redraw(); select('#file-loader').elt.click();
+      });
+
+      select('#file-loader').changed((e) => {
+        if (e.target.files && e.target.files[0]) {
+          let url = URL.createObjectURL(e.target.files[0]);
+          loadImage(url, newImg => {
+            imgUserSaved = newImg; imgSource = imgUserSaved;
+            let boutonUser = select('#btn-img-user');
+            boutonUser.html(`<img src="${url}"><div class="badge-perso">PERSO</div>`).style('display', 'flex');
+            select('#btn-img-joconde').removeClass('active'); boutonUser.addClass('active');
+            select('#btn-clear-import').style('display', 'block'); filtreActif.instance.init(); redraw();
+          });
+        }
+      });
+
+      select('#btn-img-user').mousePressed(() => {
+        if (imgUserSaved) {
+          select('#btn-img-joconde').removeClass('active'); select('#btn-img-user').addClass('active');
+          imgSource = imgUserSaved; filtreActif.instance.init(); redraw();
+        }
+      });
+
+      select('#btn-clear-import').mousePressed(() => {
+        imgUserSaved = null; select('#btn-img-user').style('display', 'none').removeClass('active');
+        select('#btn-clear-import').style('display', 'none'); select('#btn-img-joconde').addClass('active');
+        preload(); filtreActif.instance.init(); redraw(); select('#file-loader').elt.value = "";
+      });
+    }
+
+    /* =========================================================================
+       CLASSE MÈRE
+       ========================================================================= */
+    class FiltreArt {
+      constructor() { 
+        this.pg = createGraphics(400, 400); 
+        this.estDynamique = false; 
+        this.actionDeclenchee = false;
+      }
+      init() { 
+        this.pg.background(0); this.pg.noStroke(); 
+        if (this.estDynamique && modeAnimation === "marche") { loop(); } else { noLoop(); }
+      }
+      declencherAction(action) { this.actionDeclenchee = true; }
+      render(img) { this.update(img); image(this.pg, 50, 50); this.actionDeclenchee = false; }
+      update(img) {}
+    }
+
+    /* =========================================================================
+       LES FILTRES ENFANTS
+       ========================================================================= */
+
+    class FiltrePointillisme extends FiltreArt {
+      constructor() { super(); this.taillePinceau = 10; this.estDynamique = true; }
+      declencherAction(action) {
+        super.declencherAction(action);
+        if (action === "diminuer_taille") this.taillePinceau = constrain(this.taillePinceau - 2, 2, 50);
+        if (action === "augmenter_taille") this.taillePinceau = constrain(this.taillePinceau + 2, 2, 50);
+        this.init(); redraw();
+      }
+      update(img) {
+        for (let i = 0; i < 40; i++) {
+          let x = floor(random(0, 400)); let y = floor(random(0, 400));
+          let sX = floor(map(x, 0, 400, 0, img.width)); let sY = floor(map(y, 0, 400, 0, img.height));
+          this.pg.fill(img.get(sX, sY));
+          let t = random(this.taillePinceau * 0.7, this.taillePinceau * 1.3);
+          this.pg.ellipse(x, y, t, t);
+        }
+      }
+    }
+
+// --- FILTRE 2 : MOSAÏQUE EMOJI (LUMINANCE PUR ET IMMOBILE) ---
+// --- FILTRE 2 : MOSAÏQUE EMOJI (4 TEINTES × 3 INTENSITÉS, IMMOBILE) ---
+    class FiltreEmoji extends FiltreArt {
+      constructor() {
+        super();
+        this.step = 12;
+        this.estDynamique = false;
+        this.grilleEmojisChoisis = []; 
+
+        // BANQUE MATRICIELLE : 4 FAMILLES DE COULEURS × 3 NIVEAUX D'INTENSITÉ
+        // 1. Les Noirs / Ombres (communs ou transitions très sombres)
+        this.emojisNoirs = ["⚫", "⬛", "🎴", "🖤", "🎩"];
+
+        // 2. Les Verts (Sombre, Moyen, Clair)
+        this.vertsSombres = ["🌲", "🥦", "🥑"];
+        this.vertsMoyens  = ["🟢", "🟩", "🌿"];
+        this.vertsClairs  = ["🍏", "🍐", "🎄"];
+
+        // 3. Les Bleus (Sombre, Moyen, Clair)
+        this.bleusSombres = ["🌑", "🌌", "⚓"];
+        this.bleusMoyens  = ["🔵", "🟦", "🌀"];
+        this.bleusClairs  = ["🐳", "🌐", "🧊"];
+
+        // 4. Les Chauds / Carnation (Sombre, Moyen, Clair)
+        this.chaudsSombres = ["🟫", "🧱"];
+        this.chaudsMoyens  = ["🍪", "🦊", "🦁"];
+        this.chaudsClairs  = ["😀", "👑", "🌕", "🐱"];
+      }
+
+      init() {
+        this.grilleEmojisChoisis = []; 
+        super.init();
+        this.pg.textAlign(CENTER, CENTER); 
+        this.genererGrilleMemoire(imgSource); 
+      }
+
+      genererGrilleMemoire(img) {
+        this.grilleEmojisChoisis = [];
+        let pas = this.step;
+
+        for (let x = pas / 2; x < 400; x += pas) {
+          for (let y = pas / 2; y < 400; y += pas) {
+            let sX = floor(map(x, 0, 400, 0, img.width)); 
+            let sY = floor(map(y, 0, 400, 0, img.height));
+            let c = img.get(sX, sY);
+            
+            let r = red(c); 
+            let g = green(c); 
+            let b = blue(c);
+            
+            // Calcul de l'intensité globale (Luminance de 0 à 255)
+            let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            let listeChoisie;
+
+            // NIVEAU 1 : Gestion de l'intensité critique (Ombres denses)
+            if (luminance < 45 || (r < 55 && g < 55 && b < 55)) {
+              listeChoisie = this.emojisNoirs;
+            } 
+            // NIVEAU 2 : Analyse de la teinte prédominante si la zone est éclairée
+            else if (g > r && g > b) { 
+              // Intensité dans le Vert
+              if (luminance < 100)       listeChoisie = this.vertsSombres;
+              else if (luminance < 160)  listeChoisie = this.vertsMoyens;
+              else                       listeChoisie = this.vertsClairs;
+            } 
+            else if (b > r && b > g) { 
+              // Intensité dans le Bleu
+              if (luminance < 100)       listeChoisie = this.bleusSombres;
+              else if (luminance < 160)  listeChoisie = this.bleusMoyens;
+              else                       listeChoisie = this.bleusClairs;
+            } 
+            else { 
+              // Intensité dans les tons Chauds (Peau, mains, reflets)
+              if (luminance < 100)       listeChoisie = this.chaudsSombres;
+              else if (luminance < 160)  listeChoisie = this.chaudsMoyens;
+              else                       listeChoisie = this.chaudsClairs;
+            }
+
+            // Enregistrement de la configuration stable
+            this.grilleEmojisChoisis.push({ 
+              x: x, 
+              y: y, 
+              emoji: random(listeChoisie) 
+            });
+          }
+        }
+      }
+
+      declencherAction(action) {
+        super.declencherAction(action);
+        if (action === "diminuer_taille") this.step = constrain(this.step - 2, 8, 20);
+        if (action === "augmenter_taille") this.step = constrain(this.step + 2, 8, 20);
+        this.init(); 
+        redraw();
+      }
+
+      update(img) {
+        if (this.actionDeclenchee) { this.genererGrilleMemoire(img); }
+        
+        this.pg.background(0); 
+        this.pg.fill(255); 
+        this.pg.noStroke(); 
+        this.pg.textSize(this.step * 1.1); 
+        
+        this.grilleEmojisChoisis.forEach(item => {
+          this.pg.push(); 
+          this.pg.translate(item.x, item.y); 
+          this.pg.text(item.emoji, 0, 0); 
+          this.pg.pop();
+        });
+      }
+    }
+
+    // --- NOUVELLE CLASSE : PIXEL ART PAR DOMINANTE RGB FORCEE (ROUGE, VERT, BLEU, NOIR STRICT) ---
+    class FiltreDominanteRGB extends FiltreArt {
+      constructor() { 
+        super(); 
+        this.taillePixel = 12; 
+        this.estDynamique = false; 
+      }
+      declencherAction(action) {
+        super.declencherAction(action);
+        if (action === "diminuer_taille") this.taillePixel = constrain(this.taillePixel - 2, 4, 40);
+        if (action === "augmenter_taille") this.taillePixel = constrain(this.taillePixel + 2, 4, 40);
+        this.init(); 
+        redraw();
+      }
+ update(img) {
+        // Fond blanc obligatoire (comme du papier)
+        this.pg.background(255); 
+        
+        // On active le mode MULTIPLY pour que les encres se mélangent 
+        // exactement comme de la vraie peinture ou de l'encre d'imprimerie
+        this.pg.blendMode(MULTIPLY); 
+        this.pg.noStroke();
+
+        let t = this.taillePixel;
+        
+        for (let x = 0; x < 400; x += t) {
+          for (let y = 0; y < 400; y += t) {
+            
+            // Échantillonnage de l'image source
+            let sX = floor(map(x + t / 2, 0, 400, 0, img.width)); 
+            let sY = floor(map(y + t / 2, 0, 400, 0, img.height));
+            let c = img.get(sX, sY);
+            
+            let r = red(c) / 255.0;
+            let g = green(c) / 255.0;
+            let b = blue(c) / 255.0;
+            
+            // 1. Conversion CMJN (valeurs entre 0.0 et 1.0)
+            let k = 1 - max(r, max(g, b)); 
+            let cyan = (k < 1) ? (1 - r - k) / (1 - k) : 0;
+            let magenta = (k < 1) ? (1 - g - k) / (1 - k) : 0;
+            let jaune = (k < 1) ? (1 - b - k) / (1 - k) : 0;
+
+            // 2. Le cœur de ton idée : La taille du pixel dépend de l'intensité de l'encre
+            let tailleC = cyan * t;
+            let tailleM = magenta * t;
+            let tailleJ = jaune * t;
+            let tailleK = k * t;
+
+            // 3. Dessin des 4 couches superposées avec de légers décalages (offset) 
+            // pour éviter qu'elles ne se cachent complètement les unes les autres
+            
+            // Couche CYAN
+            this.pg.fill(0, 255, 255);
+            this.pg.rect(x, y, tailleC, tailleC);
+            
+            // Couche MAGENTA
+            this.pg.fill(255, 0, 255);
+            this.pg.rect(x + (t - tailleM), y, tailleM, tailleM);
+            
+            // Couche JAUNE
+            this.pg.fill(255, 255, 0);
+            this.pg.rect(x, y + (t - tailleJ), tailleJ, tailleJ);
+            
+            // Couche NOIR (K)
+            this.pg.fill(0, 0, 0);
+            this.pg.rect(x + (t - tailleK)/2, y + (t - tailleK)/2, tailleK, tailleK);
+          }
+        }
+        
+        // On réinitialise le mode de fusion pour le reste du p5.js
+        this.pg.blendMode(BLEND); 
+      }
+
+
+    }
+
+    class FiltrePixelArt extends FiltreArt {
+      constructor() { super(); this.taillePixel = 10; this.estDynamique = false; }
+      declencherAction(action) {
+        super.declencherAction(action);
+        if (action === "diminuer_taille") this.taillePixel = constrain(this.taillePixel - 2, 4, 40);
+        if (action === "augmenter_taille") this.taillePixel = constrain(this.taillePixel + 2, 4, 40);
+        this.init(); redraw();
+      }
+      update(img) {
+        if (modeAnimation === "pause" && !this.actionDeclenchee) return;
+        this.pg.background(0); let t = this.taillePixel;
+        for (let x = 0; x < 400 / t; x++) {
+          for (let y = 0; y < 400 / t; y++) {
+            let sX = floor(map(t * x + t / 2, 0, 400, 0, img.width)); let sY = floor(map(t * y + t / 2, 0, 400, 0, img.height));
+            this.pg.fill(img.get(sX, sY)); this.pg.rect(t * x, t * y, t, t);
+          }
+        }
+      }
+    }
+
+    class FiltreLettres extends FiltreArt {
+      constructor() { super(); this.estDynamique = true; }
+      init() { super.init(); this.pg.textAlign(CENTER, CENTER); this.letters = ["J","O","C","O","N","D","E"]; }
+      update(img) {
+        for (let i = 0; i < 200; i++) {
+          let t = random(6, 32); let x = random(0, 400); let y = random(0, 400); let u = random(this.letters);
+          let sX = floor(map(x, 0, 400, 0, img.width)); let sY = floor(map(y, 0, 400, 0, img.height));
+          let c = img.get(sX, sY);
+          this.pg.fill(0); this.pg.textSize(t * 1.15); this.pg.text(u, x, y);
+          this.pg.fill(c); this.pg.textSize(t); this.pg.text(u, x, y);
+        }
+      }
+    }
+
+    class FiltreTexteEclate extends FiltreArt {
+      constructor() { super(); this.estDynamique = true; }
+      init() { super.init(); frameRate(4); this.pg.textAlign(CENTER, CENTER); }
+      update(img) {
+        this.pg.image(img, 0, 0, 400, 400);
+        for (let i = 0; i < 15; i++) {
+          let t = random(10, 45); let x = random(0, 400); let y = random(0, 400);
+          let sX = floor(map(x, 0, 400, 0, img.width)); let sY = floor(map(y, 0, 400, 0, img.height));
+          this.pg.fill(img.get(sX, sY)); this.pg.textSize(t); this.pg.text("JOCONDE", x, y);
+        }
+      }
+    }
+
+    class FiltreCMJN extends FiltreArt {
+      constructor() { super(); this.step = 16; this.estDynamique = false; }
+      init() { super.init(); }
+      declencherAction(action) {
+        super.declencherAction(action);
+        if (action === "diminuer_maille")  this.modifieStep(-2);
+        if (action === "augmenter_maille") this.modifieStep(2);
+        if (action === "maille_aleatoire") this.stepAleatoire();
+        this.init(); redraw();
+      }
+      modifieStep(val) { this.step = constrain(this.step + val, 8, 30); }
+      stepAleatoire() { this.step = floor(random(10, 24)); if(this.step % 2 !== 0) this.step++; }
+
+      dessinerCoucheTrame(img, couleurCible, angleDegres) {
+        this.pg.push(); this.pg.translate(200, 200); this.pg.rotate(radians(angleDegres)); this.pg.fill(couleurCible);
+        let rCible = red(couleurCible); let gCible = green(couleurCible); let bCible = blue(couleurCible);
+        let pas = this.step; let limite = 300; 
+        for (let x = -limite; x < limite; x += pas) {
+          for (let y = -limite; y < limite; y += pas) {
+            let origineX = 200 + (x * cos(radians(angleDegres)) - y * sin(radians(angleDegres)));
+            let origineY = 200 + (x * sin(radians(angleDegres)) + y * cos(radians(angleDegres)));
+            if (origineX >= 0 && origineX < 400 && origineY >= 0 && origineY < 400) {
+              let sX = floor(map(origineX, 0, 400, 0, img.width)); let sY = floor(map(origineY, 0, 400, 0, img.height));
+              let col = img.get(sX, sY); let r = red(col); let g = green(col); let b = blue(col);
+              let c = 1 - r / 255.0; let m = 1 - g / 255.0; let j = 1 - b / 255.0; let k = min(c, min(m, j));
+              if (k < 1) { c = (c - k) / (1 - k); m = (m - k) / (1 - k); j = (j - k) / (1 - k); } else { c = 0; m = 0; j = 0; }
+              let intensiteCouche = 0;
+              if (rCible === 0 && gCible === 255 && bCible === 255) intensiteCouche = c;
+              if (rCible === 255 && gCible === 0 && bCible === 255) intensiteCouche = m;
+              if (rCible === 255 && gCible === 255 && bCible === 0) intensiteCouche = j;
+              if (rCible === 0 && gCible === 0 && bCible === 0) intensiteCouche = k;
+              if (intensiteCouche > 0.05) { let diametre = intensiteCouche * pas * 1.4; this.pg.ellipse(x, y, diametre, diametre); }
+            }
+          }
+        }
+        this.pg.pop();
+      }
+
+      update(img) {
+        if (img.width <= 1) return;
+        this.pg.background(255); this.pg.blendMode(MULTIPLY); 
+        this.dessinerCoucheTrame(img, color(0, 255, 255), 15);   
+        this.dessinerCoucheTrame(img, color(255, 0, 255), 75);  
+        this.dessinerCoucheTrame(img, color(255, 255, 0), 0);   
+        this.dessinerCoucheTrame(img, color(0, 0, 0), 45);      
+        this.pg.blendMode(BLEND); 
+      }
+    }
+  </script>
+</body>
+</html>
