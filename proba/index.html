@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur Aléatoire Pro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <main class="dashboard">
+        
+<section class="panel-controls">
+            <h2>Configuration</h2>
+            
+            <div class="sub-section-central">
+                <div class="sub-section-header">
+                    <h3>Modèle d'expérience</h3>
+                </div>
+                <div class="control-group-inner">
+                    <div class="experience-selector-wrapper">
+                        <select id="experience-select">
+                            <option value="des"> 🎲+🎲</option>
+                            <option value="pieces">Pile ou face </option>
+                            <option value="produit">🎲x🎲</option> 
+                            <option value="urne">Urne 🟦🟥🟨 </option>
+                            <option value="marche">Marche Aléatoire</option> 
+                        </select>
+                        <button id="btn-open-settings" class="btn-toggle btn-param-exp" title="Paramètres de l'expérience">⚙️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sub-section-central">
+                <div class="sub-section-header">
+                    <h3>Pilotage du flux</h3>
+                </div>
+                <div class="control-group-inner">
+                    
+                    <div class="view-mode-selector">
+                        <button class="btn active" id="btn-mode-step">Pas à pas</button>
+                        <button class="btn" id="btn-mode-infinite">Flux continu</button>
+                    </div>
+                    
+                    <div class="control-timeline">
+                        <button class="btn-control btn-play" id="control-play">Play ▶️</button>
+                        <button class="btn-control btn-next" id="control-next">Suivant ⏭️</button>
+                        <button class="btn-control btn-reset" id="control-reset">Reset 🔄</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sub-section-central">
+                <div class="sub-section-header">
+                    <h3>Options d'affichage</h3>
+                </div>
+                <div class="control-group-inner">
+                    
+                    <div class="view-mode-selector">
+    <button class="btn" id="btn-theory-show">Théorie 👁️</button>
+    <button class="btn active" id="btn-theory-hide">Masquer 🙈</button>
+</div>
+
+                    <div class="control-slide">
+                        <div class="control-group-slider" id="speed-control-group">
+                            <label for="speed-slider">Vitesse du Pas-à-pas :</label>
+                            <div class="slider-wrapper">
+                                <input type="range" id="speed-slider" min="200" max="2000" step="100" value="500">
+                                <span id="speed-value" class="slider-value">500ms</span>
+                            </div>
+                        </div>
+
+                        <div class="control-group-slider" id="batch-control-group">
+                            <label for="batch-slider">Taille des paquets :</label>
+                            <div class="slider-wrapper">
+                                <input type="range" id="batch-slider" min="10" max="1000" step="10" value="100">
+                                <span id="batch-value" class="slider-value">100</span>
+                            </div>
+                        </div>
+
+                        <div class="control-group-slider" id="wrapper-height-slider">
+                            <label for="height-slider">Plafond (Zoom Fréq.) :</label>
+                            <div class="slider-wrapper">
+                                <input type="range" id="height-slider" class="slider-input" min="10" max="100" step="5" value="40">
+                                <span id="height-value" class="slider-value">40%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-visual">
+            <h2>Expérience</h2>
+            
+            <div class="sub-section-central">
+                <div class="sub-section-header">
+                    <h3>Description du protocole</h3>
+                    <button id="toggle-desc" class="btn-toggle">🙈 Masquer</button>
+                </div>
+                <div id="container-desc">
+                    <div class="experience-desc-box" id="display-desc">...</div>
+                </div>
+            </div>
+
+            <div class="sub-section-central">
+                <div class="sub-section-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3>Rendu Visuel</h3>
+                        
+                    </div>
+                    <button id="toggle-visual" class="btn-toggle">🙈 Masquer</button>
+                </div>
+                <div id="container-visual">
+                    <div class="visual-container-box" id="main-render-viewport">
+                        <span style="color: var(--text-muted);">En attente de lancement</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sub-section-central">
+                <div class="sub-section-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3>Événement A</h3>
+                        <button id="btn-open-event-settings" class="btn-toggle" style="color: var(--warning); border-color: rgba(245,158,11,0.3);">⚙️ Paramètres</button>
+                    </div>
+                    <button id="toggle-event-view" class="btn-toggle">👁️ Afficher</button>
+                </div>
+                <div id="container-event-view" class="hidden">
+                    <div class="set-box" id="display-set">...</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-results">
+            <h2>Résultats & Analyses</h2> 
+            
+            <div class="results-scroll-content">
+
+                                <div class="data-section" style="background-color: var(--bg-main); border-color: var(--accent); padding: 0.85rem; text-align: center;">
+                    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0;">
+                        Nombre total d'expériences : 
+                        <span id="total-count" style="font-size: 1.4rem; font-family: monospace; font-weight: bold; color: var(--accent); margin-left: 5px;">0</span>
+                    </h3>
+                </div>
+                
+                <div class="data-section">
+                    <div class="data-section-header">
+                        <h3>Échantillon (100 premiers lancers)</h3>
+                        <button id="btn-toggle-sample" class="btn-toggle">👁️ Afficher</button>
+                    </div>
+                    <div id="container-sample-view" class="hidden">
+                        <div id="sample-grid" class="sample-analysis-grid"></div>
+                      
+                    </div>
+                </div>
+
+
+
+                <div class="data-section">
+                    <div class="data-section-header">
+                        <div class="data-section-title-block">
+                            <h3>Histogramme</h3>
+                            <div class="phet-display-selector">
+                                <button id="btn-phet-count" class="btn-phet">Effectif</button>
+                                <button id="btn-phet-freq" class="btn-phet active">Fréquence</button>
+                            </div>
+                        </div>
+                        <button id="btn-toggle-chart" class="btn-toggle">👁️ Afficher</button>
+                    </div>
+                    <div id="chart-container" class="chart-grid hidden"></div>
+                </div>
+
+                <div class="data-section">
+                    <div class="data-section-header">
+                        <h3>Suivi de l'Événement A</h3>
+                        <button id="btn-toggle-event" class="btn-toggle">👁️ Afficher</button>
+                    </div>
+                    <div id="event-container" class="hidden">
+                        <div class="event-gauge-track">
+                            <div id="event-marker" class="event-marker"></div>
+                            <div id="event-fill" class="event-fill">Calcul en cours...</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.65rem; margin-top: 6px; color: var(--text-muted);">
+                            <span>🟩 Fréquence réelle constatée</span>
+                            <span>🔸 Probabilité théorique calculée P(A)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <div class="data-section-header">
+                        <h3>Données complètes</h3>
+                        <button id="btn-toggle-table" class="btn-toggle">👁️ Afficher</button>
+                    </div>
+                    <div id="table-container" class="hidden">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th id="th-issue-name">Issue</th>
+                                    <th>Effectif</th>
+                                    <th>Fréquence</th>
+                                    <th style="color:var(--warning);">Proba Th.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+            </div> </section>
+        
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Configuration</h3>
+                <button id="btn-close-settings" class="modal-close-btn">❌</button>
+            </div>
+            <div class="dynamic-settings-box" id="dynamic-settings-viewport"></div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

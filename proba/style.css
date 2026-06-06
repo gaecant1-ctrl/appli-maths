@@ -1,0 +1,414 @@
+:root {
+    --bg-main: #0f172a;       /* Bleu nuit/noir de geek */
+    --bg-panel: #1e293b;      /* Panneau de contrôle sombre */
+    --text-main: #f8fafc;     /* Blanc éclatant pour le code et les chiffres */
+    --text-muted: #94a3b8;    /* Gris techno pour les légendes */
+    --accent: #3b82f6;        /* Bleu néon pour les calculs */
+    --success: #10b981;       /* Vert matrice pour les succès */
+    --danger: #ef4444;        /* Rouge alerte */
+    --warning: #f59e0b;       /* Orange ambré pour la théorie */
+    --border-color: #334155;  /* Bordures des circuits */
+}
+
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
+
+/* 1. On force le body à occuper strictement l'écran sans créer de scroll global de page */
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    background-color: var(--bg-main); 
+    color: var(--text-main); 
+    height: 100vh; 
+    margin: 0;
+    padding: 1.5rem; 
+    display: flex; 
+    justify-content: center; 
+    overflow: hidden; 
+}
+
+/* 2. Le dashboard prend 100% de la hauteur disponible du body */
+.dashboard { 
+    display: grid; 
+    grid-template-columns: 260px 440px 1fr; 
+    gap: 1.25rem; 
+    width: 100%; 
+    max-width: 1450px; 
+    height: 100%; 
+}
+
+/* 3. Règle commune pour TOUS les panneaux : ils héritent de la hauteur du dashboard */
+section { 
+    background-color: var(--bg-panel); 
+    border: 1px solid var(--border-color); 
+    border-radius: 12px; 
+    padding: 1.25rem; 
+    box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+    
+    height: 100%; 
+    max-height: 100%; 
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow-y: auto; /* Autorise le défilement interne à la molette partout */
+}
+
+h2 { 
+    font-size: 1.1rem; 
+    color: var(--accent); 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 0.4rem; 
+    margin-bottom: 1rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+}
+
+h3 { 
+    font-size: 0.95rem; 
+    font-weight: 600; 
+    margin: 0; 
+    color: var(--text-main); 
+}
+
+/* ==========================================
+   NETTOYAGE DES ASCENSEURS GAUCHE/CENTRE (BARRES INVISIBLES)
+   ========================================== */
+.panel-controls, .panel-visual {
+    scrollbar-width: none; /* Firefox */
+    gap: 1rem;
+}
+
+.panel-controls::-webkit-scrollbar, 
+.panel-visual::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+/* ==========================================
+   GAUCHE : TÉLÉCOMMANDE (CONFIGURATION)
+   ========================================== */
+.control-group-inner {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group-slider {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.control-group-slider label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.experience-selector-wrapper {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+}
+
+.experience-selector-wrapper select {
+    flex: 1;
+    min-width: 0; 
+}
+
+.btn-param-exp {
+    height: 38px; 
+    width: 38px;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+    color: var(--warning) !important;
+    transition: all 0.2s ease;
+}
+
+.btn-param-exp:hover {
+    background-color: rgba(245, 158, 11, 0.15);
+    border-color: var(--warning) !important;
+    transform: scale(1.05);
+}
+
+.control-group { margin: 1rem; }
+label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+select { width: 100%; padding: 0.5rem; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+.view-mode-selector { display: flex; gap: 0.25rem; background-color: var(--bg-main); padding: 0.2rem; border-radius: 6px; }
+.view-mode-selector .btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 0.4rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+.view-mode-selector .btn.active { background-color: var(--accent); color: var(--text-main); }
+
+.control-timeline { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.btn-control { padding: 0.55rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+.btn-play { grid-column: span 2; background: var(--success); color: var(--bg-main); }
+.btn-play.playing { background: var(--danger); color: white; }
+.btn-next { background: var(--accent); color: white; }
+.btn-reset { background: var(--bg-main); color: white; border: 1px solid var(--border-color); }
+
+.control-slide { gap: 0.4rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+
+/* ==========================================
+   CENTRE : HUB PÉDAGOGIQUE (EXPÉRIENCE)
+   ========================================== */
+.sub-section-central { background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; width: 100%; }
+.sub-section-header { display: flex; justify-content: space-between; align-items: center; }
+
+.experience-desc-box { font-size: 0.9rem; line-height: 1.4; color: var(--text-main); padding: 0.6rem; background: var(--bg-main); border-radius: 6px; margin-top: 0.5rem; border-left: 3px solid var(--success); text-align: left; }
+
+.dynamic-settings-box { margin-top: 0.5rem; padding: 0.5rem 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.slider-wrapper { display: flex; align-items: center; gap: 0.5rem; }
+.slider-input { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.slider-value { font-family: monospace; font-size: 0.9rem; background: var(--bg-main); padding: 2px 6px; border-radius: 4px; min-width: 45px; text-align: center; border: 1px solid var(--border-color); }
+
+.visual-container-box { 
+    height: 180px; 
+    width: 100%; 
+    background: var(--bg-main); 
+    border-radius: 10px; 
+    border: 3px solid var(--border-color); 
+    margin-top: 0.75rem; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    position: relative; 
+    padding: 15px; 
+    box-sizing: border-box; 
+}
+
+.continuous-render-layout { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; color: var(--accent); font-weight: 600; font-size: 0.95rem; }
+.animated-bars { display: flex; gap: 4px; height: 16px; margin-top: 4px; }
+.animated-bars span { width: 4px; height: 100%; background-color: var(--accent); border-radius: 2px; animation: bounce 0.6s infinite alternate; }
+.animated-bars span:nth-child(2) { animation-delay: 0.15s; }
+.animated-bars span:nth-child(3) { animation-delay: 0.3s; }
+.animated-bars span:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes bounce { 
+    from { transform: scaleY(0.3); } 
+    to { transform: scaleY(1.3); } 
+}
+
+.phrase-box { font-size: 0.95rem; font-weight: 500; color: var(--text-main); padding: 0.6rem; background: var(--bg-main); border-radius: 6px; margin-top: 0.5rem; border-left: 3px solid var(--accent); text-align: left; }
+.set-box { font-family: 'Courier New', monospace; color: var(--warning); font-size: 0.95rem; font-weight: bold; padding: 0.6rem; background: var(--bg-main); border-radius: 6px; margin-top: 0.5rem; border: 1px dashed var(--border-color); text-align: center; }
+.counter-total { font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-top: auto; padding-top: 0.5rem; }
+.btn-toggle { background: var(--bg-main); color: var(--text-muted); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+
+/* ==========================================
+   DROITE : GRAPHES & ANALYSES (SCROLLBAR FINE DÉDIÉE)
+   ========================================== */
+.panel-results { 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden !important; /* Force le panneau à rester fixe */
+}
+
+/* Le conteneur interne gère seul le scroll visible */
+
+
+/* Conteneur interne prenant le relais pour le défilement de droite */
+.results-scroll-content {
+    flex: 1;
+    overflow-y: auto; /* Laisse le défilement actif à la molette */
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; 
+    
+    scrollbar-width: none; /* Masque la barre sur Firefox */
+}
+
+/* Masque la barre physique sur Chrome, Safari, Edge et Opera */
+.results-scroll-content::-webkit-scrollbar {
+    display: none;
+}
+
+.data-section { border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; background-color: var(--bg-panel); }
+.data-section-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.data-section-title-block { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+
+.phet-display-selector { display: inline-flex; gap: 2px; background-color: var(--bg-main); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color); }
+.phet-display-selector .btn-phet { background: transparent; border: none; color: var(--text-muted); padding: 0.3rem 0.6rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; border-radius: 4px; }
+.phet-display-selector .btn-phet.active { background-color: var(--accent); color: var(--text-main); }
+
+/* Histogramme */
+.chart-grid { 
+    display: flex; 
+    align-items: flex-end; 
+    height: 220px; 
+    border-bottom: 2px solid var(--border-color); 
+    gap: 6px; 
+    padding: 0 15px 5px 15px; 
+    margin-top: 1.5rem; 
+}
+
+.chart-col { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: flex-end; 
+    height: 100%; 
+    position: relative; 
+}
+
+.chart-bar { 
+    width: 100%; 
+    background: var(--accent); 
+    border-radius: 2px 2px 0 0; 
+    transition: height 0.05s linear; 
+    position: relative; 
+}
+.chart-bar.in-event { 
+    background: var(--warning); 
+}
+
+.chart-col-value { 
+    position: absolute; 
+    top: -25px; 
+    width: 100%; 
+    text-align: center; 
+    font-size: 0.7rem; 
+    font-family: monospace; 
+    color: var(--text-main); 
+    font-weight: bold; 
+    white-space: nowrap; 
+}
+
+.col-label { 
+    font-size: 0.75rem; 
+    margin-top: 10px; 
+    color: var(--text-muted); 
+    font-weight: bold; 
+    font-family: monospace; 
+}
+
+/* Jauge */
+.event-gauge-track { width: 100%; height: 26px; background: var(--bg-main); border-radius: 6px; overflow: hidden; display: flex; position: relative; margin-top: 0.75rem; border: 1px solid var(--border-color); }
+.event-fill { height: 100%; background: var(--success); transition: width 0.05s linear; display: flex; align-items: center; padding-left: 10px; font-size: 0.8rem; font-weight: bold; color: var(--bg-main); white-space: nowrap; }
+.event-marker { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--warning); z-index: 5; box-shadow: 0 0 6px var(--warning); }
+
+/* Tableau */
+.results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.75rem; background-color: rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden; }
+.results-table th, .results-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+.results-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.65rem; background-color: var(--bg-main); font-weight: bold; }
+.results-table td { font-family: monospace; }
+
+/* Grille d'échantillonnage des 100 */
+.sample-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr); /* Force des rangées égales */
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-top: 5px;
+    
+    /* Sécurités anti-sautillement */
+    contain: layout size style; /* Empêche le navigateur de recalculer tout le panneau à chaque lancer */
+    aspect-ratio: 1 / 1;       /* Force la grille à rester un carré parfait quoi qu'il arrive */
+    max-height: 400px;         /* Limite sa hauteur pour laisser respirer le reste */
+}
+
+.sample-cell {
+    aspect-ratio: 1;
+    background: var(--bg-main);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-family: monospace;
+    font-weight: bold;
+    color: var(--text-main);
+    transition: all 0.1s ease;
+}
+
+.sample-cell.empty {
+    color: rgba(255, 255, 255, 0.15);
+    font-weight: normal;
+}
+
+.sample-cell.sample-cell-success {
+    border-color: var(--warning);
+    background-color: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+}
+
+/* ==========================================
+   FENÊTRE MODALE & SELECTIONS
+   ========================================== */
+.modal-overlay { 
+    position: fixed; 
+    top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(15, 23, 42, 0.75); 
+    backdrop-filter: blur(4px); 
+    display: flex; align-items: center; justify-content: center; 
+    z-index: 100; 
+}
+.modal-card { 
+    background-color: var(--bg-panel); 
+    border: 1px solid var(--border-color); 
+    border-radius: 12px; 
+    width: 400px; 
+    padding: 1.5rem; 
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
+}
+.modal-header { 
+    display: flex; justify-content: space-between; align-items: center; 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 0.5rem; margin-bottom: 1rem; 
+}
+.modal-close-btn { 
+    background: transparent; border: none; cursor: pointer; font-size: 1rem; 
+}
+
+.hidden { display: none !important; }
+
+.outcome-selection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.outcome-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-main);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.outcome-item:hover {
+    border-color: var(--accent);
+}
+
+.outcome-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--success);
+    cursor: pointer;
+}
+
+.outcome-item span {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
