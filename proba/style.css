@@ -217,11 +217,51 @@ h2 { font-size: 1.1rem; color: var(--accent); border-bottom: 1px solid var(--bor
 .event-fill { height: 100%; background: var(--success); transition: width 0.05s linear; display: flex; align-items: center; padding-left: 12px; font-size: 0.85rem; font-weight: bold; color: var(--bg-main); }
 .event-marker { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--warning); z-index: 5; box-shadow: 0 0 6px var(--warning); }
 
-.sample-analysis-grid { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); gap: 4px; background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); max-width: 240px; aspect-ratio: 1; contain: layout size style; margin-top: 0.75rem; }
-.sample-cell { aspect-ratio: 1; background: var(--bg-panel); border: 1px solid rgba(255, 255, 255, 0.02); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-family: monospace; font-weight: bold; }
-.sample-cell.sample-cell-success { border-color: var(--warning); background-color: rgba(245, 158, 11, 0.2); color: var(--warning); }
-.sample-cell.empty { color: rgba(255, 255, 255, 0.1); font-weight: normal; }
+/* ========================================================
+   GRILLE D'ÉCHANTILLONS OPTIMISÉE (ZÉRO DÉBORDEMENT)
+   ======================================================== */
+.sample-analysis-grid { 
+    display: grid; 
+    grid-template-columns: repeat(10, 1fr); /* Force 10 colonnes rigoureusement égales */
+    grid-template-rows: repeat(10, 1fr);    /* Force 10 lignes rigoureusement égales */
+    gap: 3px;                               /* Espace légèrement réduit pour gagner de la place */
+    background: rgba(0, 0, 0, 0.2); 
+    padding: 6px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border-color); 
+    width: 100%;                            /* S'adapte à 100% de la largeur du panneau parent */
+    max-width: 280px;                       /* Limite la taille maximale pour garder un aspect propre */
+    aspect-ratio: 1 / 1;                    /* Force la grille à rester un carré parfait */
+    margin-top: 0.75rem; 
+    box-sizing: border-box;                 /* Inclut le padding dans le calcul de la taille */
+}
 
+.sample-cell { 
+    width: 100%;                            /* S'ajuste dynamiquement à la cellule de la grille */
+    height: 100%;                           /* S'ajuste dynamiquement à la cellule de la grille */
+    background: var(--bg-panel); 
+    border: 1px solid rgba(255, 255, 255, 0.02); 
+    border-radius: 4px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 0.65rem;                     /* Taille de police légèrement réduite pour les petits écrans */
+    font-family: monospace; 
+    font-weight: bold; 
+    overflow: hidden;                       /* Empêche le texte ou l'émoji de dépasser de sa cellule */
+    white-space: nowrap;
+}
+
+.sample-cell.sample-cell-success { 
+    border-color: var(--warning); 
+    background-color: rgba(245, 158, 11, 0.2); 
+    color: var(--warning); 
+}
+
+.sample-cell.empty { 
+    color: rgba(255, 255, 255, 0.1); 
+    font-weight: normal; 
+}
 .results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.75rem; background-color: rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden; }
 .results-table th, .results-table td { padding: 0.6rem; border-bottom: 1px solid var(--border-color); text-align: left; }
 .results-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.65rem; background-color: var(--bg-panel); font-weight: bold; }

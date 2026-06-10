@@ -83,42 +83,53 @@ class BaseExperience {
 
 /**
  * ========================================================
- * 2. ENFANT 1 : SIMULATION DES DEUX DÉS
+ * 2. ENFANT 1 : SIMULATION DES DEUX DÉS (AVEC SÉLECTEUR)
  * ========================================================
  */
 class SommeDeuxDesExperience extends BaseExperience {
     constructor() {
         super();
         this.savedSeuil = 7; 
+        this.savedFaces = 6; 
         this.configureUniverse();
     }
 
     configureUniverse() {
-        this.total = 0; this.issuesDefinition = []; this.counts = {}; this.distribution = {};
-        this.experienceDesc = "Simulation du lancer simultané de deux dés cubiques équilibrés à 6 faces. La variable d'étude suit la somme des valeurs obtenues.";
+        this.total = 0; 
+        this.issuesDefinition = []; 
+        this.counts = {}; 
+        this.distribution = {};
+        this.experienceDesc = `Simulation du lancer simultané de deux dés à ${this.savedFaces} faces. La variable d'étude suit la somme des valeurs obtenues.`;
         
-        for (let s = 2; s <= 12; s++) {
+        const maxSomme = this.savedFaces * 2;
+
+        for (let s = 2; s <= maxSomme; s++) {
             const idStr = `s_${s}`; 
             this.issuesDefinition.push({ id: idStr, label: `${s}` }); 
             this.counts[idStr] = 0;
             
             let combinaisons = 0;
-            for (let d1 = 1; d1 <= 6; d1++) { 
-                for (let d2 = 1; d2 <= 6; d2++) { if (d1 + d2 === s) combinaisons++; } 
+            for (let d1 = 1; d1 <= this.savedFaces; d1++) { 
+                for (let d2 = 1; d2 <= this.savedFaces; d2++) { if (d1 + d2 === s) combinaisons++; } 
             }
-            this.distribution[idStr] = combinaisons / 36;
+            this.distribution[idStr] = combinaisons / (this.savedFaces * this.savedFaces);
         }
 
-        if (this.eventIndices.length === 0) {
-            this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= this.savedSeuil).map(i => i.id);
+        if (this.savedSeuil > maxSomme) {
+            this.savedSeuil = maxSomme;
         }
+
+        this.eventIndices = this.issuesDefinition
+            .filter(iss => parseInt(iss.label) >= this.savedSeuil)
+            .map(i => i.id);
+
         this.calculateProbaA();
     }
 
     lancer() {
         this.total++;
-        const deBleu = Math.floor(Math.random() * 6) + 1; 
-        const deRouge = Math.floor(Math.random() * 6) + 1; 
+        const deBleu = Math.floor(Math.random() * this.savedFaces) + 1; 
+        const deRouge = Math.floor(Math.random() * this.savedFaces) + 1; 
         const somme = deBleu + deRouge;
         const idTire = `s_${somme}`; 
         this.counts[idTire]++;
@@ -164,16 +175,51 @@ class SommeDeuxDesExperience extends BaseExperience {
     }
 
     renderExperienceSettingsHTML() {
-        return `<div><label>Seuil de la Somme visée (Somme ≥ X) :</label><div class="slider-wrapper"><input type="range" id="slider-somme-cible" class="slider-input" min="2" max="12" value="${this.savedSeuil}"><span id="value-somme-cible" class="slider-value">${this.savedSeuil}</span></div></div>`;
+        const check4 = this.savedFaces === 4 ? 'checked' : '';
+        const check6 = this.savedFaces === 6 ? 'checked' : '';
+        const maxSomme = this.savedFaces * 2;
+
+        return `
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px;">Type de dés :</label>
+                <div style="display:flex; gap:15px;">
+                    <label><input type="radio" name="dice-type" value="4" ${check4}> Tétraédrique (4 faces)</label>
+                    <label><input type="radio" name="dice-type" value="6" ${check6}> Cubique (6 faces)</label>
+                </div>
+            </div>
+            <div>
+                <label>Seuil de la Somme visée (Somme ≥ X) :</label>
+                <div class="slider-wrapper">
+                    <input type="range" id="slider-somme-cible" class="slider-input" min="2" max="${maxSomme}" value="${this.savedSeuil}">
+                    <span id="value-somme-cible" class="slider-value">${this.savedSeuil}</span>
+                </div>
+            </div>
+        `;
     }
 
     bindExperienceSettings(container, onUpdateCallback) {
-        const s = container.querySelector('#slider-somme-cible');
-        if (!s) return;
-        s.oninput = () => {
-            this.savedSeuil = parseInt(s.value);
-            container.querySelector('#value-somme-cible').textContent = s.value;
-            this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= this.savedSeuil).map(i => i.id);
+        const radios = container.querySelectorAll('input[name="dice-type"]');
+        const slider = container.querySelector('#slider-somme-cible');
+        const sliderValue = container.querySelector('#value-somme-cible');
+        
+        radios.forEach(r => {
+            r.onchange = () => {
+                this.savedFaces = parseInt(r.value);
+                this.configureUniverse();
+                const maxSomme = this.savedFaces * 2;
+                if (slider) {
+                    slider.max = maxSomme;
+                    slider.value = this.savedSeuil;
+                }
+                if (sliderValue) sliderValue.textContent = this.savedSeuil;
+                onUpdateCallback();
+            };
+        });
+
+        if (!slider) return;
+        slider.oninput = () => {
+            this.savedSeuil = parseInt(slider.value);
+            if (sliderValue) sliderValue.textContent = slider.value;
             this.configureUniverse();
             onUpdateCallback();
         };
@@ -213,9 +259,7 @@ class ProduitDeuxDesExperience extends BaseExperience {
             this.distribution[idStr] = combinaisons / 36;
         });
 
-        if (this.eventIndices.length === 0) {
-            this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= this.savedSeuilProduit).map(i => i.id);
-        }
+        this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= this.savedSeuilProduit).map(i => i.id);
         this.calculateProbaA();
     }
 
@@ -288,7 +332,6 @@ class ProduitDeuxDesExperience extends BaseExperience {
         s.oninput = () => {
             this.savedSeuilProduit = parseInt(s.value);
             container.querySelector('#value-produit-cible').textContent = s.value;
-            this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= this.savedSeuilProduit).map(i => i.id);
             this.configureUniverse();
             onUpdateCallback();
         };
@@ -362,28 +405,18 @@ class UrneMulticoloreExperience extends BaseExperience {
         return `
             <style>
                 .urn-bricks-container { display: flex; gap: 8px; align-items: center; justify-content: center; width: 100%; padding: 10px; flex-wrap: wrap; }
-.brick { 
-    width: 32px; 
-    height: 32px; /* ◄ On passe à 32px au lieu de 45px pour casser l'effet rectangle */
-    border-radius: 50%; /* ◄ 50% transforme les briques en parfaits petits jetons ronds ! (Mets 6px si tu préfères des carrés) */
-    border: 2px solid rgba(255, 255, 255, 0.1); 
-    opacity: 0.5; 
-    position: relative; 
-    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); 
-    transition: all 0.2s ease;
-}                .brick.color-bleue { background-color: var(--accent); }
+                .brick { 
+                    width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.1); 
+                    opacity: 0.5; position: relative; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); transition: all 0.2s ease;
+                }
+                .brick.color-bleue { background-color: var(--accent); }
                 .brick.color-rouge { background-color: var(--danger); }
                 .brick.color-jaune { background-color: #eab308; }
                 .brick.picked-highlight { opacity: 1 !important; transform: scale(1.18) translateY(-5px); border-color: var(--text-main); box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), inset 0 -4px 0 rgba(0,0,0,0.2); z-index: 10; }
-.brick.picked-highlight::before { 
-    content: "👇"; 
-    position: absolute; 
-    top: -32px; /* ◄ Ajusté pour laisser respirer le jeton rond */
-    left: 50%; 
-    transform: translateX(-50%); 
-    font-size: 1.2rem; 
-    animation: bounceArrow 0.4s infinite alternate; 
-}                @keyframes bounceArrow { from { transform: translateX(-50%) translateY(0); } to { transform: translateX(-50%) translateY(-4px); } }
+                .brick.picked-highlight::before { 
+                    content: "👇"; position: absolute; top: -32px; left: 50%; transform: translateX(-50%); font-size: 1.2rem; animation: bounceArrow 0.4s infinite alternate; 
+                }
+                @keyframes bounceArrow { from { transform: translateX(-50%) translateY(0); } to { transform: translateX(-50%) translateY(-4px); } }
                 .result-badge-urne { height: 45px; min-width: 120px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); font-size: 1.4rem; font-weight: bold; white-space: nowrap; box-sizing: border-box; }
             </style>
         `;
@@ -440,7 +473,6 @@ class UrneMulticoloreExperience extends BaseExperience {
             container.querySelector('#v-jaune').textContent = j.value;
             
             this.configureUniverse();
-            if (typeof échantillonLancers !== 'undefined') échantillonLancers = [];
             onUpdateCallback();
         };
         b.oninput = r.oninput = j.oninput = reconfig;
@@ -476,7 +508,7 @@ class MarcheAleatoireExperience extends BaseExperience {
             ne: 2 / 16, no: 2 / 16, so: 2 / 16, se: 2 / 16  
         };
 
-        if (this.eventIndices.length === 0) this.eventIndices = ['ne', 'no', 'so', 'se'];
+        this.eventIndices = ['ne', 'no', 'so', 'se'];
         this.calculateProbaA();
     }
 
@@ -649,10 +681,11 @@ class PiecesExperience extends BaseExperience {
             this.distribution[idStr] = coeffBinomial(this.savedN, k) / totalCombinaisons;
         }
 
-        if (this.eventIndices.length === 0) {
-            const seuilMoitie = Math.ceil(this.savedN / 2);
-            this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= seuilMoitie).map(i => i.id);
-        }
+        const seuilMoitie = Math.ceil(this.savedN / 2);
+        this.eventIndices = this.issuesDefinition
+            .filter(iss => parseInt(iss.label) >= seuilMoitie)
+            .map(i => i.id);
+
         this.calculateProbaA();
     }
 
@@ -719,10 +752,6 @@ class PiecesExperience extends BaseExperience {
         s.oninput = () => {
             this.savedN = parseInt(s.value);
             container.querySelector('#value-pieces-n').textContent = s.value;
-            const seuilMoitie = Math.ceil(this.savedN / 2);
-            this.eventIndices = []; 
-            this.configureUniverse();
-            this.eventIndices = this.issuesDefinition.filter(iss => parseInt(iss.label) >= seuilMoitie).map(i => i.id);
             this.configureUniverse();
             onUpdateCallback();
         };
@@ -731,7 +760,7 @@ class PiecesExperience extends BaseExperience {
 
 /**
  * ========================================================
- * 6. MOTEUR D'AIGUILLAGE ET POOL DU DOM (AGNOSTIQUE)
+ * 7. MOTEUR D'AIGUILLAGE ET GESTIONNAIRE GLOBAL
  * ========================================================
  */
 const EXPERIENCES_MAP = {
@@ -763,8 +792,6 @@ const speedSlider = document.getElementById('speed-slider');
 const speedValue = document.getElementById('speed-value');
 const batchSlider = document.getElementById('batch-slider');
 const batchValue = document.getElementById('batch-value');
-
-// Ciblage de la classe pour le nouveau bouton Modifier
 const btnOpenEventSettings = document.querySelector('.btn-toggle-event-settings');
 
 let exp = null;
@@ -799,13 +826,10 @@ if (btnTheoryHide) {
 
 function buildCentralSettings() {
     stop();
-    if (expSelect) {
-        exp = new EXPERIENCES_MAP[expSelect.value]();
-    }
+    if (expSelect) exp = new EXPERIENCES_MAP[expSelect.value]();
     échantillonLancers = [];
     updateUI();
 }
-
 if (expSelect) expSelect.onchange = buildCentralSettings;
 
 function renderModalContent(type) {
@@ -813,14 +837,21 @@ function renderModalContent(type) {
     const header = document.querySelector('.modal-header h3');
     if (!header) return;
     
+    const rafraichirApresConfiguration = () => {
+        stop(); 
+        if (type === 'experience') échantillonLancers = []; 
+        exp.calculateProbaA(); 
+        updateUI();            
+    };
+
     if (type === 'experience') {
         header.textContent = "Configuration du modèle";
         settingsViewport.innerHTML = exp.renderExperienceSettingsHTML();
-        exp.bindExperienceSettings(settingsViewport, () => { stop(); updateUI(); });
+        exp.bindExperienceSettings(settingsViewport, rafraichirApresConfiguration);
     } else {
         header.textContent = "Définition de l'événement A";
         settingsViewport.innerHTML = exp.renderEventSettingsHTML(showTheory);
-        exp.bindEventSettings(settingsViewport, () => { stop(); updateUI(); });
+        exp.bindEventSettings(settingsViewport, rafraichirApresConfiguration);
     }
 }
 
@@ -828,16 +859,13 @@ const btnOpenSettings = document.getElementById('btn-open-settings');
 if (btnOpenSettings) {
     btnOpenSettings.onclick = () => { renderModalContent('experience'); if(modalOverlay) modalOverlay.classList.remove('hidden'); };
 }
-
 if (btnOpenEventSettings) {
     btnOpenEventSettings.onclick = () => { renderModalContent('event'); if(modalOverlay) modalOverlay.classList.remove('hidden'); };
 }
-
 const btnCloseSettings = document.getElementById('btn-close-settings');
 if (btnCloseSettings) {
     btnCloseSettings.onclick = () => { if(modalOverlay) modalOverlay.classList.add('hidden'); };
 }
-
 if (modalOverlay) {
     modalOverlay.onclick = (e) => { if(e.target === modalOverlay) modalOverlay.classList.add('hidden'); };
 }
@@ -914,13 +942,24 @@ function updateUI(lastOutcome = null) {
         }).join('');
     }
 
-    const sampleGridEl = document.getElementById('sample-grid');
+ const sampleGridEl = document.getElementById('sample-grid');
     if (sampleGridEl) {
         let casesHTML = "";
         for (let i = 0; i < 100; i++) {
             if (i < échantillonLancers.length) {
                 const item = échantillonLancers[i];
-                const classeSucces = (item.inEvent && isEventSectionVisible) ? "sample-cell-success" : "";
+                
+                // 1. On retrouve l'ID de l'issue correspondante dans l'univers actuel
+                const correspondance = exp.issuesDefinition.find(iss => 
+                    iss.label === item.valeur.toString() || 
+                    iss.label === `${item.valeur} P` ||
+                    iss.id === item.valeur
+                );
+                
+                // 2. On vérifie en temps réel si cette issue fait partie de l'événement A reconfiguré
+                const estDansEvenementActuel = correspondance ? exp.eventIndices.includes(correspondance.id) : item.inEvent;
+                
+                const classeSucces = (estDansEvenementActuel && isEventSectionVisible) ? "sample-cell-success" : "";
                 casesHTML += `<div class="sample-cell ${classeSucces}">${item.valeur}</div>`;
             } else {
                 casesHTML += `<div class="sample-cell empty">•</div>`;
@@ -928,6 +967,7 @@ function updateUI(lastOutcome = null) {
         }
         sampleGridEl.innerHTML = casesHTML;
     }
+
 }
 
 function runSimulation(batchSize) {
@@ -944,6 +984,17 @@ function runSimulation(batchSize) {
             échantillonLancers.push({ valeur: valeurBrute, inEvent: last.isSuccess });
         }
     }
+    
+    if (échantillonLancers.length > 0) {
+        échantillonLancers.forEach(item => {
+            const correspondance = exp.issuesDefinition.find(iss => 
+                iss.label === item.valeur.toString() || 
+                iss.label === `${item.valeur} P` ||
+                iss.id === item.valeur
+            );
+            if (correspondance) item.inEvent = exp.eventIndices.includes(correspondance.id);
+        });
+    }
     updateUI(last);
 }
 
@@ -958,12 +1009,7 @@ if (btnNext) {
     btnNext.onclick = function() { 
         stop(); 
         const isModeContinuActive = btnModeInfinite && btnModeInfinite.classList.contains('active');
-        if (isModeContinuActive) {
-            const taillePaquet = batchSlider ? parseInt(batchSlider.value) : 100;
-            runSimulation(taillePaquet); 
-        } else {
-            runSimulation(1); 
-        }
+        runSimulation(isModeContinuActive ? (batchSlider ? parseInt(batchSlider.value) : 100) : 1);
     };
 }
 
@@ -977,16 +1023,12 @@ if (speedSlider) {
 function relancerInterval() {
     clearInterval(interval);
     const isInf = btnModeInfinite && btnModeInfinite.classList.contains('active');
-    const delaiPasAPas = speedSlider ? parseInt(speedSlider.value) : 500;
-    const taillePaquetContinu = batchSlider ? parseInt(batchSlider.value) : 100;
-    interval = setInterval(() => runSimulation(isInf ? taillePaquetContinu : 1), isInf ? 16 : delaiPasAPas);
+    interval = setInterval(() => runSimulation(isInf ? (batchSlider ? parseInt(batchSlider.value) : 100) : 1), isInf ? 16 : (speedSlider ? parseInt(speedSlider.value) : 500));
 }
 
 if (btnPlay) {
     btnPlay.onclick = function() {
-        if (playing) {
-            stop();
-        } else {
+        if (playing) { stop(); } else {
             playing = true; 
             this.textContent = "Pause ⏸️"; 
             this.classList.add('playing');
@@ -1013,21 +1055,13 @@ if (btnModeInfinite) {
 
 function stop() { 
     playing = false; 
-    if (btnPlay) {
-        btnPlay.textContent = "Play ▶️"; 
-        btnPlay.classList.remove('playing'); 
-    }
+    if (btnPlay) { btnPlay.textContent = "Play ▶️"; btnPlay.classList.remove('playing'); }
     clearInterval(interval); 
 }
 
 const btnReset = document.getElementById('control-reset');
 if (btnReset) {
-    btnReset.onclick = () => { 
-        stop();                  
-        if (exp) exp.configureUniverse(); 
-        échantillonLancers = []; 
-        updateUI();              
-    };
+    btnReset.onclick = () => { stop(); if (exp) exp.configureUniverse(); échantillonLancers = []; updateUI(); };
 }
 
 if (heightSlider) {
@@ -1061,18 +1095,14 @@ if (btnPhetFreq) {
     };
 }
 
-// ==========================================
-// SYSTEME DES COMMANDES ACCORDÉONS (AFFICHER/MASQUER)
-// ==========================================
 function brancherAccordeon(btnId, containerId) {
     const bouton = document.getElementById(btnId);
     const conteneur = document.getElementById(containerId);
-    
     if (bouton && conteneur) {
         bouton.onclick = function() {
             const estMasque = conteneur.classList.toggle('hidden');
             this.textContent = estMasque ? `👁️ Afficher` : `🙈 Masquer`;
-            updateUI(); // Force le rafraîchissement des couleurs/badges selon la visibilité
+            updateUI();
         };
     }
 }
@@ -1082,5 +1112,4 @@ brancherAccordeon('btn-toggle-chart', 'chart-container');
 brancherAccordeon('btn-toggle-event', 'event-container');
 brancherAccordeon('btn-toggle-table', 'table-container');
 
-// Initialisation globale au chargement
 buildCentralSettings();
