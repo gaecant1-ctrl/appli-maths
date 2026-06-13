@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Arbuste Pédagogique - Modules Séparés</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Conteneur global des modules à gauche */
+        #ui-container {
+            position: absolute; top: 15px; left: 15px; width: 300px;
+            z-index: 10; max-height: 95vh; overflow-y: auto;
+            display: none; flex-direction: column; gap: 10px;
+        }
+
+        /* Style générique des modules */
+        .module {
+            color: white; background: rgba(12, 12, 12, 0.94);
+            padding: 12px; border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            border: 1px solid #2a2a2a;
+        }
+
+        .module-header {
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; user-select: none;
+        }
+
+        .module-header h2 { 
+            margin: 0; font-size: 11px; color: #ffeb3b; 
+            text-transform: uppercase; letter-spacing: 0.5px; 
+        }
+        
+        .toggle-icon { font-size: 10px; color: #888; font-weight: bold; }
+
+        .module-content { margin-top: 10px; display: block; }
+        .module-content.hidden { display: none; }
+        
+        .control-group { margin-bottom: 8px; }
+        label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; align-items: center; }
+        span.val { color: #fff; font-weight: bold; }
+
+        input[type=range] { width: 100%; cursor: pointer; margin-bottom: 6px; accent-color: #4CAF50; }
+        
+        /* Inputs numériques */
+        .factor-inputs { display: flex; gap: 8px; margin-bottom: 5px; }
+        .factor-inputs div { flex: 1; text-align: center; }
+        .factor-inputs input[type=number] { 
+            width: 75%; padding: 5px; background: #222; border: 1px solid #444; 
+            color: white; border-radius: 4px; text-align: center; font-weight: bold; font-size: 13px;
+        }
+
+        /* Boutons */
+        button {
+            padding: 8px; color: white; border: none; border-radius: 6px; 
+            font-weight: bold; cursor: pointer; transition: 0.15s; font-size: 12px;
+        }
+        .btn-primary { background: #4CAF50; width: 100%; }
+        .btn-primary:hover { background: #45a049; }
+        .btn-secondary { background: #2a2a2a; border: 1px solid #444; }
+        .btn-secondary:hover { background: #3a3a3a; }
+        .btn-action { background: #2196F3; }
+        .btn-action:hover { background: #0b7dda; }
+        button.paused { background: #f44336; }
+
+        /* Légende */
+        .legend-item { display: flex; align-items: center; margin: 6px 0; font-size: 12.5px; }
+        .color-box { width: 12px; height: 12px; border-radius: 3px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* Barre d'outils supérieure fixe à droite */
+/* Barre d'outils ancrée en bas au centre */
+#top-toolbar {
+    position: absolute; 
+    bottom: 15px;      /* Fixé en bas */
+    left: 50%;        /* Aligné au milieu horizontalement */
+    transform: translateX(-50%); /* Centrage parfait */
+    z-index: 10; 
+    display: flex; 
+    gap: 8px;
+}
+        .top-btn { padding: 10px 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-weight: bold; }
+
+        #ui-container::-webkit-scrollbar { width: 4px; }
+        #ui-container::-webkit-scrollbar-thumb { background: #333; }
+
+
+    </style>
+</head>
+<body>
+
+<div id="top-toolbar">
+    <button id="btn-top-shuffle" class="btn-action top-btn">🎲 </button>
+    <button id="btn-top-rotation" class="btn-primary top-btn">⏸️ </button>
+    <button id="btn-top-toggle-all" class="btn-secondary top-btn">👁️</button>
+</div>
+
+<div id="ui-container">
+
+    <div class="module" id="mod-bilan">
+        <div class="module-header " onclick="toggleModule('content-bilan', 'icon-bilan')">
+            <h2>📊 Analyse & Dénombrement</h2>
+            <span class="toggle-icon" id="icon-bilan">[-]</span>
+        </div>
+        <div class="module-content hidden" id="content-bilan">
+            <div class="legend-item">
+                <div class="color-box" style="background: #1f140e;"></div>
+                <span>Tronc Initial : <b id="lbl-trunk">1</b></span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #6e473b;"></div>
+                <span>Niveau 1 : <b id="lbl-n1">5</b> branches</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #556b2f;"></div>
+                <span>Niveau 2 : <b id="lbl-n2">20</b> branches</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #8fbc8f;"></div>
+                <span>Niveau 3 : <b id="lbl-n3">60</b> branches</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #b22222;"></div>
+                <span>Bourgeons terminaux : <b style="color: #ffeb3b;" id="lbl-buds">60</b></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="module" id="mod-structure">
+        <div class="module-header" onclick="toggleModule('content-structure', 'icon-structure')">
+            <h2>🔢 Multiplicateurs (Structure)</h2>
+            <span class="toggle-icon" id="icon-structure">[-]</span>
+        </div>
+        <div class="module-content hidden" id="content-structure">
+            <div class="factor-inputs">
+                <div>
+                    <label>Niv 1</label>
+                    <input type="number" id="in-n1" min="1" max="6" value="5">
+                </div>
+                <div>
+                    <label>Niv 2</label>
+                    <input type="number" id="in-n2" min="1" max="5" value="4">
+                </div>
+                <div>
+                    <label>Niv 3</label>
+                    <input type="number" id="in-n3" min="1" max="4" value="3">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="module" id="mod-config">
+        <div class="module-header" onclick="toggleModule('content-config', 'icon-config')">
+            <h2>⚙️ Configuration & Forme</h2>
+            <span class="toggle-icon" id="icon-config">[-]</span>
+        </div>
+        <div class="module-content" id="content-config">
+            <label style="color: #ffeb3b; font-weight: bold; margin-bottom: 6px;">Révélation progressive :</label>
+            <label>Ordre Géométrique <span class="val" id="v-noise">Naturelle</span></label>
+            <input type="range" id="s-noise" min="0" max="1" step="0.01" value="1">
+            
+            <label>Coloration Pédagogique <span class="val" id="v-color">35%</span></label>
+            <input type="range" id="s-color" min="0" max="1" step="0.01" value="0.35">
+
+            <label style="color: #aaa; margin-top: 10px; margin-bottom: 4px;">Géométrie des branches :</label>
+            <label>Longueur Tronc <span class="val" id="v-length">5</span></label>
+            <input type="range" id="s-length" min="2" max="7" step="0.1" value="5">
+            
+            <label>Ouverture Angles <span class="val" id="v-angle">0.65</span></label>
+            <input type="range" id="s-angle" min="0.05" max="1.0" step="0.02" value="0.65">
+            
+            <label>Ratio Réduction <span class="val" id="v-ratio">0.78</span></label>
+            <input type="range" id="s-ratio" min="0.4" max="0.85" step="0.02" value="0.78">
+            
+            <label>Friction (Damping) <span class="val" id="v-damping">0.14</span></label>
+            <input type="range" id="s-damping" min="0" max="0.3" step="0.01" value="0.14">
+        </div>
+    </div>
+
+    <div class="module" id="mod-env">
+        <div class="module-header" onclick="toggleModule('content-env', 'icon-env')">
+            <h2>☀️ Lumière & Ombres</h2>
+            <span class="toggle-icon" id="icon-env">[-]</span>
+        </div>
+        <div class="module-content" id="content-env">
+            <label>Hauteur Soleil <span class="val" id="v-lHeight">22</span></label>
+            <input type="range" id="s-lHeight" min="2" max="45" step="1" value="22">
+            
+            <label>Rotation Soleil <span class="val" id="v-lAngle">0.7</span></label>
+            <input type="range" id="s-lAngle" min="0" max="6.28" step="0.05" value="0.7">
+
+            <label>Hauteur Caméra <span class="val" id="v-camHeight">8</span></label>
+<input type="range" id="s-camHeight" min="2" max="35" step="0.5" value="8">
+
+<label>Recul Caméra <span class="val" id="v-camDist">20</span></label>
+<input type="range" id="s-camDist" min="8" max="40" step="0.5" value="20">
+
+<label>Angle de champ (Zoom) <span class="val" id="v-camFov">55</span>°</label>
+<input type="range" id="s-camFov" min="20" max="90" step="1" value="55">
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    // --- Initialisation Three.js ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    scene.fog = new THREE.FogExp2(0x050505, 0.022);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 8, 20);
+    camera.lookAt(0, 3.8, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    // --- Lumières ---
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambLight);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 60;
+    const d = 25; 
+    sun.shadow.camera.left = -d;
+    sun.shadow.camera.right = d;
+    sun.shadow.camera.top = d;
+    sun.shadow.camera.bottom = -d;
+    sun.shadow.bias = -0.0003; 
+    scene.add(sun);
+
+    // --- Palette Pédagogique Botanique Naturelle ---
+    const baseWoodColor = new THREE.Color(0x40291d); 
+    const levelColors = [
+        new THREE.Color(0x1f140e), // Tronc
+        new THREE.Color(0x6e473b), // N1
+        new THREE.Color(0x556b2f), // N2
+        new THREE.Color(0x8fbc8f)  // N3
+    ];
+    const budTargetColor = new THREE.Color(0xb22222); // Bourgeons
+
+    // --- Groupes ---
+    const treeGroup = new THREE.Group();
+    treeGroup.position.y = -3;
+    scene.add(treeGroup);
+
+    const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(70, 70),
+        new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    treeGroup.add(floor);
+
+    let arbusteGroup = new THREE.Group();
+    treeGroup.add(arbusteGroup);
+
+    // Variables globales
+    let isRotating = true;
+    let allUiVisible = false;
+    
+    // Bruit fixe pré-calculé
+    const noiseSeeds = Array.from({length: 500}, () => ({
+        a: Math.random() * 2 - 1, r: Math.random() * 2 - 1, l: Math.random() * 0.4 - 0.2
+    }));
+
+    // --- Fonction d'affichage / masquage d'un module ---
+    function toggleModule(contentId, iconId) {
+        const content = document.getElementById(contentId);
+        const icon = document.getElementById(iconId);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.innerText = "[-]";
+        } else {
+            content.classList.add('hidden');
+            icon.innerText = "[+]";
+        }
+    }
+
+    // --- Reconstruction de l'arbre ---
+    function buildTree() {
+        while(arbusteGroup.children.length > 0) arbusteGroup.remove(arbusteGroup.children[0]);
+        
+        let f1 = Math.max(1, parseInt(document.getElementById('in-n1').value) || 1);
+        let f2 = Math.max(1, parseInt(document.getElementById('in-n2').value) || 1);
+        let f3 = Math.max(1, parseInt(document.getElementById('in-n3').value) || 1);
+        const divSettings = [f1, f2, f3];
+
+        // Mise à jour de la légende
+        document.getElementById('lbl-n1').innerText = f1;
+        document.getElementById('lbl-n2').innerText = f1 + " × " + f2 + " = " + (f1 * f2);
+        document.getElementById('lbl-n3').innerText = (f1 * f2) + " × " + f3 + " = " + (f1 * f2 * f3);
+        document.getElementById('lbl-buds').innerText = (f1 * f2 * f3);
+
+        const config = {
+            noise: parseFloat(document.getElementById('s-noise').value),
+            color: parseFloat(document.getElementById('s-color').value),
+            length: parseFloat(document.getElementById('s-length').value),
+            angle: parseFloat(document.getElementById('s-angle').value),
+            ratio: parseFloat(document.getElementById('s-ratio').value),
+            damping: parseFloat(document.getElementById('s-damping').value),
+            divisions: divSettings
+        };
+
+        // Labels
+        document.getElementById('v-noise').innerText = config.noise < 0.05 ? "Géométrique Pure" : (config.noise > 0.8 ? "Naturelle" : "Mixte");
+        document.getElementById('v-color').innerText = Math.round(config.color * 100) + "%";
+        document.getElementById('v-length').innerText = config.length;
+        document.getElementById('v-angle').innerText = config.angle;
+        document.getElementById('v-ratio').innerText = config.ratio;
+        document.getElementById('v-damping').innerText = config.damping;
+
+        generateBranch(arbusteGroup, config.length, 0.42, 0, 0, config);
+    }
+
+    function generateBranch(parent, len, thick, level, seedIdx, cfg) {
+        const matColor = new THREE.Color().copy(baseWoodColor);
+        if (cfg.color > 0) {
+            matColor.lerp(levelColors[Math.min(level, 3)], cfg.color);
+        }
+        
+        const branch = new THREE.Mesh(
+            new THREE.CylinderGeometry(thick * 0.65, thick, len, 10),
+            new THREE.MeshStandardMaterial({ color: matColor, roughness: 0.85 })
+        );
+        branch.geometry.translate(0, len / 2, 0);
+        branch.castShadow = branch.receiveShadow = true;
+        parent.add(branch);
+
+        if (level >= cfg.divisions.length) {
+            const budCol = new THREE.Color().copy(baseWoodColor).lerp(budTargetColor, cfg.color);
+            const bud = new THREE.Mesh(
+                new THREE.SphereGeometry(0.24, 12, 12),
+                new THREE.MeshStandardMaterial({ color: budCol, roughness: 0.5, emissive: budCol.clone().multiplyScalar(0.05) })
+            );
+            bud.position.y = len;
+            bud.castShadow = true;
+            parent.add(bud);
+            return;
+        }
+
+        const n = cfg.divisions[level];
+        const spread = cfg.angle - (level * 0.12); 
+
+        for (let i = 0; i < n; i++) {
+            const node = new THREE.Group();
+            node.position.y = len;
+            
+            const ns = noiseSeeds[(seedIdx + i * 11 + level * 23) % 500];
+            
+            const finalAngle = Math.max(0.02, spread + (ns.a * 0.3 * cfg.noise));
+            const finalRot = ((i / n) * Math.PI * 2) + (ns.r * 0.6 * cfg.noise);
+            const finalLen = len * (Math.max(0.15, (cfg.ratio - (level * cfg.damping)) + (ns.l * cfg.noise)));
+
+            node.rotation.z = finalAngle;
+            node.rotation.y = finalRot;
+
+            generateBranch(node, finalLen, thick * 0.58, level + 1, seedIdx + i + 1, cfg);
+            parent.add(node);
+        }
+    }
+
+    // --- Gestion des Événements ---
+    const inputs = ["s-noise", "s-color", "s-length", "s-angle", "s-ratio", "s-damping", "in-n1", "in-n2", "in-n3"];
+    inputs.forEach(id => document.getElementById(id).addEventListener('input', buildTree));
+
+    document.getElementById('btn-top-shuffle').addEventListener('click', () => {
+        document.getElementById('in-n1').value = Math.floor(Math.random() * 4) + 3; 
+        document.getElementById('in-n2').value = Math.floor(Math.random() * 3) + 3; 
+        document.getElementById('in-n3').value = Math.floor(Math.random() * 3) + 3; 
+        buildTree();
+    });
+
+    document.getElementById('btn-top-rotation').addEventListener('click', function() {
+        isRotating = !isRotating;
+        this.innerText = isRotating ? "⏸️" : "▶️";
+        
+    });
+
+    document.getElementById('btn-top-toggle-all').addEventListener('click', () => {
+        allUiVisible = !allUiVisible;
+        document.getElementById('ui-container').style.display = allUiVisible ? "flex" : "none";
+    });
+
+    function updateLight() {
+        const h = parseFloat(document.getElementById('s-lHeight').value);
+        const a = parseFloat(document.getElementById('s-lAngle').value);
+        document.getElementById('v-lHeight').innerText = h;
+        document.getElementById('v-lAngle').innerText = a;
+        sun.position.set(Math.cos(a)*25, h, Math.sin(a)*25);
+    }
+
+function updateCamera() {
+    const h = parseFloat(document.getElementById('s-camHeight').value);
+    const d = parseFloat(document.getElementById('s-camDist').value);
+    const fov = parseFloat(document.getElementById('s-camFov').value);
+    
+    // Met à jour les textes dans le panneau
+    document.getElementById('v-camHeight').innerText = h;
+    document.getElementById('v-camDist').innerText = d;
+    document.getElementById('v-camFov').innerText = fov;
+    
+    // Applique la position
+    camera.position.set(0, h, d);
+    
+    // Applique le nouvel angle de champ (FOV) et force Three.js à recalculer la perspective
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+    
+    camera.lookAt(0, 3.8, 0); }
+
+
+document.getElementById('s-camHeight').addEventListener('input', updateCamera);
+document.getElementById('s-camDist').addEventListener('input', updateCamera);
+document.getElementById('s-camFov').addEventListener('input', updateCamera);
+
+    ["s-lHeight", "s-lAngle"].forEach(id => document.getElementById(id).addEventListener('input', updateLight));
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    buildTree();
+    updateLight();
+    animate();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (isRotating) treeGroup.rotation.y += 0.005;
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
