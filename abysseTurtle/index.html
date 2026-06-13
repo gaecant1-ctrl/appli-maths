@@ -148,42 +148,47 @@
         .btn-generate:hover { background-color: var(--color-generate-hover); box-shadow: 0 6px 12px rgba(114, 9, 183, 0.3); }
 
         /* Style modes */
-        .mode-selector {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            background: var(--bg-canvas);
-            padding: 4px;
-            border-radius: var(--radius-elem);
-            border: 1px solid var(--border-color);
-            height: var(--elem-height);
-            flex: 2;
-        }
+/* Style du conteneur global (on enlève sa bordure et son fond) */
+.mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    height: var(--elem-height);
+    flex: 3.5;
+}
         
-        .mode-selector label {
-            flex: 1;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--text-muted);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            height: 100%;
-        }
+/* Style individuel de chaque bouton de mode */
+.mode-selector label {
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+    border-radius: var(--radius-elem); /* Utilisation de ton arrondi standardisé */
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg-canvas); /* Fond sombre individuel */
+    border: 1px solid var(--border-color); /* Bordure individuelle discrète */
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 100%;
+}
         
-        .mode-selector input[type="radio"] { display: none; }
-        
-        .mode-selector label:has(input:checked) {
-            background: var(--bg-card);
-            color: var(--color-primary);
-            box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
-            border: 1px solid rgba(0, 245, 212, 0.2);
-        }
+/* Effet au survol d'un mode non sélectionné */
+.mode-selector label:hover {
+    border-color: rgba(0, 245, 212, 0.4);
+    color: var(--text-main);
+}
+
+/* Style de l'élément sélectionné (actif) */
+.mode-selector label:has(input:checked) {
+    background: var(--bg-card);
+    color: var(--color-primary);
+    border-color: var(--color-primary); /* La bordure prend la couleur cyan néon */
+    box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+}
 
         /* Curseur de vitesse */
         .slider-container {
@@ -255,11 +260,15 @@
                 <div class="mode-selector">
                     <label>
                         <input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)"> 
-                        Parcours Libre 
+                        Libre 
                     </label>
                     <label>
                         <input type="radio" name="modeChemin" value="polygone" onchange="changerMode(this.value)"> 
-                        Polygone Régulier 
+                        Polygone 
+                    </label>
+                    <label>
+                        <input type="radio" name="modeChemin" value="parallelogramme" onchange="changerMode(this.value)"> 
+                        Parallélo.
                     </label>
                 </div>
             </div>
@@ -267,7 +276,6 @@
     </div>
 
     <script>
-        // --- TAILLE DU CANEVAS EN VARIABLE CLAIRE ---
         const CANVAS_SIZE = 350;
 
         // --- 1. CONFIGURATION DES CANEVAS ---
@@ -429,13 +437,11 @@
         workspace.addChangeListener(Blockly.Events.disableOrphans); 
 
         // --- 4. CONNEXION DE L'API ACORN (JS-INTERPRETER) ---
-        // --- 4. CONNEXION DE L'API ACORN (JS-INTERPRETER) ---
         function initAPI(interpreter, globalObject) {
             const grillePseudo = interpreter.createObjectProto(interpreter.OBJECT_PROTO);
             interpreter.setProperty(globalObject, 'grille', grillePseudo);
 
             interpreter.setProperty(grillePseudo, 'avancer', interpreter.createNativeFunction(function(dist) {
-                // 🌟 MISE À JOUR : LE TRACÉ UTILISATEUR PASSE EN BLEU ÉLECTRIQUE
                 trackCtx.strokeStyle = "#0066ff"; 
                 trackCtx.lineWidth = 4;           
                 trackCtx.shadowBlur = 10;         
@@ -521,48 +527,48 @@
             rafraichirIconeTortue();
         }
 
-        // --- 5. LOGIQUE DES DÉFIS CIBLES ---
-        function dessinerArcEtAngle(ctx, sommetX, sommetY, angleEntree, angleSortie, angleRotation, sens) {
-            ctx.save();
-            ctx.strokeStyle = "#475569"; 
-            ctx.lineWidth = 1.5;
+        // --- 5. LOGIQUE MATHEMATIQUE RECTIFIEE POUR LES ARCS ---
+function dessinerArcEtAngle(ctx, sommetX, sommetY, angleEntree, angleSortie, angleRotation, sens, afficherValeur) {
+    ctx.save();
+    ctx.strokeStyle = "#475569"; 
+    ctx.lineWidth = 1.5;
 
-            let radEntreeProlongement = (angleEntree + 180) * Math.PI / 180;
-            let vAx = Math.cos(radEntreeProlongement), vAy = Math.sin(radEntreeProlongement);
-            let radSortie = angleSortie * Math.PI / 180;
-            let vBx = Math.cos(radSortie), vBy = Math.sin(radSortie);
+    let radEntreeProlongement = (angleEntree + 180) * Math.PI / 180;
+    let vAx = Math.cos(radEntreeProlongement), vAy = Math.sin(radEntreeProlongement);
+    let radSortie = angleSortie * Math.PI / 180;
+    let vBx = Math.cos(radSortie), vBy = Math.sin(radSortie);
 
-            let ax = sommetX + 30 * vAx, ay = sommetY + 30 * vAy;
-            let bx = sommetX + 30 * vBx, by = sommetY + 30 * vBy;
+    let ax = sommetX + 30 * vAx, ay = sommetY + 30 * vAy;
+    let bx = sommetX + 30 * vBx, by = sommetY + 30 * vBy;
 
-            let startAngleRad = Math.atan2(CANVAS_SIZE - ay - (CANVAS_SIZE - sommetY), ax - sommetX);
-            let endAngleRad = Math.atan2(CANVAS_SIZE - by - (CANVAS_SIZE - sommetY), bx - sommetX);
+    let startAngleRad = Math.atan2(CANVAS_SIZE - ay - (CANVAS_SIZE - sommetY), ax - sommetX);
+    let endAngleRad = Math.atan2(CANVAS_SIZE - by - (CANVAS_SIZE - sommetY), bx - sommetX);
 
-            let sensBalayageCanvas = (sens === "droite"); 
-            ctx.beginPath();
-            ctx.arc(sommetX, CANVAS_SIZE - sommetY, 30, startAngleRad, endAngleRad, sensBalayageCanvas);
-            ctx.stroke();
+    let sensBalayageCanvas = (sens === "droite"); 
+    ctx.beginPath();
+    ctx.arc(sommetX, CANVAS_SIZE - sommetY, 30, startAngleRad, endAngleRad, sensBalayageCanvas);
+    ctx.stroke();
 
-            if (typeChemin === 'libre') {
-                let bissectriceX = vAx + vBx, bissectriceY = vAy + vBy;
-                let norme = Math.sqrt(bissectriceX * bissectriceX + bissectriceY * bissectriceY);
-                if (norme < 0.01) {
-                    bissectriceX = -Math.sin(radEntreeProlongement);
-                    bissectriceY = Math.cos(radEntreeProlongement);
-                    norme = 1;
-                }
-                let etiquetteX = sommetX + (46 * (bissectriceX / norme));
-                let etiquetteY = sommetY + (46 * (bissectriceY / norme));
-
-                ctx.translate(etiquetteX, CANVAS_SIZE - etiquetteY);
-                ctx.fillStyle = "#e2e8f0";
-                ctx.font = "bold 11px Arial";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText((180 - angleRotation) + "°", 0, 0);
-            }
-            ctx.restore();
+    if (afficherValeur) {
+        let bissectriceX = vAx + vBx, bissectriceY = vAy + vBy;
+        let norme = Math.sqrt(bissectriceX * bissectriceX + bissectriceY * bissectriceY);
+        if (norme < 0.01) {
+            bissectriceX = -Math.sin(radEntreeProlongement);
+            bissectriceY = Math.cos(radEntreeProlongement);
+            norme = 1;
         }
+        let etiquetteX = sommetX + (46 * (bissectriceX / norme));
+        let etiquetteY = sommetY + (46 * (bissectriceY / norme));
+
+        ctx.translate(etiquetteX, CANVAS_SIZE - etiquetteY);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "bold 11px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText((180 - angleRotation) + "°", 0, 0);
+    }
+    ctx.restore();
+}
 
         function changerMode(nouveauMode) {
             typeChemin = nouveauMode;
@@ -570,208 +576,234 @@
         }
 
         function genererNouveauCheminDefi() {
-    executionEnCours = false;
-    bgCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            executionEnCours = false;
+            bgCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    bgCtx.lineCap = "round";
-    bgCtx.lineJoin = "round";
+            bgCtx.lineCap = "round";
+            bgCtx.lineJoin = "round";
 
-    let cheminValide = false;
-    let actions = [];
-    let départTheoriqueX = CANVAS_SIZE / 2, départTheoriqueY = CANVAS_SIZE / 2;
+            let cheminValide = false;
+            let actions = [];
+            let départTheoriqueX = CANVAS_SIZE / 2, départTheoriqueY = CANVAS_SIZE / 2;
 
-    while (!cheminValide) {
-        actions = [];
-        let simu = { x: départTheoriqueX, y: départTheoriqueY, heading: 0 };
-        let historiqueSommets = [{ x: simu.x, y: simu.y }];
+            while (!cheminValide) {
+                actions = [];
+                let simu = { x: départTheoriqueX, y: départTheoriqueY, heading: 0 };
+                let historiqueSommets = [{ x: simu.x, y: simu.y }];
 
-        // --- GÉNÉRATION DU PARCOURS LIBRE ---
-        if (typeChemin === 'libre') {
-            let nbSegments = 3;
-            for (let i = 0; i < nbSegments; i++) {
-                let d = Math.floor(Math.random() * 40) + 100; 
-                let rad = simu.heading * Math.PI / 180;
-                simu.x += d * Math.cos(rad);
-                simu.y += d * Math.sin(rad);
-                historiqueSommets.push({ x: simu.x, y: simu.y });
-                actions.push({ type: 'av', valeur: d });
+                // --- GÉNÉRATION DU PARCOURS LIBRE ---
+                if (typeChemin === 'libre') {
+                    let nbSegments = 3;
+                    for (let i = 0; i < nbSegments; i++) {
+                        let d = Math.floor(Math.random() * 40) + 100; 
+                        let rad = simu.heading * Math.PI / 180;
+                        simu.x += d * Math.cos(rad);
+                        simu.y += d * Math.sin(rad);
+                        historiqueSommets.push({ x: simu.x, y: simu.y });
+                        actions.push({ type: 'av', valeur: d });
 
-                if (i < nbSegments - 1) {
-                    let angle = Math.floor(Math.random() * 55) + 55;
+                        if (i < nbSegments - 1) {
+                            let angle = Math.floor(Math.random() * 55) + 55;
+                            let sens = Math.random() > 0.5 ? 'droite' : 'gauche';
+                            if (sens === 'droite') simu.heading = (simu.heading - angle) % 360;
+                            else simu.heading = (simu.heading + angle) % 360;
+                            actions.push({ type: sens, valeur: angle });
+                        }
+                    }
+                // --- GÉNÉRATION DU POLYGONE RÉGULIER ---
+                } else if (typeChemin === 'polygone'){
+                    let optionsCotes = [3, 4, 5, 6, 8];
+                    let nbCotes = optionsCotes[Math.floor(Math.random() * optionsCotes.length)];
+                    let angleRotationPolygone = 360 / nbCotes;
+                    let longueurCote = (nbCotes >= 6) ? (nbCotes === 8 ? 70 : 100) : (nbCotes === 5 ? 100 : 120);
+                    let sensUnique = Math.random() > 0.5 ? 'droite' : 'gauche';
+
+                    for (let i = 0; i < nbCotes; i++) {
+                        let rad = simu.heading * Math.PI / 180;
+                        simu.x += longueurCote * Math.cos(rad);
+                        simu.y += longueurCote * Math.sin(rad);
+                        historiqueSommets.push({ x: simu.x, y: simu.y });
+                        actions.push({ type: 'av', valeur: longueurCote });
+
+                        if (i < nbCotes - 1) {
+                            if (sensUnique === 'droite') simu.heading = (simu.heading - angleRotationPolygone) % 360;
+                            else simu.heading = (simu.heading + angleRotationPolygone) % 360;
+                            actions.push({ type: sensUnique, valeur: angleRotationPolygone });
+                        }
+                    }
+                // --- GÉNÉRATION DU PARALLÉLOGRAMME ---
+                } else if (typeChemin === 'parallelogramme') {
+                    let a = Math.floor(Math.random() * 30) + 110; 
+                    let b = Math.floor(Math.random() * 30) + 60;  
+                    let angleDonne = Math.floor(Math.random() * 30) + 50; 
+                    let rotation1 = 180 - angleDonne; 
+                    let rotation2 = angleDonne;       
                     let sens = Math.random() > 0.5 ? 'droite' : 'gauche';
-                    if (sens === 'droite') simu.heading = (simu.heading - angle) % 360;
-                    else simu.heading = (simu.heading + angle) % 360;
-                    actions.push({ type: sens, valeur: angle });
+
+                    for (let i = 0; i < 2; i++) {
+                        let rad1 = simu.heading * Math.PI / 180;
+                        simu.x += a * Math.cos(rad1); simu.y += a * Math.sin(rad1);
+                        historiqueSommets.push({ x: simu.x, y: simu.y });
+                        actions.push({ type: 'av', valeur: a });
+                        
+                        if (sens === 'droite') simu.heading = (simu.heading - rotation1) % 360;
+                        else simu.heading = (simu.heading + rotation1) % 360;
+                        actions.push({ type: sens, valeur: rotation1 });
+
+                        let rad2 = simu.heading * Math.PI / 180;
+                        simu.x += b * Math.cos(rad2); simu.y += b * Math.sin(rad2);
+                        historiqueSommets.push({ x: simu.x, y: simu.y });
+                        actions.push({ type: 'av', valeur: b });
+                        
+                        if (sens === 'droite') simu.heading = (simu.heading - rotation2) % 360;
+                        else simu.heading = (simu.heading + rotation2) % 360;
+                        actions.push({ type: sens, valeur: rotation2 });
+                    }
+                }
+
+                // --- VERIFICATION DU CADRAGE DANS LE CANVAS ---
+                let xMin = Math.min(...historiqueSommets.map(s => s.x));
+                let xMax = Math.max(...historiqueSommets.map(s => s.x));
+                let yMin = Math.min(...historiqueSommets.map(s => s.y));
+                let yMax = Math.max(...historiqueSommets.map(s => s.y));
+
+                if ((xMax - xMin) <= (CANVAS_SIZE - 60) && (yMax - yMin) <= (CANVAS_SIZE - 60)) {
+                    cheminValide = true;
+                    let deltaX = (CANVAS_SIZE / 2) - (xMin + xMax) / 2;
+                    let deltaY = (CANVAS_SIZE / 2) - (yMin + yMax) / 2;
+
+                    departX = départTheoriqueX + deltaX;
+                    departY = départTheoriqueY + deltaY;
+
+                    tUtilisateur.x = departX; tUtilisateur.y = departY; tUtilisateur.heading = 0;
+                    
+                    let tAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
+                    let pAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
+                    pAffichage.up();
+
+                    let sensPolygone = actions.find(act => act.type === 'gauche' || act.type === 'droite')?.type || 'gauche';
+
+                    function avDefi(r) {
+                        let oldX = tAffichage.x, oldY = tAffichage.y;
+                        let actuelHeading = tAffichage.heading; 
+
+                        bgCtx.save();
+                        bgCtx.strokeStyle = "#ff3355"; 
+                        bgCtx.lineWidth = 5;           
+                        bgCtx.shadowBlur = 30;         
+                        bgCtx.shadowColor = "#ff3355"; 
+                        
+                        bgCtx.beginPath();
+                        bgCtx.moveTo(oldX, CANVAS_SIZE - oldY);
+                        let rad = actuelHeading * Math.PI / 180;
+                        let nextX = oldX + r * Math.cos(rad);
+                        let nextY = oldY + r * Math.sin(rad);
+                        bgCtx.lineTo(nextX, CANVAS_SIZE - nextY);
+                        bgCtx.stroke();
+
+                        bgCtx.strokeStyle = "#ffe5ec"; 
+                        bgCtx.lineWidth = 1;           
+                        bgCtx.shadowBlur = 6;          
+                        bgCtx.stroke(); 
+
+                        bgCtx.restore();
+
+                        tAffichage.x = nextX;
+                        tAffichage.y = nextY;
+
+                        let milieuX = (oldX + tAffichage.x) / 2;
+                        let milieuY = (oldY + tAffichage.y) / 2;
+
+                        let angleDecalage = actuelHeading * Math.PI / 180;
+                        if (typeChemin === 'polygone' || typeChemin === 'parallelogramme') {
+                            angleDecalage += (sensPolygone === 'gauche') ? -Math.PI / 2 : Math.PI / 2;
+                        } else {
+                            angleDecalage += -Math.PI / 2;
+                        }
+
+                        let decX = milieuX + 24 * Math.cos(angleDecalage);
+                        let decY = milieuY + 24 * Math.sin(angleDecalage);
+
+                        pAffichage.goto(decX, decY);
+                        pAffichage.write(r);
+                    }
+
+                    // --- DETECTION PEDAGOGIQUE SUR LA BOUCLE DE TRACE ---
+                    let indexAngle = 0;
+                    actions.forEach(act => {
+                        if (act.type === 'av') {
+                            avDefi(act.valeur);
+                        } else {
+                            let oldH = tAffichage.heading;
+                            if (act.type === 'droite') tAffichage.right(act.valeur);
+                            else tAffichage.left(act.valeur);
+                            
+                            // Logique de filtrage stricte
+                            if (typeChemin === 'libre') {
+                                // Mode Libre : Arc et valeur partout
+                                dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, true);
+                            } else if (typeChemin === 'polygone') {
+                                // Mode Polygone : Arc partout mais pas de texte (codage de l'égalité)
+                                dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, false);
+                            } else if (typeChemin === 'parallelogramme') {
+                                // Mode Parallélogramme : Uniquement le tout premier angle (donnée minimale)
+                                if (indexAngle === 0) {
+                                    dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, true);
+                                }
+                            }
+                            indexAngle++;
+                        }
+                    });
                 }
             }
-        // --- GÉNÉRATION DU POLYGONE RÉGULIER ---
-        } else {
-            let optionsCotes = [3, 4, 5, 6, 8];
-            let nbCotes = optionsCotes[Math.floor(Math.random() * optionsCotes.length)];
-            let angleRotationPolygone = 360 / nbCotes;
-            let longueurCote = (nbCotes >= 6) ? (nbCotes === 8 ? 70 : 100) : (nbCotes === 5 ? 100 : 120);
-            let sensUnique = Math.random() > 0.5 ? 'droite' : 'gauche';
-
-            for (let i = 0; i < nbCotes; i++) {
-                let rad = simu.heading * Math.PI / 180;
-                simu.x += longueurCote * Math.cos(rad);
-                simu.y += longueurCote * Math.sin(rad);
-                historiqueSommets.push({ x: simu.x, y: simu.y });
-                actions.push({ type: 'av', valeur: longueurCote });
-
-                if (i < nbCotes - 1) {
-                    if (sensUnique === 'droite') simu.heading = (simu.heading - angleRotationPolygone) % 360;
-                    else simu.heading = (simu.heading + angleRotationPolygone) % 360;
-                    actions.push({ type: sensUnique, valeur: angleRotationPolygone });
-                }
-            }
+            rafraichirIconeTortue();
         }
-
-        // --- VERIFICATION DU CADRAGE DANS LE CANVAS ---
-        let xMin = Math.min(...historiqueSommets.map(s => s.x));
-        let xMax = Math.max(...historiqueSommets.map(s => s.x));
-        let yMin = Math.min(...historiqueSommets.map(s => s.y));
-        let yMax = Math.max(...historiqueSommets.map(s => s.y));
-
-        if ((xMax - xMin) <= (CANVAS_SIZE - 100) && (yMax - yMin) <= (CANVAS_SIZE - 100)) {
-            cheminValide = true;
-            let deltaX = (CANVAS_SIZE / 2) - (xMin + xMax) / 2;
-            let deltaY = (CANVAS_SIZE / 2) - (yMin + yMax) / 2;
-
-            departX = départTheoriqueX + deltaX;
-            departY = départTheoriqueY + deltaY;
-
-            tUtilisateur.x = departX; tUtilisateur.y = departY; tUtilisateur.heading = 0;
-            
-            let tAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
-            let pAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
-            pAffichage.up();
-
-            // Détection du sens de rotation pour adapter l'affichage extérieur
-            let sensPolygone = actions.find(act => act.type === 'gauche' || act.type === 'droite')?.type || 'gauche';
-
-            // --- FONCTION INTERNE POUR DESSINER ET PLACER LE TEXTE D'AVANCEMENT ---
-            function avDefi(r) {
-    let oldX = tAffichage.x, oldY = tAffichage.y;
-    let actuelHeading = tAffichage.heading; 
-
-    // --- ENREGISTREMENT DE L'ÉTAT DU CANVAS ---
-    bgCtx.save();
-
-    // 1. CONFIGURATION DU GRAND HALO EXTÉRIEUR (Lumière diffuse)
-    bgCtx.strokeStyle = "#ff3355"; 
-    bgCtx.lineWidth = 5;           // Trait épais pour asseoir la couleur
-    bgCtx.shadowBlur = 30;         // Rayonnement maximal très doux
-    bgCtx.shadowColor = "#ff3355"; 
-    
-    // On trace une première fois pour le rayonnement large
-    bgCtx.beginPath();
-    bgCtx.moveTo(oldX, CANVAS_SIZE - oldY);
-    let rad = actuelHeading * Math.PI / 180;
-    let nextX = oldX + r * Math.cos(rad);
-    let nextY = oldY + r * Math.sin(rad);
-    bgCtx.lineTo(nextX, CANVAS_SIZE - nextY);
-    bgCtx.stroke();
-
-    // 2. SUPERPOSITION DU CŒUR INTENSE (Lumière concentrée)
-    // On change les paramètres à la volée sur le même tracé
-    bgCtx.strokeStyle = "#ffe5ec"; // Un rose/blanc ultra-lumineux pour le centre
-    bgCtx.lineWidth = 1;           // Trait très fin au cœur du laser
-    bgCtx.shadowBlur = 6;          // Flou concentré pour l'effet d'incandescence
-    bgCtx.stroke();                // On ré-applique le tracé existant
-
-    // --- RESTAURATION (Éteint le néon pour les autres éléments)
-    bgCtx.restore();
-
-    // On met à jour les coordonnées réelles de la tortue d'affichage
-    tAffichage.x = nextX;
-    tAffichage.y = nextY;
-
-    // --- CALCUL DU DÉCALAGE DU TEXTE VERS L'EXTÉRIEUR ---
-    let milieuX = (oldX + tAffichage.x) / 2;
-    let milieuY = (oldY + tAffichage.y) / 2;
-
-    let angleDecalage = actuelHeading * Math.PI / 180;
-    if (typeChemin === 'polygone') {
-        angleDecalage += (sensPolygone === 'gauche') ? -Math.PI / 2 : Math.PI / 2;
-    } else {
-        angleDecalage += -Math.PI / 2;
-    }
-
-    // Décalage augmenté à 24px pour ne pas mordre sur le grand halo diffuse
-    let decX = milieuX + 24 * Math.cos(angleDecalage);
-    let decY = milieuY + 24 * Math.sin(angleDecalage);
-
-    pAffichage.goto(decX, decY);
-    pAffichage.write(r);}
-
-            // --- EXÉCUTION DU TRACÉ DU DÉFI ---
-            actions.forEach(act => {
-                if (act.type === 'av') {
-                    avDefi(act.valeur);
-                } else {
-                    let oldH = tAffichage.heading;
-                    if (act.type === 'droite') tAffichage.right(act.valeur);
-                    else tAffichage.left(act.valeur);
-                    dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type);
-                }
-            });
-        }
-    }
-    rafraichirIconeTortue();}
 
         // --- DESSIN DE LA TORTUE VUE DU DESSUS ---
         function rafraichirIconeTortue() {
-    turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    turtleCtx.save();
-    turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE - tUtilisateur.y);
-    turtleCtx.rotate(-tUtilisateur.heading * Math.PI / 180);
-    
-    // --- HALO LUMINEUX DE LA TORTUE ---
-    turtleCtx.shadowBlur = 8;
-    turtleCtx.shadowColor = "#00ff66"; // Ombre portée vert fluo
+            turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            turtleCtx.save();
+            turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE - tUtilisateur.y);
+            turtleCtx.rotate(-tUtilisateur.heading * Math.PI / 180);
+            
+            turtleCtx.shadowBlur = 8;
+            turtleCtx.shadowColor = "#00ff66"; 
 
-    // 1. Nageoires antérieures (Cyan pour le contraste avec la carapace)
-    turtleCtx.fillStyle = "#00f5d4";
-    turtleCtx.beginPath();
-    turtleCtx.ellipse(5, -9, 8, 3, Math.PI / 4, 0, Math.PI * 2);
-    turtleCtx.ellipse(5, 9, 8, 3, -Math.PI / 4, 0, Math.PI * 2);
-    turtleCtx.fill();
+            turtleCtx.fillStyle = "#00f5d4";
+            turtleCtx.beginPath();
+            turtleCtx.ellipse(5, -9, 8, 3, Math.PI / 4, 0, Math.PI * 2);
+            turtleCtx.ellipse(5, 9, 8, 3, -Math.PI / 4, 0, Math.PI * 2);
+            turtleCtx.fill();
 
-    // 2. Nageoires postérieures
-    turtleCtx.beginPath();
-    turtleCtx.ellipse(-7, -7, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
-    turtleCtx.ellipse(-7, 7, 4, 2, Math.PI / 6, 0, Math.PI * 2);
-    turtleCtx.fill();
+            turtleCtx.beginPath();
+            turtleCtx.ellipse(-7, -7, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
+            turtleCtx.ellipse(-7, 7, 4, 2, Math.PI / 6, 0, Math.PI * 2);
+            turtleCtx.fill();
 
-    // 3. Queue
-    turtleCtx.beginPath();
-    turtleCtx.moveTo(-10, 0);
-    turtleCtx.lineTo(-14, -2);
-    turtleCtx.lineTo(-14, 2);
-    turtleCtx.closePath();
-    turtleCtx.fill();
+            turtleCtx.beginPath();
+            turtleCtx.moveTo(-10, 0);
+            turtleCtx.lineTo(-14, -2);
+            turtleCtx.lineTo(-14, 2);
+            turtleCtx.closePath();
+            turtleCtx.fill();
 
-    // 4. Carapace centrale (PROPULSÉE EN VERT FLUO INTENSE)
-    turtleCtx.beginPath();
-    turtleCtx.ellipse(-1, 0, 10, 8, 0, 0, Math.PI * 2);
-    turtleCtx.fillStyle = "#00ff66"; // 🌟 Nouveau vert bio-luminescent très vif
-    turtleCtx.fill();
-    
-    // Bordure interne de la carapace pour lui donner du relief
-    turtleCtx.strokeStyle = "#050b14";
-    turtleCtx.lineWidth = 1.5;
-    turtleCtx.stroke();
+            turtleCtx.beginPath();
+            turtleCtx.ellipse(-1, 0, 10, 8, 0, 0, Math.PI * 2);
+            turtleCtx.fillStyle = "#00ff66"; 
+            turtleCtx.fill();
+            
+            turtleCtx.strokeStyle = "#050b14";
+            turtleCtx.lineWidth = 1.5;
+            turtleCtx.stroke();
 
-    // 5. Tête
-    turtleCtx.beginPath();
-    turtleCtx.arc(12, 0, 4, 0, Math.PI * 2);
-    turtleCtx.fillStyle = "#00f5d4";
-    turtleCtx.fill();
+            turtleCtx.beginPath();
+            turtleCtx.arc(12, 0, 4, 0, Math.PI * 2);
+            turtleCtx.fillStyle = "#00f5d4";
+            turtleCtx.fill();
 
-    turtleCtx.restore();
-}
+            turtleCtx.restore();
+        }
 
         window.onload = function() {
             genererNouveauCheminDefi();
