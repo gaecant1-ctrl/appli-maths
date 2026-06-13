@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Défi Tortue - Programmation par Blocs</title>
+
+    <script src="https://unpkg.com/blockly@10.4.0/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.0/javascript_compressed.js"></script>
+    <script src="acorn_interpreter.js"></script>
+
+    <style>
+        /* --- CENTRALISATION DU THÈME SOUS-MARIN VIA :ROOT --- */
+        :root {
+            --bg-global: #050b14;        /* Fond de la page : Bleu abyssal très sombre */
+            --bg-card: #0d1527;          /* Fond des panneaux : Bleu cockpit */
+            --bg-canvas: #070d1a;        /* Fond de la zone de dessin : Eau profonde */
+            --text-main: #f8fafc;        /* Texte principal : Blanc cassé lumineux */
+            --text-muted: #64748b;       /* Texte secondaire */
+            --border-color: #1e293b;     /* Bordures sombres high-tech */
+            
+            /* Couleurs néon des accents */
+            --color-primary: #00f5d4;    /* Cyan Néon (Accent principal & Slider) */
+            --color-run: #10b981;        /* Vert exécution */
+            --color-run-hover: #059669;
+            --color-reset: #ef4444;      /* Rouge réinitialisation */
+            --color-reset-hover: #dc2626;
+            --color-generate: #7209b7;   /* Violet mystique pour le nouveau défi */
+            --color-generate-hover: #5b0696;
+            
+            /* Dimensions standardisées pour l'homogénéisation */
+            --radius-card: 16px;
+            --radius-elem: 10px;
+            --elem-height: 48px;         
+        }
+
+        /* --- DESIGN GLOBAL --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-global);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+        }
+        
+        h2 { 
+            margin-bottom: 25px; 
+            font-weight: 700;
+            color: var(--color-primary);
+            font-size: 28px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
+        }
+
+        #main-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- CONFIGURATION DES CARTES --- */
+        .card-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #workspace-area {
+            width: 600px;
+        }
+        
+        #blocklyDiv {
+            width: 100%;
+            height: 350px; 
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        #render-area {
+            width: 390px;
+            align-items: center;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-canvas);
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* --- INTERFACES INTERACTIVES HOMOGÉNÉISÉES --- */
+        .buttons-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        button {
+            flex: 1;
+            height: var(--elem-height);
+            font-size: 14px;
+            color: white;
+            border: none;
+            border-radius: var(--radius-elem);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        button:active { transform: scale(0.97); }
+        
+        .btn-run { background-color: var(--color-run); }
+        .btn-run:hover { background-color: var(--color-run-hover); box-shadow: 0 6px 12px rgba(16, 185, 129, 0.2); }
+        
+        .btn-reset { background-color: var(--color-reset); }
+        .btn-reset:hover { background-color: var(--color-reset-hover); box-shadow: 0 6px 12px rgba(239, 68, 68, 0.2); }
+        
+        .btn-generate { background-color: var(--color-generate); }
+        .btn-generate:hover { background-color: var(--color-generate-hover); box-shadow: 0 6px 12px rgba(114, 9, 183, 0.3); }
+
+        /* Style modes */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            background: var(--bg-canvas);
+            padding: 4px;
+            border-radius: var(--radius-elem);
+            border: 1px solid var(--border-color);
+            height: var(--elem-height);
+            flex: 2;
+        }
+        
+        .mode-selector label {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 100%;
+        }
+        
+        .mode-selector input[type="radio"] { display: none; }
+        
+        .mode-selector label:has(input:checked) {
+            background: var(--bg-card);
+            color: var(--color-primary);
+            box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+            border: 1px solid rgba(0, 245, 212, 0.2);
+        }
+
+        /* Curseur de vitesse */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--bg-canvas);
+            padding: 0 10px;
+            border-radius: var(--radius-elem);
+            border: 1px solid var(--border-color);
+            height: var(--elem-height);
+            flex: 1.2;
+        }
+        
+        .slider-container span { font-size: 16px; user-select: none; }
+        
+        input[type="range"] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 5px;
+            background: var(--border-color);
+            outline: none;
+            min-width: 40px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            box-shadow: 0 0 6px var(--color-primary);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <h2>⚓ Défi Tortue des Abysses</h2>
+    
+    <div id="main-container">
+        <div id="workspace-area" class="card-panel">
+            <div id="blocklyDiv"></div>
+            <div class="buttons-group">
+                <button class="btn-run" onclick="runCode()">Exécuter le code</button>
+                <button class="btn-reset" onclick="reinitialiserUtilisateur()">Réinitialiser</button>
+                <div class="slider-container">
+                    <span>🐢</span>
+                    <input type="range" id="vitesseSlider" min="50" max="1000" step="50" value="750">
+                    <span>🐇</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="render-area" class="card-panel">
+            <div id="canvas-container">
+                <canvas id="bgCanvas" width="350" height="350"></canvas>
+                <canvas id="trackCanvas" width="350" height="350"></canvas>
+                <canvas id="turtleCanvas" width="350" height="350"></canvas>
+            </div>
+            <div class="buttons-group">
+                <button class="btn-generate" onclick="genererNouveauCheminDefi()">Défi</button>
+                <div class="mode-selector">
+                    <label>
+                        <input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)"> 
+                        Parcours Libre 
+                    </label>
+                    <label>
+                        <input type="radio" name="modeChemin" value="polygone" onchange="changerMode(this.value)"> 
+                        Polygone Régulier 
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TAILLE DU CANEVAS EN VARIABLE CLAIRE ---
+        const CANVAS_SIZE = 350;
+
+        // --- 1. CONFIGURATION DES CANEVAS ---
+        const bgCtx = document.getElementById('bgCanvas').getContext('2d');
+        const trackCtx = document.getElementById('trackCanvas').getContext('2d');
+        const turtleCtx = document.getElementById('turtleCanvas').getContext('2d');
+
+        let typeChemin = 'libre'; 
+        let departX = CANVAS_SIZE / 2, departY = CANVAS_SIZE / 2;
+        let executionEnCours = false;
+        let monInterpreteur = null;
+
+        // --- 2. CLASSE DE LA TORTUE VIRTUELLE ---
+        class VirtualPythonTurtle {
+            constructor(x, y, ctx) {
+                this.x = x;
+                this.y = y;
+                this.heading = 0; 
+                this.isDown = true;
+                this.ctx = ctx;
+            }
+
+            forward(distance) {
+                let rad = this.heading * Math.PI / 180;
+                let nextX = this.x + distance * Math.cos(rad);
+                let nextY = this.y + distance * Math.sin(rad);
+
+                if (this.isDown && this.ctx) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.x, CANVAS_SIZE - this.y); 
+                    this.ctx.lineTo(nextX, CANVAS_SIZE - nextY);
+                    this.ctx.stroke();
+                }
+                this.x = nextX;
+                this.y = nextY;
+            }
+
+            backward(distance) { this.forward(-distance); }
+            left(angle) { this.heading = (this.heading + angle) % 360; }
+            right(angle) { this.heading = (this.heading - angle) % 360; }
+            
+            up() { this.isDown = false; }
+            down() { this.isDown = true; }
+            goto(x, y) { this.x = x; this.y = y; }
+
+            write(text) {
+                if (!this.ctx) return;
+                this.ctx.save();
+                this.ctx.translate(this.x, CANVAS_SIZE - this.y);
+                this.ctx.fillStyle = "#e2e8f0"; 
+                this.ctx.font = "bold 12px Arial";
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "middle";
+                this.ctx.fillText(text, 0, 0);
+                this.ctx.restore();
+            }
+        }
+
+        let tUtilisateur = new VirtualPythonTurtle(departX, departY, trackCtx);
+
+        // --- 3. DÉFINITION DES BLOCS BLOCKLY ---
+        Blockly.Blocks['programme'] = {
+            init: function() {
+                this.appendDummyInput().appendField("Quand le programme démarre");
+                this.setNextStatement(true, null);
+                this.setColour(290);
+            }
+        };
+
+        Blockly.Blocks['avancer'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField("Avancer de")
+                    .appendField(new Blockly.FieldNumber(60, 0, CANVAS_SIZE), "DISTANCE")
+                    .appendField("unités");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(160);
+            }
+        };
+
+        Blockly.Blocks['tourner_gauche'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField("Tourner à gauche de")
+                    .appendField(new Blockly.FieldNumber(90, 0, 360), "ANGLE")
+                    .appendField("degrés");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(230);
+            }
+        };
+
+        Blockly.Blocks['tourner_droite'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField("Tourner à droite de")
+                    .appendField(new Blockly.FieldNumber(90, 0, 360), "ANGLE")
+                    .appendField("degrés");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(230);
+            }
+        };
+
+        Blockly.Blocks['repeter_x_fois'] = {
+            init: function() {
+                this.appendDummyInput()
+                    .appendField("Répéter")
+                    .appendField(new Blockly.FieldNumber(4, 1, 100), "FOIS")
+                    .appendField("fois");
+                this.appendStatementInput("DO").setCheck(null).appendField("faire");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(60);
+            }
+        };
+
+        // --- CONFIGURATION DU GÉNÉRATEUR JAVASCRIPT ---
+        Blockly.JavaScript.forBlock = Blockly.JavaScript.forBlock || {};
+        Blockly.JavaScript.forBlock['programme'] = function(block) { return ""; };
+        Blockly.JavaScript.forBlock['avancer'] = function(block) {
+            var distance = block.getFieldValue('DISTANCE') || '0';
+            return `grille.avancer(${distance});\n`;
+        };
+        Blockly.JavaScript.forBlock['tourner_gauche'] = function(block) {
+            var angle = block.getFieldValue('ANGLE') || '90';
+            return `grille.tournerGauche(${angle});\n`;
+        };
+        Blockly.JavaScript.forBlock['tourner_droite'] = function(block) {
+            var angle = block.getFieldValue('ANGLE') || '90';
+            return `grille.tournerDroite(${angle});\n`;
+        };
+        Blockly.JavaScript.forBlock['repeter_x_fois'] = function(block) {
+            let fois = block.getFieldValue('FOIS') || '4';
+            let branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            return `for (var k = 0; k < ${fois}; k++) {\n${branch}}\n`;
+        };
+
+        const workspace = Blockly.inject('blocklyDiv', {
+            toolbox: `
+                <xml>
+                    <block type="programme"></block>
+                    <block type="avancer"></block>
+                    <block type="tourner_gauche"></block>
+                    <block type="tourner_droite"></block>
+                    <block type="repeter_x_fois"></block>
+                </xml>
+            `,
+            media: 'https://unpkg.com/blockly/media/',
+            sounds: false
+        });
+
+        let startBlock = workspace.newBlock('programme');
+        startBlock.initSvg();
+        startBlock.render();
+        startBlock.moveBy(20, 20);
+        startBlock.setDeletable(false);
+        workspace.addChangeListener(Blockly.Events.disableOrphans); 
+
+        // --- 4. CONNEXION DE L'API ACORN (JS-INTERPRETER) ---
+        // --- 4. CONNEXION DE L'API ACORN (JS-INTERPRETER) ---
+        function initAPI(interpreter, globalObject) {
+            const grillePseudo = interpreter.createObjectProto(interpreter.OBJECT_PROTO);
+            interpreter.setProperty(globalObject, 'grille', grillePseudo);
+
+            interpreter.setProperty(grillePseudo, 'avancer', interpreter.createNativeFunction(function(dist) {
+                // 🌟 MISE À JOUR : LE TRACÉ UTILISATEUR PASSE EN BLEU ÉLECTRIQUE
+                trackCtx.strokeStyle = "#0066ff"; 
+                trackCtx.lineWidth = 4;           
+                trackCtx.shadowBlur = 10;         
+                trackCtx.shadowColor = "#0066ff";
+                
+                tUtilisateur.forward(dist);
+                
+                trackCtx.shadowBlur = 0;          
+                rafraichirIconeTortue();
+            }));
+
+            interpreter.setProperty(grillePseudo, 'tournerGauche', interpreter.createNativeFunction(function(angle) {
+                tUtilisateur.left(angle);
+                rafraichirIconeTortue();
+            }));
+
+            interpreter.setProperty(grillePseudo, 'tournerDroite', interpreter.createNativeFunction(function(angle) {
+                tUtilisateur.right(angle);
+                rafraichirIconeTortue();
+            }));
+        }
+        
+        function executionPasAPas() {
+            if (!executionEnCours) return;
+
+            let aEncoreDuCode = true;
+            let valeurSlider = parseInt(document.getElementById("vitesseSlider").value);
+            
+            if (valeurSlider === 1000) {
+                while (monInterpreteur && monInterpreteur.step()) {}
+                aEncoreDuCode = false;
+            } else {
+                for (let i = 0; i < 20; i++) {
+                    if (monInterpreteur && monInterpreteur.step()) {
+                        aEncoreDuCode = true;
+                    } else {
+                        aEncoreDuCode = false;
+                        break;
+                    }
+                }
+            }
+
+            if (aEncoreDuCode) {
+                let vitesse = 1050 - valeurSlider;
+                setTimeout(executionPasAPas, vitesse);
+            } else {
+                executionEnCours = false;
+                console.log("Parcours terminé !");
+            }
+        }
+
+        function runCode() {
+            if (executionEnCours) return;
+
+            reinitialiserUtilisateur();
+            
+            let rootBlock = workspace.getTopBlocks().find(b => b.type === "programme");
+            if (!rootBlock) return;
+
+            try {
+                Blockly.JavaScript.init(workspace);
+                const codeGenere = Blockly.JavaScript.blockToCode(rootBlock);
+                console.log("Code envoyé à Acorn :\n", codeGenere);
+
+                if (!codeGenere.trim()) return;
+
+                executionEnCours = true;
+                monInterpreteur = new Interpreter(codeGenere, initAPI);
+                executionPasAPas();
+
+            } catch (e) {
+                console.error("Erreur d'interprétation : ", e);
+                executionEnCours = false;
+            }
+        }
+
+        function reinitialiserUtilisateur() {
+            executionEnCours = false;
+            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            tUtilisateur.x = departX;
+            tUtilisateur.y = departY;
+            tUtilisateur.heading = 0;
+            rafraichirIconeTortue();
+        }
+
+        // --- 5. LOGIQUE DES DÉFIS CIBLES ---
+        function dessinerArcEtAngle(ctx, sommetX, sommetY, angleEntree, angleSortie, angleRotation, sens) {
+            ctx.save();
+            ctx.strokeStyle = "#475569"; 
+            ctx.lineWidth = 1.5;
+
+            let radEntreeProlongement = (angleEntree + 180) * Math.PI / 180;
+            let vAx = Math.cos(radEntreeProlongement), vAy = Math.sin(radEntreeProlongement);
+            let radSortie = angleSortie * Math.PI / 180;
+            let vBx = Math.cos(radSortie), vBy = Math.sin(radSortie);
+
+            let ax = sommetX + 30 * vAx, ay = sommetY + 30 * vAy;
+            let bx = sommetX + 30 * vBx, by = sommetY + 30 * vBy;
+
+            let startAngleRad = Math.atan2(CANVAS_SIZE - ay - (CANVAS_SIZE - sommetY), ax - sommetX);
+            let endAngleRad = Math.atan2(CANVAS_SIZE - by - (CANVAS_SIZE - sommetY), bx - sommetX);
+
+            let sensBalayageCanvas = (sens === "droite"); 
+            ctx.beginPath();
+            ctx.arc(sommetX, CANVAS_SIZE - sommetY, 30, startAngleRad, endAngleRad, sensBalayageCanvas);
+            ctx.stroke();
+
+            if (typeChemin === 'libre') {
+                let bissectriceX = vAx + vBx, bissectriceY = vAy + vBy;
+                let norme = Math.sqrt(bissectriceX * bissectriceX + bissectriceY * bissectriceY);
+                if (norme < 0.01) {
+                    bissectriceX = -Math.sin(radEntreeProlongement);
+                    bissectriceY = Math.cos(radEntreeProlongement);
+                    norme = 1;
+                }
+                let etiquetteX = sommetX + (46 * (bissectriceX / norme));
+                let etiquetteY = sommetY + (46 * (bissectriceY / norme));
+
+                ctx.translate(etiquetteX, CANVAS_SIZE - etiquetteY);
+                ctx.fillStyle = "#e2e8f0";
+                ctx.font = "bold 11px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText((180 - angleRotation) + "°", 0, 0);
+            }
+            ctx.restore();
+        }
+
+        function changerMode(nouveauMode) {
+            typeChemin = nouveauMode;
+            genererNouveauCheminDefi();
+        }
+
+        function genererNouveauCheminDefi() {
+    executionEnCours = false;
+    bgCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    bgCtx.lineCap = "round";
+    bgCtx.lineJoin = "round";
+
+    let cheminValide = false;
+    let actions = [];
+    let départTheoriqueX = CANVAS_SIZE / 2, départTheoriqueY = CANVAS_SIZE / 2;
+
+    while (!cheminValide) {
+        actions = [];
+        let simu = { x: départTheoriqueX, y: départTheoriqueY, heading: 0 };
+        let historiqueSommets = [{ x: simu.x, y: simu.y }];
+
+        // --- GÉNÉRATION DU PARCOURS LIBRE ---
+        if (typeChemin === 'libre') {
+            let nbSegments = 3;
+            for (let i = 0; i < nbSegments; i++) {
+                let d = Math.floor(Math.random() * 40) + 100; 
+                let rad = simu.heading * Math.PI / 180;
+                simu.x += d * Math.cos(rad);
+                simu.y += d * Math.sin(rad);
+                historiqueSommets.push({ x: simu.x, y: simu.y });
+                actions.push({ type: 'av', valeur: d });
+
+                if (i < nbSegments - 1) {
+                    let angle = Math.floor(Math.random() * 55) + 55;
+                    let sens = Math.random() > 0.5 ? 'droite' : 'gauche';
+                    if (sens === 'droite') simu.heading = (simu.heading - angle) % 360;
+                    else simu.heading = (simu.heading + angle) % 360;
+                    actions.push({ type: sens, valeur: angle });
+                }
+            }
+        // --- GÉNÉRATION DU POLYGONE RÉGULIER ---
+        } else {
+            let optionsCotes = [3, 4, 5, 6, 8];
+            let nbCotes = optionsCotes[Math.floor(Math.random() * optionsCotes.length)];
+            let angleRotationPolygone = 360 / nbCotes;
+            let longueurCote = (nbCotes >= 6) ? (nbCotes === 8 ? 70 : 100) : (nbCotes === 5 ? 100 : 120);
+            let sensUnique = Math.random() > 0.5 ? 'droite' : 'gauche';
+
+            for (let i = 0; i < nbCotes; i++) {
+                let rad = simu.heading * Math.PI / 180;
+                simu.x += longueurCote * Math.cos(rad);
+                simu.y += longueurCote * Math.sin(rad);
+                historiqueSommets.push({ x: simu.x, y: simu.y });
+                actions.push({ type: 'av', valeur: longueurCote });
+
+                if (i < nbCotes - 1) {
+                    if (sensUnique === 'droite') simu.heading = (simu.heading - angleRotationPolygone) % 360;
+                    else simu.heading = (simu.heading + angleRotationPolygone) % 360;
+                    actions.push({ type: sensUnique, valeur: angleRotationPolygone });
+                }
+            }
+        }
+
+        // --- VERIFICATION DU CADRAGE DANS LE CANVAS ---
+        let xMin = Math.min(...historiqueSommets.map(s => s.x));
+        let xMax = Math.max(...historiqueSommets.map(s => s.x));
+        let yMin = Math.min(...historiqueSommets.map(s => s.y));
+        let yMax = Math.max(...historiqueSommets.map(s => s.y));
+
+        if ((xMax - xMin) <= (CANVAS_SIZE - 100) && (yMax - yMin) <= (CANVAS_SIZE - 100)) {
+            cheminValide = true;
+            let deltaX = (CANVAS_SIZE / 2) - (xMin + xMax) / 2;
+            let deltaY = (CANVAS_SIZE / 2) - (yMin + yMax) / 2;
+
+            departX = départTheoriqueX + deltaX;
+            departY = départTheoriqueY + deltaY;
+
+            tUtilisateur.x = departX; tUtilisateur.y = departY; tUtilisateur.heading = 0;
+            
+            let tAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
+            let pAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
+            pAffichage.up();
+
+            // Détection du sens de rotation pour adapter l'affichage extérieur
+            let sensPolygone = actions.find(act => act.type === 'gauche' || act.type === 'droite')?.type || 'gauche';
+
+            // --- FONCTION INTERNE POUR DESSINER ET PLACER LE TEXTE D'AVANCEMENT ---
+            function avDefi(r) {
+    let oldX = tAffichage.x, oldY = tAffichage.y;
+    let actuelHeading = tAffichage.heading; 
+
+    // --- ENREGISTREMENT DE L'ÉTAT DU CANVAS ---
+    bgCtx.save();
+
+    // 1. CONFIGURATION DU GRAND HALO EXTÉRIEUR (Lumière diffuse)
+    bgCtx.strokeStyle = "#ff3355"; 
+    bgCtx.lineWidth = 5;           // Trait épais pour asseoir la couleur
+    bgCtx.shadowBlur = 30;         // Rayonnement maximal très doux
+    bgCtx.shadowColor = "#ff3355"; 
+    
+    // On trace une première fois pour le rayonnement large
+    bgCtx.beginPath();
+    bgCtx.moveTo(oldX, CANVAS_SIZE - oldY);
+    let rad = actuelHeading * Math.PI / 180;
+    let nextX = oldX + r * Math.cos(rad);
+    let nextY = oldY + r * Math.sin(rad);
+    bgCtx.lineTo(nextX, CANVAS_SIZE - nextY);
+    bgCtx.stroke();
+
+    // 2. SUPERPOSITION DU CŒUR INTENSE (Lumière concentrée)
+    // On change les paramètres à la volée sur le même tracé
+    bgCtx.strokeStyle = "#ffe5ec"; // Un rose/blanc ultra-lumineux pour le centre
+    bgCtx.lineWidth = 1;           // Trait très fin au cœur du laser
+    bgCtx.shadowBlur = 6;          // Flou concentré pour l'effet d'incandescence
+    bgCtx.stroke();                // On ré-applique le tracé existant
+
+    // --- RESTAURATION (Éteint le néon pour les autres éléments)
+    bgCtx.restore();
+
+    // On met à jour les coordonnées réelles de la tortue d'affichage
+    tAffichage.x = nextX;
+    tAffichage.y = nextY;
+
+    // --- CALCUL DU DÉCALAGE DU TEXTE VERS L'EXTÉRIEUR ---
+    let milieuX = (oldX + tAffichage.x) / 2;
+    let milieuY = (oldY + tAffichage.y) / 2;
+
+    let angleDecalage = actuelHeading * Math.PI / 180;
+    if (typeChemin === 'polygone') {
+        angleDecalage += (sensPolygone === 'gauche') ? -Math.PI / 2 : Math.PI / 2;
+    } else {
+        angleDecalage += -Math.PI / 2;
+    }
+
+    // Décalage augmenté à 24px pour ne pas mordre sur le grand halo diffuse
+    let decX = milieuX + 24 * Math.cos(angleDecalage);
+    let decY = milieuY + 24 * Math.sin(angleDecalage);
+
+    pAffichage.goto(decX, decY);
+    pAffichage.write(r);}
+
+            // --- EXÉCUTION DU TRACÉ DU DÉFI ---
+            actions.forEach(act => {
+                if (act.type === 'av') {
+                    avDefi(act.valeur);
+                } else {
+                    let oldH = tAffichage.heading;
+                    if (act.type === 'droite') tAffichage.right(act.valeur);
+                    else tAffichage.left(act.valeur);
+                    dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type);
+                }
+            });
+        }
+    }
+    rafraichirIconeTortue();}
+
+        // --- DESSIN DE LA TORTUE VUE DU DESSUS ---
+        function rafraichirIconeTortue() {
+    turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    turtleCtx.save();
+    turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE - tUtilisateur.y);
+    turtleCtx.rotate(-tUtilisateur.heading * Math.PI / 180);
+    
+    // --- HALO LUMINEUX DE LA TORTUE ---
+    turtleCtx.shadowBlur = 8;
+    turtleCtx.shadowColor = "#00ff66"; // Ombre portée vert fluo
+
+    // 1. Nageoires antérieures (Cyan pour le contraste avec la carapace)
+    turtleCtx.fillStyle = "#00f5d4";
+    turtleCtx.beginPath();
+    turtleCtx.ellipse(5, -9, 8, 3, Math.PI / 4, 0, Math.PI * 2);
+    turtleCtx.ellipse(5, 9, 8, 3, -Math.PI / 4, 0, Math.PI * 2);
+    turtleCtx.fill();
+
+    // 2. Nageoires postérieures
+    turtleCtx.beginPath();
+    turtleCtx.ellipse(-7, -7, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
+    turtleCtx.ellipse(-7, 7, 4, 2, Math.PI / 6, 0, Math.PI * 2);
+    turtleCtx.fill();
+
+    // 3. Queue
+    turtleCtx.beginPath();
+    turtleCtx.moveTo(-10, 0);
+    turtleCtx.lineTo(-14, -2);
+    turtleCtx.lineTo(-14, 2);
+    turtleCtx.closePath();
+    turtleCtx.fill();
+
+    // 4. Carapace centrale (PROPULSÉE EN VERT FLUO INTENSE)
+    turtleCtx.beginPath();
+    turtleCtx.ellipse(-1, 0, 10, 8, 0, 0, Math.PI * 2);
+    turtleCtx.fillStyle = "#00ff66"; // 🌟 Nouveau vert bio-luminescent très vif
+    turtleCtx.fill();
+    
+    // Bordure interne de la carapace pour lui donner du relief
+    turtleCtx.strokeStyle = "#050b14";
+    turtleCtx.lineWidth = 1.5;
+    turtleCtx.stroke();
+
+    // 5. Tête
+    turtleCtx.beginPath();
+    turtleCtx.arc(12, 0, 4, 0, Math.PI * 2);
+    turtleCtx.fillStyle = "#00f5d4";
+    turtleCtx.fill();
+
+    turtleCtx.restore();
+}
+
+        window.onload = function() {
+            genererNouveauCheminDefi();
+        };
+    </script>
+</body>
+</html>
