@@ -1,176 +1,167 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<script>
+  <script>
     window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']]
-      }
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      options: { ignoreHtmlClass: 'cell-text', processHtmlClass: 'consigne-box' }
     };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Tableur - Données à Plat</title>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f0f4f8;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>   
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Tableur - Fonds Immuables</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background-color: #f0f4f8;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
 
-        .quiz-container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            max-width: 850px;
-            width: 100%;
-        }
+    .quiz-container {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-width: 850px;
+        width: 100%;
+    }
 
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .progress-bar-bg {
-            flex: 1;
-            height: 10px;
-            background: #e0e6ed;
-            margin: 0 20px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        #progress-fill {
-            height: 100%;
-            background: #2196f3;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .progress-bar-bg {
+        flex: 1;
+        height: 10px;
+        background: #e0e6ed;
+        margin: 0 20px;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    #progress-fill {
+        height: 100%;
+        background: #2196f3;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
 
-        .consigne-box {
-            background-color: #e3f2fd;
-            border-left: 5px solid #2196f3;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
+    .consigne-box {
+        background-color: #e3f2fd;
+        border-left: 5px solid #2196f3;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    .consigne-box strong { font-weight: 800; color: #000000; }
 
-        .spreadsheet-container { overflow-x: auto; margin-bottom: 20px; }
-        .spreadsheet {
-            border-collapse: collapse;
-            width: 100%;
-            background-color: #fff;
-            table-layout: fixed;
-        }
-        .spreadsheet th, .spreadsheet td {
-            border: 1px solid #cfd8dc;
-            height: 38px;
-            text-align: center;
-            font-size: 14px;
-            padding: 0;
-        }
-        .label-cell, .col-header { background: #eceff1; font-weight: bold; color: #607d8b; cursor: default; user-select: none; }
-        
+    .spreadsheet-container { overflow-x: auto; margin-bottom: 20px; }
+    .spreadsheet {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+    }
+    .spreadsheet th, .spreadsheet td {
+        border: 1px solid #cfd8dc;
+        height: 38px;
+        text-align: center;
+        font-size: 14px;
+        padding: 0;
+        white-space: pre-line;
+    }
+    
+    td.label-cell, th.label-cell {
+        width: 40px !important;
+        background: #eceff1; 
+        font-weight: bold; 
+        color: #607d8b; 
+        user-select: none;
+    }
+    .col-header { background: #eceff1; font-weight: bold; color: #607d8b; user-select: none; }
 
-        /* Force une largeur fixe sur la colonne des numéros de lignes */
-td.label-cell, th.label-cell {
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    background: #eceff1; 
-    font-weight: bold; 
-    color: #607d8b; 
+    /* --- FONDS IMMUABLES (RÈGLE ABSOLUE) --- */
+/* Le texte pur (Cyan saturé comme demandé !) */
+.spreadsheet td.cell-text-bg { 
+    background-color: #00ffff !important; 
+    color: #004d40; /* Un bleu/vert très foncé pour que le texte reste hyper lisible sur le cyan */
 }
+    .spreadsheet td.cell-numeric-bg { 
+        background-color: #ffff00 !important; 
+    }
+    .spreadsheet td.cell-numeric-bg input.editable-val {
+        background-color: #ffff00 !important;
+        width: 100%; height: 100%; border: none; text-align: center;
+        font-size: 14px; font-family: inherit; color: #1565c0; font-weight: bold; outline: none;
+    }
 
-        /* Force le gras sur les textes de cellules qui commencent par & */
-.cell-text strong {
-    font-weight: bold !important;
-    display: inline-block;
-}
+    /* Orange saturé cible et orange doux étirement */
+    .spreadsheet td.cible { background-color: #ff9800 !important; font-weight: bold !important; color: #ffffff !important; }
+    .spreadsheet td.etiree { background-color: #fff3e0 !important; font-style: italic; color: #e65100; }
 
-        /* États dynamiques des cellules */
-        .cible { background-color: #fff9c4 !important; border: 2px solid #fbc02d !important; font-weight: bold; }
-        .etiree { background-color: #f9f9f9; font-style: italic; color: #555; }
-        
-        /* Couleurs de feedback */
-        .status-success { background-color: #e8f5e9 !important; color: #2e7d32 !important; border: 2px solid #81c784 !important; font-weight: bold; }
-        
-        .cible.status-error { 
-            outline: 3px solid #e57373 !important; 
-            outline-offset: -3px;
-            color: #c62828 !important; 
-        }
-        .etiree.status-error { 
-            background-color: #ffebee !important; 
-            color: #c62828 !important; 
-            border: 1px solid #e57373 !important; 
-        }
+    /* --- VALIDATION : DESORMAIS UNIQUEMENT SUR LES BORDURES --- */
+    .spreadsheet td.status-success { 
+        border: 3px solid #2e7d32 !important; 
+        color: #2e7d32 !important;
+        font-style: normal;
+    }
+    .spreadsheet td.cible.status-success { color: #ffffff !important; } 
 
-        .status-valide-precedent { background-color: #e3f2fd; color: #1565c0; font-weight: bold; }
+    .spreadsheet td.status-error { 
+        border: 3px solid #c62828 !important; 
+        color: #c62828 !important; 
+    }
+    .spreadsheet td.cible.status-error { color: #ffffff !important; }
 
-        .spreadsheet input {
-            width: 100%; height: 100%; border: none; text-align: center;
-            font-size: 14px; background: transparent; font-family: inherit;
-        }
-        .spreadsheet input:focus { background: #f0f7ff; outline: none; }
-        .editable-val { color: #1565c0; font-weight: 500; }
+    /* L'historique n'écrase plus le fond, il applique juste une fine bordure verte de validation définitive */
+    .spreadsheet td.status-valide-precedent { 
+        border: 2px solid #2e7d32 !important; 
+        font-weight: bold !important; 
+        font-style: normal; 
+    }
+    /* Si la cible validée précédemment était orange, le texte reste blanc pour la lisibilité */
+    .spreadsheet td.cible.status-valide-precedent { color: #ffffff !important; }
 
-        .formula-zone {
-            display: flex;
-            gap: 10px;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-        .formula-input {
-            flex: 1; padding: 12px; font-size: 16px; border: 2px solid #ced4da;
-            border-radius: 6px; font-family: 'Courier New', monospace; font-weight: bold;
-        }
-        .formula-input:focus { border-color: #2196f3; outline: none; }
+    .formula-zone { display: flex; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; }
+    .formula-input { flex: 1; padding: 12px; font-size: 16px; border: 2px solid #ced4da; border-radius: 6px; font-family: 'Courier New', monospace; font-weight: bold; }
+    .formula-input:focus { border-color: #2196f3; outline: none; }
 
-        button { padding: 10px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-primary { background: #2196f3; color: white; }
-        .btn-primary:hover { background: #1976d2; }
-        .btn-giveup { background: #e0e0e0; color: #616161; }
-        .btn-giveup:hover { background: #b0bec5; color: #212121; }
-        .btn-next { background: #4caf50; color: white; display: none; }
+    button { padding: 10px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .btn-primary { background: #2196f3; color: white; }
+    .btn-primary:hover { background: #1976d2; }
+    .btn-giveup { background: #e0e0e0; color: #616161; }
+    .btn-giveup:hover { background: #b0bec5; color: #212121; }
+    .btn-next { background: #4caf50; color: white; display: none; }
 
-        .feedback { margin-top: 15px; text-align: center; font-weight: bold; min-height: 24px; }
-        #final-screen { display: none; text-align: center; }
-        .score-big { font-size: 48px; color: #2196f3; margin: 20px 0; }
-        
-        .label-cell, .col-header { user-select: none; -webkit-user-select: none; cursor: default; }
-    </style>
+    .feedback { margin-top: 15px; text-align: center; font-weight: bold; min-height: 24px; }
+    #final-screen { display: none; text-align: center; }
+    .score-big { font-size: 48px; color: #2196f3; margin: 20px 0; }
+  </style>
 </head>
 <body>
 
 <div class="quiz-container" id="quiz-ui">
     <div class="progress-header">
-        <span id="step-label">Exercice 1 / 3</span>
+        <span id="step-label"></span>
         <div class="progress-bar-bg"><div id="progress-fill"></div></div>
         <button class="btn-toggle" style="background:#90a4ae; color:white; font-size:11px" onclick="app.toggleView()">Formules / Valeurs</button>
     </div>
-
     <div class="consigne-box" id="consigne"></div>
-
     <div class="spreadsheet-container">
         <table class="spreadsheet" id="sheet"></table>
     </div>
-
     <div class="formula-zone">
         <input type="text" id="formula-bar" class="formula-input" placeholder="Tapez votre formule ici..." autocomplete="off">
         <button class="btn-primary" id="btn-validate" onclick="app.checkAnswer()">Tester la formule</button>
         <button class="btn-giveup" id="btn-giveup" onclick="app.giveUp()">Abandonner</button>
         <button class="btn-next" id="btn-next" onclick="app.nextStep()">Continuer ➔</button>
     </div>
-
     <div id="feedback" class="feedback"></div>
 </div>
 
@@ -187,16 +178,14 @@ class QuizApp {
         this.scenarios = scenarios;
         this.currentScenarioIndex = 0;
         this.currentStepIndex = 0;
-        
         this.viewMode = "valeurs"; 
-        this.currentContext = {};
-        
+        this.currentContext = {};     
         this.validatedFormulas = {}; 
         this.currentStepFormulas = {}; 
         this.stepStatus = "idle"; 
+        this.scenographicMap = {}; 
 
         this.initScenario();
-        
         document.getElementById('formula-bar').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.checkAnswer();
         });
@@ -206,15 +195,43 @@ class QuizApp {
         const sn = this.scenarios[this.currentScenarioIndex];
         this.currentStepIndex = 0;
         this.validatedFormulas = {};
-        
-        // Tout est à plat : les indices de lignes correspondent exactement aux index du tableau + 1
         this.currentContext = {};
+        this.scenographicMap = {};
+        
         sn.data.forEach((row, rIdx) => {
             const actualRow = rIdx + 1;
-            row.forEach((val, cIdx) => {
+            row.forEach((rawString, cIdx) => {
                 const id = `${String.fromCharCode(65 + cIdx)}${actualRow}`;
-                this.currentContext[id] = val;
+                let cleanVal = String(rawString);
+                if (cleanVal.startsWith('&&')) cleanVal = cleanVal.substring(2);
+                else if (cleanVal.startsWith('&') || cleanVal.startsWith('!')) cleanVal = cleanVal.substring(1);
+                this.currentContext[id] = cleanVal;
             });
+        });
+
+        sn.steps.forEach((step) => {
+            this.scenographicMap[step.targetCell] = "cible";
+            const targetColIndex = step.targetCell[0].charCodeAt(0) - 65;
+            const targetRowIndex = parseInt(step.targetCell.substring(1));
+
+            if (step.direction === "partout") {
+                sn.data.forEach((row, rIdx) => {
+                    const actualRow = rIdx + 1;
+                    row.forEach((_, cIdx) => {
+                        if (actualRow >= targetRowIndex && cIdx >= targetColIndex) {
+                            const cellId = `${String.fromCharCode(65 + cIdx)}${actualRow}`;
+                            if (cellId !== step.targetCell) this.scenographicMap[cellId] = "etiree";
+                        }
+                    });
+                });
+            } else {
+                for (let o = 1; o <= step.nbEtirements; o++) {
+                    const nextId = step.direction === "bas" 
+                        ? `${step.targetCell[0]}${targetRowIndex + o}` 
+                        : `${String.fromCharCode(step.targetCell[0].charCodeAt(0) + o)}${targetRowIndex}`;
+                    this.scenographicMap[nextId] = "etiree";
+                }
+            }
         });
 
         this.initStep();
@@ -239,21 +256,8 @@ class QuizApp {
         document.getElementById('consigne').innerHTML = `<strong>Mission :</strong> ${step.instruction}`;
 
         this.render();
-        // Force MathJax à restituer le LaTeX injecté dynamiquement
-// Déclenche le rendu LaTeX de manière sécurisée
-if (window.MathJax && typeof MathJax.typesetPromise === "function") {
-    MathJax.typesetPromise();
-} else {
-    // Si MathJax n'est pas encore tout à fait prêt, on réessaie 100ms plus tard
-    setTimeout(() => {
-        if (window.MathJax && typeof MathJax.typesetPromise === "function") {
-            MathJax.typesetPromise();
-        }
-    }, 100);
-}
-
-// Remet le curseur automatiquement dans la barre de formule
-document.getElementById('formula-bar').focus();
+        if (window.MathJax && typeof MathJax.typesetPromise === "function") { MathJax.typesetPromise(); }
+        document.getElementById('formula-bar').focus();
     }
 
     render() {
@@ -262,69 +266,79 @@ document.getElementById('formula-bar').focus();
         const table = document.getElementById('sheet');
         table.innerHTML = "";
 
-        // Formater le texte et gérer l'accent gras avec le "&"
-        const formatTexte = (texte) => {
-            const chaine = String(texte);
-            if (chaine.startsWith('&')) {
-                return `<strong style="font-weight: bold;">${chaine.substring(1)}</strong>`;
-            }
-            return chaine;
-        };
-
-        // En-têtes de colonnes grises (A, B, C...) basées sur la longueur de la ligne 1
         const maxCols = sn.data[0].length;
         const hRow = document.createElement('tr');
         hRow.innerHTML = '<th class="label-cell"></th>';
-        for (let i = 0; i < maxCols; i++) {
-            hRow.innerHTML += `<th class="col-header">${String.fromCharCode(65 + i)}</th>`;
-        }
+        for (let i = 0; i < maxCols; i++) { hRow.innerHTML += `<th class="col-header">${String.fromCharCode(65 + i)}</th>`; }
         table.appendChild(hRow);
 
-        // Rendu de toutes les lignes de données à plat (Ligne 1, Ligne 2, Ligne 3...)
         sn.data.forEach((row, rIdx) => {
-            const actualRow = rIdx + 1; // Alignement parfait : index 0 -> Ligne 1
+            const actualRow = rIdx + 1; 
             const tr = document.createElement('tr');
             tr.innerHTML = `<td class="label-cell">${actualRow}</td>`;
 
-            row.forEach((val, cIdx) => {
+            row.forEach((rawStr, cIdx) => {
                 const colLetter = String.fromCharCode(65 + cIdx);
                 const cellId = `${colLetter}${actualRow}`;
-                
                 let td = document.createElement('td');
                 
-                if (this.validatedFormulas[cellId]) {
-                    td.className = "status-valide-precedent";
-                    td.textContent = this.getDisplay(cellId, this.validatedFormulas[cellId]);
-                }
-                else if (cellId === currentStep.targetCell) {
+                const globalRole = this.scenographicMap[cellId];
+                const isActiveInCurrentStep = (cellId === currentStep.targetCell || this.isCellInActiveSpread(cellId, currentStep, actualRow, cIdx));
+
+                // --- GESTION DU FOND IMMUABLE + BORDURE DE VALIDATION ---
+                if (globalRole === "cible") {
                     td.className = "cible";
-                    if(this.stepStatus === "success") td.className += " status-success";
-                    if(this.stepStatus === "error") td.className += " status-error";
-                    td.textContent = this.getDisplay(cellId, this.currentStepFormulas[cellId]);
+                    if (this.validatedFormulas[cellId] && !isActiveInCurrentStep) {
+                        td.className += " status-valide-precedent";
+                    } else if (isActiveInCurrentStep) {
+                        if (this.stepStatus === "success") td.className += " status-success";
+                        if (this.stepStatus === "error") td.className += " status-error";
+                    }
+                    td.textContent = this.currentStepFormulas[cellId] ? this.getDisplay(cellId, this.currentStepFormulas[cellId]) : (this.validatedFormulas[cellId] ? this.getDisplay(cellId, this.validatedFormulas[cellId]) : (cellId === currentStep.targetCell ? "?" : ""));
+                } 
+                else if (globalRole === "etiree") {
+                    td.className = "etiree";
+                    if (this.validatedFormulas[cellId] && !isActiveInCurrentStep) {
+                        td.className += " status-valide-precedent";
+                    } else if (isActiveInCurrentStep) {
+                        if (this.stepStatus === "success") td.className += " status-success";
+                        if (this.stepStatus === "error") td.className += " status-error";
+                    }
+                    td.textContent = this.getDisplay(cellId, isActiveInCurrentStep ? this.currentStepFormulas[cellId] : this.validatedFormulas[cellId]);
                 } 
                 else {
-                    const offset = this.getOffset(cellId, currentStep.targetCell, currentStep.direction);
-                    if (offset > 0 && offset <= currentStep.nbEtirements) {
-                        td.className = "etiree";
-                        if(this.stepStatus === "success") td.className += " status-success";
-                        if(this.stepStatus === "error") td.className += " status-error";
-                        td.textContent = this.getDisplay(cellId, this.currentStepFormulas[cellId]);
-                    } else {
-                        // Gestion unifiée du contenu
-                        const currentVal = this.currentContext[cellId];
-                        const isNum = !isNaN(parseFloat(currentVal)) && isFinite(currentVal);
-                        
-                        if (isNum) {
-                            td.innerHTML = `<input type="text" class="editable-val" value="${currentVal}" oninput="app.updateVal('${cellId}', this.value)">`;
-                        } else {
-                            td.innerHTML = `<div class="cell-text" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">${formatTexte(currentVal)}</div>`;
-                        }
+                    const cellStr = String(rawStr);
+                    if (cellStr.startsWith('&&')) {
+                        td.className = "cell-text-bg";
+                        td.innerHTML = `<div class="cell-text" style="font-weight: bold;">${cellStr.substring(2)}</div>`;
+                    } 
+                    else if (cellStr.startsWith('&')) {
+                        td.className = "cell-text-bg";
+                        td.innerHTML = `<div class="cell-text">${cellStr.substring(1)}</div>`;
+                    } 
+                    else if (cellStr.startsWith('!')) {
+                        td.className = "cell-numeric-bg";
+                        td.innerHTML = `<input type="text" class="editable-val" value="${this.currentContext[cellId]}" onchange="app.updateVal('${cellId}', this.value)">`;
+                    } 
+                    else {
+                        td.style.border = "none";
+                        td.style.backgroundColor = "transparent";
                     }
                 }
                 tr.appendChild(td);
             });
             table.appendChild(tr);
         });
+    }
+
+    isCellInActiveSpread(cellId, currentStep, actualRow, cIdx) {
+        const offset = this.getOffset(cellId, currentStep.targetCell, currentStep.direction);
+        if (currentStep.direction === "partout") {
+            const targetColIndex = currentStep.targetCell[0].charCodeAt(0) - 65;
+            const targetRowIndex = parseInt(currentStep.targetCell.substring(1));
+            return (actualRow >= targetRowIndex && cIdx >= targetColIndex && cellId !== currentStep.targetCell);
+        } 
+        return (offset > 0 && offset <= currentStep.nbEtirements);
     }
 
     getOffset(id, target, dir) {
@@ -344,46 +358,25 @@ document.getElementById('formula-bar').focus();
         });
     }
 
-getDisplay(id, f) {
-    if (!f) return (id === this.scenarios[this.currentScenarioIndex].steps[this.currentStepIndex].targetCell) ? "?" : "";
-    if (this.viewMode === "formules") return f;
-    try { 
-        // CORRECT : Le nom est attaché et la valeur est attribuée immédiatement
-        const resultatBrut = this.evaluate(f, this.currentContext); 
-        return this.formaterNombre(resultatBrut);
-    } catch { 
-        return "#VALEUR!"; 
-    }
-}
-
-    updateVal(id, v) {
-        this.currentContext[id] = v;
-        this.render();
+    getDisplay(id, f) {
+        if (!f) return "";
+        if (this.viewMode === "formules") return f;
+        try { 
+            const resultatBrut = this.evaluate(f, this.currentContext); 
+            return this.formaterNombre(resultatBrut);
+        } catch { 
+            return "#VALEUR!"; 
+        }
     }
 
-    toggleView() {
-        this.viewMode = this.viewMode === "valeurs" ? "formules" : "valeurs";
-        this.render();
-    }
+    updateVal(id, v) { this.currentContext[id] = v; this.render(); }
+    toggleView() { this.viewMode = this.viewMode === "valeurs" ? "formules" : "valeurs"; this.render(); }
+    formaterNombre(valeur) { const num = parseFloat(valeur); return isNaN(num) ? valeur : parseFloat(num.toFixed(10)); }
 
-    // Arrondit proprement à 10 chiffres après la virgule maximum pour effacer les bugs binaires
-formaterNombre(valeur) {
-    const num = parseFloat(valeur);
-    if (isNaN(num)) return valeur;
-    // On arrondit à la 10e décimale, puis parseFloat supprime les zéros inutiles à la fin
-    return parseFloat(num.toFixed(10));
-}
-
- /**
-     * L'élève abandonne l'exercice complet : 
-     * On passe directement au scénario suivant, peu importe l'étape en cours
-     */
     giveUp() {
         this.currentScenarioIndex++;
-        if (this.currentScenarioIndex < this.scenarios.length) {
-            this.initScenario();
-        } else {
-            // Si c'était le dernier exercice, on affiche l'écran final
+        if (this.currentScenarioIndex < this.scenarios.length) { this.initScenario(); } 
+        else {
             document.getElementById('quiz-ui').style.display = "none";
             document.getElementById('final-screen').style.display = "block";
             document.getElementById('progress-fill').style.width = "100%";
@@ -391,43 +384,29 @@ formaterNombre(valeur) {
     }
 
     checkAnswer() {
-        const input = document.getElementById('formula-bar').value.trim().toUpperCase().replace(/\s/g, '');
+        let input = document.getElementById('formula-bar').value.trim().toUpperCase().replace(/\s/g, '');
         const sn = this.scenarios[this.currentScenarioIndex];
         const step = sn.steps[this.currentStepIndex];
 
-        if (!input.startsWith("=")) {
-            this.feedback("Erreur : Commencez par '='", "#d32f2f");
-            return;
-        }
+        if (!input.startsWith("=")) { this.feedback("Erreur : Commencez par '='", "#d32f2f"); return; }
 
-this.currentStepFormulas[step.targetCell] = input;
-        
-        // --- NOUVELLE LOGIQUE D'ÉTIREMENT GLOBAL ---
+        this.currentStepFormulas = {};
+        this.currentStepFormulas[step.targetCell] = input;
+        const targetColIndex = step.targetCell[0].charCodeAt(0) - 65;
+        const targetRowIndex = parseInt(step.targetCell.substring(1));
+
         if (step.direction === "partout") {
-            // On boucle sur toutes les lignes et colonnes du tableau pour propager la formule
             for (let r = 1; r <= sn.data.length; r++) {
                 for (let c = 0; c < sn.data[0].length; c++) {
-                    const colLetter = String.fromCharCode(65 + c);
-                    const currentId = `${colLetter}${r}`;
-                    
-                    // On n'étire que sur les cases qui sont initialement vides dans le scénario
-                    const targetColIndex = step.targetCell[0].charCodeAt(0) - 65;
-                    const targetRowIndex = parseInt(step.targetCell.substring(1));
-                    
                     if (r >= targetRowIndex && c >= targetColIndex) {
-                        const offsetRow = r - targetRowIndex;
-                        const offsetCol = c - targetColIndex;
-                        
-                        // On propage d'abord vers la droite, puis vers le bas
-                        let propagated = this.propagate(input, offsetCol, "droite");
-                        propagated = this.propagate(propagated, offsetRow, "bas");
-                        
+                        const currentId = `${String.fromCharCode(65 + c)}${r}`;
+                        let propagated = this.propagate(input, c - targetColIndex, "droite");
+                        propagated = this.propagate(propagated, r - targetRowIndex, "bas");
                         this.currentStepFormulas[currentId] = propagated;
                     }
                 }
             }
         } else {
-            // Logique classique pour "bas" ou "droite" (inchangée)
             for(let o = 1; o <= step.nbEtirements; o++) {
                 const targetCol = step.targetCell[0];
                 const targetRow = parseInt(step.targetCell.substring(1));
@@ -440,53 +419,52 @@ this.currentStepFormulas[step.targetCell] = input;
             let passed = true;
             for (let i = 0; i < 3; i++) {
                 const testCtx = i === 0 ? this.getCurrentNumericContext() : this.genRandomCtx();
-                for (let cell in this.validatedFormulas) {
-                    testCtx[cell] = this.evaluate(this.validatedFormulas[cell], testCtx);
+                for (let cell in this.validatedFormulas) { testCtx[cell] = this.evaluate(this.validatedFormulas[cell], testCtx); }
+
+                for (let cellId in this.currentStepFormulas) {
+                    const userFormula = this.currentStepFormulas[cellId];
+                    const cC = cellId[0].charCodeAt(0) - 65;
+                    const cR = parseInt(cellId.substring(1));
+                    let refFormulaProg = this.propagate(step.refFormula, cC - targetColIndex, "droite");
+                    refFormulaProg = this.propagate(refFormulaProg, cR - targetRowIndex, "bas");
+
+                    const userRes = this.evaluate(userFormula, testCtx);
+                    const refRes = this.evaluate(refFormulaProg, testCtx);
+
+                    if (Math.abs(userRes - refRes) > 0.00001) { passed = false; break; }
                 }
-                for (let o = 0; o <= step.nbEtirements; o++) {
-                    const uF = this.propagate(input, o, step.direction);
-                    const rF = this.propagate(step.refFormula, o, step.direction);
-                    if (this.evaluate(uF, testCtx) !== this.evaluate(rF, testCtx)) {
-                        passed = false; break;
-                    }
-                }
+                if (!passed) break;
             }
 
             if (passed) {
                 this.stepStatus = "success";
                 this.feedback("Formule correcte ! Les calculs et l'étirement sont parfaits.", "#2e7d32");
-                
                 document.getElementById('btn-validate').style.display = "none";
                 document.getElementById('btn-giveup').style.display = "none";
                 document.getElementById('btn-next').style.display = "block";
                 document.getElementById('formula-bar').disabled = true;
 
                 Object.assign(this.validatedFormulas, this.currentStepFormulas);
-                for(let key in this.currentStepFormulas) {
-                    this.currentContext[key] = this.evaluate(this.currentStepFormulas[key], this.currentContext);
-                }
+                for(let key in this.currentStepFormulas) { this.currentContext[key] = this.evaluate(this.currentStepFormulas[key], this.currentContext); }
             } else {
                 this.stepStatus = "error";
-                this.feedback("Formule appliquée et étirée. Cependant, le résultat ou la logique d'étirement est incorrecte.", "#c62828");
+                this.feedback("Formule incorrecte ou mauvaise gestion des dollars ($) lors de l'étirement global.", "#c62828");
             }
         } catch {
             this.stepStatus = "error";
             this.feedback("Formule appliquée, mais elle génère une erreur (#VALEUR!).", "#c62828");
         }
-
         this.render();
     }
 
     nextStep() {
         this.currentStepIndex++;
         const sn = this.scenarios[this.currentScenarioIndex];
-        if (this.currentStepIndex < sn.steps.length) {
-            this.initStep();
-        } else {
+        if (this.currentStepIndex < sn.steps.length) { this.initStep(); } 
+        else {
             this.currentScenarioIndex++;
-            if (this.currentScenarioIndex < this.scenarios.length) {
-                this.initScenario();
-            } else {
+            if (this.currentScenarioIndex < this.scenarios.length) { this.initScenario(); } 
+            else {
                 document.getElementById('quiz-ui').style.display = "none";
                 document.getElementById('final-screen').style.display = "block";
                 document.getElementById('progress-fill').style.width = "100%";
@@ -494,23 +472,31 @@ this.currentStepFormulas[step.targetCell] = input;
         }
     }
 
- evaluate(f, ctx) {
+    getCellNumericValue(id, ctx) {
+        let raw = String(ctx[id] || "0").trim();
+        if (raw.endsWith('%')) {
+            const num = parseFloat(raw.replace('%', ''));
+            return isNaN(num) ? 0 : num / 100;
+        }
+        const num = parseFloat(raw);
+        return isNaN(num) ? 0 : num;
+    }
+
+    evaluate(f, ctx) {
         let e = f.substring(1);
+        e = e.replace(/([0-9.]+)\%/g, "($1/100)");
+
         const fn = (m, p) => {
             const cells = this.parseRange(p);
-            const vals = cells.map(c => parseFloat(ctx[c.replace(/\$/g,'')]) || 0);
+            const vals = cells.map(c => this.getCellNumericValue(c.replace(/\$/g,''), ctx));
             return m.includes("MOY") || m.includes("AVE") ? `(${vals.reduce((a,b)=>a+b,0)}/${vals.length})` : `(${vals.reduce((a,b)=>a+b,0)})`;
         };
         e = e.replace(/(?:MOYENNE|AVERAGE)\(([^)]+)\)/g, fn);
         e = e.replace(/(?:SOMME|SUM)\(([^)]+)\)/g, fn);
         e = e.replace(/\$?[A-Z]+\$?[0-9]+/g, m => {
-            const v = parseFloat(ctx[m.replace(/\$/g,'')]);
-            return isNaN(v) ? 0 : v;
+            return this.getCellNumericValue(m.replace(/\$/g,''), ctx);
         });
-
-        // --- AJOUTE CETTE LIGNE ICI POUR GÉRER LES PUISSANCES ^ ---
         e = e.replace(/\^([0-9]+)/g, '**$1'); 
-
         return Function(`return (${e})`)();
     }
 
@@ -529,10 +515,7 @@ this.currentStepFormulas[step.targetCell] = input;
 
     getCurrentNumericContext() {
         let numericCtx = {};
-        for (let key in this.currentContext) {
-            const num = parseFloat(this.currentContext[key]);
-            numericCtx[key] = !isNaN(num) ? num : 0;
-        }
+        for (let key in this.currentContext) { numericCtx[key] = this.getCellNumericValue(key, this.currentContext); }
         return numericCtx;
     }
 
@@ -544,210 +527,156 @@ this.currentStepFormulas[step.targetCell] = input;
         return c;
     }
 
-    feedback(m, c) {
-        const f = document.getElementById('feedback');
-        f.textContent = m; f.style.color = c;
-    }
+    feedback(m, c) { const f = document.getElementById('feedback'); f.textContent = m; f.style.color = c; }
 }
 
-// --- INITIALISATION DU QUIZ COMPLÈTEMENT À PLAT ---
 const app = new QuizApp([
     {
-        // EXERCICE 1 : Moyenne (Ligne 1 = En-têtes textuelles, Données de 2 à 4)
+    data: [
+        ["&&Rectangle", "&&Côté 1 (cm)", "&&Côté 2 (cm)", "&&Périmètre (cm)", "&&Aire (cm²)"], 
+        ["&Valeurs",   "!5",            "!3",            "",                 ""]                            
+    ],
+    steps: [
+        { instruction: "Étape 1 : Écrivez la formule pour calculer le <strong>Périmètre</strong> du rectangle en <strong>D2</strong> en utilisant les cellules <strong>B2</strong> et <strong>C2</strong>.", targetCell: "D2", refFormula: "=2*(B2+C2)", direction: "bas", nbEtirements: 0 },
+        { instruction: "Étape 2 : Écrivez la formule pour calculer l'<strong>Aire</strong> du rectangle en <strong>E2</strong>.", targetCell: "E2", refFormula: "=B2*C2", direction: "bas", nbEtirements: 0 }
+    ]
+},
+    {
         data: [
-            ["&Élève", "&Note 1", "&Note 2", "&Note 3", "&Moyenne"], // Ligne 1
-            ["Léa", 5, 4, 6, ""],                              // Ligne 2
-            ["Bob", 12, 14, 10, ""],                            // Ligne 3
-            ["Charlie", 8, 9, 7, ""]                            // Ligne 4
+            ["&&Élève", "&&Note 1", "&&Note 2", "&&Note 3", "&&Moyenne"], 
+            ["&Léa",     "!5",       "!4",       "!6",       ""],                                
+            ["&Bob",     "!12",      "!14",      "!10",      ""],                            
+            ["&Charlie", "!8",       "!9",       "!7",       ""]                            
+        ],
+        steps: [{ instruction: "Donnez la formule à taper en <strong>E2</strong> prête à être étirée vers le bas jusqu'en <strong>E4</strong>.", targetCell: "E2", refFormula: "=MOYENNE(B2:D2)", direction: "bas", nbEtirements: 2 }]
+    },
+    {
+        data: [
+            ["&&Article", "&&Prix Unit.", "&&Quantité", "&&Total"],     
+            ["&Stylos",    "!1.5",         "!10",        ""],                            
+            ["&Cahiers",   "!4",           "!5",         ""],                              
+            ["&Gommes",    "!0.8",         "!20",        ""],                            
+            ["",           "",             "&&Total à payer", ""]              
         ],
         steps: [
-            {
-                instruction: "Donnez la formule à taper en <strong>E2</strong>  prête à être étirée vers le bas jusqu'en <strong>E4</strong>.",
-                targetCell: "E2",
-                refFormula: "=MOYENNE(B2:D2)",
-                direction: "bas",
-                nbEtirements: 2
-            }
+            { instruction: "Étape 1 : Donnez la formule à taper en <strong>D2</strong> prête à être étirée vers le bas jusqu'en <strong>D4</strong>.", targetCell: "D2", refFormula: "=B2*C2", direction: "bas", nbEtirements: 2 },
+            { instruction: "Étape 2 : Donnez la formule à taper en <strong>D5</strong>", targetCell: "D5", refFormula: "=SOMME(D2:D4)", direction: "bas", nbEtirements: 0 }
         ]
     },
     {
-        // EXERCICE 2 : Facture (Double calcul successif)
         data: [
-            ["&Article", "&Prix Unit.", "&Quantité", "&Total"],     // Ligne 1
-            ["Stylos", 1.5, 10, ""],                            // Ligne 2
-            ["Cahiers", 4, 5, ""],                              // Ligne 3
-            ["Gommes", 0.8, 20, ""],                            // Ligne 4
-            ["", "", "&Total à payer", ""]              // Ligne 5
+            ["&&Article",   "&&Prix\nHT", "&&Montant\nTVA", "&&Prix\nTTC"], 
+            ["&Ordinateur", "!500",        "",              ""],                        
+            ["&Smartphone", "!300",        "",              ""],                        
+            ["&Tablette",   "!200",        "",              ""]                           
         ],
         steps: [
-            {
-                instruction: "Étape 1 : Donnez la formule à taper en <strong>D2</strong>  prête à être étirée vers le bas jusqu'en <strong>D4</strong>.",
-                targetCell: "D2",
-                refFormula: "=B2*C2",
-                direction: "bas",
-                nbEtirements: 2
-            },
-            {
-                instruction: "Étape 2 : Donnez la formule à taper en <strong>D5</strong>",
-                targetCell: "D5",
-                refFormula: "=SOMME(D2:D4)",
-                direction: "bas",
-                nbEtirements: 0
-            }
+            { instruction: "La TVA est de 20%. Écrivez la formule à taper en <strong>C2</strong> prête à être étirée jusqu'en <strong>C4</strong>.", targetCell: "C2", refFormula: "=B2*0.2", direction: "bas", nbEtirements: 2 },
+            { instruction: "Écrivez la formule à taper en <strong>D2</strong> prête à être étirée jusqu'en <strong>D4</strong>.", targetCell: "D2", refFormula: "=B2+C2", direction: "bas", nbEtirements: 2 }
         ]
     },
     {
-        // EXERCICE 7 : Calcul de TVA et TTC à plat (Taux fixé dans la consigne)
+    data: [
+        ["&&Réponse",  "&A",  "&B",  "&C",  "&&Total"], 
+        ["&&Effectif", "!8",  "!15", "!7",  "!"],                            
+        ["&&Fréquence","",   "",    "",    ""]                             
+    ],
+    steps: [
+        { 
+            instruction: "Étape 1 : Écrivez la formule en <strong>E2</strong> pour calculer le nombre total de réponses (l'effectif total).", 
+            targetCell: "E2", 
+            refFormula: "=SOMME(B2:D2)", 
+            direction: "bas", 
+            nbEtirements: 0 
+        },
+        { 
+            instruction: "Étape 2 : Écrivez la formule en <strong>B3</strong> pour calculer la fréquence de la réponse A, prête à être <strong>étirée vers la droite jusqu'en D3</strong>.", 
+            targetCell: "B3", 
+            refFormula: "=B2/$E2", 
+            direction: "droite", 
+            nbEtirements: 2 
+        },
+        { 
+            instruction: "Étape 3 : Écrivez la formule en <strong>E3</strong> pour calculer le total des fréquences.", 
+            targetCell: "E3", 
+            refFormula: "=SOMME(B3:D3)", 
+            direction: "bas", 
+            nbEtirements: 0 
+        }
+    ]
+}
+,
+    {
         data: [
-            ["&Article", "&Prix\nHT", "&Montant\nTVA", "&Prix\nTTC"], // Ligne 1
-            ["Ordinateur", 500, "", ""],                        // Ligne 2 (Cibles en C2 puis D2)
-            ["Smartphone", 300, "", ""],                        // Ligne 3
-            ["Tablette", 200, "", ""]                           // Ligne 4
+            ["&&Taux",        "!20%",              ""],                       
+            ["&&Prix avant", "&&Prix après",       ""],          
+            ["!30",           "",                 ""],                               
+            ["!40",           "",                 ""],                               
+            ["!50",           "",                 ""]                                
         ],
-        steps: [
-            {
-                // Étape 1 : Le montant de la TVA
-                instruction: "La TVA est de 20%. Écrivez la formule à taper en <strong>C2</strong> prête à être étirée jusqu'en <strong>C4</strong>.",
-                targetCell: "C2",
-                refFormula: "=B2*0.2", // Formule attendue : Prix HT * 0.2
-                direction: "bas",
-                nbEtirements: 2
-            },
-            {
-                // Étape 2 : Le prix TTC
-                instruction: "Écrivez la formule à taper en <strong>D2</strong> prête à être étirée jusqu'en <strong>D4</strong>.",
-                targetCell: "D2",
-                refFormula: "=B2+C2", // Accepte aussi =B2*(1+0.2) ou =B2+B2*0.2 grâce au fuzzing numérique
-                direction: "bas",
-                nbEtirements: 2
-            }
-        ]
+        steps: [{ instruction: "Le taux de réduction est de 20% en <strong>B1</strong>.<br> Ecrivez la formule à taper en <strong>B3</strong> prête à être étirée vers le bas jusqu'en <strong>B5</strong>.", targetCell: "B3", refFormula: "=A3*(1-B$1)", direction: "bas", nbEtirements: 2 }]
     },
-{
-        // EXERCICE 3 : NOUVELLE VERSION (Réduction négative isolée en B2)
+    {
         data: [
-            ["&Taux", -0.7, ""],                       // Ligne 1 : B2 contient le taux de -0.7
-            ["&Prix avant", "&Prix après", ""],          // Ligne 2
-            [30, "", ""],                             // Ligne 3 : B3 contient 30, la cible est en B3
-            [40, "", ""],                             // Ligne 4
-            [50, "", ""]                              // Ligne 5
+            ["&&Rectangle", "&&Côté 1 (cm)", "&&Côté 2 (cm)", "&&Périmètre (cm)", "&&Aire (cm²)"], 
+            ["&Valeurs",   "!5",            "!3",            "",                 ""]                            
         ],
         steps: [
-            {
-                instruction: "Le taux de réduction est stocké de manière négative (-0.7) en <strong>B1</strong>.<br> Ecrivez la formule à taper en <strong>B3</strong>  prête à être étirée vers le bas jusqu'en <strong>B5</strong>.",
-                targetCell: "B3",
-                refFormula: "=A3*(1+$B$1)", // Formule attendue : Prix avant * (1 + Taux) avec B2 verrouillé
-                direction: "bas",
-                nbEtirements: 2 // Va remplir B4 (pour 30), puis se propager sur B5 (pour 40) et B6 (pour 50)
-            }
+            { instruction: "Étape 1 : Écrivez la formule pour calculer le <strong>Périmètre</strong> du rectangle en <strong>D2</strong> en utilisant les cellules <strong>B2</strong> et <strong>C2</strong>.", targetCell: "D2", refFormula: "=2*(B2+C2)", direction: "bas", nbEtirements: 0 },
+            { instruction: "Étape 2 : Écrivez la formule pour calculer l'<strong>Aire</strong> du rectangle en <strong>E2</strong>.", targetCell: "E2", refFormula: "=B2*C2", direction: "bas", nbEtirements: 0 }
         ]
     },
     {
-        // EXERCICE 5 : Évaluation d'une fonction mathématique en ligne
         data: [
-            ["&x", 0, 1, 2, 3],       // Ligne 1 : Les valeurs de x (B1, C1, D1, E1)
-            ["&f(x)", "", "", "", ""] // Ligne 2 : La cible est en B2 (f(0))
+            ["&&x",    "!0",  "!1",  "!2",  "!3"],       
+            ["&&f(x)", "", "", "", ""] 
+        ],
+        steps: [{ instruction: "Soit la fonction $f : x \\mapsto (x-1)(2x+3)$. <br> En utilisant la cellule <strong>B1</strong> (qui contient la première valeur de $x$), écrivez la formule correspondante dans la cellule cible <strong>B2</strong>. Attention, cette fois-ci, l'<strong>étirement se fait vers la droite</strong> !", targetCell: "B2", refFormula: "=(B1-1)*(2*B1+3)", direction: "droite", nbEtirements: 3 }]
+    },
+    {
+        data: [
+            ["&&Pas", "!0.1",       ""],         
+            ["&&x",   "&&f(x)",     ""],        
+            ["!0",    "",          ""],              
+            ["",     "",          ""],             
+            ["",     "",          ""],             
+            ["",     "",          ""]              
         ],
         steps: [
-            {
-                instruction: "Soit la fonction $f : x \\mapsto (x-1)(2x+3)$. <br> En utilisant la cellule <strong>B1</strong> (qui contient la première valeur de $x$), écrivez la formule correspondante dans la cellule cible <strong>B2</strong>. Attention, cette fois-ci, l'<strong>étirement se fait vers la droite</strong> !",
-                targetCell: "B2",
-                // Formule attendue : =(B1-1)*(2*B1+3)
-                refFormula: "=(B1-1)*(2*B1+3)", 
-                direction: "droite",
-                nbEtirements: 3 // Va étirer et remplir C2, D2 et E2
-            }
+            { instruction: "Le pas de progression (0.1) est en <strong>B1</strong>.<br> Écrivez la formule en <strong>A4</strong> pour calculer la valeur suivante de $x$ (valeur précédente + pas), de manière à ce qu'elle reste correcte lorsqu'on l'<strong>étirera vers le bas</strong>.", targetCell: "A4", refFormula: "=A3+$B$1", direction: "bas", nbEtirements: 2 },
+            { instruction: "$f : x \\mapsto -2x+5$ : écrivez la formule de la fonction dans la cellule <strong>B3</strong> en utilisant la valeur de $x$ située en <strong>A3</strong>. Étirez-la ensuite vers le bas.", targetCell: "B3", refFormula: "=-2*A3+5", direction: "bas", nbEtirements: 3 }
         ]
     },
     {
-        // EXERCICE 6 : Fonction en colonne avec PAS dynamique isolé
         data: [
-            ["&Pas", 0.1, ""],         // Ligne 1 : B1 contient la valeur du pas (0.1)
-            ["&x", "&f(x)", ""],        // Ligne 2 : En-têtes (A2 et B2)
-            [0, "", ""],              // Ligne 3 : A3 contient la valeur de départ (0). Cible Étape 2 en B3.
-            ["", "", ""],             // Ligne 4 : Cible Étape 1 en A4.
-            ["", "", ""],             // Ligne 5
-            ["", "", ""]              // Ligne 6
+            ["&&Échelle",            "!2",   ""],                     
+            ["&&Aire\navant (cm²)",  "&&Aire\napres (cm²)", ""], 
+            ["!10",                  "",    ""],                            
+            ["!20",                  "",    ""],                            
+            ["!30",                  "",    ""]                             
         ],
-        steps: [
-            {
-                // ÉTAPE 1 : Générer les valeurs de x (0 -> 0.1 -> 0.2 -> 0.3)
-                instruction: "Le pas de progression (0.1) est en <strong>B1</strong>.<br> Écrivez la formule en <strong>A4</strong> pour calculer la valeur suivante de $x$ (valeur précédente + pas), de manière à ce qu'elle reste correcte lorsqu'on l'<strong>étirera vers le bas</strong>.",
-                targetCell: "A4",
-                refFormula: "=A3+$B$1", // L'élève doit absolument bloquer B1 !
-                direction: "bas",
-                nbEtirements: 2 // Va remplir automatiquement A5 (0.2) et A6 (0.3)
-            },
-            {
-                // ÉTAPE 2 : Calculer les images de la fonction $f(x) = (x-1)(2x+3)$
-                instruction: "$f : x \\mapsto -2x+5$ :  écrivez la formule de la fonction  dans la cellule <strong>B3</strong> en utilisant la valeur de $x$ située en <strong>A3</strong>. Étirez-la ensuite vers le bas.",
-                targetCell: "B3",
-                refFormula: "=-2*A3+5", // Pas de dollar ici, x varie à chaque ligne
-                direction: "bas",
-                nbEtirements: 3 // Va remplir B4, B5 et B6
-            }
-        ]
+        steps: [{ instruction: "Écrivez la formule à taper en <strong>B3</strong> prête à être étirée jusqu'en <strong>B5</strong>.", targetCell: "B3", refFormula: "=A3*$B$1^2", direction: "bas", nbEtirements: 2 }]
     },
     {
-        // EXERCICE 8 : Mise à l'échelle d'une aire (Piège du facteur au carré)
         data: [
-            ["&Échelle", 2, ""],                     // Ligne 1 : B1 contient le facteur d'échelle (2)
-            ["&Aire\navant (cm²)", "&Aire\naprès (cm²)", ""], // Ligne 2 : En-têtes internes
-            [10, "", ""],                           // Ligne 3 : Cible en B3
-            [20, "", ""],                           // Ligne 4
-            [30, "", ""]                            // Ligne 5
+            ["&&Échelle",            "!2",   ""],                     
+            ["&&Volume\navant (cm³)","&&Volume\napres (cm³)", ""], 
+            ["!10",                  "",    ""],                            
+            ["!20",                  "",    ""],                            
+            ["!30",                  "",    ""],                             
         ],
-        steps: [
-            {
-                instruction: "Écrivez la formule à taper en <strong>B3</strong> prête à être étirée jusqu'en <strong>B5</strong>.",
-                targetCell: "B3",
-                // Formule attendue : Aire avant * Échelle^2 -> Le B1 doit être verrouillé
-                refFormula: "=A3*$B$1^2", 
-                direction: "bas",
-                nbEtirements: 2
-            }
-        ]
-    }
-    ,    {
-        // EXERCICE 9 : Mise à l'échelle d'un volume (Facteur au cube)
-        data: [
-            ["&Échelle", 2, ""],                     // Ligne 1 : B1 contient l'échelle (2)
-            ["&Volume\navant (cm³)", "&Volume\napres (cm³)", ""], // Ligne 2 : En-têtes avec sauts de ligne
-            [10, "", ""],                           // Ligne 3 : Cible en B3
-            [20, "", ""],                           // Ligne 4
-            [30, "", ""]                            // Ligne 5
-        ],
-        steps: [
-            {
-                instruction: "Écrivez la formule à taper en <strong>B3</strong> prête à être étirée jusqu'en <strong>B5</strong>.",
-                targetCell: "B3",
-                // Formule attendue : Volume avant * Échelle^3 -> B1 doit avoir ses dollars
-                refFormula: "=A3*$B$1^3", 
-                direction: "bas",
-                nbEtirements: 2
-            }
-        ]
+        steps: [{ instruction: "Écrivez la formule à taper en <strong>B3</strong> prête à être étirée jusqu'en <strong>B5</strong>.", targetCell: "B3", refFormula: "=A3*$B$1^3", direction: "bas", nbEtirements: 2 }]
     },
     {
-        // EXERCICE 11 : Table de multiplication (Dollars mixtes $)
         data: [
-            ["x", 1, 2, 3, 4, 5], // Ligne 1 : Les multiplicateurs du haut (B1 à F1)
-            [1, "", "", "", "", ""], // Ligne 2 : Cible Étape 1 en B2 (1x1)
-            [2, "", "", "", "", ""], // Ligne 3
-            [3, "", "", "", "", ""], // Ligne 4
-            [4, "", "", "", "", ""], // Ligne 5
-            [5, "", "", "", "", ""]  // Ligne 6
+            ["&&x", "!1", "!2", "!3", "!4", "!5"],    
+            ["!1",  "",  "",  "",  "",  ""], 
+            ["!2",  "",  "",  "",  "",  ""], 
+            ["!3",  "",  "",  "",  "",  ""], 
+            ["!4",  "",  "",  "",  "",  ""], 
+            ["!5",  "",  "",  "",  "",  ""]  
         ],
-        steps: [
-            {
-                instruction: "Écrivez la formule magique en <strong>B2</strong> prête à être étirée sur tout le tableau (vers la droite jusqu'en <strong>F2</strong>, puis vers le bas jusqu'en <strong>F6</strong>).",
-                targetCell: "B2",
-                // Formule attendue : =$A2*B$1
-                refFormula: "=$A2*B$1", 
-                direction: "partout", // Le quiz simulera d'abord l'étirement horizontal
-                nbEtirements: 4 // Va remplir C2, D2, E2, F2
-            }
-        ]
+        steps: [{ instruction: "Écrivez la formule magique en <strong>B2</strong> prête à être étirée sur tout le tableau.", targetCell: "B2", refFormula: "=$A2*B$1", direction: "partout", nbEtirements: 0 }]
     }
 ]);
 </script>
