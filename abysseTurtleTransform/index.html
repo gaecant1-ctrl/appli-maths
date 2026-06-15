@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Défi Tortue - Programmation par Blocs</title>
+    <script src="https://unpkg.com/blockly@10.4.0/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.0/msg/fr.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.0/javascript_compressed.js"></script>
+    <script src="acorn_interpreter.js"></script>
+
+    <style>
+        /* --- CENTRALISATION DU THÈME SOUS-MARIN VIA :ROOT --- */
+        :root {
+            --bg-global: #050b14;        /* Fond de la page : Bleu abyssal très sombre */
+            --bg-card: #0d1527;          /* Fond des panneaux : Bleu cockpit */
+            --bg-canvas: #070d1a;        /* Fond de la zone de dessin : Eau profonde */
+            --text-main: #f8fafc;        /* Texte principal : Blanc cassé lumineux */
+            --text-muted: #64748b;       /* Texte secondaire */
+            --border-color: #1e293b;     /* Bordures sombres high-tech */
+            
+            /* Couleurs néon des accents */
+            --color-primary: #00f5d4;    /* Cyan Néon (Accent principal & Slider) */
+            --color-run: #10b981;        /* Vert exécution */
+            --color-run-hover: #059669;
+            --color-reset: #ef4444;      /* Rouge réinitialisation */
+            --color-reset-hover: #dc2626;
+            --color-generate: #7209b7;   /* Violet mystique pour le nouveau défi */
+            --color-generate-hover: #5b0696;
+            
+            /* Dimensions standardisées pour l'homogénéisation */
+            --radius-card: 16px;
+            --radius-elem: 10px;
+            --elem-height: 48px;         
+        }
+
+        /* --- DESIGN GLOBAL --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-global);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+        }
+        
+        h2 { 
+            margin-bottom: 5px; 
+            font-weight: 700;
+            color: var(--color-primary);
+            font-size: 28px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
+        }
+
+        #infoAngleExterne {
+            font-size: 16px;
+            color: #ffea00;
+            font-weight: bold;
+            margin-bottom: 15px;
+            min-height: 22px;
+            text-shadow: 0 0 8px rgba(255, 234, 0, 0.2);
+        }
+
+        #main-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- CONFIGURATION DES CARTES --- */
+        .card-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #workspace-area { width: 600px; }
+        
+        #blocklyDiv {
+            width: 100%;
+            height: 380px; 
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        #render-area {
+            width: 390px;
+            align-items: center;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-canvas);
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+        }
+        
+        canvas { position: absolute; top: 0; left: 0; }
+
+        /* --- INTERFACES INTERACTIVES HOMOGÉNÉISÉES --- */
+        .buttons-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        button {
+            flex: 1;
+            height: var(--elem-height);
+            font-size: 14px;
+            color: white;
+            border: none;
+            border-radius: var(--radius-elem);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        button:active { transform: scale(0.97); }
+        
+        .btn-run { background-color: var(--color-run); }
+        .btn-run:hover { background-color: var(--color-run-hover); box-shadow: 0 6px 12px rgba(16, 185, 129, 0.2); }
+        
+        .btn-reset { background-color: var(--color-reset); }
+        .btn-reset:hover { background-color: var(--color-reset-hover); box-shadow: 0 6px 12px rgba(239, 68, 68, 0.2); }
+        
+        .btn-generate { background-color: var(--color-generate); }
+        .btn-generate:hover { background-color: var(--color-generate-hover); box-shadow: 0 6px 12px rgba(114, 9, 183, 0.3); }
+
+        /* Style modes */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            background: var(--bg-canvas);
+            padding: 4px;
+            border-radius: var(--radius-elem);
+            border: 1px solid var(--border-color);
+            height: var(--elem-height);
+            flex: 3.5;
+        }
+        
+        .mode-selector label {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .mode-selector input[type="radio"] { display: none; }
+        
+        .mode-selector label:has(input:checked) {
+            background: var(--bg-card);
+            color: var(--color-primary);
+            box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+            border: 1px solid rgba(0, 245, 212, 0.2);
+        }
+
+        /* Curseur de vitesse */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--bg-canvas);
+            padding: 0 10px;
+            border-radius: var(--radius-elem);
+            border: 1px solid var(--border-color);
+            height: var(--elem-height);
+            flex: 1.2;
+        }
+        
+        .slider-container span { font-size: 16px; user-select: none; }
+        
+        input[type="range"] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 5px;
+            background: var(--border-color);
+            outline: none;
+            min-width: 40px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            box-shadow: 0 0 6px var(--color-primary);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <h2>⚓ Défi Tortue des Abysses</h2>
+    <div id="infoAngleExterne"></div>
+    
+    <div id="main-container">
+        <div id="workspace-area" class="card-panel">
+            <div id="blocklyDiv"></div>
+            <div class="buttons-group">
+                <button class="btn-run" onclick="runCode()">Exécuter le code</button>
+                <button class="btn-reset" onclick="reinitialiserUtilisateur()">Réinitialiser</button>
+                <div class="slider-container">
+                    <span>🐢</span>
+                    <input type="range" id="vitesseSlider" min="50" max="1000" step="50" value="750">
+                    <span>🐇</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="render-area" class="card-panel">
+            <div id="canvas-container">
+                <canvas id="bgCanvas" width="350" height="350"></canvas>
+                <canvas id="trackCanvas" width="350" height="350"></canvas>
+                <canvas id="turtleCanvas" width="350" height="350"></canvas>
+            </div>
+            <div class="buttons-group">
+                <button class="btn-generate" onclick="genererNouveauCheminDefi()">Défi</button>
+<div class="mode-selector">
+    <label><input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)"> Libre</label>
+    <label><input type="radio" name="modeChemin" value="centrale" onchange="changerMode(this.value)"> Centrale</label>
+    <label><input type="radio" name="modeChemin" value="axiale" onchange="changerMode(this.value)"> Axiale</label>
+    <label><input type="radio" name="modeChemin" value="translation" onchange="changerMode(this.value)"> Translation</label>
+    <label><input type="radio" name="modeChemin" value="rotation" onchange="changerMode(this.value)"> Rotation</label> </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CANVAS_SIZE = 350;
+
+        // --- 1. CONFIGURATION DES CANEVAS ---
+        const bgCtx = document.getElementById('bgCanvas').getContext('2d');
+        const trackCtx = document.getElementById('trackCanvas').getContext('2d');
+        const turtleCtx = document.getElementById('turtleCanvas').getContext('2d');
+
+        let typeChemin = 'libre'; 
+        let departX = CANVAS_SIZE / 2, departY = CANVAS_SIZE / 2;
+        let departHeading = 0; 
+        let executionEnCours = false;
+        let monInterpreteur = null;
+
+        // Variables globales de l'ancrage dynamique
+        let ancrageX = null;
+        let ancrageY = null;
+        let ancrageHeading = null;
+        let ancrageActif = false;
+
+        // Données géométriques mémorisées du défi courant
+        let donneesDefi = { d1: 0, angle: 0, d2: 0, sousTypeSym: 'centrale', angleABA: 0 };
+
+        // --- 2. CLASSE DE LA TORTUE VIRTUELLE ---
+        class VirtualPythonTurtle {
+            constructor(x, y, ctx) {
+                this.x = x;
+                this.y = y;
+                this.heading = 0; 
+                this.isDown = true;
+                this.ctx = ctx;
+
+                // Mémoire d'état interne
+                this.memoireX = x;
+                this.memoireY = y;
+                this.memoireHeading = 0;
+
+                this.invisible = false;                     
+                this.historiqueActions = [];                
+                this.historiquePoints = [{ x: this.x, y: this.y }]; 
+            }
+
+            sauvegarderEtat() {
+                this.memoireX = this.x;
+                this.memoireY = this.y;
+                this.memoireHeading = this.heading;
+            }
+
+            restaurerEtat() {
+                this.x = this.memoireX;
+                this.y = this.memoireY;
+                this.heading = this.memoireHeading;
+            }
+
+            configurerStyle(typeStyle) {
+                if (!this.ctx || this.invisible) return;
+                
+                this.ctx.restore(); 
+                this.ctx.save();    
+                
+                this.ctx.lineCap = "round";
+                this.ctx.lineJoin = "round";
+                this.ctx.setLineDash([]); 
+
+                if (typeStyle === 'rouge') {
+                    this.ctx.strokeStyle = "#ff3355"; 
+                    this.ctx.lineWidth = 5;
+                    this.ctx.shadowBlur = 20; 
+                    this.ctx.shadowColor = "#ff3355";
+                } else if (typeStyle === 'eclat_interne') {
+                    this.ctx.strokeStyle = "#ffe5ec"; 
+                    this.ctx.lineWidth = 1; 
+                    this.ctx.shadowBlur = 4;
+                    this.ctx.shadowColor = "#ffe5ec";
+                } else if (typeStyle === 'orange') {
+                    this.ctx.strokeStyle = "#ffa500"; 
+                    this.ctx.lineWidth = 3;
+                    this.ctx.setLineDash([4, 4]); 
+                    this.ctx.shadowBlur = 0;
+                } else if (typeStyle === 'utilisateur') {
+                    // Le style bleu néon de la tortue verte de l'élève
+                    this.ctx.strokeStyle = "#00f5d4"; 
+                    this.ctx.lineWidth = 4;
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = "#00f5d4";
+                }
+            }
+
+            executerAction(action, inclureAffichage = false) {
+                let headingInitial = this.heading;
+
+                if (action.a !== 0) {
+                    this.left(action.a); 
+                    if (action.affiche === "angle" && inclureAffichage && !this.invisible) {
+                        this.tracerArcAngle(action.a, headingInitial);
+                    }
+                }
+                
+                if (action.d !== 0) {
+                    this.forward(action.d);
+                    if (action.affiche === "distance" && inclureAffichage && !this.invisible) {
+                        this.ecrireDimension(action.d);
+                    }
+                }
+            }
+
+            forward(distance, affiche = "") {
+                let rad = this.heading * Math.PI / 180;
+                let nextX = this.x + distance * Math.cos(rad);
+                let nextY = this.y + distance * Math.sin(rad);
+
+                if (this.isDown && this.ctx && !this.invisible) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.x, CANVAS_SIZE - this.y); 
+                    this.ctx.lineTo(nextX, CANVAS_SIZE - nextY);
+                    this.ctx.stroke();
+                }
+                
+                this.x = nextX;
+                this.y = nextY;
+                
+                this.historiqueActions.push({ d: distance, a: 0, affiche: affiche });
+                this.historiquePoints.push({ x: this.x, y: this.y });
+            }
+
+            backward(distance, affiche = "") { 
+                this.forward(-distance, affiche); 
+            }
+            
+            left(angle, affiche = "") { 
+                this.heading = (this.heading + angle) % 360; 
+                if (this.heading < 0) this.heading += 360;
+                this.historiqueActions.push({ d: 0, a: angle, affiche: affiche });
+            }
+            
+            right(angle, affiche = "") { 
+                this.heading = (this.heading - angle) % 360; 
+                if (this.heading < 0) this.heading += 360;
+                this.historiqueActions.push({ d: 0, a: -angle, affiche: affiche });
+            }
+            
+            up() { this.isDown = false; }
+            down() { this.isDown = true; }
+            
+            goto(x, y) { 
+                this.x = x; 
+                this.y = y; 
+                this.historiquePoints.push({ x: this.x, y: this.y });
+            }
+
+            tracerArcAngle(angleRotation, headingInitial) {
+                if (!this.ctx || this.invisible) return;
+
+                this.ctx.restore(); 
+                this.ctx.save();
+                
+                this.ctx.strokeStyle = "#00f0ff"; 
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([]);
+                this.ctx.shadowBlur = 8;
+                this.ctx.shadowColor = "#00f0ff";
+
+                let rayonArc = 25;
+                let angleGeometrique = 180 - Math.abs(angleRotation);
+                let angleGeometriqueRad = angleGeometrique * Math.PI / 180;
+                let alpha1 = -(headingInitial + 180) * Math.PI / 180;
+                
+                let alpha2;
+                let sensAntiHoraireCanvas;
+
+                if (angleRotation > 0) {
+                    alpha2 = alpha1 + angleGeometriqueRad;
+                    sensAntiHoraireCanvas = false;
+                } else {
+                    alpha2 = alpha1 - angleGeometriqueRad;
+                    sensAntiHoraireCanvas = true;
+                }
+
+                this.ctx.beginPath();
+                this.ctx.arc(this.x, CANVAS_SIZE - this.y, rayonArc, alpha1, alpha2, sensAntiHoraireCanvas);
+                this.ctx.stroke();
+
+                let alphaBissectrice = (alpha1 + alpha2) / 2;
+                let texteX = this.x + (rayonArc + 15) * Math.cos(alphaBissectrice);
+                let texteY = (CANVAS_SIZE - this.y) + (rayonArc + 15) * Math.sin(alphaBissectrice);
+
+                this.ctx.fillStyle = "#00f0ff";
+                this.ctx.font = "bold 11px Arial";
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "middle";
+                
+                this.ctx.fillText(angleGeometrique + "°", texteX, texteY);
+                this.ctx.restore();
+            }
+
+            ecrireDimension(valeur) {
+                if (!this.ctx || this.invisible) return;
+                
+                let hRad = this.heading * Math.PI / 180;
+                let mX = (this.x + (this.x - valeur * Math.cos(hRad))) / 2;
+                let mY = (this.y + (this.y - valeur * Math.sin(hRad))) / 2;
+                
+                let texteX = mX - 12 * Math.sin(hRad);
+                let texteY = mY + 12 * Math.cos(hRad);
+
+                this.ctx.save();
+                this.ctx.translate(texteX, CANVAS_SIZE - texteY);
+                this.ctx.fillStyle = "#e2e8f0"; 
+                this.ctx.font = "bold 12px Arial";
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "middle";
+                this.ctx.fillText(valeur, 0, 0);
+                this.ctx.restore();
+            }
+        }
+        
+        let tUtilisateur = new VirtualPythonTurtle(departX, departY, trackCtx);
+
+        // --- 3. DÉFINITION DES BLOCS BLOCKLY ---
+
+        Blockly.Blocks['programme'] = {
+            init: function() {
+                this.appendDummyInput().appendField("Quand le programme démarre");
+                this.setNextStatement(true, null);
+                this.setColour(290);
+                this.setDeletable(false);
+            }
+        };
+
+        Blockly.Blocks['avancer'] = {
+            init: function() {
+                this.appendValueInput("DISTANCE")
+                    .setCheck("Number")
+                    .appendField("Avancer de");
+                this.appendDummyInput().appendField("unités");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(160);
+                this.setInputsInline(true);
+            }
+        };
+
+        Blockly.Blocks['tourner_angle'] = {
+            init: function() {
+                this.appendValueInput("ANGLE")
+                    .setCheck("Number")
+                    .appendField("Tourner de");
+                this.appendDummyInput().appendField("degrés (+ gauche / - droite)");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(230);
+                this.setInputsInline(true);
+            }
+        };
+
+        Blockly.Blocks['definir_origine'] = {
+            init: function() {
+                this.appendDummyInput().appendField("Sauvegarder la position (O)");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(340);
+            }
+        };
+
+        Blockly.Blocks['revenir_origine'] = {
+            init: function() {
+                this.appendDummyInput().appendField("Retourner à la position sauvegardée");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(340);
+            }
+        };
+
+        // --- CONFIGURATION DU GÉNÉRATEUR JAVASCRIPT ---
+
+        Blockly.JavaScript.forBlock['programme'] = function(block) { 
+            return ""; 
+        };
+
+        Blockly.JavaScript.forBlock['avancer'] = function(block) {
+            var distance = Blockly.JavaScript.valueToCode(block, 'DISTANCE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            return `grille.avancer(${distance});\n`;
+        };
+
+        Blockly.JavaScript.forBlock['tourner_angle'] = function(block) {
+            var angle = Blockly.JavaScript.valueToCode(block, 'ANGLE', Blockly.JavaScript.ORDER_ATOMIC) || '90';
+            return `grille.tourner(${angle});\n`;
+        };
+
+        Blockly.JavaScript.forBlock['definir_origine'] = function(block) {
+            return `grille.definirOrigine();\n`;
+        };
+
+        Blockly.JavaScript.forBlock['revenir_origine'] = function(block) {
+            return `grille.revenirOrigine();\n`;
+        };
+
+        Blockly.JavaScript.forBlock['controls_repeat_ext'] = function(block) {
+            var repeats = Blockly.JavaScript.valueToCode(block, 'TIMES', Blockly.JavaScript.ORDER_ASSIGNMENT) || '0';
+            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            return `for (var i_loop = 0; i_loop < ${repeats}; i_loop++) {\n${branch}}\n`;
+        };
+
+        // --- INJECTION DU WORKSPACE COMPLET ---
+        const workspace = Blockly.inject('blocklyDiv', {
+            toolbox: `
+            <xml id="toolbox" style="display: none">
+                <category name="Tortue" colour="#33a57a">
+                    <block type="avancer">
+                        <value name="DISTANCE">
+                            <shadow type="math_number"><field name="NUM">50</field></shadow>
+                        </value>
+                    </block>
+                    <block type="tourner_angle">
+                        <value name="ANGLE">
+                            <shadow type="math_number"><field name="NUM">90</field></shadow>
+                        </value>
+                    </block>
+                    <block type="definir_origine"></block>
+                    <block type="revenir_origine"></block>
+                </category>
+                
+                <category name="Boucles" colour="#5b10a7">
+                    <block type="controls_repeat_ext">
+                        <value name="TIMES">
+                            <shadow type="math_number"><field name="NUM">2</field></shadow>
+                        </value>
+                    </block>
+                </category>
+                
+                <category name="Variables" custom="VARIABLE" colour="#a55b80"></category>
+                
+                <category name="Maths" colour="#5b67a5">
+                    <block type="math_number">
+                        <field name="NUM">1</field>
+                    </block>
+                    <block type="math_arithmetic">
+                        <field name="OP">MULTIPLY</field>
+                        <value name="B">
+                            <shadow type="math_number">
+                                <field name="NUM">-1</field>
+                            </shadow>
+                        </value>
+                    </block>
+                </category>
+            </xml>
+            `,
+            media: 'https://unpkg.com/blockly/media/',
+            sounds: false
+        });
+
+        // Création de la variable 'sens' par défaut dans le workspace
+        workspace.createVariable('sens');
+
+        let startBlock = workspace.newBlock('programme');
+        startBlock.initSvg();
+        startBlock.render();
+        startBlock.moveBy(20, 20);
+        startBlock.setDeletable(false);
+        workspace.addChangeListener(Blockly.Events.disableOrphans); 
+
+        // --- 4. CONNEXION DE L'API ACORN (JS-INTERPRETER) ---
+        function initAPI(interpreter, globalObject) {
+            var grillePseudo = interpreter.createObjectProto(interpreter.OBJECT_PROTO);
+            interpreter.setProperty(globalObject, 'grille', grillePseudo);
+            
+            interpreter.setProperty(grillePseudo, 'avancer', interpreter.createNativeFunction(function(d) {
+                tUtilisateur.configurerStyle('utilisateur'); // <-- CORRECTION : Initialise le style bleu néon avant le tracé !
+                tUtilisateur.forward(d);
+                rafraichirIconeTortue();
+            }));
+            
+            interpreter.setProperty(grillePseudo, 'tourner', interpreter.createNativeFunction(function(a) {
+                tUtilisateur.left(a);
+                rafraichirIconeTortue();
+            }));
+
+            interpreter.setProperty(grillePseudo, 'definirOrigine', interpreter.createNativeFunction(function() {
+                tUtilisateur.sauvegarderEtat();
+            }));
+
+            interpreter.setProperty(grillePseudo, 'revenirOrigine', interpreter.createNativeFunction(function() {
+                tUtilisateur.restaurerEtat();
+                rafraichirIconeTortue();
+            }));
+
+            interpreter.setProperty(globalObject, 'parseFloat', interpreter.createNativeFunction(window.parseFloat));
+            interpreter.setProperty(globalObject, 'Math', interpreter.createNativeFunction(window.Math));
+            
+            var consolePseudo = interpreter.createObjectProto(interpreter.OBJECT_PROTO);
+            interpreter.setProperty(globalObject, 'console', consolePseudo);
+            interpreter.setProperty(consolePseudo, 'log', interpreter.createNativeFunction(function(msg) {
+                console.log(msg);
+            }));
+        }
+                
+        function executionPasAPas() {
+            if (!executionEnCours) return;
+
+            let aEncoreDuCode = true;
+            let valeurSlider = parseInt(document.getElementById("vitesseSlider").value);
+            
+            if (valeurSlider === 1000) {
+                while (monInterpreteur && monInterpreteur.step()) {}
+                aEncoreDuCode = false;
+            } else {
+                for (let i = 0; i < 6; i++) {
+                    if (monInterpreteur && monInterpreteur.step()) {
+                        aEncoreDuCode = true;
+                    } else {
+                        aEncoreDuCode = false;
+                        break;
+                    }
+                }
+            }
+
+            if (aEncoreDuCode) {
+                let vitesse = 1050 - valeurSlider;
+                setTimeout(executionPasAPas, vitesse);
+            } else {
+                executionEnCours = false;
+                console.log("Parcours terminé !");
+            }
+        }
+
+        function runCode() {
+            if (executionEnCours) return;
+
+            var codeGenere = Blockly.JavaScript.workspaceToCode(workspace);
+            if (!codeGenere.trim()) return;
+            
+            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            tUtilisateur.x = departX;
+            tUtilisateur.y = departY;
+            tUtilisateur.heading = departHeading;
+            tUtilisateur.sauvegarderEtat(); 
+            rafraichirIconeTortue();
+            
+            let rootBlock = workspace.getTopBlocks().find(b => b.type === "programme");
+            if (!rootBlock) return;
+
+            try {
+                executionEnCours = true;
+                monInterpreteur = new Interpreter(codeGenere, initAPI);
+                executionPasAPas();
+            } catch (e) {
+                console.error("Erreur d'interprétation : ", e);
+                executionEnCours = false;
+            }
+        }
+
+        function reinitialiserUtilisateur() {
+            executionEnCours = false;
+            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            tUtilisateur.x = departX;
+            tUtilisateur.y = departY;
+            tUtilisateur.heading = departHeading;
+            tUtilisateur.sauvegarderEtat();
+            rafraichirIconeTortue();
+        }
+
+        function changerMode(nouveauMode) {
+            typeChemin = nouveauMode;
+            genererNouveauCheminDefi();
+        }
+
+// --- 6. GENERATEUR DE DEFIS ---
+// --- 6. GENERATEUR DE DEFIS ---
+// --- 6. GENERATEUR DE DEFIS ---
+// --- 6. GENERATEUR DE DEFIS ---
+function genererNouveauCheminDefi() {
+    executionEnCours = false;
+    bgCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    document.getElementById('infoAngleExterne').innerText = "";
+
+    let cheminValide = false;
+    let départTheoriqueX = CANVAS_SIZE / 2;
+    let départTheoriqueY = CANVAS_SIZE / 2;
+
+    while (!cheminValide) {
+        // --- ÉTAPE 1 : CHOIX DE LA TRANSFORMATION ---
+        let modeActif = typeChemin;
+        if (typeChemin === 'libre') {
+            const modes = ['centrale', 'axiale', 'translation', 'rotation'];
+            modeActif = modes[Math.floor(Math.random() * modes.length)];
+        }
+
+        // --- ÉTAPE 2 : PARAMÈTRES GÉOMÉTRIQUES DU ROUGE ---
+        let headingInitial = Math.floor(Math.random() * 360);
+        donneesDefi.d1 = Math.floor(Math.random() * 25) + 65;   // OA
+        donneesDefi.d2 = Math.floor(Math.random() * 25) + 65;   // AB
+
+        // SÉCURITÉ ÉTHIQUE : On pioche un angle mais on interdit STRICTEMENT le 90°
+        donneesDefi.angle = 90;
+        while (donneesDefi.angle === 90) {
+            donneesDefi.angle = Math.floor(Math.random() * 40) + 55; 
+        }
+
+        // Simulation Rouge
+        let tRougeSimu = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+        tRougeSimu.invisible = true;
+        tRougeSimu.heading = headingInitial;
+        tRougeSimu.forward(donneesDefi.d1, "distance"); 
+        tRougeSimu.left(donneesDefi.angle, "angle");    
+        tRougeSimu.forward(donneesDefi.d2, "distance"); 
+
+        // Simulation Orange
+        let listeTortuesOrangeSimu = [];
+
+        if (modeActif === 'centrale') {
+            let tOrange = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+            tOrange.invisible = true;
+            tOrange.heading = (headingInitial + 180) % 360;
+            tRougeSimu.historiqueActions.forEach(act => tOrange.executerAction(act, false));
+            listeTortuesOrangeSimu.push(tOrange);
+
+        } else if (modeActif === 'axiale') {
+            let capIndicesInitial = (headingInitial + 180) % 360;
+            let signeTheta = Math.random() < 0.5 ? 1 : -1;
+            donneesDefi.thetaAxiale = (Math.floor(Math.random() * 80) + 60) * signeTheta;
+            let hOrange = (capIndicesInitial + donneesDefi.thetaAxiale) % 360;
+            if (hOrange < 0) hOrange += 360;
+
+            let tOrange = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+            tOrange.invisible = true;
+            tOrange.heading = hOrange;
+            tRougeSimu.historiqueActions.forEach(act => {
+                tOrange.executerAction({ d: act.d, a: -act.a, affiche: act.affiche }, false); 
+            });
+            listeTortuesOrangeSimu.push(tOrange);
+
+        } else if (modeActif === 'translation') {
+            let pointFinalRouge = tRougeSimu.historiquePoints[tRougeSimu.historiquePoints.length - 1];
+            let tOrange = new VirtualPythonTurtle(pointFinalRouge.x, pointFinalRouge.y, null);
+            tOrange.invisible = true;
+            let hOrange = (tRougeSimu.heading - donneesDefi.angle) % 360;
+            if (hOrange < 0) hOrange += 360;
+            tOrange.heading = hOrange;
+            tRougeSimu.historiqueActions.forEach(act => tOrange.executerAction(act, false));
+            listeTortuesOrangeSimu.push(tOrange);
+
+        } else if (modeActif === 'rotation') {
+            // SÉCURITÉ ÉTHIQUE ABSOLUE : On tire 3 ou 5 branches, on bannit le 4
+            donneesDefi.nbReteptitionsRotation = Math.random() < 0.5 ? 3 : 5; 
+            let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
+
+            let tConceptuelle = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+            tConceptuelle.invisible = true;
+
+            for (let i = 1; i < donneesDefi.nbReteptitionsRotation; i++) {
+                tConceptuelle.x = départTheoriqueX;
+                tConceptuelle.y = départTheoriqueY;
+                tConceptuelle.heading = headingInitial;
+                
+                tConceptuelle.left(i * pasAngle);
+                
+                let tBranche = new VirtualPythonTurtle(tConceptuelle.x, tConceptuelle.y, null);
+                tBranche.invisible = true;
+                tBranche.heading = tConceptuelle.heading;
+                tRougeSimu.historiqueActions.forEach(act => tBranche.executerAction(act, false));
+                
+                listeTortuesOrangeSimu.push(tBranche);
+            }
+        }
+
+        // --- ÉTAPE 4 : CALCUL DU CADRAGE GLOBAL ---
+        let tousLesPoints = [...tRougeSimu.historiquePoints];
+        listeTortuesOrangeSimu.forEach(tSimu => tousLesPoints.push(...tSimu.historiquePoints));
+
+        let xMin = Math.min(...tousLesPoints.map(p => p.x));
+        let xMax = Math.max(...tousLesPoints.map(p => p.x));
+        let yMin = Math.min(...tousLesPoints.map(p => p.y));
+        let yMax = Math.max(...tousLesPoints.map(p => p.y));
+
+        if ((xMax - xMin) <= (CANVAS_SIZE - 25) && (yMax - yMin) <= (CANVAS_SIZE - 25)) {
+            cheminValide = true;
+            
+            let deltaX = 0;
+            let deltaY = 0;
+
+            if (modeActif === 'rotation') {
+                // Pas de recentrage pour la rotation : l'origine est figée au milieu (175, 175)
+                departX = départTheoriqueX; 
+                departY = départTheoriqueY; 
+            } else {
+                // Recentrage classique pour les autres modes
+                deltaX = (CANVAS_SIZE / 2) - (xMin + xMax) / 2;
+                deltaY = (CANVAS_SIZE / 2) - (yMin + yMax) / 2;
+                departX = départTheoriqueX + deltaX;
+                departY = départTheoriqueY + deltaY;
+            }
+
+            departHeading = headingInitial; 
+
+            tUtilisateur.x = departX; 
+            tUtilisateur.y = departY; 
+            tUtilisateur.heading = departHeading;
+            tUtilisateur.sauvegarderEtat();
+                            
+            // --- ÉTAPE 5 : DESSIN RÉEL ---
+            
+            // A) Le motif Rouge
+            let tRougeReelle = new VirtualPythonTurtle(departX, departY, bgCtx);
+            tRougeReelle.heading = headingInitial;
+            bgCtx.save();
+            tRougeSimu.historiqueActions.forEach(action => {
+                tRougeReelle.configurerStyle('rouge'); 
+                tRougeReelle.executerAction(action, true); 
+            });
+            bgCtx.restore();
+
+            // B) Le(s) motif(s) Orange(s) Réel(s)
+            bgCtx.save();
+            if (modeActif === 'rotation') {
+                let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
+                let tMecanique = new VirtualPythonTurtle(departX, departY, bgCtx);
+
+                for (let i = 1; i < donneesDefi.nbReteptitionsRotation; i++) {
+                    tMecanique.x = departX;
+                    tMecanique.y = departY;
+                    tMecanique.heading = headingInitial;
+                    
+                    tMecanique.left(i * pasAngle);
+
+                    tRougeSimu.historiqueActions.forEach(action => {
+                        tMecanique.configurerStyle('orange'); 
+                        tMecanique.executerAction(action, false); 
+                    });
+                }
+            } else {
+                listeTortuesOrangeSimu.forEach(tOrangeSimu => {
+                    let orangeRealX = tOrangeSimu.historiquePoints[0].x + deltaX;
+                    let orangeRealY = tOrangeSimu.historiquePoints[0].y + deltaY;
+                    let tOrangeReelle = new VirtualPythonTurtle(orangeRealX, orangeRealY, bgCtx);
+                    tOrangeReelle.heading = tOrangeSimu.heading;
+
+                    tRougeSimu.historiqueActions.forEach(action => {
+                        tOrangeReelle.configurerStyle('orange'); 
+                        if (modeActif === 'axiale') {
+                            tOrangeReelle.executerAction({ d: action.d, a: -action.a, affiche: action.affiche }, false); 
+                        } else {
+                            tOrangeReelle.executerAction(action, false); 
+                        }
+                    });
+                });
+            }
+            bgCtx.restore();
+
+            // C) L'indice d'angle AOA' (Symétrie Axiale)
+            if (modeActif === 'axiale') {
+                let tIndicesReelle = new VirtualPythonTurtle(departX, departY, bgCtx);
+                let capIndicesInitial = (headingInitial + 180) % 360;
+                tIndicesReelle.tracerArcAngle(donneesDefi.thetaAxiale, capIndicesInitial);
+            }
+        }
+    }
+    rafraichirIconeTortue();
+}
+
+        // --- DESSIN DE LA TORTUE VUE DU DESSUS ---
+        function rafraichirIconeTortue() {
+            turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            turtleCtx.save();
+            turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE - tUtilisateur.y);
+            turtleCtx.rotate(-tUtilisateur.heading * Math.PI / 180);
+            
+            turtleCtx.shadowBlur = 8;
+            turtleCtx.shadowColor = "#00ff66"; 
+
+            turtleCtx.fillStyle = "#00f5d4";
+            turtleCtx.beginPath();
+            turtleCtx.ellipse(5, -9, 8, 3, Math.PI / 4, 0, Math.PI * 2);
+            turtleCtx.ellipse(5, 9, 8, 3, -Math.PI / 4, 0, Math.PI * 2);
+            turtleCtx.fill();
+
+            turtleCtx.beginPath();
+            turtleCtx.ellipse(-7, -7, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
+            turtleCtx.ellipse(-7, 7, 4, 2, Math.PI / 6, 0, Math.PI * 2);
+            turtleCtx.fill();
+
+            turtleCtx.beginPath();
+            turtleCtx.moveTo(-10, 0);
+            turtleCtx.lineTo(-14, -2);
+            turtleCtx.lineTo(-14, 2);
+            turtleCtx.closePath();
+            turtleCtx.fill();
+
+            turtleCtx.beginPath();
+            turtleCtx.ellipse(-1, 0, 10, 8, 0, 0, Math.PI * 2);
+            turtleCtx.fillStyle = "#00ff66"; 
+            turtleCtx.fill();
+            
+            turtleCtx.strokeStyle = "#050b14";
+            turtleCtx.lineWidth = 1.5;
+            turtleCtx.stroke();
+
+            turtleCtx.beginPath();
+            turtleCtx.arc(12, 0, 4, 0, Math.PI * 2);
+            turtleCtx.fillStyle = "#00f5d4";
+            turtleCtx.fill();
+
+            turtleCtx.restore();
+        }
+
+        window.onload = function() {
+            genererNouveauCheminDefi();
+        };
+    </script>
+</body>
+</html>
