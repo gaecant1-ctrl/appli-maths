@@ -879,6 +879,7 @@ function genererNouveauCheminDefi() {
             bgCtx.restore();
 
             // B) Le(s) motif(s) Orange(s) Réel(s)
+// B) Le(s) motif(s) Orange(s) Réel(s)
             bgCtx.save();
             if (modeActif === 'rotation') {
                 let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
@@ -897,11 +898,23 @@ function genererNouveauCheminDefi() {
                     });
                 }
             } else {
-                listeTortuesOrangeSimu.forEach(tOrangeSimu => {
+                // MODES STANDARDS : On recalcule le cap exact par rapport au headingInitial officiel
+                listeTortuesOrangeSimu.forEach((tOrangeSimu, index) => {
                     let orangeRealX = tOrangeSimu.historiquePoints[0].x + deltaX;
                     let orangeRealY = tOrangeSimu.historiquePoints[0].y + deltaY;
                     let tOrangeReelle = new VirtualPythonTurtle(orangeRealX, orangeRealY, bgCtx);
-                    tOrangeReelle.heading = tOrangeSimu.heading;
+                    
+                    // On recalcule le cap initial de l'orange basé sur la transformation subie
+                    if (modeActif === 'centrale') {
+                        tOrangeReelle.heading = (headingInitial + 180) % 360;
+                    } else if (modeActif === 'axiale') {
+                        let capIndicesInitial = (headingInitial + 180) % 360;
+                        tOrangeReelle.heading = (capIndicesInitial + donneesDefi.thetaAxiale) % 360;
+                        if (tOrangeReelle.heading < 0) tOrangeReelle.heading += 360;
+                    } else if (modeActif === 'translation') {
+                        tOrangeReelle.heading = (tRougeSimu.heading - donneesDefi.angle) % 360;
+                        if (tOrangeReelle.heading < 0) tOrangeReelle.heading += 360;
+                    }
 
                     tRougeSimu.historiqueActions.forEach(action => {
                         tOrangeReelle.configurerStyle('orange'); 
