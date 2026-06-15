@@ -90,7 +90,7 @@
         
         #blocklyDiv {
             width: 100%;
-            height: 380px; 
+            height: 400px; 
             border-radius: 12px;
             border: 1px solid var(--border-color);
             overflow: hidden;
@@ -104,7 +104,7 @@
         #canvas-container {
             position: relative;
             width: 350px;
-            height: 350px;
+            height: 400px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
             background-color: var(--bg-canvas);
@@ -114,7 +114,7 @@
         
         canvas { position: absolute; top: 0; left: 0; }
 
-        /* --- INTERFACES INTERACTIVES HOMOGÉNÉISÉES --- */
+        /* --- INTERFACES INTERACTIVES --- */
         .buttons-group {
             display: flex;
             gap: 12px;
@@ -150,15 +150,12 @@
         .btn-generate { background-color: var(--color-generate); }
         .btn-generate:hover { background-color: var(--color-generate-hover); box-shadow: 0 6px 12px rgba(114, 9, 183, 0.3); }
 
-        /* Style modes */
+        /* Style des boutons radios avec bordures fixes */
         .mode-selector {
             display: flex;
             justify-content: center;
-            gap: 6px;
-            background: var(--bg-canvas);
-            padding: 4px;
-            border-radius: var(--radius-elem);
-            border: 1px solid var(--border-color);
+            gap: 8px;
+            background: transparent;
             height: var(--elem-height);
             flex: 3.5;
         }
@@ -167,11 +164,13 @@
             flex: 1;
             text-align: center;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: var(--radius-elem);
             font-weight: 600;
             font-size: 11px;
             color: var(--text-muted);
-            transition: all 0.2s ease;
+            background: var(--bg-canvas);
+            border: 2px solid var(--border-color); /* Bordure structurelle visible par défaut */
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -181,11 +180,12 @@
         
         .mode-selector input[type="radio"] { display: none; }
         
+        /* Activation néon de la bordure quand sélectionné */
         .mode-selector label:has(input:checked) {
             background: var(--bg-card);
             color: var(--color-primary);
-            box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
-            border: 1px solid rgba(0, 245, 212, 0.2);
+            border-color: var(--color-primary); 
+            box-shadow: 0 0 12px rgba(0, 245, 212, 0.25);
         }
 
         /* Curseur de vitesse */
@@ -250,24 +250,26 @@
 
         <div id="render-area" class="card-panel">
             <div id="canvas-container">
-                <canvas id="bgCanvas" width="350" height="350"></canvas>
-                <canvas id="trackCanvas" width="350" height="350"></canvas>
-                <canvas id="turtleCanvas" width="350" height="350"></canvas>
+                <canvas id="bgCanvas" width="350" height="400"></canvas>
+                <canvas id="trackCanvas" width="350" height="400"></canvas>
+                <canvas id="turtleCanvas" width="350" height="400"></canvas>
             </div>
             <div class="buttons-group">
                 <button class="btn-generate" onclick="genererNouveauCheminDefi()">Défi</button>
-<div class="mode-selector">
-    <label><input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)"> Libre</label>
-    <label><input type="radio" name="modeChemin" value="centrale" onchange="changerMode(this.value)"> Centrale</label>
-    <label><input type="radio" name="modeChemin" value="axiale" onchange="changerMode(this.value)"> Axiale</label>
-    <label><input type="radio" name="modeChemin" value="translation" onchange="changerMode(this.value)"> Translation</label>
-    <label><input type="radio" name="modeChemin" value="rotation" onchange="changerMode(this.value)"> Rotation</label> </div>
+                <div class="mode-selector">
+                    <label><input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)"> Libre</label>
+                    <label><input type="radio" name="modeChemin" value="centrale" onchange="changerMode(this.value)"> Centrale</label>
+                    <label><input type="radio" name="modeChemin" value="axiale" onchange="changerMode(this.value)"> Axiale</label>
+                    <label><input type="radio" name="modeChemin" value="translation" onchange="changerMode(this.value)"> Translation</label>
+                    <label><input type="radio" name="modeChemin" value="rotation" onchange="changerMode(this.value)"> Rotation</label> 
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const CANVAS_SIZE = 350;
+        const CANVAS_SIZE_X = 350;
+        const CANVAS_SIZE_Y = 400;
 
         // --- 1. CONFIGURATION DES CANEVAS ---
         const bgCtx = document.getElementById('bgCanvas').getContext('2d');
@@ -275,7 +277,7 @@
         const turtleCtx = document.getElementById('turtleCanvas').getContext('2d');
 
         let typeChemin = 'libre'; 
-        let departX = CANVAS_SIZE / 2, departY = CANVAS_SIZE / 2;
+        let departX = CANVAS_SIZE_X / 2, departY = CANVAS_SIZE_Y / 2;
         let departHeading = 0; 
         let executionEnCours = false;
         let monInterpreteur = null;
@@ -298,6 +300,8 @@
                 this.isDown = true;
                 this.ctx = ctx;
 
+                this.multiplicateurAngle = 1; // 1 = normal, -1 = inversé
+
                 // Mémoire d'état interne
                 this.memoireX = x;
                 this.memoireY = y;
@@ -318,6 +322,13 @@
                 this.x = this.memoireX;
                 this.y = this.memoireY;
                 this.heading = this.memoireHeading;
+            }
+
+            inverserOrientation() {
+                this.multiplicateurAngle *= -1;
+                if (!this.invisible) {
+                    this.historiqueActions.push({ type: 'inverser' });
+                }
             }
 
             configurerStyle(typeStyle) {
@@ -346,7 +357,6 @@
                     this.ctx.setLineDash([4, 4]); 
                     this.ctx.shadowBlur = 0;
                 } else if (typeStyle === 'utilisateur') {
-                    // Le style bleu néon de la tortue verte de l'élève
                     this.ctx.strokeStyle = "#00f5d4"; 
                     this.ctx.lineWidth = 4;
                     this.ctx.shadowBlur = 10;
@@ -355,6 +365,11 @@
             }
 
             executerAction(action, inclureAffichage = false) {
+                if (action.type === 'inverser') {
+                    this.inverserOrientation();
+                    return;
+                }
+
                 let headingInitial = this.heading;
 
                 if (action.a !== 0) {
@@ -379,8 +394,8 @@
 
                 if (this.isDown && this.ctx && !this.invisible) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(this.x, CANVAS_SIZE - this.y); 
-                    this.ctx.lineTo(nextX, CANVAS_SIZE - nextY);
+                    this.ctx.moveTo(this.x, CANVAS_SIZE_Y - this.y); 
+                    this.ctx.lineTo(nextX, CANVAS_SIZE_Y - nextY);
                     this.ctx.stroke();
                 }
                 
@@ -396,13 +411,15 @@
             }
             
             left(angle, affiche = "") { 
-                this.heading = (this.heading + angle) % 360; 
+                let angleEffectif = angle * this.multiplicateurAngle;
+                this.heading = (this.heading + angleEffectif) % 360; 
                 if (this.heading < 0) this.heading += 360;
                 this.historiqueActions.push({ d: 0, a: angle, affiche: affiche });
             }
             
             right(angle, affiche = "") { 
-                this.heading = (this.heading - angle) % 360; 
+                let angleEffectif = angle * this.multiplicateurAngle;
+                this.heading = (this.heading - angleEffectif) % 360; 
                 if (this.heading < 0) this.heading += 360;
                 this.historiqueActions.push({ d: 0, a: -angle, affiche: affiche });
             }
@@ -445,12 +462,12 @@
                 }
 
                 this.ctx.beginPath();
-                this.ctx.arc(this.x, CANVAS_SIZE - this.y, rayonArc, alpha1, alpha2, sensAntiHoraireCanvas);
+                this.ctx.arc(this.x, CANVAS_SIZE_Y - this.y, rayonArc, alpha1, alpha2, sensAntiHoraireCanvas);
                 this.ctx.stroke();
 
                 let alphaBissectrice = (alpha1 + alpha2) / 2;
                 let texteX = this.x + (rayonArc + 15) * Math.cos(alphaBissectrice);
-                let texteY = (CANVAS_SIZE - this.y) + (rayonArc + 15) * Math.sin(alphaBissectrice);
+                let texteY = (CANVAS_SIZE_Y - this.y) + (rayonArc + 15) * Math.sin(alphaBissectrice);
 
                 this.ctx.fillStyle = "#00f0ff";
                 this.ctx.font = "bold 11px Arial";
@@ -472,7 +489,7 @@
                 let texteY = mY + 12 * Math.cos(hRad);
 
                 this.ctx.save();
-                this.ctx.translate(texteX, CANVAS_SIZE - texteY);
+                this.ctx.translate(texteX, CANVAS_SIZE_Y - texteY);
                 this.ctx.fillStyle = "#e2e8f0"; 
                 this.ctx.font = "bold 12px Arial";
                 this.ctx.textAlign = "center";
@@ -513,11 +530,21 @@
                 this.appendValueInput("ANGLE")
                     .setCheck("Number")
                     .appendField("Tourner de");
-                this.appendDummyInput().appendField("degrés (+ gauche / - droite)");
+                this.appendDummyInput().appendField("degrés");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
                 this.setColour(230);
                 this.setInputsInline(true);
+            }
+        };
+
+        Blockly.Blocks['inverser_orientation'] = {
+            init: function() {
+                this.appendDummyInput().appendField("🔄 Inverser l'orientation");
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setColour(230);
+                this.setTooltip("Inverse le sens des virages : tourner à gauche ira à droite et inversement.");
             }
         };
 
@@ -532,7 +559,7 @@
 
         Blockly.Blocks['revenir_origine'] = {
             init: function() {
-                this.appendDummyInput().appendField("Retourner à la position sauvegardée");
+                this.appendDummyInput().appendField("Retourner à la position O");
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
                 this.setColour(340);
@@ -555,6 +582,10 @@
             return `grille.tourner(${angle});\n`;
         };
 
+        Blockly.JavaScript.forBlock['inverser_orientation'] = function(block) {
+            return `grille.inverserOrientation();\n`;
+        };
+
         Blockly.JavaScript.forBlock['definir_origine'] = function(block) {
             return `grille.definirOrigine();\n`;
         };
@@ -569,56 +600,33 @@
             return `for (var i_loop = 0; i_loop < ${repeats}; i_loop++) {\n${branch}}\n`;
         };
 
-        // --- INJECTION DU WORKSPACE COMPLET ---
+        // --- INJECTION DU WORKSPACE ÉPURÉ SANS MENUS ---
         const workspace = Blockly.inject('blocklyDiv', {
             toolbox: `
             <xml id="toolbox" style="display: none">
-                <category name="Tortue" colour="#33a57a">
-                    <block type="avancer">
-                        <value name="DISTANCE">
-                            <shadow type="math_number"><field name="NUM">50</field></shadow>
-                        </value>
-                    </block>
-                    <block type="tourner_angle">
-                        <value name="ANGLE">
-                            <shadow type="math_number"><field name="NUM">90</field></shadow>
-                        </value>
-                    </block>
-                    <block type="definir_origine"></block>
-                    <block type="revenir_origine"></block>
-                </category>
-                
-                <category name="Boucles" colour="#5b10a7">
-                    <block type="controls_repeat_ext">
-                        <value name="TIMES">
-                            <shadow type="math_number"><field name="NUM">2</field></shadow>
-                        </value>
-                    </block>
-                </category>
-                
-                <category name="Variables" custom="VARIABLE" colour="#a55b80"></category>
-                
-                <category name="Maths" colour="#5b67a5">
-                    <block type="math_number">
-                        <field name="NUM">1</field>
-                    </block>
-                    <block type="math_arithmetic">
-                        <field name="OP">MULTIPLY</field>
-                        <value name="B">
-                            <shadow type="math_number">
-                                <field name="NUM">-1</field>
-                            </shadow>
-                        </value>
-                    </block>
-                </category>
+                <block type="avancer">
+                    <value name="DISTANCE">
+                        <shadow type="math_number"><field name="NUM">50</field></shadow>
+                    </value>
+                </block>
+                <block type="tourner_angle">
+                    <value name="ANGLE">
+                        <shadow type="math_number"><field name="NUM">60</field></shadow>
+                    </value>
+                </block>
+                <block type="inverser_orientation"></block>
+                <block type="definir_origine"></block>
+                <block type="revenir_origine"></block>
+                <block type="controls_repeat_ext">
+                    <value name="TIMES">
+                        <shadow type="math_number"><field name="NUM">2</field></shadow>
+                    </value>
+                </block>
             </xml>
             `,
             media: 'https://unpkg.com/blockly/media/',
             sounds: false
         });
-
-        // Création de la variable 'sens' par défaut dans le workspace
-        workspace.createVariable('sens');
 
         let startBlock = workspace.newBlock('programme');
         startBlock.initSvg();
@@ -633,7 +641,7 @@
             interpreter.setProperty(globalObject, 'grille', grillePseudo);
             
             interpreter.setProperty(grillePseudo, 'avancer', interpreter.createNativeFunction(function(d) {
-                tUtilisateur.configurerStyle('utilisateur'); // <-- CORRECTION : Initialise le style bleu néon avant le tracé !
+                tUtilisateur.configurerStyle('utilisateur');
                 tUtilisateur.forward(d);
                 rafraichirIconeTortue();
             }));
@@ -641,6 +649,10 @@
             interpreter.setProperty(grillePseudo, 'tourner', interpreter.createNativeFunction(function(a) {
                 tUtilisateur.left(a);
                 rafraichirIconeTortue();
+            }));
+
+            interpreter.setProperty(grillePseudo, 'inverserOrientation', interpreter.createNativeFunction(function() {
+                tUtilisateur.inverserOrientation();
             }));
 
             interpreter.setProperty(grillePseudo, 'definirOrigine', interpreter.createNativeFunction(function() {
@@ -697,10 +709,11 @@
             var codeGenere = Blockly.JavaScript.workspaceToCode(workspace);
             if (!codeGenere.trim()) return;
             
-            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            trackCtx.clearRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
             tUtilisateur.x = departX;
             tUtilisateur.y = departY;
             tUtilisateur.heading = departHeading;
+            tUtilisateur.multiplicateurAngle = 1; 
             tUtilisateur.sauvegarderEtat(); 
             rafraichirIconeTortue();
             
@@ -719,10 +732,11 @@
 
         function reinitialiserUtilisateur() {
             executionEnCours = false;
-            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            trackCtx.clearRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
             tUtilisateur.x = departX;
             tUtilisateur.y = departY;
             tUtilisateur.heading = departHeading;
+            tUtilisateur.multiplicateurAngle = 1;
             tUtilisateur.sauvegarderEtat();
             rafraichirIconeTortue();
         }
@@ -732,218 +746,200 @@
             genererNouveauCheminDefi();
         }
 
-// --- 6. GENERATEUR DE DEFIS ---
-// --- 6. GENERATEUR DE DEFIS ---
-// --- 6. GENERATEUR DE DEFIS ---
-// --- 6. GENERATEUR DE DEFIS ---
-function genererNouveauCheminDefi() {
-    executionEnCours = false;
-    bgCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    document.getElementById('infoAngleExterne').innerText = "";
+        // --- 6. GENERATEUR DE DEFIS ---
+        function genererNouveauCheminDefi() {
+            executionEnCours = false;
+            bgCtx.clearRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
+            trackCtx.clearRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
+            document.getElementById('infoAngleExterne').innerText = "";
 
-    let cheminValide = false;
-    let départTheoriqueX = CANVAS_SIZE / 2;
-    let départTheoriqueY = CANVAS_SIZE / 2;
+            let cheminValide = false;
+            let départTheoriqueX = CANVAS_SIZE_X / 2;
+            let départTheoriqueY = CANVAS_SIZE_Y / 2;
 
-    while (!cheminValide) {
-        // --- ÉTAPE 1 : CHOIX DE LA TRANSFORMATION ---
-        let modeActif = typeChemin;
-        if (typeChemin === 'libre') {
-            const modes = ['centrale', 'axiale', 'translation', 'rotation'];
-            modeActif = modes[Math.floor(Math.random() * modes.length)];
-        }
-
-        // --- ÉTAPE 2 : PARAMÈTRES GÉOMÉTRIQUES DU ROUGE ---
-        let headingInitial = Math.floor(Math.random() * 360);
-        donneesDefi.d1 = Math.floor(Math.random() * 25) + 65;   // OA
-        donneesDefi.d2 = Math.floor(Math.random() * 25) + 65;   // AB
-
-        // SÉCURITÉ ÉTHIQUE : On pioche un angle mais on interdit STRICTEMENT le 90°
-        donneesDefi.angle = 90;
-        while (donneesDefi.angle === 90) {
-            donneesDefi.angle = Math.floor(Math.random() * 40) + 55; 
-        }
-
-        // Simulation Rouge
-        let tRougeSimu = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
-        tRougeSimu.invisible = true;
-        tRougeSimu.heading = headingInitial;
-        tRougeSimu.forward(donneesDefi.d1, "distance"); 
-        tRougeSimu.left(donneesDefi.angle, "angle");    
-        tRougeSimu.forward(donneesDefi.d2, "distance"); 
-
-        // Simulation Orange
-        let listeTortuesOrangeSimu = [];
-
-        if (modeActif === 'centrale') {
-            let tOrange = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
-            tOrange.invisible = true;
-            tOrange.heading = (headingInitial + 180) % 360;
-            tRougeSimu.historiqueActions.forEach(act => tOrange.executerAction(act, false));
-            listeTortuesOrangeSimu.push(tOrange);
-
-        } else if (modeActif === 'axiale') {
-            let capIndicesInitial = (headingInitial + 180) % 360;
-            let signeTheta = Math.random() < 0.5 ? 1 : -1;
-            donneesDefi.thetaAxiale = (Math.floor(Math.random() * 80) + 60) * signeTheta;
-            let hOrange = (capIndicesInitial + donneesDefi.thetaAxiale) % 360;
-            if (hOrange < 0) hOrange += 360;
-
-            let tOrange = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
-            tOrange.invisible = true;
-            tOrange.heading = hOrange;
-            tRougeSimu.historiqueActions.forEach(act => {
-                tOrange.executerAction({ d: act.d, a: -act.a, affiche: act.affiche }, false); 
-            });
-            listeTortuesOrangeSimu.push(tOrange);
-
-        } else if (modeActif === 'translation') {
-            let pointFinalRouge = tRougeSimu.historiquePoints[tRougeSimu.historiquePoints.length - 1];
-            let tOrange = new VirtualPythonTurtle(pointFinalRouge.x, pointFinalRouge.y, null);
-            tOrange.invisible = true;
-            let hOrange = (tRougeSimu.heading - donneesDefi.angle) % 360;
-            if (hOrange < 0) hOrange += 360;
-            tOrange.heading = hOrange;
-            tRougeSimu.historiqueActions.forEach(act => tOrange.executerAction(act, false));
-            listeTortuesOrangeSimu.push(tOrange);
-
-        } else if (modeActif === 'rotation') {
-            // SÉCURITÉ ÉTHIQUE ABSOLUE : On tire 3 ou 5 branches, on bannit le 4
-            donneesDefi.nbReteptitionsRotation = Math.random() < 0.5 ? 3 : 5; 
-            let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
-
-            let tConceptuelle = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
-            tConceptuelle.invisible = true;
-
-            for (let i = 1; i < donneesDefi.nbReteptitionsRotation; i++) {
-                tConceptuelle.x = départTheoriqueX;
-                tConceptuelle.y = départTheoriqueY;
-                tConceptuelle.heading = headingInitial;
-                
-                tConceptuelle.left(i * pasAngle);
-                
-                let tBranche = new VirtualPythonTurtle(tConceptuelle.x, tConceptuelle.y, null);
-                tBranche.invisible = true;
-                tBranche.heading = tConceptuelle.heading;
-                tRougeSimu.historiqueActions.forEach(act => tBranche.executerAction(act, false));
-                
-                listeTortuesOrangeSimu.push(tBranche);
-            }
-        }
-
-        // --- ÉTAPE 4 : CALCUL DU CADRAGE GLOBAL ---
-        let tousLesPoints = [...tRougeSimu.historiquePoints];
-        listeTortuesOrangeSimu.forEach(tSimu => tousLesPoints.push(...tSimu.historiquePoints));
-
-        let xMin = Math.min(...tousLesPoints.map(p => p.x));
-        let xMax = Math.max(...tousLesPoints.map(p => p.x));
-        let yMin = Math.min(...tousLesPoints.map(p => p.y));
-        let yMax = Math.max(...tousLesPoints.map(p => p.y));
-
-        if ((xMax - xMin) <= (CANVAS_SIZE - 25) && (yMax - yMin) <= (CANVAS_SIZE - 25)) {
-            cheminValide = true;
-            
-            let deltaX = 0;
-            let deltaY = 0;
-
-            if (modeActif === 'rotation') {
-                // Pas de recentrage pour la rotation : l'origine est figée au milieu (175, 175)
-                departX = départTheoriqueX; 
-                departY = départTheoriqueY; 
-            } else {
-                // Recentrage classique pour les autres modes
-                deltaX = (CANVAS_SIZE / 2) - (xMin + xMax) / 2;
-                deltaY = (CANVAS_SIZE / 2) - (yMin + yMax) / 2;
-                departX = départTheoriqueX + deltaX;
-                departY = départTheoriqueY + deltaY;
-            }
-
-            departHeading = headingInitial; 
-
-            tUtilisateur.x = departX; 
-            tUtilisateur.y = departY; 
-            tUtilisateur.heading = departHeading;
-            tUtilisateur.sauvegarderEtat();
-                            
-            // --- ÉTAPE 5 : DESSIN RÉEL ---
-            
-            // A) Le motif Rouge
-            let tRougeReelle = new VirtualPythonTurtle(departX, departY, bgCtx);
-            tRougeReelle.heading = headingInitial;
-            bgCtx.save();
-            tRougeSimu.historiqueActions.forEach(action => {
-                tRougeReelle.configurerStyle('rouge'); 
-                tRougeReelle.executerAction(action, true); 
-            });
-            bgCtx.restore();
-
-            // B) Le(s) motif(s) Orange(s) Réel(s)
-// B) Le(s) motif(s) Orange(s) Réel(s)
-            bgCtx.save();
-            if (modeActif === 'rotation') {
-                let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
-                let tMecanique = new VirtualPythonTurtle(departX, departY, bgCtx);
-
-                for (let i = 1; i < donneesDefi.nbReteptitionsRotation; i++) {
-                    tMecanique.x = departX;
-                    tMecanique.y = departY;
-                    tMecanique.heading = headingInitial;
-                    
-                    tMecanique.left(i * pasAngle);
-
-                    tRougeSimu.historiqueActions.forEach(action => {
-                        tMecanique.configurerStyle('orange'); 
-                        tMecanique.executerAction(action, false); 
-                    });
+            while (!cheminValide) {
+                let modeActif = typeChemin;
+                if (typeChemin === 'libre') {
+                    const modes = ['centrale', 'axiale', 'translation', 'rotation'];
+                    modeActif = modes[Math.floor(Math.random() * modes.length)];
                 }
-            } else {
-                // MODES STANDARDS : On recalcule le cap exact par rapport au headingInitial officiel
-                listeTortuesOrangeSimu.forEach((tOrangeSimu, index) => {
-                    let orangeRealX = tOrangeSimu.historiquePoints[0].x + deltaX;
-                    let orangeRealY = tOrangeSimu.historiquePoints[0].y + deltaY;
-                    let tOrangeReelle = new VirtualPythonTurtle(orangeRealX, orangeRealY, bgCtx);
+
+                let headingInitial = Math.floor(Math.random() * 360);
+                donneesDefi.d1 = Math.floor(Math.random() * 25) + 85;   // OA
+                donneesDefi.d2 = Math.floor(Math.random() * 25) + 85;   // AB
+
+                donneesDefi.angle = 90;
+                while (donneesDefi.angle === 90) {
+                    donneesDefi.angle = Math.floor(Math.random() * 40) + 55; 
+                }
+
+                let tRougeSimu = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+                tRougeSimu.invisible = true;
+                tRougeSimu.heading = headingInitial;
+                tRougeSimu.forward(donneesDefi.d1, "distance"); 
+                tRougeSimu.left(donneesDefi.angle, "angle");    
+                tRougeSimu.forward(donneesDefi.d2, "distance"); 
+
+                let listeTortuesOrangeSimu = [];
+
+                if (modeActif === 'centrale') {
+                    let tOrange = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+                    tOrange.invisible = true;
+                    tOrange.heading = (headingInitial + 180) % 360;
+                    tRougeSimu.historiqueActions.forEach(act => tOrange.executerAction(act, false));
+                    listeTortuesOrangeSimu.push(tOrange);
+
+                } else if (modeActif === 'axiale') {
+                    let capIndicesInitial = (headingInitial + 180) % 360;
+                    let signeTheta = Math.random() < 0.5 ? 1 : -1;
+                    donneesDefi.thetaAxiale = (Math.floor(Math.random() * 80) + 30) * signeTheta;
+                    let hOrange = (capIndicesInitial + donneesDefi.thetaAxiale) % 360;
+                    if (hOrange < 0) hOrange += 360;
+
+                    let tOrange = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+                    tOrange.invisible = true;
+                    tOrange.heading = hOrange;
+                    tRougeSimu.historiqueActions.forEach(act => {
+                        tOrange.executerAction({ d: act.d, a: -act.a, affiche: act.affiche }, false); 
+                    });
+                    listeTortuesOrangeSimu.push(tOrange);
+
+                } else if (modeActif === 'translation') {
+                    let pointFinalRouge = tRougeSimu.historiquePoints[tRougeSimu.historiquePoints.length - 1];
+                    let tOrange = new VirtualPythonTurtle(pointFinalRouge.x, pointFinalRouge.y, null);
+                    tOrange.invisible = true;
+                    let hOrange = (tRougeSimu.heading - donneesDefi.angle) % 360;
+                    if (hOrange < 0) hOrange += 360;
+                    tOrange.heading = hOrange;
+                    tRougeSimu.historiqueActions.forEach(act => tOrange.executerAction(act, false));
+                    listeTortuesOrangeSimu.push(tOrange);
+
+                } else if (modeActif === 'rotation') {
+                    donneesDefi.nbReteptitionsRotation = Math.random() < 0.5 ? 3 : 5; 
+                    let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
+
+                    let tConceptuelle = new VirtualPythonTurtle(départTheoriqueX, départTheoriqueY, null);
+                    tConceptuelle.invisible = true;
+
+                    for (let i = 1; i < donneesDefi.nbReteptitionsRotation; i++) {
+                        tConceptuelle.x = départTheoriqueX;
+                        tConceptuelle.y = départTheoriqueY;
+                        tConceptuelle.heading = headingInitial;
+                        
+                        tConceptuelle.left(i * pasAngle);
+                        
+                        let tBranche = new VirtualPythonTurtle(tConceptuelle.x, tConceptuelle.y, null);
+                        tBranche.invisible = true;
+                        tBranche.heading = tConceptuelle.heading;
+                        tRougeSimu.historiqueActions.forEach(act => tBranche.executerAction(act, false));
+                        
+                        listeTortuesOrangeSimu.push(tBranche);
+                    }
+                }
+
+                let tousLesPoints = [...tRougeSimu.historiquePoints];
+                listeTortuesOrangeSimu.forEach(tSimu => tousLesPoints.push(...tSimu.historiquePoints));
+
+                let xMin = Math.min(...tousLesPoints.map(p => p.x));
+                let xMax = Math.max(...tousLesPoints.map(p => p.x));
+                let yMin = Math.min(...tousLesPoints.map(p => p.y));
+                let yMax = Math.max(...tousLesPoints.map(p => p.y));
+
+                if ((xMax - xMin) <= (CANVAS_SIZE_X - 25) && (yMax - yMin) <= (CANVAS_SIZE_Y - 25)) {
+                    cheminValide = true;
                     
-                    // On recalcule le cap initial de l'orange basé sur la transformation subie
-                    if (modeActif === 'centrale') {
-                        tOrangeReelle.heading = (headingInitial + 180) % 360;
-                    } else if (modeActif === 'axiale') {
-                        let capIndicesInitial = (headingInitial + 180) % 360;
-                        tOrangeReelle.heading = (capIndicesInitial + donneesDefi.thetaAxiale) % 360;
-                        if (tOrangeReelle.heading < 0) tOrangeReelle.heading += 360;
-                    } else if (modeActif === 'translation') {
-                        tOrangeReelle.heading = (tRougeSimu.heading - donneesDefi.angle) % 360;
-                        if (tOrangeReelle.heading < 0) tOrangeReelle.heading += 360;
+                    let deltaX = 0;
+                    let deltaY = 0;
+
+                    if (modeActif === 'rotation') {
+                        departX = départTheoriqueX; 
+                        departY = départTheoriqueY; 
+                    } else {
+                        deltaX = (CANVAS_SIZE_X / 2) - (xMin + xMax) / 2;
+                        deltaY = (CANVAS_SIZE_Y / 2) - (yMin + yMax) / 2;
+                        departX = départTheoriqueX + deltaX;
+                        departY = départTheoriqueY + deltaY;
                     }
 
-                    tRougeSimu.historiqueActions.forEach(action => {
-                        tOrangeReelle.configurerStyle('orange'); 
-                        if (modeActif === 'axiale') {
-                            tOrangeReelle.executerAction({ d: action.d, a: -action.a, affiche: action.affiche }, false); 
-                        } else {
-                            tOrangeReelle.executerAction(action, false); 
-                        }
-                    });
-                });
-            }
-            bgCtx.restore();
+                    departHeading = headingInitial; 
 
-            // C) L'indice d'angle AOA' (Symétrie Axiale)
-            if (modeActif === 'axiale') {
-                let tIndicesReelle = new VirtualPythonTurtle(departX, departY, bgCtx);
-                let capIndicesInitial = (headingInitial + 180) % 360;
-                tIndicesReelle.tracerArcAngle(donneesDefi.thetaAxiale, capIndicesInitial);
+                    tUtilisateur.x = departX; 
+                    tUtilisateur.y = departY; 
+                    tUtilisateur.heading = departHeading;
+                    tUtilisateur.sauvegarderEtat();
+                                    
+                    // A) Le motif Rouge
+                    let tRougeReelle = new VirtualPythonTurtle(departX, departY, bgCtx);
+                    tRougeReelle.heading = headingInitial;
+                    bgCtx.save();
+                    tRougeSimu.historiqueActions.forEach(action => {
+                        tRougeReelle.configurerStyle('rouge'); 
+                        tRougeReelle.executerAction(action, true); 
+                    });
+                    bgCtx.restore();
+
+                    // B) Le(s) motif(s) Orange(s) Réel(s)
+                    bgCtx.save();
+                    if (modeActif === 'rotation') {
+                        let pasAngle = 360 / donneesDefi.nbReteptitionsRotation;
+                        let tMecanique = new VirtualPythonTurtle(departX, departY, bgCtx);
+
+                        for (let i = 1; i < donneesDefi.nbReteptitionsRotation; i++) {
+                            tMecanique.x = departX;
+                            tMecanique.y = departY;
+                            tMecanique.heading = headingInitial;
+                            
+                            tMecanique.left(i * pasAngle);
+
+                            tRougeSimu.historiqueActions.forEach(action => {
+                                tMecanique.configurerStyle('orange'); 
+                                tMecanique.executerAction(action, false); 
+                            });
+                        }
+                    } else {
+                        listeTortuesOrangeSimu.forEach((tOrangeSimu, index) => {
+                            let orangeRealX = tOrangeSimu.historiquePoints[0].x + deltaX;
+                            let orangeRealY = tOrangeSimu.historiquePoints[0].y + deltaY;
+                            let tOrangeReelle = new VirtualPythonTurtle(orangeRealX, orangeRealY, bgCtx);
+                            
+                            if (modeActif === 'centrale') {
+                                tOrangeReelle.heading = (headingInitial + 180) % 360;
+                            } else if (modeActif === 'axiale') {
+                                let capIndicesInitial = (headingInitial + 180) % 360;
+                                tOrangeReelle.heading = (capIndicesInitial + donneesDefi.thetaAxiale) % 360;
+                                if (tOrangeReelle.heading < 0) tOrangeReelle.heading += 360;
+                            } else if (modeActif === 'translation') {
+                                tOrangeReelle.heading = (tRougeSimu.heading - donneesDefi.angle) % 360;
+                                if (tOrangeReelle.heading < 0) tOrangeReelle.heading += 360;
+                            }
+
+                            tRougeSimu.historiqueActions.forEach(action => {
+                                tOrangeReelle.configurerStyle('orange'); 
+                                if (modeActif === 'axiale') {
+                                    tOrangeReelle.executerAction({ d: action.d, a: -action.a, affiche: action.affiche }, false); 
+                                } else {
+                                    tOrangeReelle.executerAction(action, false); 
+                                }
+                            });
+                        });
+                    }
+                    bgCtx.restore();
+
+                    if (modeActif === 'axiale') {
+                        let tIndicesReelle = new VirtualPythonTurtle(departX, departY, bgCtx);
+                        let capIndicesInitial = (headingInitial + 180) % 360;
+                        tIndicesReelle.tracerArcAngle(donneesDefi.thetaAxiale, capIndicesInitial);
+                    }
+                }
             }
+            rafraichirIconeTortue();
         }
-    }
-    rafraichirIconeTortue();
-}
 
         // --- DESSIN DE LA TORTUE VUE DU DESSUS ---
         function rafraichirIconeTortue() {
-            turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            turtleCtx.clearRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
             turtleCtx.save();
-            turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE - tUtilisateur.y);
+            turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE_Y - tUtilisateur.y);
             turtleCtx.rotate(-tUtilisateur.heading * Math.PI / 180);
             
             turtleCtx.shadowBlur = 8;
