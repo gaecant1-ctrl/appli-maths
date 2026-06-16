@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz : Les 11 Patrons du Cube</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #2d3748;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: #1a365d;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .consigne {
+            font-size: 1.1em;
+            background: #ebf8ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #3182ce;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* --- STRUCTURE EN 3 COLONNES CÔTE À CÔTE --- */
+        .zone-principale {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Style commun pour les sections/colonnes */
+        .colonne {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .colonne h2 {
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #718096;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            width: 100%;
+            padding-bottom: 8px;
+            text-align: center;
+        }
+
+        /* 1. Colonne COULEURS (Gauche) */
+        .col-couleurs {
+            width: 15%;
+            justify-content: flex-start;
+        }
+
+        .palette {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-couleur {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .btn-couleur:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-couleur.actif {
+            border-color: #2d3748 !important;
+            box-shadow: 0 0 0 2px white, 0 6px 12px rgba(0,0,0,0.25);
+            transform: scale(1.1);
+        }
+
+        #btn-rouge { background-color: #e53e3e; }
+        #btn-vert  { background-color: #38a169; }
+        #btn-bleu  { background-color: #3182ce; }
+
+        /* 2. Colonne PATRON (Centre) */
+        .col-patron {
+            width: 50%;
+            justify-content: center;
+            min-height: 250px;
+        }
+
+        #zone-patron {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        svg {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        .face {
+            fill: #ffffff;
+            stroke: #2d3748;
+            stroke-width: 2.5px;
+            cursor: pointer;
+            transition: fill 0.15s, stroke-width 0.15s;
+        }
+
+        .face:hover {
+            stroke-width: 4px;
+            opacity: 0.9;
+        }
+
+        /* 3. Colonne VALIDATION & FEEDBACK (Droite) */
+        .col-validation {
+            width: 30%;
+            justify-content: space-between;
+        }
+
+        .status {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .actions {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        button.action {
+            width: 100%;
+            padding: 14px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button.action:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button.action:disabled {
+            background-color: #cbd5e0;
+            color: #718096;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-valider { background-color: #319795; color: white; }
+        .btn-valider:hover:not(:disabled) { background-color: #2c7a7b; }
+
+        .btn-suivant { background-color: #4a5568; color: white; }
+        .btn-suivant:hover { background-color: #2d3748; }
+
+        #message {
+            margin-top: 15px;
+            font-size: 1.05em;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.4;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .correct { color: #2f855a; background: #f0fff4; border: 1px solid #c6f6d5; padding: 10px; border-radius: 6px; width: 100%; }
+        .incorrect { color: #c53030; background: #fff5f5; border: 1px solid #fed7d7; padding: 10px; border-radius: 6px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Les 11 patrons du cube</h1>
+    
+    <div class="consigne">
+        Coloriez dans la même couleur deux faces opposées d'un même patron. <br>
+        Utilisez des couleurs différentes pour deux faces non opposées.
+    </div>
+
+    <div class="zone-principale">
+        
+        <div class="colonne col-couleurs">
+            <h2>Couleurs</h2>
+            <div class="palette">
+                <button class="btn-couleur" id="btn-rouge" title="Rouge" onclick="selectionnerCouleur('#e53e3e', 'btn-rouge')"></button>
+                <button class="btn-couleur" id="btn-vert" title="Vert" onclick="selectionnerCouleur('#38a169', 'btn-vert')"></button>
+                <button class="btn-couleur" id="btn-bleu" title="Bleu" onclick="selectionnerCouleur('#3182ce', 'btn-bleu')"></button>
+            </div>
+        </div>
+
+        <div class="colonne col-patron">
+            <h2>Patron du cube</h2>
+            <div id="zone-patron"></div>
+        </div>
+
+        <div class="colonne col-validation">
+            <h2>Validation</h2>
+            <div>
+                <div class="status" id="titre-patron">Patron 1 / 11</div>
+                <div id="message"></div>
+            </div>
+            
+            <div class="actions">
+                <button class="action btn-valider" id="btn-valider" onclick="verifierPatron()">Valider ma réponse</button>
+                <button class="action btn-suivant" id="btn-suivant" onclick="patronSuivant()" style="display:none;">Patron suivant &rarr;</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const deval = 45; 
+    const patrons = [
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:0}, {id:5,x:1,y:2}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:2,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:3,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:2,y:2}, {id:5,x:2,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:2,y:2}, {id:5,x:1,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:3,y:2}, {id:5,x:0,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:0,y:0}, {id:4,x:1,y:2}, {id:5,x:2,y:2}], paires: [[0,2], [1,3], [4,5]], w: 155, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:1,y:0}, {id:4,x:2,y:0}, {id:5,x:2,y:2}], paires: [[0,2], [1,5], [3,4]], w: 155, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:1,y:2}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], paires: [[0,2], [1,5], [3,4]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:2}, {id:1,x:1,y:2}, {id:2,x:1,y:1}, {id:3,x:2,y:1}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], paires: [[0,3], [1,4], [2,5]], w: 200, h: 155 },
+        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:1,y:0}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], paires: [[0,4], [1,5], [2,3]], w: 200, h: 110 }
+    ];
+
+    let indexActuel = 0;
+    let couleurActive = '#e53e3e'; 
+    let couleursFaces = {}; 
+
+    function chargerPatron(index) {
+        indexActuel = index;
+        couleursFaces = {};
+        document.getElementById('message').innerHTML = "";
+        document.getElementById('btn-suivant').style.display = "none";
+        document.getElementById('btn-valider').disabled = false; // Réactive le bouton valider
+        document.getElementById('titre-patron').innerText = "Patron " + (index + 1) + " / 11";
+        
+        const p = patrons[index];
+        
+        let htmlSvg = `<svg width="${p.w}" height="${p.h}">`;
+        p.faces.forEach(f => {
+            let posX = f.x * deval + 10;
+            let posY = f.y * deval + 10;
+            htmlSvg += `<rect id="face-${f.id}" class="face" x="${posX}" y="${posY}" width="${deval}" height="${deval}" onclick="clicFace(${f.id})"/>`;
+        });
+        htmlSvg += `</svg>`;
+        
+        document.getElementById('zone-patron').innerHTML = htmlSvg;
+    }
+
+    function selectionnerCouleur(codeCouleur, idBouton) {
+        const boutons = document.querySelectorAll('.btn-couleur');
+        boutons.forEach(btn => btn.classList.remove('actif'));
+        document.getElementById(idBouton).classList.add('actif');
+        couleurActive = codeCouleur;
+    }
+
+    function clicFace(id) {
+        // Si le bouton de validation est désactivé (réponse juste), on empêche de remodifier le patron
+        if (document.getElementById('btn-valider').disabled) return;
+
+        const face = document.getElementById(`face-${id}`);
+        
+        if (couleursFaces[id] === couleurActive) {
+            face.style.fill = "#ffffff";
+            delete couleursFaces[id];
+        } else {
+            face.style.fill = couleurActive;
+            couleursFaces[id] = couleurActive;
+        }
+        document.getElementById('message').innerHTML = ""; 
+    }
+
+    function verifierPatron() {
+        const p = patrons[indexActuel];
+        const msgElement = document.getElementById('message');
+        
+        for(let i=0; i<6; i++) {
+            if(!couleursFaces[i]) {
+                msgElement.innerHTML = "<div class='incorrect'>Toutes les faces doivent être coloriées !</div>";
+                return;
+            }
+        }
+        
+        let couleursPaires = [];
+        let valide = true;
+        
+        for (let paire of p.paires) {
+            let c1 = couleursFaces[paire[0]];
+            let c2 = couleursFaces[paire[1]];
+            if (c1 !== c2) { valide = false; }
+            couleursPaires.push(c1);
+        }
+        
+        let setCouleurs = new Set(couleursPaires);
+        if (setCouleurs.size !== 3) { valide = false; }
+        
+        if (valide) {
+            msgElement.innerHTML = "<div class='correct'>Bravo ! C'est parfaitement juste. 🎉</div>";
+            document.getElementById('btn-valider').disabled = true; // Désactive le bouton de validation
+            document.getElementById('btn-suivant').style.display = "block";
+        } else {
+            msgElement.innerHTML = "<div class='incorrect'>Ce n'est pas correct. Vérifiez la position des faces opposées ! ❌</div>";
+        }
+    }
+
+    function patronSuivant() {
+        if (indexActuel < patrons.length - 1) {
+            chargerPatron(indexActuel + 1);
+        } else {
+            document.getElementById('message').innerHTML = "<div class='correct'>Félicitations ! Tu as validé les 11 patrons du cube ! 🏆</div>";
+            document.getElementById('btn-suivant').style.display = "none";
+        }
+    }
+
+    window.onload = function() {
+        document.getElementById('btn-rouge').classList.add('actif');
+        chargerPatron(0);
+    };
+</script>
+
+</body>
+</html>
