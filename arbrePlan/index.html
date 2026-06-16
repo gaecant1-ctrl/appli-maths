@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Arbuste Pédagogique - Fix Alignement & Vue</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Conteneur global des modules à gauche */
+        #ui-container {
+            position: absolute; top: 15px; left: 15px; width: 300px;
+            z-index: 10; max-height: 95vh; overflow-y: auto;
+            display: none; flex-direction: column; gap: 10px;
+        }
+
+        /* Style générique des modules stabilisé */
+        .module {
+            color: white; background: rgba(12, 12, 12, 0.94);
+            padding: 12px; border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            border: 1px solid #2a2a2a;
+            box-sizing: border-box;
+        }
+
+        .module-header {
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; user-select: none;
+            padding-bottom: 4px;
+        }
+
+        .module-header h2 { 
+            margin: 0; font-size: 11px; color: #ffeb3b; 
+            text-transform: uppercase; letter-spacing: 0.5px; 
+        }
+        
+        .toggle-icon { font-size: 10px; color: #888; font-weight: bold; }
+        
+        /* Correction du bug d'alignement et de saut */
+        .module-content { margin-top: 10px; display: block; }
+        .module-content.hidden { display: none !important; }
+        
+        label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; align-items: center; }
+        span.val { color: #fff; font-weight: bold; }
+        input[type=range] { width: 100%; cursor: pointer; margin-bottom: 8px; accent-color: #4CAF50; display: block; }
+        
+        .factor-inputs { display: flex; gap: 8px; margin-bottom: 5px; }
+        .factor-inputs div { flex: 1; text-align: center; }
+        .factor-inputs input[type=number] { 
+            width: 75%; padding: 5px; background: #222; border: 1px solid #444; 
+            color: white; border-radius: 4px; text-align: center; font-weight: bold; font-size: 13px;
+        }
+
+        button { padding: 8px; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.15s; font-size: 12px; }
+        .btn-primary { background: #4CAF50; width: 100%; }
+        .btn-primary:hover { background: #45a049; }
+        .btn-secondary { background: #2a2a2a; border: 1px solid #444; }
+        .btn-secondary:hover { background: #3a3a3a; }
+        .btn-action { background: #2196F3; }
+        .btn-action:hover { background: #0b7dda; }
+
+        .legend-item { display: flex; align-items: center; margin: 6px 0; font-size: 12.5px; }
+        .color-box { width: 12px; height: 12px; border-radius: 3px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.1); }
+
+        #top-toolbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; }
+        .top-btn { padding: 10px 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-weight: bold; }
+        #ui-container::-webkit-scrollbar { width: 4px; }
+        #ui-container::-webkit-scrollbar-thumb { background: #333; }
+    </style>
+</head>
+<body>
+
+<div id="top-toolbar">
+    <button id="btn-top-shuffle" class="btn-action top-btn">🎲</button>
+    <button id="btn-top-rotation" class="btn-primary top-btn">⏸️</button>
+    <button id="btn-top-reset-cam" class="btn-action top-btn" style="background: #e91e63;">🏠</button>
+    <button id="btn-top-toggle-all" class="btn-secondary top-btn">👁️</button>
+</div>
+
+<div id="ui-container">
+    <div class="module" id="mod-bilan">
+        <div class="module-header" onclick="toggleModule('content-bilan', 'icon-bilan')">
+            <h2>📊 Analyse & Dénombrement</h2>
+            <span class="toggle-icon" id="icon-bilan">[-]</span>
+        </div>
+        <div class="module-content hidden" id="content-bilan">
+            <div class="legend-item"><div class="color-box" style="background: #1f140e;"></div><span>Tronc Initial : 1</span></div>
+            <div class="legend-item"><div class="color-box" style="background: #6e473b;"></div><span>Niveau 1 : <b id="lbl-n1">3</b> branches</span></div>
+            <div class="legend-item"><div class="color-box" style="background: #556b2f;"></div><span>Niveau 2 : <b id="lbl-n2">9</b> branches</span></div>
+            <div class="legend-item"><div class="color-box" style="background: #8fbc8f;"></div><span>Niveau 3 : <b id="lbl-n3">27</b> branches</span></div>
+            <div class="legend-item"><div class="color-box" style="background: #b22222;"></div><span>Bourgeons terminaux : <b style="color: #ffeb3b;" id="lbl-buds">27</b></span></div>
+        </div>
+    </div>
+
+    <div class="module" id="mod-structure">
+        <div class="module-header" onclick="toggleModule('content-structure', 'icon-structure')">
+            <h2>🔢 Multiplicateurs (Structure)</h2>
+            <span class="toggle-icon" id="icon-structure">[-]</span>
+        </div>
+        <div class="module-content hidden" id="content-structure">
+            <div class="factor-inputs">
+                <div><label>Niv 1</label><input type="number" id="in-n1" min="1" max="6" value="3"></div>
+                <div><label>Niv 2</label><input type="number" id="in-n2" min="1" max="5" value="3"></div>
+                <div><label>Niv 3</label><input type="number" id="in-n3" min="1" max="4" value="3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="module" id="mod-config">
+        <div class="module-header" onclick="toggleModule('content-config', 'icon-config')">
+            <h2>⚙️ Configuration & Forme</h2>
+            <span class="toggle-icon" id="icon-config">[-]</span>
+        </div>
+        <div class="module-content" id="content-config">
+            <label style="color: #ffeb3b; font-weight: bold; margin-bottom: 6px;">Révélation progressive :</label>
+            <label>Régularité Géométrique <span class="val" id="v-noise">Pure</span></label>
+            <input type="range" id="s-noise" min="0" max="1" step="0.01" value="0.00">
+            
+            <label>Coloration Pédagogique <span class="val" id="v-color">100%</span></label>
+            <input type="range" id="s-color" min="0" max="1" step="0.01" value="1.00">
+
+            <label style="color: #aaa; margin-top: 10px; margin-bottom: 4px;">Géométrie des niveaux :</label>
+            <label>Hauteur Totale <span class="val" id="v-length">9</span></label>
+            <input type="range" id="s-length" min="4" max="15" step="0.1" value="9">
+            
+            <label>Largeur Totale de l'arbre <span class="val" id="v-angle">8.0</span></label>
+            <input type="range" id="s-angle" min="1.0" max="20.0" step="0.1" value="8.0">
+            
+            <label>Proportion Tronc / Total <span class="val" id="v-ratio">0.30</span></label>
+            <input type="range" id="s-ratio" min="0.1" max="0.6" step="0.01" value="0.30">
+            
+            <label>Amortissement Paliers <span class="val" id="v-damping">0.75</span></label>
+            <input type="range" id="s-damping" min="0.4" max="1.2" step="0.01" value="0.75">
+        </div>
+    </div>
+
+    <div class="module" id="mod-env">
+        <div class="module-header" onclick="toggleModule('content-env', 'icon-env')">
+            <h2>☀️ Lumière & Ombres</h2>
+            <span class="toggle-icon" id="icon-env">[-]</span>
+        </div>
+        <div class="module-content" id="content-env">
+            <label>Hauteur Soleil <span class="val" id="v-lHeight">22</span></label><input type="range" id="s-lHeight" min="2" max="45" step="1" value="22">
+            <label>Rotation Soleil <span class="val" id="v-lAngle">0.7</span></label><input type="range" id="s-lAngle" min="0" max="6.28" step="0.05" value="0.7">
+            <label>Hauteur Caméra <span class="val" id="v-camHeight">5</span></label><input type="range" id="s-camHeight" min="2" max="35" step="0.5" value="5">
+            <label>Recul Caméra <span class="val" id="v-camDist">16</span></label><input type="range" id="s-camDist" min="8" max="40" step="0.5" value="16">
+            <label>Angle de champ (Zoom) <span class="val" id="v-camFov">50</span>°</label><input type="range" id="s-camFov" min="20" max="90" step="1" value="50">
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    
+    // Valeurs standards de face par défaut
+    const DEFAULT_CAM = { h: 5, d: 16, fov: 50 };
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambLight);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    const d = 25; 
+    sun.shadow.camera.left = -d; sun.shadow.camera.right = d; sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+    sun.shadow.bias = -0.0003; 
+    scene.add(sun);
+
+    const baseWoodColor = new THREE.Color(0x40291d); 
+    const levelColors = [
+        new THREE.Color(0x1f140e),
+        new THREE.Color(0x6e473b),
+        new THREE.Color(0x556b2f),
+        new THREE.Color(0x8fbc8f)
+    ];
+    const budTargetColor = new THREE.Color(0xb22222);
+
+    const treeGroup = new THREE.Group();
+    treeGroup.position.y = -3;
+    scene.add(treeGroup);
+
+    const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(70, 70),
+        new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    treeGroup.add(floor);
+
+    let arbusteGroup = new THREE.Group();
+    treeGroup.add(arbusteGroup);
+
+    let isRotating = true;
+    let allUiVisible = false;
+    
+    const noiseSeeds = Array.from({length: 500}, () => ({
+        a: Math.random() * 2 - 1
+    }));
+
+    // Fonction de masquage nettoyée (sans sauts d'éléments)
+    function toggleModule(contentId, iconId) {
+        const content = document.getElementById(contentId);
+        const icon = document.getElementById(iconId);
+        if (content.classList.contains('hidden')) { 
+            content.classList.remove('hidden'); 
+            icon.innerText = "[-]"; 
+        } else { 
+            content.classList.add('hidden'); 
+            icon.innerText = "[+]"; 
+        }
+    }
+
+    function buildTree() {
+        while(arbusteGroup.children.length > 0) arbusteGroup.remove(arbusteGroup.children[0]);
+        
+        let f1 = Math.max(1, parseInt(document.getElementById('in-n1').value) || 1);
+        let f2 = Math.max(1, parseInt(document.getElementById('in-n2').value) || 1);
+        let f3 = Math.max(1, parseInt(document.getElementById('in-n3').value) || 1);
+        const divSettings = [f1, f2, f3];
+
+        document.getElementById('lbl-n1').innerText = f1;
+        document.getElementById('lbl-n2').innerText = f1 + " × " + f2 + " = " + (f1 * f2);
+        document.getElementById('lbl-n3').innerText = (f1 * f2) + " × " + f3 + " = " + (f1 * f2 * f3);
+        document.getElementById('lbl-buds').innerText = (f1 * f2 * f3);
+
+        const config = {
+            noise: parseFloat(document.getElementById('s-noise').value),
+            color: parseFloat(document.getElementById('s-color').value),
+            totalHeight: parseFloat(document.getElementById('s-length').value),
+            totalWidth: parseFloat(document.getElementById('s-angle').value), 
+            trunkRatio: parseFloat(document.getElementById('s-ratio').value),
+            damping: parseFloat(document.getElementById('s-damping').value),
+            divisions: divSettings
+        };
+
+        document.getElementById('v-noise').innerText = config.noise < 0.05 ? "Géométrique Pure" : (config.noise > 0.8 ? "Naturelle" : "Mixte");
+        document.getElementById('v-color').innerText = Math.round(config.color * 100) + "%";
+        document.getElementById('v-length').innerText = config.totalHeight;
+        document.getElementById('v-angle').innerText = config.totalWidth;
+        document.getElementById('v-ratio').innerText = config.trunkRatio;
+        document.getElementById('v-damping').innerText = config.damping;
+
+        const hTronc = config.totalHeight * config.trunkRatio;
+        const hRestante = config.totalHeight - hTronc;
+        
+        const d1 = 1.0;
+        const d2 = d1 * config.damping;
+        const d3 = d2 * config.damping;
+        const sommeD = d1 + d2 + d3;
+
+        const p1 = hTronc + hRestante * (d1 / sommeD);
+        const p2 = p1 + hRestante * (d2 / sommeD);
+        const p3 = config.totalHeight;
+
+        const hauteurPaliers = [hTronc, p1, p2, p3];
+
+        generateStep(arbusteGroup, 0, 0, 0, 0, hauteurPaliers, config, -config.totalWidth / 2, config.totalWidth / 2);
+    }
+
+    function generateStep(parent, startX, startY, level, seedIdx, paliers, cfg, minX, maxX) {
+        const yCourant = startY;
+        const ySuivant = paliers[level];
+        const hauteurDelta = ySuivant - yCourant;
+
+        const matColor = new THREE.Color().copy(baseWoodColor);
+        if (cfg.color > 0) matColor.lerp(levelColors[Math.min(level, 3)], cfg.color);
+
+        const thickBase = 0.38 * Math.pow(0.58, level);
+        
+        if (level === 0) {
+            const branchGeom = new THREE.CylinderGeometry(thickBase * 0.7, thickBase, hauteurDelta, 10);
+            branchGeom.translate(0, hauteurDelta / 2, 0);
+            const branch = new THREE.Mesh(branchGeom, new THREE.MeshStandardMaterial({ color: matColor, roughness: 0.85 }));
+            branch.position.set(startX, yCourant, 0);
+            branch.castShadow = branch.receiveShadow = true;
+            parent.add(branch);
+
+            generateStep(parent, startX, ySuivant, level + 1, seedIdx + 1, paliers, cfg, minX, maxX);
+            return;
+        }
+
+        const n = cfg.divisions[level - 1];
+        const largeurSecteur = maxX - minX;
+        const portionEnfant = largeurSecteur / n;
+
+        for (let i = 0; i < n; i++) {
+            const ns = noiseSeeds[(seedIdx + i * 19 + level * 29) % 500];
+
+            const sousMinX = minX + (i * portionEnfant);
+            const sousMaxX = sousMinX + portionEnfant;
+            let cibleX = sousMinX + (portionEnfant / 2);
+            
+            if (cfg.noise > 0) {
+                const margeInterne = portionEnfant * 0.15;
+                cibleX += ns.a * margeInterne * cfg.noise;
+            }
+
+            const deltaX = cibleX - startX;
+            const longueurBranche = Math.sqrt(deltaX * deltaX + hauteurDelta * hauteurDelta);
+            const angleZ = -Math.atan2(deltaX, hauteurDelta);
+
+            const branchGeom = new THREE.CylinderGeometry(thickBase * 0.6, thickBase, longueurBranche, 10);
+            branchGeom.translate(0, longueurBranche / 2, 0);
+            
+            const branch = new THREE.Mesh(branchGeom, new THREE.MeshStandardMaterial({ color: matColor, roughness: 0.85 }));
+            branch.castShadow = branch.receiveShadow = true;
+            branch.position.set(startX, yCourant, 0);
+            branch.rotation.z = angleZ;
+            parent.add(branch);
+
+            if (level === cfg.divisions.length) {
+                const budCol = new THREE.Color().copy(baseWoodColor).lerp(budTargetColor, cfg.color);
+                const bud = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 12, 12),
+                    new THREE.MeshStandardMaterial({ color: budCol, roughness: 0.4, emissive: budCol.clone().multiplyScalar(0.06) })
+                );
+                bud.position.set(cibleX, ySuivant, 0);
+                bud.castShadow = true;
+                parent.add(bud);
+            } else {
+                generateStep(parent, cibleX, ySuivant, level + 1, seedIdx + i + 13, paliers, cfg, sousMinX, sousMaxX);
+            }
+        }
+    }
+
+    // --- Bouton Reset Caméra & Vue de Face ---
+    document.getElementById('btn-top-reset-cam').addEventListener('click', () => {
+        // Arrête la rotation pour stabiliser la vue de face
+        isRotating = false;
+        document.getElementById('btn-top-rotation').innerText = "▶️";
+        treeGroup.rotation.y = 0; 
+        
+        // Remet les sliders de la caméra aux valeurs par défaut
+        document.getElementById('s-camHeight').value = DEFAULT_CAM.h;
+        document.getElementById('s-camDist').value = DEFAULT_CAM.d;
+        document.getElementById('s-camFov').value = DEFAULT_CAM.fov;
+        
+        updateCamera();
+    });
+
+    // --- Événements & Initialisation ---
+    const inputs = ["s-noise", "s-color", "s-length", "s-angle", "s-ratio", "s-damping", "in-n1", "in-n2", "in-n3"];
+    inputs.forEach(id => document.getElementById(id).addEventListener('input', buildTree));
+
+    document.getElementById('btn-top-shuffle').addEventListener('click', () => {
+        document.getElementById('in-n1').value = Math.floor(Math.random() * 3) + 2; 
+        document.getElementById('in-n2').value = Math.floor(Math.random() * 3) + 2; 
+        document.getElementById('in-n3').value = Math.floor(Math.random() * 2) + 2; 
+        buildTree();
+    });
+
+    document.getElementById('btn-top-rotation').addEventListener('click', function() {
+        isRotating = !isRotating;
+        this.innerText = isRotating ? "⏸️" : "▶️";
+    });
+
+    document.getElementById('btn-top-toggle-all').addEventListener('click', () => {
+        allUiVisible = !allUiVisible;
+        document.getElementById('ui-container').style.display = allUiVisible ? "flex" : "none";
+    });
+
+    function updateLight() {
+        const h = parseFloat(document.getElementById('s-lHeight').value);
+        const a = parseFloat(document.getElementById('s-lAngle').value);
+        document.getElementById('v-lHeight').innerText = h;
+        document.getElementById('v-lAngle').innerText = a;
+        sun.position.set(Math.cos(a)*25, h, Math.sin(a)*25);
+    }
+
+    function updateCamera() {
+        const h = parseFloat(document.getElementById('s-camHeight').value);
+        const d = parseFloat(document.getElementById('s-camDist').value);
+        const fov = parseFloat(document.getElementById('s-camFov').value);
+        document.getElementById('v-camHeight').innerText = h;
+        document.getElementById('v-camDist').innerText = d;
+        document.getElementById('v-camFov').innerText = fov;
+        camera.position.set(0, h, d);
+        camera.fov = fov;
+        camera.updateProjectionMatrix();
+        camera.lookAt(0, 4, 0); 
+    }
+
+    document.getElementById('s-camHeight').addEventListener('input', updateCamera);
+    document.getElementById('s-camDist').addEventListener('input', updateCamera);
+    document.getElementById('s-camFov').addEventListener('input', updateCamera);
+    ["s-lHeight", "s-lAngle"].forEach(id => document.getElementById(id).addEventListener('input', updateLight));
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Configuration initiale de la caméra avant le premier rendu
+    updateCamera();
+    buildTree();
+    updateLight();
+    animate();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (isRotating) treeGroup.rotation.y += 0.005;
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
