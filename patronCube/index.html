@@ -256,17 +256,50 @@
 <script>
     const deval = 45; 
     const patrons = [
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:0}, {id:5,x:1,y:2}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:2,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:3,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:2,y:2}, {id:5,x:2,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:2,y:2}, {id:5,x:1,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:3,y:2}, {id:5,x:0,y:0}], paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:0,y:0}, {id:4,x:1,y:2}, {id:5,x:2,y:2}], paires: [[0,2], [1,3], [4,5]], w: 155, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:1,y:0}, {id:4,x:2,y:0}, {id:5,x:2,y:2}], paires: [[0,2], [1,5], [3,4]], w: 155, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:1,y:2}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], paires: [[0,2], [1,5], [3,4]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:2}, {id:1,x:1,y:2}, {id:2,x:1,y:1}, {id:3,x:2,y:1}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], paires: [[0,3], [1,4], [2,5]], w: 200, h: 155 },
-        { faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:1,y:0}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], paires: [[0,4], [1,5], [2,3]], w: 200, h: 110 }
+        { // 1. La croix classique
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:1,y:0}], 
+            paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 
+        },
+        { // 2. Le T décalé d'un cran en bas (oreille bas à gauche)
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:0,y:0}], 
+            paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 
+        },
+        { // 3. Le T décalé au milieu en bas
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:2,y:0}], 
+            paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 
+        },
+        { // 4. Le T décalé tout au bout en bas
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:3,y:0}], 
+            paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 
+        },
+        { // 5. Oreilles en haut à gauche et en bas à gauche
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:0,y:2}, {id:5,x:0,y:0}], 
+            paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 
+        },
+        { // 6. Oreille haut à gauche, oreille bas tout à droite
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:0,y:2}, {id:5,x:3,y:0}], 
+            paires: [[0,2], [1,3], [4,5]], w: 200, h: 155 
+        },
+        { // 7. Ligne de 3, une oreille haut-gauche, deux bas-droite
+            faces: [{id:0,x:0,y:2}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:1,y:0}], 
+            paires: [[0,4], [1,3], [2,5]], w: 200, h: 155 
+        },
+        { // 8. Ligne de 3, oreille haut-milieu, deux bas-droite
+            faces: [{id:0,x:0,y:2}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:2,y:0}], 
+            paires: [[0,4], [1,3], [2,5]], w: 200, h: 155 
+        },
+        { // 9. Ligne de 3, oreille haut-droite, deux bas-droite
+            faces: [{id:0,x:0,y:2}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:3,y:1}, {id:4,x:1,y:2}, {id:5,x:3,y:0}], 
+            paires: [[0,4], [1,3], [2,5]], w: 200, h: 155 
+        },
+        { // 10. Ligne de 3 décalée, une oreille haut, deux bas-gauche
+            faces: [{id:0,x:0,y:1}, {id:1,x:1,y:1}, {id:2,x:2,y:1}, {id:3,x:2,y:0}, {id:4,x:3,y:0}, {id:5,x:4,y:0}], 
+            paires: [[0,2], [1,4], [3,5]], w: 240, h: 110 
+        },
+        { // 11. L'escalier régulier 2-2-2
+            faces: [{id:0,x:0,y:2}, {id:1,x:1,y:2}, {id:2,x:1,y:1}, {id:3,x:2,y:1}, {id:4,x:2,y:0}, {id:5,x:3,y:0}], 
+            paires: [[0,3], [1,4], [2,5]], w: 200, h: 155 
+        }
     ];
 
     let indexActuel = 0;
@@ -278,7 +311,7 @@
         couleursFaces = {};
         document.getElementById('message').innerHTML = "";
         document.getElementById('btn-suivant').style.display = "none";
-        document.getElementById('btn-valider').disabled = false; // Réactive le bouton valider
+        document.getElementById('btn-valider').disabled = false; 
         document.getElementById('titre-patron').innerText = "Patron " + (index + 1) + " / 11";
         
         const p = patrons[index];
@@ -302,9 +335,7 @@
     }
 
     function clicFace(id) {
-        // Si le bouton de validation est désactivé (réponse juste), on empêche de remodifier le patron
         if (document.getElementById('btn-valider').disabled) return;
-
         const face = document.getElementById(`face-${id}`);
         
         if (couleursFaces[id] === couleurActive) {
@@ -343,7 +374,7 @@
         
         if (valide) {
             msgElement.innerHTML = "<div class='correct'>Bravo ! C'est parfaitement juste. 🎉</div>";
-            document.getElementById('btn-valider').disabled = true; // Désactive le bouton de validation
+            document.getElementById('btn-valider').disabled = true; 
             document.getElementById('btn-suivant').style.display = "block";
         } else {
             msgElement.innerHTML = "<div class='incorrect'>Ce n'est pas correct. Vérifiez la position des faces opposées ! ❌</div>";
