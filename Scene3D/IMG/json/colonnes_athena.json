@@ -1,0 +1,137 @@
+{
+  "affichage_variable": "n",
+  "consignes": {
+    "titre": "Le temple grec",
+    "texte": "Détermine le volume du solide en fonction de n."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "2x^2 + 4x - 8"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "x",
+      "sizeY": "x + 2",
+      "sizeZ": "x"
+    },
+    "position_camera": {
+      "cameraX": 20,
+      "cameraY": 15,
+      "cameraZ": 25,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#0b1220"
+  },
+  "slider": {
+    "n_min": 3,
+    "n_max": 12,
+    "n_depart": 4,
+    "step": 1
+  },
+  "objet": [
+    {
+      "type": "plan",
+      "color": "#ef233c",
+      "sequence": false,
+      "operation": "add",
+      "orientation": "Y",
+      "point1": {
+        "x": "0",
+        "y": "0",
+        "z": "0"
+      },
+      "point2": {
+        "x": "x - 1",
+        "y": "0",
+        "z": "x - 1"
+      }
+    },
+    {
+      "type": "plan",
+      "color": "#ef233c",
+      "sequence": false,
+      "operation": "add",
+      "orientation": "Y",
+      "point1": {
+        "x": "0",
+        "y": "x - 1",
+        "z": "0"
+      },
+      "point2": {
+        "x": "x - 1",
+        "y": "x - 1",
+        "z": "x - 1"
+      }
+    },
+    {
+      "type": "plan",
+      "color": "#3b82f6",
+      "sequence": false,
+      "operation": "add",
+      "orientation": "X",
+      "point1": {
+        "x": "0",
+        "y": "1",
+        "z": "0"
+      },
+      "point2": {
+        "x": "0",
+        "y": "x - 2",
+        "z": "0"
+      }
+    },
+    {
+      "type": "plan",
+      "color": "#3b82f6",
+      "sequence": false,
+      "operation": "add",
+      "orientation": "X",
+      "point1": {
+        "x": "x - 1",
+        "y": "1",
+        "z": "0"
+      },
+      "point2": {
+        "x": "x - 1",
+        "y": "x - 2",
+        "z": "0"
+      }
+    },
+    {
+      "type": "plan",
+      "color": "#3b82f6",
+      "sequence": false,
+      "operation": "add",
+      "orientation": "X",
+      "point1": {
+        "x": "0",
+        "y": "1",
+        "z": "x - 1"
+      },
+      "point2": {
+        "x": "0",
+        "y": "x - 2",
+        "z": "x - 1"
+      }
+    },
+    {
+      "type": "plan",
+      "color": "#3b82f6",
+      "sequence": false,
+      "operation": "add",
+      "orientation": "X",
+      "point1": {
+        "x": "x - 1",
+        "y": "1",
+        "z": "x - 1"
+      },
+      "point2": {
+        "x": "x - 1",
+        "y": "x - 2",
+        "z": "x - 1"
+      }
+    }
+  ]
+}

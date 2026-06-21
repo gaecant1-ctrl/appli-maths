@@ -1,0 +1,142 @@
+{
+  "affichage_variable": "n",
+  "consignes": {
+    "titre": "Cube à faces et coins creux",
+    "texte": "Détermine le volume restant en fonction de $n$."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "x^3 - 14"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "x",
+      "sizeZ": "x",
+      "sizeY": "x"
+    },
+    "position_camera": {
+      "cameraX": 18,
+      "cameraY": 14,
+      "cameraZ": 22,
+      "zoom": 1.3
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#0f172a"
+  },
+  "slider": {
+    "n_min": 3,
+    "n_max": 11,
+    "n_depart": 5,
+    "step": 2
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "0", "y": "0", "z": "0" },
+      "point2": { "x": "x-1", "y": "0", "z": "x-1" },
+      "point3": { "x": "x-1", "y": "x-1", "z": "x-1" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "(x-1)/2", "y": "(x-1)/2", "z": "0" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "(x-1)/2", "y": "(x-1)/2", "z": "x-1" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "0", "y": "(x-1)/2", "z": "(x-1)/2" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "x-1", "y": "(x-1)/2", "z": "(x-1)/2" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "(x-1)/2", "y": "0", "z": "(x-1)/2" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "(x-1)/2", "y": "x-1", "z": "(x-1)/2" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "0", "y": "0", "z": "0" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "x-1", "y": "0", "z": "0" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "0", "y": "0", "z": "x-1" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "x-1", "y": "0", "z": "x-1" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "0", "y": "x-1", "z": "0" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "x-1", "y": "x-1", "z": "0" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "0", "y": "x-1", "z": "x-1" }
+    },
+    {
+      "type": "cube",
+      "color": "#ffffff",
+      "sequence": false,
+      "operation": "remove",
+      "point1": { "x": "x-1", "y": "x-1", "z": "x-1" }
+    }
+  ]
+}
