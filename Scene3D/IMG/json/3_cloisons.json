@@ -2,8 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Les trois cloisons",
-    "texte": "Exprime le volume de ce solide en fonction de $n$."
-  },
+"texte": "Exprime le nombre total de cubes en fonction de $n$."  },
   "tableau": {
     "type": "Volume",
     "f": "3*x^2 + 24"

@@ -2,7 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Le cube aux huit coins et son noyau",
-    "texte": "Exprime le volume de ce solide en fonction de $n$."
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
   },
   "tableau": {
     "type": "Volume",

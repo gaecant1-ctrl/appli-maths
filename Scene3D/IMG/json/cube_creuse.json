@@ -2,7 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Cube creusé sur ses faces",
-    "texte": "Détermine le volume restant en fonction de $n$."
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
   },
   "tableau": {
     "type": "Volume",

@@ -2,7 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Prisme vertical en croix",
-    "texte": "Détermine le volume de ce prisme en forme de croix en fonction de $n$."
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
   },
   "tableau": {
     "type": "Volume",

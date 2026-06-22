@@ -2,8 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Les huit coins fixes et leurs arêtes",
-    "texte": "Exprime le volume de ce solide en fonction de $n$."
-  },
+"texte": "Exprime le nombre total de cubes en fonction de $n$."  },
   "tableau": {
     "type": "Volume",
     "f": "12*x + 64"

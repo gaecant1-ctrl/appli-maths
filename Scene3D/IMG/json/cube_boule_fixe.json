@@ -2,8 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Les huit coins fixes et leur noyau",
-    "texte": "Exprime le volume de ce solide en fonction de $n$."
-  },
+"texte": "Exprime le nombre total de cubes en fonction de $n$."  },
   "tableau": {
     "type": "Volume",
     "f": "x^3 + 6*x^2 + 12*x + 64"

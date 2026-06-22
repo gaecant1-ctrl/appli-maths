@@ -2,7 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Le prisme peigne",
-    "texte": "Exprime le volume de ce prisme couché en fonction de $n$."
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
   },
   "tableau": {
     "type": "Volume",

@@ -2,7 +2,7 @@
   "affichage_variable": "n",
   "consignes": {
     "titre": "Le Cube transpercé ",
-    "texte": "Détermine le volume du solide restant en fonction de $n$."
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
   },
   "tableau": {
     "type": "Volume",
