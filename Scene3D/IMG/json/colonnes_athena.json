@@ -33,7 +33,7 @@
   "objet": [
     {
       "type": "plan",
-      "color": "#ef233c",
+      "color": "#ffb703",
       "sequence": false,
       "operation": "add",
       "orientation": "Y",
@@ -50,7 +50,7 @@
     },
     {
       "type": "plan",
-      "color": "#ef233c",
+      "color": "#ffb703",
       "sequence": false,
       "operation": "add",
       "orientation": "Y",
@@ -67,7 +67,7 @@
     },
     {
       "type": "plan",
-      "color": "#3b82f6",
+      "color": "#9d4edd",
       "sequence": false,
       "operation": "add",
       "orientation": "X",
@@ -84,7 +84,7 @@
     },
     {
       "type": "plan",
-      "color": "#3b82f6",
+      "color": "#9d4edd",
       "sequence": false,
       "operation": "add",
       "orientation": "X",
@@ -101,7 +101,7 @@
     },
     {
       "type": "plan",
-      "color": "#3b82f6",
+      "color": "#9d4edd",
       "sequence": false,
       "operation": "add",
       "orientation": "X",
@@ -118,7 +118,7 @@
     },
     {
       "type": "plan",
-      "color": "#3b82f6",
+      "color": "#9d4edd",
       "sequence": false,
       "operation": "add",
       "orientation": "X",

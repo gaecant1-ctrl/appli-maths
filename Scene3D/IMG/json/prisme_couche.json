@@ -1,118 +1,55 @@
 {
   "affichage_variable": "n",
   "consignes": {
-    "titre": "Prisme vertical en croix",
-    "texte": "Détermine le volume de ce prisme en forme de croix en fonction de $n$."
+    "titre": "Le prisme peigne",
+    "texte": "Exprime le volume de ce prisme couché en fonction de $n$."
   },
   "tableau": {
     "type": "Volume",
-    "f": "(2 * x - 1) * x"
+    "f": "11*x"
   },
   "scene": {
     "dimension_grille": {
       "sizeX": "x",
-      "sizeZ": "x",
-      "sizeY": "x"
+      "sizeZ": "5",
+      "sizeY": "3"
     },
     "position_camera": {
-      "cameraX": 18,
-      "cameraY": 14,
-      "cameraZ": 22,
+      "cameraX": 20,
+      "cameraY": 12,
+      "cameraZ": 18,
       "zoom": 1
     },
     "qualite": 1,
     "gridVisible": false,
-    "edgeColor": "#0f172a"
+    "edgeColor": "#1f2724"
   },
   "slider": {
     "n_min": 3,
-    "n_max": 11,
+    "n_max": 10,
     "n_depart": 5,
-    "step": 2
+    "step": 1
   },
   "objet": [
     {
       "type": "pave",
-      "color": "#E0A83F",
-      "sequence": false,
-      "operation": "add",
-      "point1": {
-        "x": "(x-1)/2",
-        "y": "0",
-        "z": "0"
-      },
-      "point2": {
-        "x": "(x-1)/2",
-        "y": "x-1",
-        "z": "(x-3)/2"
-      },
-      "point3": {
-        "x": "(x-1)/2",
-        "y": "x-1",
-        "z": "(x-3)/2"
-      }
-    },
-    {
-      "type": "pave",
-      "color": "#E0A83F",
-      "sequence": false,
-      "operation": "add",
-      "point1": {
-        "x": "(x-1)/2",
-        "y": "0",
-        "z": "(x+1)/2"
-      },
-      "point2": {
-        "x": "(x-1)/2",
-        "y": "x-1",
-        "z": "x-1"
-      },
-      "point3": {
-        "x": "(x-1)/2",
-        "y": "x-1",
-        "z": "x-1"
-      }
-    },
-    {
-      "type": "pave",
-      "color": "#E0A83F",
+      "color": "#9d4edd",
       "sequence": false,
       "operation": "add",
       "point1": {
         "x": "0",
         "y": "0",
-        "z": "(x-1)/2"
+        "z": "0"
       },
       "point2": {
-        "x": "(x-3)/2",
-        "y": "x-1",
-        "z": "(x-1)/2"
-      },
-      "point3": {
-        "x": "(x-3)/2",
-        "y": "x-1",
-        "z": "(x-1)/2"
-      }
-    },
-    {
-      "type": "pave",
-      "color": "#E0A83F",
-      "sequence": false,
-      "operation": "add",
-      "point1": {
-        "x": "(x+1)/2",
+        "x": "x-1",
         "y": "0",
-        "z": "(x-1)/2"
-      },
-      "point2": {
-        "x": "x-1",
-        "y": "x-1",
-        "z": "(x-1)/2"
+        "z": "0"
       },
       "point3": {
         "x": "x-1",
-        "y": "x-1",
-        "z": "(x-1)/2"
+        "y": "2",
+        "z": "0"
       }
     },
     {
@@ -121,19 +58,82 @@
       "sequence": false,
       "operation": "add",
       "point1": {
-        "x": "(x-1)/2",
+        "x": "0",
         "y": "0",
-        "z": "(x-1)/2"
+        "z": "2"
       },
       "point2": {
-        "x": "(x-1)/2",
-        "y": "x-1",
-        "z": "(x-1)/2"
+        "x": "x-1",
+        "y": "0",
+        "z": "2"
       },
       "point3": {
-        "x": "(x-1)/2",
-        "y": "x-1",
-        "z": "(x-1)/2"
+        "x": "x-1",
+        "y": "2",
+        "z": "2"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "0",
+        "y": "0",
+        "z": "4"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "0",
+        "z": "4"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "2",
+        "z": "4"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "0",
+        "y": "1",
+        "z": "1"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "1",
+        "z": "1"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "1",
+        "z": "1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "0",
+        "y": "1",
+        "z": "3"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "1",
+        "z": "3"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "1",
+        "z": "3"
       }
     }
   ]

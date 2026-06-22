@@ -26,32 +26,21 @@
 <body>
 <header>
   <div id="titre_appli"><b>Scène3D</b>/<i>Cubes et Variables</i></div>
-  <div class="filet-header"></div>
   
   <div class="header-actions">
-    <div class="groupe-affichage">
-      <button id="btn_monochrome" class="btn-header">
-        <img src="./Scene3D_files/icone_monochrome.svg" alt=""><span id="txt_btn_monochrome">monochrome</span>
-      </button>
-      <div class="filet-header"></div>
-      <button id="btn_direction" class="btn-header btn-dir" title="Cliquer pour changer de direction"><span id="txt_btn_direction">XYZ</span></button>
-      <button id="btn_explosion" class="btn-header">
-        <img src="./Scene3D_files/icone_explosion.svg" alt=""><span id="txt_btn_explosion">Exploser</span>
-      </button>
-    </div>
+        <button id="btn_monochrome" class="btn-header">
+      <img src="./Scene3D_files/icone_monochrome.svg" alt=""><span id="txt_btn_monochrome">Mode monochrome</span>
+    </button>
+    <button id="btn_abandonner" class="btn-header">
+      <img src="./Scene3D_files/icone_abandon.svg" alt="">Abandonner
+    </button>
 
-    <div class="groupe-actions">
-      <button id="btn_abandonner" class="btn-header">
-        <img src="./Scene3D_files/icone_abandon.svg" alt="">Abandon
-      </button>
-      <button id="btn_suivant" class="btn-header accent" disabled>
-        Suivant<img src="./Scene3D_files/icone_suivant.svg" alt="">
-      </button>
-    </div>
-
-    <div class="filet-header"></div>
+    <button id="btn_suivant" class="btn-header accent" disabled>
+      Question suivante <img src="./Scene3D_files/icone_suivant.svg" alt="">
+    </button>
+    
     <div id="header_score" class="header-score">
-      <span>Épreuve :</span> <span id="score_actuel">0</span> <span>/</span> <span id="score_total">0</span>
+      Épreuve : <span id="score_actuel">0</span> / <span id="score_total">0</span>
     </div>
   </div>
 </header>
@@ -259,7 +248,6 @@
       lightHolder.quaternion.copy(camera.quaternion);
       myReq=requestAnimationFrame(render);
       controls.update();
-      updateExplosion();
       renderer.render(scene,camera); 
     }
 
@@ -343,100 +331,11 @@
       }
       const texteBouton = document.getElementById('txt_btn_monochrome');
       if (texteBouton) {
-        texteBouton.textContent = monochromeActif ? 'Couleurs' : 'Monochrome';
+        texteBouton.textContent = monochromeActif ? 'Couleurs d\'origine' : 'Mode monochrome';
       }
       const bouton = document.getElementById('btn_monochrome');
       if (bouton) {
         bouton.classList.toggle('actif', monochromeActif);
-      }
-    }
-
-    // ---------- Mode explosion ----------
-    let explosionActive = false;
-    let coeffExplosion = 1;      // valeur courante, animée
-    let coeffExplosionCible = 1; // valeur visée (1 = normal, FACTEUR_EXPLOSION = explosé)
-    let directionExplosion = 'xyz'; // 'x', 'y', 'z' ou 'xyz' — direction utilisée au prochain déclenchement
-    const FACTEUR_EXPLOSION = 2.5;
-    const VITESSE_EXPLOSION = 0.06; // fraction de l'écart restant parcourue par frame (ease-out / suspension)
-
-    function cyclerDirectionExplosion(){
-      const ordre = ['x', 'y', 'z', 'xyz'];
-      const indexCourant = ordre.indexOf(directionExplosion);
-      directionExplosion = ordre[(indexCourant + 1) % ordre.length];
-      const texte = document.getElementById('txt_btn_direction');
-      if (texte) {
-        texte.textContent = directionExplosion.toUpperCase();
-      }
-    }
-
-    function toggleExplosion(){
-      explosionActive = !explosionActive;
-      coeffExplosionCible = explosionActive ? FACTEUR_EXPLOSION : 1;
-
-      if (explosionActive) {
-        // On révèle toutes les faces : à l'écartement, les faces qui étaient
-        // masquées contre un voisin redeviennent visibles dans l'espace.
-        for (const m of state.voxels.values()) {
-          for (let i = 0; i < 6; i++) m.material[i].visible = true;
-        }
-      }
-      // Le remasquage au retour se fait dans updateExplosion(), une fois l'animation terminée
-      // et les positions revenues à leurs coordonnées logiques.
-
-      const texteBouton = document.getElementById('txt_btn_explosion');
-      if (texteBouton) {
-        texteBouton.textContent = explosionActive ? 'Recomposer' : 'Exploser';
-      }
-      const bouton = document.getElementById('btn_explosion');
-      if (bouton) {
-        bouton.classList.toggle('actif', explosionActive);
-      }
-    }
-
-    function updateExplosion(){
-      if (Math.abs(coeffExplosion - coeffExplosionCible) < 0.001) {
-        if (coeffExplosion !== coeffExplosionCible) {
-          coeffExplosion = coeffExplosionCible;
-          applyExplosionToVoxels();
-          if (!explosionActive) {
-            // L'animation de retour vient de se terminer : les positions sont de
-            // nouveau à leurs coordonnées logiques, on peut remasquer les faces.
-            updateAllMaterial();
-          }
-        }
-        return;
-      }
-      if (explosionActive) {
-        // Suspension à l'explosion : on ralentit en approchant de la cible (ease-out).
-        // On ne parcourt qu'une fraction de l'écart restant à chaque frame.
-        coeffExplosion += (coeffExplosionCible - coeffExplosion) * VITESSE_EXPLOSION;
-      } else {
-        // Retour : on accélère en se rapprochant de la cible (ease-in).
-        // On avance d'un pas qui grandit avec l'écart déjà parcouru depuis le départ.
-        const ecartTotal = FACTEUR_EXPLOSION - 1;
-        const progres = (FACTEUR_EXPLOSION - coeffExplosion) / ecartTotal; // 0 au départ, 1 à l'arrivée
-        const vitesse = VITESSE_EXPLOSION * (0.3 + 1.4 * progres); // démarre lentement, finit vite
-        coeffExplosion += (coeffExplosionCible - coeffExplosion) * vitesse;
-      }
-      applyExplosionToVoxels();
-    }
-
-    function applyExplosionToVoxels(){
-      const centre = {
-        x: (state.sizeX - 1) / 2,
-        y: (state.sizeY - 1) / 2,
-        z: (state.sizeZ - 1) / 2
-      };
-      const surX = directionExplosion === 'x' || directionExplosion === 'xyz';
-      const surY = directionExplosion === 'y' || directionExplosion === 'xyz';
-      const surZ = directionExplosion === 'z' || directionExplosion === 'xyz';
-      for (const m of state.voxels.values()) {
-        const ox = m.userData.x, oy = m.userData.y, oz = m.userData.z;
-        const nx = surX ? centre.x + (ox - centre.x) * coeffExplosion : ox;
-        const ny = surY ? centre.y + (oy - centre.y) * coeffExplosion : oy;
-        const nz = surZ ? centre.z + (oz - centre.z) * coeffExplosion : oz;
-        m.position.set(nx, ny, nz);
-        if (m.userData.edge) m.userData.edge.position.set(nx, ny, nz);
       }
     }
 
@@ -719,8 +618,6 @@
       katex.render(`${data.affichage_variable} = ${n_depart}`, txt_variable, { throwOnError: false });
 
       construc_tous_objets(state_data.objet, nb);
-      coeffExplosion = coeffExplosionCible;
-      applyExplosionToVoxels();
       slider.removeEventListener("input", action);
       slider.addEventListener("input", action);
 
@@ -827,8 +724,6 @@
       clearVoxels();
       construc_tous_objets(state_data.objet, nb);
       updateAllMaterial();  
-      coeffExplosion = coeffExplosionCible;
-      applyExplosionToVoxels();
       renderOnce();
 
       let ligneCalculEnCours = document.getElementById("ligne_calcul_cours");
@@ -1037,11 +932,7 @@ catch(e) { contientVariable = true; }
     }
 
     // ---------- LOGIQUE DU QUIZ ----------
-     const listeQuizInitiale = [
-      "IMG/json/prisme_couche.json",
-      "IMG/json/3_cloisons.json",
-      "IMG/json/cube_plaques.json",
-      "IMG/json/socle.json",
+    const listeQuizInitiale = [
       "IMG/json/cube_boule_fixe_filaire.json",
       "IMG/json/cube_boule_fixe.json",
       "IMG/json/cube_boule_filaire.json",
@@ -1122,15 +1013,6 @@ catch(e) { contientVariable = true; }
     if (btnMonochrome) {
       btnMonochrome.addEventListener('click', toggleMonochrome);
     }
-
-    const btnExplosion = document.getElementById('btn_explosion');
-    if (btnExplosion) {
-      btnExplosion.addEventListener('click', toggleExplosion);
-    }
-
-    document.querySelectorAll('.btn-dir').forEach(b => {
-      b.addEventListener('click', cyclerDirectionExplosion);
-    });
 
     const btnAbandonner = document.getElementById('btn_abandonner');
     if (btnAbandonner) {
