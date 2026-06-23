@@ -1,91 +1,408 @@
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Piles 3D avec JSpreadsheet + Three.js</title>
-
-  <!-- JSpreadsheet -->
-  <link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v5/jspreadsheet.css" />
-  <link rel="stylesheet" href="https://jsuites.net/v5/jsuites.css" />
-  <script src="https://jsuites.net/v5/jsuites.js"></script>
-  <script src="https://bossanova.uk/jspreadsheet/v5/jspreadsheet.js"></script>
-
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Empilement de cubes</title>
+  <script type="importmap">
+    { "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "orbit": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+    }}
+  </script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app-title">
-  <span class="title-icon">🧱</span>
-  <span class="title-text">Tableau → Piles 3D</span>
-  <button id="modeRandomBtn" class="palette-btn"></button>
-<button id="modeHeightBtn">Hauteur</button>
-<button id="modeColumnBtn">Colonnes</button>
-<button id="modeRowBtn">Lignes</button>
-<button id="modeFacesBtn" class="palette-btn"></button>
 
+<header>
+  <span class="title">🧱 Empilement</span>
+  <div class="header-right">
+    <button class="btn active" id="btnEdit">✏️ Éditer</button>
+    <button class="btn" id="btnRotate">🔄 Tourner</button>
+    <span class="sep"></span>
+    <button class="btn-icon" id="btnClear" title="Tout effacer">🗑️</button>
+    <button class="btn-icon" id="btnPng" title="Export PNG">🖼️</button>
+    <button class="btn-icon" id="btnLatex" title="Export LaTeX">∑</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="section">
+      <div class="section-label">Hauteurs</div>
+      <div id="htable"></div>
+      <div class="total">Total : <b id="total">0</b> cube(s)</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Couleurs</div>
+      <div class="btn-col">
+        <button class="btn active" data-pal="hauteur">Par hauteur</button>
+        <button class="btn" data-pal="colonne">Par colonne</button>
+        <button class="btn" data-pal="mono">Monochrome</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Vue</div>
+      <div class="btn-row">
+        <button class="btn-icon" data-view="home" title="Vue par défaut">⌂</button>
+        <button class="btn-icon" data-view="top"   title="Dessus">↑</button>
+        <button class="btn-icon" data-view="front" title="Face">□</button>
+        <button class="btn-icon" data-view="right" title="Droite">▷</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <canvas id="canvas"></canvas>
+    <div class="hint" id="hint">✏️ Clic gauche : empiler &nbsp;|&nbsp; Clic droit : dépiler</div>
+  </main>
 </div>
-  <div class="main-layout">
 
-    <!-- CONTAINER TABLEAU -->
-    <div id="container-tableau">
-            <div class="toolbar jss_object">
-<button id="shuffleBtn" class="tool-btn">🎲</button>
-<button id="clearBtn" class="tool-btn">🗑</button>
-<button id="incBtn" class="tool-btn">➕1</button>
-<button id="decBtn" class="tool-btn">➖1</button>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'orbit';
 
+// ── Constantes ───────────────────────────────────────────
+const ROWS = 5, COLS = 5, MAX_H = 5;
 
-<button id="toggleTableBtn" class="tool-btn" title="Afficher / masquer tableau">
-  👁
-</button>
+const PAL = {
+  hauteur: ['#60a5fa','#34d399','#fbbf24','#fb923c','#f87171'],
+  colonne: ['#818cf8','#c084fc','#f472b6','#fb923c','#4ade80'],
+  mono:    ['#3b82f6','#3b82f6','#3b82f6','#3b82f6','#3b82f6']
+};
+let palKey = 'hauteur';
 
-<input id="totalCubesInput"
-       type="number"
-       min="0"
-       max="125"
-       value="18"
-       class="cube-input">
+// ── État ─────────────────────────────────────────────────
+const heights  = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+const voxels   = new Map();
+const vkey     = (x,y,z) => `${x},${y},${z}`;
+let editMode   = true;
+let lastMouse  = null;
+let mouseDown  = null;
 
-<button id="shuffleRandomBtn" class="palette-btn">
-  🔀
-</button>
-      </div>
-      <div id="spreadsheet"></div>
-      
-                 <div class="toolbar jss_object">
-<button id="toggleRotBtn" class="tool-btn" title="Rotation"></button>
-<button id="rotLeftBtn" class="tool-btn">⟲</button>
-<button id="rotRightBtn" class="tool-btn">⟳</button>
-<button id="zoomInBtn" class="tool-btn" title="Zoom +">＋</button>
-<button id="zoomOutBtn" class="tool-btn" title="Zoom -">－</button>
-<button id="savePngBtn" class="tool-btn" title="Exporter PNG">🖼</button>
-<button id="saveLatexBtn" class="tool-btn" title="Exporter LaTeX">∑</button>  
-<button id="viewTopBtn"    class="tool-btn" title="Vue dessus">top</button>
-<button id="viewFrontBtn"  class="tool-btn" title="Vue face">front</button>
-<button id="viewBackBtn"   class="tool-btn" title="Vue arrière">back</button>
-<button id="viewLeftBtn"   class="tool-btn" title="Vue gauche">left</button>
-<button id="viewRightBtn"  class="tool-btn" title="Vue droite">right</button>
-<button id="viewOrbitBtn"  class="tool-btn" title="Vue perspective (home)">home</button>
-      </div>
+// ── Scène Three.js ────────────────────────────────────────
+const canvas   = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
 
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf8fafc);
 
-    </div>
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
 
-    <!-- CONTAINER SCENE -->
-    <div class="container-scene">
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enabled = false;
 
-      <div id="scene-container"></div>
+// Lumières
+scene.add(new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 1.2));
+const dir = new THREE.DirectionalLight(0xffffff, 2.5);
+dir.position.set(6, 12, 8);
+dir.castShadow = true;
+scene.add(dir);
 
- 
-    </div>
+// Sol + grille
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(COLS, ROWS),
+  new THREE.MeshLambertMaterial({ color: 0xdde3ea })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set((COLS-1)/2, 0, (ROWS-1)/2);
+ground.receiveShadow = true;
+scene.add(ground);
 
+const grid = new THREE.GridHelper(COLS, COLS, 0x94a3b8, 0xcbd5e1);
+grid.position.set((COLS-1)/2, 0.001, (ROWS-1)/2);
+scene.add(grid);
 
+// Géométrie des arêtes (partagée)
+const EBOX = new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1));
 
- </div>
- <script src="tabl.js" defer></script>
-  <script src="app.js" defer></script>
-  <script src="scr.js" defer></script>
-    <script src="latex.js" defer></script>
+// Cube fantôme (preview hover)
+const ghost = new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.45 })
+);
+const ghostEdge = new THREE.LineSegments(
+  EBOX,
+  new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.8 })
+);
+ghost.visible = ghostEdge.visible = false;
+scene.add(ghost);
+scene.add(ghostEdge);
+
+// ── Couleur d'un voxel ────────────────────────────────────
+function getColor(col, level) {
+  if (palKey === 'colonne') return PAL.colonne[col % 5];
+  return PAL[palKey][level % 5];
+}
+
+// ── Gestion des voxels ────────────────────────────────────
+function addVoxel(col, level, row) {
+  const k = vkey(col, level, row);
+  if (voxels.has(k)) return;
+  const mat  = new THREE.MeshStandardMaterial({ color: getColor(col, level), roughness: 0.35, metalness: 0.05 });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), mat);
+  mesh.position.set(col, level + 0.5, row);
+  mesh.castShadow = true;
+  mesh.userData = { col, level, row };
+  const edges = new THREE.LineSegments(EBOX, new THREE.LineBasicMaterial({ color: 0x1e293b }));
+  edges.position.copy(mesh.position);
+  scene.add(mesh);
+  scene.add(edges);
+  voxels.set(k, { mesh, edges });
+}
+
+function removeVoxel(col, level, row) {
+  const k = vkey(col, level, row);
+  const v = voxels.get(k);
+  if (!v) return;
+  scene.remove(v.mesh);
+  scene.remove(v.edges);
+  v.mesh.geometry.dispose();
+  voxels.delete(k);
+}
+
+function setHeight(col, row, h) {
+  const old = heights[row][col];
+  for (let i = old - 1; i >= h; i--) removeVoxel(col, i, row);
+  for (let i = old; i < h; i++)      addVoxel(col, i, row);
+  heights[row][col] = h;
+}
+
+function clearAll() {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      setHeight(c, r, 0);
+  updateTable();
+}
+
+function refreshColors() {
+  for (const [, {mesh}] of voxels) {
+    const { col, level } = mesh.userData;
+    mesh.material.color.set(getColor(col, level));
+  }
+  updateTable();
+}
+
+// ── Tableau des hauteurs ──────────────────────────────────
+function buildTable() {
+  const div = document.getElementById('htable');
+  div.innerHTML = '';
+  const tbl = document.createElement('table');
+  tbl.className = 'htbl';
+  for (let r = 0; r < ROWS; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < COLS; c++) {
+      const td = document.createElement('td');
+      td.className = 'hcell';
+      td.dataset.r = r;
+      td.dataset.c = c;
+      td.addEventListener('click', () => {
+        const h = heights[r][c];
+        setHeight(c, r, h < MAX_H ? h + 1 : 0);
+        updateTable();
+      });
+      tr.appendChild(td);
+    }
+    tbl.appendChild(tr);
+  }
+  div.appendChild(tbl);
+}
+
+function updateTable() {
+  let total = 0;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const h = heights[r][c];
+      total += h;
+      const td = document.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+      if (!td) continue;
+      td.textContent = h || '';
+      if (h > 0) {
+        td.style.background = getColor(c, h - 1);
+        td.style.color = '#fff';
+      } else {
+        td.style.background = '';
+        td.style.color = '';
+      }
+    }
+  }
+  document.getElementById('total').textContent = total;
+}
+
+// ── Raycasting ────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+
+function getTarget(clientX, clientY) {
+  const rect  = canvas.getBoundingClientRect();
+  const mouse = new THREE.Vector2(
+    ((clientX - rect.left) / rect.width)  *  2 - 1,
+    -((clientY - rect.top)  / rect.height) * 2 + 1
+  );
+  raycaster.setFromCamera(mouse, camera);
+
+  const meshes = Array.from(voxels.values()).map(v => v.mesh);
+  const hits   = raycaster.intersectObjects([...meshes, ground], false);
+  if (!hits.length) return null;
+
+  const hit = hits[0];
+  let col, row;
+  if (hit.object === ground) {
+    col = Math.round(hit.point.x);
+    row = Math.round(hit.point.z);
+  } else {
+    col = hit.object.userData.col;
+    row = hit.object.userData.row;
+  }
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return null;
+  return { col, row };
+}
+
+canvas.addEventListener('mousedown', e => { mouseDown = { x: e.clientX, y: e.clientY }; });
+
+canvas.addEventListener('mouseup', e => {
+  if (!editMode || !mouseDown) return;
+  const dx = e.clientX - mouseDown.x, dy = e.clientY - mouseDown.y;
+  mouseDown = null;
+  if (Math.hypot(dx, dy) > 5) return; // drag → pas un clic
+
+  const t = getTarget(e.clientX, e.clientY);
+  if (!t) return;
+  const { col, row } = t;
+  const h = heights[row][col];
+  if (e.button === 0 && h < MAX_H) setHeight(col, row, h + 1);
+  if (e.button === 2 && h > 0)     setHeight(col, row, h - 1);
+  updateTable();
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousemove',   e => { lastMouse = e; });
+canvas.addEventListener('mouseleave',  () => { lastMouse = null; });
+
+// ── Cube fantôme (mis à jour dans la boucle d'animation) ──
+function updateGhost() {
+  if (!editMode || !lastMouse) { ghost.visible = ghostEdge.visible = false; return; }
+  const t = getTarget(lastMouse.clientX, lastMouse.clientY);
+  if (!t) { ghost.visible = ghostEdge.visible = false; return; }
+  const { col, row } = t;
+  const h = heights[row][col];
+  if (h >= MAX_H) { ghost.visible = ghostEdge.visible = false; return; }
+  ghost.position.set(col, h + 0.5, row);
+  ghostEdge.position.copy(ghost.position);
+  ghost.visible = ghostEdge.visible = true;
+}
+
+// ── Vues caméra ───────────────────────────────────────────
+const CX = (COLS - 1) / 2, CZ = (ROWS - 1) / 2;
+
+function setView(mode) {
+  controls.target.set(CX, 1.5, CZ);
+  if (mode === 'home')  camera.position.set(CX + 7, 7, CZ + 9);
+  if (mode === 'top')   camera.position.set(CX, 14, CZ + 0.01);
+  if (mode === 'front') camera.position.set(CX, 2.5, CZ + 12);
+  if (mode === 'right') camera.position.set(CX + 12, 2.5, CZ);
+  camera.lookAt(CX, 1.5, CZ);
+  controls.update();
+}
+
+// ── Export PNG ────────────────────────────────────────────
+function exportPng() {
+  const bg = scene.background;
+  scene.background = null;
+  renderer.render(scene, camera);
+  const a = document.createElement('a');
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.download = 'empilement.png';
+  a.click();
+  scene.background = bg;
+}
+
+// ── Export LaTeX (TikZ) ───────────────────────────────────
+function exportLatex() {
+  let tex = `\\documentclass[11pt]{article}
+\\usepackage{tikz}
+\\usepackage{geometry}\\geometry{margin=2cm}
+\\newcommand{\\Cube}[3]{
+  \\filldraw[fill=gray!45](#1,#2,#3)--(#1,#2+1,#3)--(#1,#2+1,#3+1)--(#1,#2,#3+1)--cycle;
+  \\filldraw[fill=gray!30](#1,#2+1,#3)--(#1,#2+1,#3+1)--(#1+1,#2+1,#3+1)--(#1+1,#2+1,#3)--cycle;
+  \\filldraw[fill=gray!20](#1,#2,#3+1)--(#1+1,#2,#3+1)--(#1+1,#2+1,#3+1)--(#1,#2+1,#3+1)--cycle;
+}
+\\begin{document}
+\\begin{tikzpicture}[x={(1cm,0cm)},y={(0.4cm,-0.3cm)},z={(0cm,1cm)}]
+\\filldraw[fill=gray!10](0,0,0)--(5,0,0)--(5,5,0)--(0,5,0)--cycle;\n`;
+
+  for (let r = 0; r < ROWS; r++)
+    for (let c = COLS - 1; c >= 0; c--)
+      for (let z = 0; z < heights[r][c]; z++)
+        tex += `\\Cube{${c}}{${r}}{${z}}\n`;
+
+  tex += `\\end{tikzpicture}\n\\end{document}`;
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([tex], { type: 'text/plain' }));
+  a.download = 'empilement.tex';
+  a.click();
+}
+
+// ── Mode édition / rotation ───────────────────────────────
+function setMode(edit) {
+  editMode = edit;
+  controls.enabled = !edit;
+  document.getElementById('btnEdit').classList.toggle('active', edit);
+  document.getElementById('btnRotate').classList.toggle('active', !edit);
+  document.getElementById('hint').style.opacity = edit ? '1' : '0';
+  if (!edit) ghost.visible = ghostEdge.visible = false;
+}
+
+// ── Redimensionnement + boucle d'animation ────────────────
+function resize() {
+  const w = canvas.parentElement.clientWidth;
+  const h = canvas.parentElement.clientHeight;
+  if (canvas.width !== w || canvas.height !== h) {
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  resize();
+  controls.update();
+  updateGhost();
+  renderer.render(scene, camera);
+}
+
+// ── Événements boutons ────────────────────────────────────
+document.getElementById('btnEdit').addEventListener('click', () => setMode(true));
+document.getElementById('btnRotate').addEventListener('click', () => setMode(false));
+document.getElementById('btnClear').addEventListener('click', clearAll);
+document.getElementById('btnPng').addEventListener('click', exportPng);
+document.getElementById('btnLatex').addEventListener('click', exportLatex);
+
+document.querySelectorAll('[data-pal]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-pal]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    palKey = btn.dataset.pal;
+    refreshColors();
+  });
+});
+
+document.querySelectorAll('[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => setView(btn.dataset.view));
+});
+
+// ── Initialisation ────────────────────────────────────────
+buildTable();
+updateTable();
+setView('home');
+animate();
+</script>
 </body>
 </html>

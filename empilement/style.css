@@ -1,245 +1,194 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  margin: 0;
-}
-
-
-/* =========================
-   TITRE APPLICATION
-========================= */
-
-.app-title {
+  font-family: system-ui, -apple-system, sans-serif;
+  height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-
-  margin-top: 30px;
-  margin-bottom: 10px;
-
-  font-size: 28px;
-  font-weight: 600;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f1f5f9;
   color: #1e293b;
 }
 
-.title-icon {
-  font-size: 30px;
+/* ── Header ──────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  background: #1e293b;
+  color: white;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.title-text {
-  letter-spacing: 0.5px;
+.title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-right: auto;
 }
 
-.main-layout {
-  display: flex;          /* ← met les deux côte à côte */
-  flex-direction: row;    /* ← sur une ligne */
-  gap: 30px;              /* ← espace entre les deux */
-  align-items: flex-start;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-
-/* =========================
-   CELLULES JSpreadsheet
-========================= */
-
-#spreadsheet .jss_cell {
-  width: 36px !important;
-  height: 50px !important;
-
-  line-height: 50px !important;   /* centrage vertical */
-  text-align: center;
-
-  font-size: 16px;
-  font-weight: 500;
-
-  border: 1px solid #d1d5db !important;
+.sep {
+  width: 1px;
+  height: 22px;
+  background: #475569;
+  margin: 0 3px;
 }
 
-/* cellule sélectionnée */
-#spreadsheet .jss_selected {
-  background: #dbeafe !important;
+/* ── Boutons header ───────────────────── */
+.btn {
+  padding: 4px 11px;
+  border-radius: 5px;
+  border: 1px solid #475569;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.1s;
 }
 
-/* focus édition */
-#spreadsheet .jss_cell:focus {
-  outline: 2px solid #3b82f6 !important;
-  outline-offset: -2px;
+.btn:hover { border-color: #94a3b8; color: white; }
+
+.btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
 }
 
-#spreadsheet {
-  transition: opacity 0.2s ease;
+.btn-icon {
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid #475569;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.1s;
 }
 
-#container-tableau {
+.btn-icon:hover { border-color: #94a3b8; color: white; }
+
+/* ── Layout ───────────────────────────── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+aside {
+  width: 175px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  padding: 14px 12px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-
-  width: 350px;        /* largeur fixe */
-  flex-shrink: 0;      /* empêche le rétrécissement */
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  border: 2px solid #d1d5db;
-  border-radius: 16px;
-  padding: 20px;
-  height: 400px;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
-.container-scene {
-  flex: 1;                /* prend tout le reste à droite */
+main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
-#scene-container {
-  
-  height: 400px;
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
 }
 
-.container-scene {
-width: 300px;
-}
-/* =========================
-   STYLE DES DEUX CONTAINERS
-========================= */
+/* ── Sections sidebar ─────────────────── */
+.section { display: flex; flex-direction: column; }
 
-#container-tableau,
-.container-scene {
-  background: #ffffff;
-  border: 2px solid #d1d5db;     /* bordure visible */
-  border-radius: 16px;           /* angles bien arrondis */
-  padding: 20px;
-
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+.section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
 }
 
-/* =========================
-   TOOLBAR
-========================= */
-
-.toolbar {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-
-  padding: 10px 12px;
-
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+/* ── Tableau des hauteurs ─────────────── */
+.htbl {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
 }
 
-/* =========================
-   BOUTONS
-========================= */
-
-/* =========================
-   BOUTONS ICONES PROPRES
-========================= */
-
-.hidden {
-  display: none !important;
-}
-
-.invisible {
-  visibility: hidden;
-}
-
-.hidden-spreadsheet {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.tool-btn {
-  width: 34px;
-  height: 34px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: #f1f5f9;
-  border: 2px solid #cbd5e1;
-  border-radius: 12px;
-
-  font-size: 15px;
-  line-height: 1;
-
+.hcell {
+  border: 1px solid #e2e8f0;
+  text-align: center;
   cursor: pointer;
-  padding: 0;
-
-  transition: all 0.15s ease;
+  font-weight: 700;
+  font-size: 0.82rem;
+  height: 28px;
+  transition: opacity 0.1s, transform 0.07s;
+  user-select: none;
 }
 
-.tool-btn:hover {
-  background: #e0f2fe;
-  border-color: #3b82f6;
+.hcell:hover  { opacity: 0.78; transform: scale(1.06); }
+.hcell:active { transform: scale(0.94); }
+
+.total {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #64748b;
+  text-align: center;
 }
 
-.tool-btn:active {
-  transform: scale(0.92);
+/* ── Boutons palette ──────────────────── */
+.btn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* état pause */
-.tool-btn.paused {
-  background: #fee2e2;
-  border-color: #ef4444;
+.btn-col .btn {
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  text-align: center;
 }
 
-.icon {
-  width: 15px;
-  height: 15px;
-  stroke: #334155;
-  stroke-width: 2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.btn-col .btn:hover  { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+.btn-col .btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+
+/* ── Boutons vue ──────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-row .btn-icon {
+  flex: 1;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.btn-row .btn-icon:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+
+/* ── Hint bas de scène ────────────────── */
+.hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 0.72rem;
   pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s;
 }
-
-.tool-btn:hover .icon {
-  stroke: #2563eb;
-}
-
-
-.palette-btn{
-  width:38px;
-  height:38px;
-  border:2px solid #cbd5e1;
-  border-radius:14px;
-  background:linear-gradient(145deg,#ffffff,#f1f5f9);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  transition:all .25s ease;
-}
-
-.palette-btn:hover{
-  transform:translateY(-2px);
-  box-shadow:0 6px 14px rgba(0,0,0,0.15);
-}
-
-.palette-btn.active{
-  border-color:#2563eb;
-  box-shadow:0 0 0 3px #bfdbfe inset;
-}
-
-.icon {
-  width: 24px;
-  height: 24px;
-}
-
-.tool-btn {
-  color: #334155;
-}
-
-.tool-btn:hover {
-  color: #2563eb;
-}
-
-.tool-btn.disabled {
-  opacity: 0.35;
-  cursor: default;
-  pointer-events: none;
-}
-
