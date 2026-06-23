@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="29.50197mm"
+   height="28.955753mm"
+   viewBox="0 0 29.50197 28.955753"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg">
+  <g id="layer1">
+    <ellipse
+       style="fill:none;stroke:#b3b3b3;stroke-width:1.24601;stroke-linecap:square;stroke-dasharray:none"
+       cx="14.75099"
+       cy="14.477876"
+       rx="13.85488"
+       ry="13.854881" />
+    <!-- Cube en perspective conique : la face arrière est plus petite, les arêtes convergent -->
+    <!-- Face avant (grand carré) -->
+    <path
+       style="fill:none;stroke:#b3b3b3;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round"
+       d="M 7,11 H 17 V 21 H 7 Z" />
+    <!-- Face arrière (petit carré, décalé en haut-droite) -->
+    <path
+       style="fill:none;stroke:#b3b3b3;stroke-width:1.0;stroke-linecap:round;stroke-linejoin:round"
+       d="M 13,7.5 H 20 V 14.5 H 13 Z" />
+    <!-- Arêtes de liaison (convergentes : perspective) -->
+    <path
+       style="fill:none;stroke:#b3b3b3;stroke-width:1.0;stroke-linecap:round"
+       d="M 7,11 L 13,7.5 M 17,11 L 20,7.5 M 17,21 L 20,14.5" />
+  </g>
+</svg>

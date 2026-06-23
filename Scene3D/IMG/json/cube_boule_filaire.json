@@ -1,0 +1,224 @@
+{
+  "affichage_variable": "n",
+  "consignes": {
+    "titre": "Le cube aux huit coins et son noyau",
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "9*x^3 + 6*x^2 + 12*x"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "3*x",
+      "sizeZ": "3*x",
+      "sizeY": "3*x"
+    },
+    "position_camera": {
+      "cameraX": 22,
+      "cameraY": 18,
+      "cameraZ": 26,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "slider": {
+    "n_min": 2,
+    "n_max": 6,
+    "n_depart": 3,
+    "step": 1
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "point2": {
+        "x": "0",
+        "y": "x-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "0",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "2*x"
+      },
+      "point2": {
+        "x": "0",
+        "y": "x-1",
+        "z": "3*x-1"
+      },
+      "point3": {
+        "x": "0",
+        "y": "0",
+        "z": "3*x-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "x-1",
+        "y": "2*x",
+        "z": "x-1"
+      },
+      "point2": {
+        "x": "0",
+        "y": "2*x",
+        "z": "0"
+      },
+      "point3": {
+        "x": "0",
+        "y": "3*x-1",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "x-1",
+        "y": "2*x",
+        "z": "2*x"
+      },
+      "point2": {
+        "x": "0",
+        "y": "2*x",
+        "z": "3*x-1"
+      },
+      "point3": {
+        "x": "0",
+        "y": "3*x-1",
+        "z": "3*x-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*x",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "point2": {
+        "x": "3*x-1",
+        "y": "x-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "3*x-1",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*x",
+        "y": "x-1",
+        "z": "2*x"
+      },
+      "point2": {
+        "x": "3*x-1",
+        "y": "x-1",
+        "z": "3*x-1"
+      },
+      "point3": {
+        "x": "3*x-1",
+        "y": "0",
+        "z": "3*x-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*x",
+        "y": "2*x",
+        "z": "x-1"
+      },
+      "point2": {
+        "x": "3*x-1",
+        "y": "2*x",
+        "z": "0"
+      },
+      "point3": {
+        "x": "3*x-1",
+        "y": "3*x-1",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*x",
+        "y": "2*x",
+        "z": "2*x"
+      },
+      "point2": {
+        "x": "3*x-1",
+        "y": "2*x",
+        "z": "3*x-1"
+      },
+      "point3": {
+        "x": "3*x-1",
+        "y": "3*x-1",
+        "z": "3*x-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "point2": {
+        "x": "2*x",
+        "y": "x-1",
+        "z": "2*x"
+      },
+      "point3": {
+        "x": "2*x",
+        "y": "2*x",
+        "z": "2*x"
+      }
+    }
+  ]
+}
