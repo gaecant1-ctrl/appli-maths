@@ -397,32 +397,15 @@ _onGradeResult(e) {
 }
 
   _finish(s, v) {
-  this.status = s;
-  if (this.inputWrapper) this.inputWrapper.disable();
-  
-  const detail = { 
-    status: s, 
-    points: (s === 'correct' ? 1 : 0), 
-    exercice: this, 
-    verdict: v 
-  };
+    this.status = s;
+    if (this.inputWrapper) this.inputWrapper.disable();
 
-  // On l'envoie sur le container
-  this.container.dispatchEvent(new CustomEvent("reponseValidee", {
-    detail: detail,
-    bubbles: true,      // Permet de remonter les parents
-    composed: true      // Traverse le Shadow DOM si besoin
-  }));
-
-  // SÉCURITÉ : On l'envoie aussi sur la zone d'exercice spécifique
-  // au cas où le Quiz écoute l'élément parent direct.
-  if (this.container.parentNode) {
-      this.container.parentNode.dispatchEvent(new CustomEvent("reponseValidee", {
-          detail: detail,
-          bubbles: true
-      }));
+    this.container.dispatchEvent(new CustomEvent("reponseValidee", {
+      detail: { status: s, points: (s === 'correct' ? 1 : 0), exercice: this, verdict: v },
+      bubbles: true,
+      composed: true
+    }));
   }
-}
 
 _shouldContinue(status) {
     const s = this.policies?.suite || {};

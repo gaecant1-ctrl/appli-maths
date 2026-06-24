@@ -287,8 +287,13 @@ _verifierFormatAtome(atome, resRef, f, expressionBrute) {
   const estUneDuree = (atome instanceof Duree) || (atome.getNature?.() === "Duree");
 
   // 1. Unité Cible : Toujours prioritaire si définie
-  if (f.uniteCible && Object.keys(f.uniteCible).length > 0) {
-    // ... (ton code de validation d'unité cible)
+  if (f.uniteCible && !Array.isArray(f.uniteCible) && Object.keys(f.uniteCible).length > 0) {
+    const ansDict = atome.grandeur?.uniteDict || {};
+    if (!this._isUnitInCible(ansDict, f.uniteCible)) {
+      meta.reason = 'wrong_unit';
+      meta.attendu = Object.keys(f.uniteCible).join(', ');
+      return { status: 'ok', meta };
+    }
   }
 
   // 2. DÉTERMINATION DU FORMAT MAÎTRE

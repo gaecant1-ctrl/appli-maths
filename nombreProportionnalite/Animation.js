@@ -209,7 +209,6 @@ class AnimationSmiley extends Animation {
     celebrate(base = {}) {
       this.burst({ particleCount: 120, spread: 100, startVelocity: 35, ...base });
       this.salvos(3, 280, base);
-      flat: (base.flat ?? this.flat),
       setTimeout(() => this.rain(2500, 120, base), 500);
     }
 

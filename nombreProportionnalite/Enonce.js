@@ -670,8 +670,7 @@ case 9: { // Tuyau qui fuit (Version Durée Réelle)
     const v2 = new Grandeur(Nombre.fromParts(v2Val, 1), { "L": 1 });
 
     // 3. Calcul de la durée (Résultat en minutes)
-    const gTemps = v2.div(coeffDebit); 
-    console.log(v2,coeffDebit,gTemps);
+    const gTemps = v2.div(coeffDebit);
 
 
     // 6. Énoncé
@@ -1253,8 +1252,13 @@ case 25: {
 }
 
 toQuestionData(variant, index) {
-    // 1. On part des options de base du constructeur
-    let finalOptions = merge({}, this.baseOptions);
+    // Deep copy des sous-objets mutables pour ne pas altérer this.baseOptions
+    const finalOptions = merge({}, this.baseOptions);
+    finalOptions.modeCorrection = merge({}, finalOptions.modeCorrection);
+    finalOptions.policies = merge({}, finalOptions.policies);
+    finalOptions.policies.format  = merge({}, finalOptions.policies.format);
+    finalOptions.policies.egalite = merge({}, finalOptions.policies.egalite);
+    finalOptions.policies.suite   = merge({}, finalOptions.policies.suite);
 
     // 2. On applique les réglages spécifiques du cas
     const vo = variant.variantOptions || {};

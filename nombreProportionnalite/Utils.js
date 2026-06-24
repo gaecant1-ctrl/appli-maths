@@ -15,8 +15,7 @@ function lcm(a, b) {
 }
 
 function trunc(n) {
-  // Retire la partie décimale sans appel à Math
-  return n >= 0 ? n - (n % 1) : n - (n % 1);
+  return n - (n % 1);
 }
 
 function round(n) {

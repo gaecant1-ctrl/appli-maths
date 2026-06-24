@@ -41,7 +41,6 @@ class Quiz {
     this._resetState();
     this._updateScore();
     this.hasStarted = false;
-    this._unlockLevelUI();
     this._clearMessage();
     this.zone.innerHTML = '';
     this.nextButton.style.display = '';
@@ -87,16 +86,10 @@ _nouvelleQuestion() {
     const index = this.total + 1;
     this._showMessage(this.texts.header(index));
 
-    const onRejetAction = (v) => {
+    const onRejetAction = () => {
         this.rejetsCumules++;
-        // On récupère le nombre de tentatives de l'exercice actuel
         this._updateScore(this.exercice ? this.exercice.tentativesEchouees : 0);
     };
-
-    // Sécurité : On retire un éventuel ancien écouteur résiduel sur la zone
-    if (this._currentHandler) {
-        this.zone.removeEventListener('reponseValidee', this._currentHandler);
-    }
 
     this.exercice = this.buildExercise(this.zone, index, onRejetAction);
 
@@ -186,7 +179,6 @@ _nouvelleQuestion() {
   _onNextClick() {
     if (!this.hasStarted) {
       this.hasStarted = true;
-      this._lockLevelUI();
       this._nouvelleQuestion();
       return;
     }
@@ -202,16 +194,6 @@ _nouvelleQuestion() {
   }
 
 
-
-  _lockLevelUI() {
-    const sel = this.levelSlot?.querySelector('select');
-    if (sel) sel.disabled = true;
-  }
-
-  _unlockLevelUI() {
-    const sel = this.levelSlot?.querySelector('select');
-    if (sel) sel.disabled = false;
-  }
 
   _clearMessage() {
     this.resultEl.style.display = 'none';
