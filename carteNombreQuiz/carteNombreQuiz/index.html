@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Écritures d'un nombre — Quiz</title>
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="styleUnique.css">
+
+<!-- MathJax -->
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  },
+  chtml: {
+    displayAlign: "center"
+  }
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>Différentes écritures d'un nombre</h1>
+
+<!-- SELECTEUR DE MODE -->
+
+<div class="nuage-toolbar">
+  <div class="segmented" id="modeSelector">
+    <button data-value="cartes" type="button">Cartes</button>
+    <button data-value="flash" type="button">Flash</button>
+  </div>
+</div>
+
+<!-- BARRE INFO -->
+
+<div class="topbar">
+
+  <div id="exerciceZone">
+    Exercice 1 :
+  </div>
+
+  <div id="scoreZone">
+    Score 0/0
+  </div>
+
+</div>
+
+<!-- ============================
+     MODE CARTES
+============================ -->
+
+<div id="vueCartes">
+
+  <div id="zoneAffichage"></div>
+
+  <div id="feedbackCartes" class="cartes-feedback"></div>
+
+  <div class="actions">
+    <button id="mainBtnCartes" class="main-btn">Correction</button>
+  </div>
+
+</div>
+
+<!-- ============================
+     MODE FLASH
+============================ -->
+
+<div id="vueFlash" style="display:none">
+
+  <div class="flashcard">
+
+    <div class="flash-consigne" id="consigneZone">
+      Chargement…
+    </div>
+
+    <div class="flash-duo">
+
+      <div class="flash-donnee" id="donneeZone"></div>
+
+      <div class="flash-reponse">
+        <input
+          type="text"
+          id="reponseInput"
+          class="flash-input"
+          autocomplete="off"
+          placeholder="Ta réponse…">
+      </div>
+
+    </div>
+
+    <div class="flash-feedback" id="feedbackFlash"></div>
+
+  </div>
+
+  <div class="actions">
+    <button id="mainBtnFlash" class="main-btn">Valider</button>
+  </div>
+
+  <div class="actions-secondaires" id="ficheFlashZone"></div>
+
+</div>
+
+</div>
+
+<script type="module" src="./app.js"></script>
+
+</body>
+
+</html>

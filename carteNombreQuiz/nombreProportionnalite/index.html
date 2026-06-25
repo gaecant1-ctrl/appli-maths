@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz NombreMot</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- MathJax (si tu veux du LaTeX dans les énoncés) -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['$$', '$$']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <!-- Confetti (optionnel) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+  <!-- Conteneur du quiz -->
+  <div id="app"></div>
+
+  <!-- Scripts de ton projet -->
+  <script src="Utils.js"></script>
+  <script src="Nombre.js"></script>
+  <script src="Grandeur.js"></script>
+  <script src="Expression.js"></script>
+  <script src="Somme.js"></script>
+  <script src="Produit.js"></script>
+  <script src="ObjetString.js"></script>
+  <script src="Grader.js"></script>
+  <script src="Exercice.js"></script>
+  <script src="Niveau.js"></script>
+  <script src="Enonce.js"></script>
+    <script src="Animation.js"></script>
+  <script src="AnimationFinale.js"></script>
+  <script src="Fiche.js"></script>
+  <script src="Quiz.js"></script>
+
+  <script>
+  
+window.addEventListener('load', () => {
+  const SEED_BASE = "quiz-Proportionnalite-2025";
+
+  // 1. Génération de toutes les variantes uniques possibles (environ 32)
+  let listeCombinaisons = [];
+  for (let t = 1; t <= 25; t++) {
+    if (t === 18 || t === 19 || t === 21) {
+      listeCombinaisons.push({ type: t, sousCas: 1 }, { type: t, sousCas: 2 }, { type: t, sousCas: 3 });
+      if (t === 21) listeCombinaisons.push({ type: t, sousCas: 4 });
+    } 
+    else if (t === 20) {
+      listeCombinaisons.push({ type: t, sousCas: 1 }, { type: t, sousCas: 2 });
+    } 
+    else {
+      // Le cube (13/14) n'apparaît qu'UNE seule fois ici
+      listeCombinaisons.push({ type: t, sousCas: null });
+    }
+  }
+
+  // 2. Mélange du paquet de cartes (hasard pur)
+  for (let i = listeCombinaisons.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [listeCombinaisons[i], listeCombinaisons[j]] = [listeCombinaisons[j], listeCombinaisons[i]];
+  }
+
+  // ==========================================
+  // AFFICHAGE EN CONSOLE (UNIQUEMENT POUR TOI)
+  // ==========================================
+  //console.log("--- LISTE DES QUESTIONS DU QUIZ (DANS L'ORDRE) ---");
+  const nbQuestionsDuQuiz = 30;
+  for (let i = 0; i < nbQuestionsDuQuiz; i++) {
+    const combo = listeCombinaisons[i % listeCombinaisons.length];
+    const sousCasTxt = combo.sousCas ? ` -> Variante ${combo.sousCas}` : "";
+    //console.log(`Question ${i + 1} : Type ${combo.type}${sousCasTxt}`);
+  }
+  //console.log("--------------------------------------------------");
+
+  // 3. Ta fonction passerelle standard
+  function buildProportionnalite(zone, index, onRejet) { 
+    const combo = listeCombinaisons[(index - 1) % listeCombinaisons.length];
+    const opts = {
+        sharedOptions: { 
+          affichageAvecLettre: "",
+          typeForce: combo.type,
+          sousCasForce: combo.sousCas
+        }
+    };
+    const inst = new EnonceProportionnalite(opts);
+    return inst.buildExercise(zone, index, onRejet); 
+  }
+
+  // 4. Ton Quiz avec son affichage original pour l'élève
+  const quiz = new Quiz({
+    mount: '#app',
+    nbQuestions: nbQuestionsDuQuiz, 
+    buildExercise: buildProportionnalite, 
+    texts: {
+      ready: "Problèmes de Proportionnalité ou non!!! ",
+      readyContent: `
+        <p style="font-size:1.2em; line-height:1.5; margin:20px 0; text-align:center;">
+          Résolvez ces petits problèmes en indiquant bien <strong>l'unité</strong> dans votre réponse !<br>
+          <em>(ex: 120 km, 45 €, 1 h + 15 min)</em>
+        </p>
+      `
+    }
+  });
+
+  quiz.start();
+
+  // ==========================================
+  // FICHE PAPIER (overlay LaTeX + impression PDF)
+  // ==========================================
+  const fiche = new FichePapier({
+    EnonceClass: EnonceProportionnalite,
+    nbExercices: 10,
+    titre: "Problèmes de Proportionnalité",
+    sousTitre: ""
+  });
+  fiche.installerBouton(quiz.ficheSlot);
+});
+  </script>
+  
+</body>
+</html>

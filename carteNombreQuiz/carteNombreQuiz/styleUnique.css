@@ -1,0 +1,335 @@
+/* =====================================================
+   FOND DE PAGE & CONTENEURS — identité visuelle
+===================================================== */
+
+body{
+  background:linear-gradient(160deg, #5b6cf5 0%, #4338ca 45%, #312e81 100%);
+  min-height:100vh;
+}
+
+.container{
+  background:#fdfdff;
+  box-shadow:0 24px 60px rgba(30,27,75,0.45);
+}
+
+h1{
+  color:#1e1b4b;
+}
+
+/* zoneAffichage est déjà à l'intérieur de .container : pas de second fond blanc */
+
+#zoneAffichage{
+  background:transparent;
+  box-shadow:none;
+  padding:0;
+}
+
+/* colonnes Rationnel / Décimal — couleurs plus affirmées */
+
+.rationnel{
+  background:#e2e6ff;
+}
+
+.decimal{
+  background:#d8f7ea;
+}
+
+.col h2{
+  color:#3730a3;
+}
+
+.decimal h2{
+  color:#0f6e56;
+}
+
+/* =====================================================
+   BOUTON PRINCIPAL — états soignés
+   (Correction / Valider → violet ; Suivant → vert ;
+    Terminé → gris désactivé)
+===================================================== */
+
+.main-btn{
+
+  padding:12px 26px;
+
+  border:none;
+  border-radius:10px;
+
+  background:#5b6cf5;
+  color:white;
+
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:.2px;
+
+  cursor:pointer;
+
+  transition:background .18s ease, transform .12s ease, box-shadow .18s ease;
+
+  box-shadow:0 4px 14px rgba(91,108,245,0.3);
+
+}
+
+.main-btn:hover{
+  background:#4a5ce0;
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(91,108,245,0.4);
+}
+
+.main-btn:active{
+  transform:translateY(1px);
+  box-shadow:0 2px 8px rgba(91,108,245,0.25);
+}
+
+/* état "suivant" : avancer à l'étape suivante */
+
+.main-btn.is-suivant{
+  background:#2ecc71;
+  box-shadow:0 4px 14px rgba(46,204,113,0.3);
+}
+
+.main-btn.is-suivant:hover{
+  background:#27b765;
+  box-shadow:0 6px 18px rgba(46,204,113,0.4);
+}
+
+.main-btn.is-suivant:active{
+  box-shadow:0 2px 8px rgba(46,204,113,0.25);
+}
+
+/* état terminé / désactivé */
+
+.main-btn:disabled{
+  background:#d8dae3;
+  color:#9498a8;
+  cursor:not-allowed;
+  box-shadow:none;
+  transform:none;
+}
+
+.main-btn:disabled:hover{
+  background:#d8dae3;
+  transform:none;
+  box-shadow:none;
+}
+
+.actions-secondaires{
+  display:flex;
+  justify-content:center;
+  margin-top:10px;
+}
+
+/* =====================================================
+   SELECTEUR DE MODE (segmented toggle)
+===================================================== */
+
+.segmented{
+  display:inline-flex;
+  border:1.5px solid #d8dae3;
+  border-radius:10px;
+  overflow:hidden;
+  background:white;
+}
+
+.segmented button{
+  border:none;
+  border-radius:0;
+  background:transparent;
+  padding:9px 24px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  color:#5a5f73;
+  transition:background .15s ease, color .15s ease;
+}
+
+.segmented button + button{
+  border-left:1.5px solid #d8dae3;
+}
+
+.segmented button:hover{
+  background:#f1f2f8;
+}
+
+.segmented button.active{
+  background:#5b6cf5;
+  color:white;
+}
+
+.segmented button.active:hover{
+  background:#4a5ce0;
+}
+
+/* =====================================================
+   FEEDBACK — MODE CARTES
+===================================================== */
+
+.cartes-feedback{
+  display:flex;
+  justify-content:center;
+  min-height:0;
+  margin-top:20px;
+}
+
+.cartes-feedback:empty{
+  margin-top:0;
+}
+
+.cartes-feedback.success,
+.cartes-feedback.info{
+
+  align-items:center;
+  gap:8px;
+
+  padding:9px 18px;
+  border-radius:999px;
+
+  font-weight:600;
+  font-size:14px;
+
+}
+
+.cartes-feedback.success{
+  background:#e7faf0;
+  color:#1f9d5c;
+  border:1px solid #b9efce;
+}
+
+.cartes-feedback.success::before{
+  content:"✓";
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#2ecc71;
+  color:white;
+  font-size:11px;
+  flex-shrink:0;
+}
+
+.cartes-feedback.info{
+  background:#eef0f7;
+  color:#4a4f63;
+  border:1px solid #d8dae3;
+}
+
+.cartes-feedback.info::before{
+  content:"i";
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#9498a8;
+  color:white;
+  font-size:11px;
+  font-style:italic;
+  font-weight:700;
+  flex-shrink:0;
+}
+
+/* =====================================================
+   PAGE FLASHCARD — Une écriture à la fois
+===================================================== */
+
+.flash-container{
+  max-width:560px;
+}
+
+.flashcard{
+  background:#eef0ff;
+  border:1px solid #c7ccf7;
+  border-radius:14px;
+  padding:28px 24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.flash-consigne{
+  text-align:center;
+  font-size:1.1em;
+  font-weight:600;
+  color:#2c3550;
+  line-height:1.5;
+}
+
+.flash-duo{
+  width:100%;
+  display:flex;
+  align-items:stretch;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+.flash-donnee{
+  flex:1 1 200px;
+  background:white;
+  border:2px solid #5b6cf5;
+  border-radius:10px;
+  padding:14px 16px;
+  min-height:64px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.flash-donnee mjx-container{
+  margin:auto;
+}
+
+.flash-reponse{
+  flex:1 1 200px;
+  display:flex;
+}
+
+.flash-input{
+  flex:1;
+  width:100%;
+  min-height:64px;
+  padding:14px 16px;
+  font-size:18px;
+  text-align:center;
+  border-radius:10px;
+  border:2px solid #ccc;
+  box-sizing:border-box;
+  transition:border-color .15s, background .15s;
+}
+
+.flash-input:focus{
+  outline:none;
+  border-color:#5b6cf5;
+}
+
+.flash-input.correct{
+  background:#d4f8d4;
+  border-color:#2ecc71;
+}
+
+.flash-input.incorrect{
+  background:#ffd6d6;
+  border-color:#e74c3c;
+}
+
+.flash-feedback{
+  min-height:22px;
+  font-weight:600;
+  text-align:center;
+}
+
+.flash-feedback.correct{
+  color:#2ecc71;
+}
+
+.flash-feedback.incorrect{
+  color:#e74c3c;
+}
+
+.flash-feedback.info{
+  color:#888;
+}
