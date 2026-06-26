@@ -239,7 +239,12 @@ class ExerciceExpression extends Exercice {
         if (res) addLine(res, true);
       }
 
-      if (window.MathJax?.typeset) MathJax.typeset([host]);
+      try {
+        if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([host]);
+        else if (window.MathJax?.typeset) window.MathJax.typeset([host]);
+      } catch (e) {
+        console.error('Erreur MathJax (correction) :', e);
+      }
     }
 
   _getLHSLetter() {
@@ -343,7 +348,12 @@ _genererQuestion() {
       this.initialWrapper = { index: 0 };
     }
 
-    if (window.MathJax?.typeset) MathJax.typeset([this.questionDiv]);
+    try {
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([this.questionDiv]);
+      else if (window.MathJax?.typeset) window.MathJax.typeset([this.questionDiv]);
+    } catch (e) {
+      console.error('Erreur MathJax (question) :', e);
+    }
     this._createInputWrapper();
   }
 
@@ -541,7 +551,8 @@ appliquerVerdict(verdict) {
                 this.input.style.display = 'none';
                 this.left.appendChild(latexDiv);
             }
-            if (window.MathJax?.typeset) MathJax.typeset([latexDiv]);
+            if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([latexDiv]);
+            else if (window.MathJax?.typeset) window.MathJax.typeset([latexDiv]);
         } catch (e) { console.error(e); }
     }
 

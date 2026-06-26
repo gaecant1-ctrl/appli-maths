@@ -38,6 +38,7 @@
   <script src="Enonce.js"></script>
     <script src="Animation.js"></script>
   <script src="AnimationFinale.js"></script>
+  <script src="Fiche.js"></script>
   <script src="Quiz.js"></script>
 
   <script>
@@ -110,6 +111,17 @@ window.addEventListener('load', () => {
   });
 
   quiz.start();
+
+  // ==========================================
+  // FICHE PAPIER (overlay LaTeX + impression PDF)
+  // ==========================================
+  const fiche = new FichePapier({
+    EnonceClass: EnonceProportionnalite,
+    nbExercices: 10,
+    titre: "Problèmes de Proportionnalité",
+    sousTitre: ""
+  });
+  fiche.installerBouton(quiz.ficheSlot);
 });
   </script>
   

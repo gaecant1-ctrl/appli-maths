@@ -96,6 +96,7 @@ _nouvelleQuestion() {
     // Sécurité : On retire un éventuel ancien écouteur résiduel sur la zone
     if (this._currentHandler) {
         this.zone.removeEventListener('reponseValidee', this._currentHandler);
+        this._currentHandler = null;
     }
 
     this.exercice = this.buildExercise(this.zone, index, onRejetAction);
@@ -106,6 +107,7 @@ _nouvelleQuestion() {
         if (status === 'correct' || status === 'incorrect') {
             // Désactivation immédiate de l'écouteur pour éviter les doubles déclenchements
             this.zone.removeEventListener('reponseValidee', handler);
+            this._currentHandler = null;
             
             if (status === 'correct') {
                 this._showMessage(this.texts.ok(index), 'correct');
@@ -124,6 +126,7 @@ _nouvelleQuestion() {
         }
     };
 
+    this._currentHandler = handler;
     this.zone.addEventListener('reponseValidee', handler);
     this._updateScore(0);
     this.nextButton.disabled = true;
@@ -171,6 +174,12 @@ _nouvelleQuestion() {
     this.nextButton.addEventListener('click', this._onNextClick);
     this.right.appendChild(this.nextButton);
 
+    // Slot dédié pour des boutons annexes (ex: Fiche papier), greffé dans 'right'
+    // sans perturber le bouton principal nextButton.
+    this.ficheSlot = document.createElement('div');
+    this.ficheSlot.className = 'header-fiche-slot';
+    this.right.appendChild(this.ficheSlot);
+
     this.header.append(this.left, this.center, this.right);
     this.exerciceZone = document.createElement('div');
     this.exerciceZone.id = 'exercice-zone';
@@ -184,20 +193,37 @@ _nouvelleQuestion() {
   }
 
   _onNextClick() {
-    if (!this.hasStarted) {
-      this.hasStarted = true;
-      this._lockLevelUI();
-      this._nouvelleQuestion();
-      return;
-    }
-    if (!this.questionValidee) {
-      if (this.exercice && this.exercice.valider) this.exercice.valider();
-      return;
-    }
-    if (this.total < this.nbQuestions) {
-      this._nouvelleQuestion();
-    } else {
-      this._finQuiz();
+    try {
+      if (!this.hasStarted) {
+        this.hasStarted = true;
+        this._lockLevelUI();
+        this._nouvelleQuestion();
+        return;
+      }
+      if (!this.questionValidee) {
+        // NB: ExerciceExpression n'implémente pas valider() (méthode abstraite de la
+        // classe Exercice) ; ce bouton sert uniquement à valider via Entrée dans l'input.
+        // On protège l'appel pour ne jamais bloquer silencieusement le bouton si une
+        // exception est levée ici.
+        if (this.exercice && typeof this.exercice.valider === 'function') {
+          try {
+            this.exercice.valider();
+          } catch (e) {
+            console.warn('Quiz: exercice.valider() a levé une exception (ignorée) :', e);
+          }
+        }
+        return;
+      }
+      if (this.total < this.nbQuestions) {
+        this._nouvelleQuestion();
+      } else {
+        this._finQuiz();
+      }
+    } catch (e) {
+      // Filet de sécurité : une exception ici ne doit jamais laisser le bouton
+      // "mort" sans aucun retour visible. On la log et on tente de réactiver le bouton.
+      console.error('Quiz: erreur dans _onNextClick :', e);
+      this.nextButton.disabled = false;
     }
   }
 
