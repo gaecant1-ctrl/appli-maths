@@ -1,541 +1,817 @@
+/* ==========================================================================
+   RÉSOLUTION D'ÉQUATIONS — feuille de style
+   Direction : clair, simple, lisible — un seul accent (prune).
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
 :root {
-  --font-main: 'Segoe UI', sans-serif;
+  /* Fond & surfaces */
+  --papier:        #ffffff;
+  --papier-panel:  #f7f2f5;
+  --papier-encart: #ffffff;
 
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --accent: #ec4899;
+  /* Lignes & structure */
+  --grille:        #e3d8de;
+  --grille-forte:  #2c2226;
 
-  --bg: #f1f5ff;
-  --surface: #ffffff;
+  /* Texte */
+  --encre:         #2c2226;
+  --encre-douce:   #6b5b62;
 
-  --border: #e0e7ff;
-  --text: #1e1b4b;
+  /* Accent unique (prune) */
+  --craie:         #7d3358;
+  --craie-hover:   #5f2742;
+  --accent-clair:  #f3e6ed;
+
+  /* Header (fond prune très clair, même accent que le reste) */
+  --header-fond:        #f3e6ed;
+  --header-bordure:     #d9bccb;
+  --header-texte:       #3a2430;
+  --header-texte-hover: #20121a;
+  --header-accent:      #7d3358;
+  --header-accent-vif:  #5f2742;
+
+  /* États fonctionnels */
+  --erreur:        #c44336;
+  --succes:        #2e9e5b;
+  --succes-fond:   #e3f4ea;
+  --attention:     #c47a1f;
+
+  --rayon:         6px;
+  --rayon-petit:   4px;
 }
 
-/* Reset */
+* {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  box-sizing: border-box;
+  min-height: 100vh;
 }
 
 body {
-  font-family: var(--font-main);
-  background: linear-gradient(135deg, #eef2ff 0%, #fdf2f8 40%, #ffffff 100%);
-  color: var(--text);
-  display: flex;
-  justify-content: center;
-}
-
-html, body {
-  height: 100%;
-}
-
-/* Layout */
-#layout {
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-
-  height: 100vh;           /* hauteur commune */
-  box-sizing: border-box;
-  align-items: stretch;    /* IMPORTANT */
-}
-
-#toolBar {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
   display: flex;
   flex-direction: column;
-  gap: 15px;
-
-  width: 240px;
-  flex-shrink: 0;
-
-  padding: 12px 16px;
-  border-radius: 16px;
-
-  background: linear-gradient(
-    180deg,
-    #eef2ff 0%,
-    #e0e7ff 100%
-  );
-
-  border: 1px solid #c7d2fe;
-  box-shadow: 0 8px 20px rgba(99,102,241,0.08);
-
-  overflow-x: hidden;   /* sécurité */
-}
-
-#controle {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: #f3f4f6;
-  padding: 12px 16px;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-
-  box-shadow: 0 6px 15px rgba(0,0,0,0.04);
 }
 
-#quizZone {
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+header {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  background: #f3f4f6;
-  padding: 12px 16px;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-
-  box-shadow: 0 6px 15px rgba(0,0,0,0.04);
+  gap: 14px;
+  width: 100%;
+  padding: 0 20px;
+  height: 54px;
+  background: var(--header-fond);
+  color: var(--encre);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
 }
 
-#controle .actions {
-  display: flex;
-  gap: 12px;
+header #titre_appli {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: .2px;
+  font-weight: 400;
+  color: var(--encre);
 }
 
-#quizToggle {
-  background: #111827;
-  color: white;
+header #titre_appli b {
   font-weight: 700;
-  padding: 8px 18px;
-  border-radius: 10px;
 }
 
-#quizToggle:hover {
-  background: #1f2937;
-}
-
-.quiz-active #tableau {
-  box-shadow: 0 0 0 3px var(--primary);
-}
-
-.module {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-
-  padding: 6px;
-  border-radius: 16px;
-
-  background: white;
-  border: 1px solid var(--border);
-
-  transition: all 0.2s ease;
-}
-
-.module label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  opacity: 0.7;
-  letter-spacing: 0.5px;
-}
-
-.module:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(99,102,241,0.12);
-}
-
-
-.debug-row {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-
-.debug-row input {
-  flex: 1;
-  min-width: 0;
-}
-
-.debug-row button {
-  flex-shrink: 0;
-}
-/* Tableau */
-
-
-#panneau {
-  flex: 1 1 auto;
-  min-width: 0;        /* OBLIGATOIRE en flex */
-  max-width: 100%;
-  overflow-x: hidden;  /* sécurité anti débordement */
-
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-
-  background: white;
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.03);
-  box-shadow: 
-    0 20px 40px rgba(0,0,0,0.06),
-    0 2px 6px rgba(0,0,0,0.04);
-}
-
-#tableau {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-
-  padding: 20px;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-
-  background: #186d4c;
-  border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
-}
-
-
-
-
-/* Zone équation */
-#equa {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-}
-
-#equationContainer {
-  width: 100%;
-  max-width: 100%;
-  aspect-ratio: 7/4;
-  border-radius: 16px;
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-
-
-
-
-/* Boutons globaux */
-button {
-  border: none;
-  border-radius: 10px;
-  padding: 8px 16px;
-  background: var(--primary);
-  color: white;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-}
-
-/* Segmented */
-.segmented {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-
-.segmented button {
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: #eef2ff;
-  color: var(--primary-dark);
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.segmented button:hover {
-  background: #e0e7ff;
-}
-
-.segmented button.active {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: white;
-  box-shadow: 0 6px 18px rgba(99,102,241,0.3);
-}
-
-/* Ligne reponse */
-
-/* Ligne input + bouton */
-#ligneRep {
-  display: flex;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-
-  gap: 12px;
-  justify-content: center;
-}
-
-/* Input et bouton même hauteur */
-#answerInput,
-#mainButton {
-  height: 44px;
-  padding: 0 12px;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-/* Input */
-#answerInput {
-  width: 160px;
-  text-align: center;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-/* Bouton */
-#mainButton {
-  min-width: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-}
-
-/* Feedback en dessous */
-#feedback {
-  margin-top: 10px;
-  width: 100%;
-  max-width: 400px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  border-radius: 8px;
-}
-
-
-
-
-  #answerInput {
-    transition: all 0.2s ease;
-  }
-
-  #answerInput:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
-  }
-
-
-#rep {
-
-  background: #f8fafc;
-  padding: 20px;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-
-  border-radius: 16px;
-  border: 1px solid var(--border);
-}
-
-
-#retryToggle {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  font-weight: 700;
-  border-radius: 10px;
-  padding: 8px 18px;
-}
-
-#retryToggle:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(99,102,241,0.3);
-}
-
-
-.quiz-active #toolBar,
-.quiz-active #controle button:not(#mainButton) {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-#bilanToggle {
-  background: var(--primary);
-  color: white;
-  padding: 12px 18px;
-  border-radius: 30px;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-  z-index: 1000;
-}
-
-/* Overlay structure */
-
-
-#bilanOverlay {
-  position: fixed;
-  inset: 0;
-
-  display: none;
-  justify-content: center;
-  align-items: center;
-
-  background: rgba(15, 23, 42, 0.45); /* voile sombre léger */
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px); /* Safari */
-
-  z-index: 2000;
-}
-
-#bilanOverlay.active {
-  display: flex;
-   flex-direction: column;
-}
-
-/* Panneau central */
-#bilanOverlay > div {
-  background: white;
-  width: 420px;
-  padding: 28px;
-  border-radius: 20px;
-
-  box-shadow: 
-    0 30px 80px rgba(0,0,0,0.25),
-    0 10px 30px rgba(0,0,0,0.15);
-
-  transform: translateY(0);
-}
-
-/* Header */
-#bilanHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-#bilanHeader button {
-  background: transparent;
-  color: var(--text);
-  font-size: 18px;
-  cursor: pointer;
-}
-
-/* Stats */
-.bilan-stat {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.bilan-stat:last-child {
-  border-bottom: none;
-}
-
-.bilan-stat span {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.bilan-stat strong {
-  font-size: 1.1rem;
-}
-
-
-/* Grille stats */
-.bilan-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-/* Cartes */
-.bilan-card {
-  background: #f8fafc;
-  padding: 14px;
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  box-shadow: inset 0 0 0 1px var(--border);
-  transition: 0.2s ease;
-}
-
-.bilan-card span {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
-.bilan-card strong {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-/* Séparation */
-.bilan-divider {
-  margin: 20px 0 10px 0;
-  height: 1px;
-  background: var(--border);
-}
-
-/* Titre section */
-.bilan-section-title {
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--primary);
-}
-
-/* Quiz ligne */
-.bilan-quiz {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  font-size: 0.95rem;
-}
-
-.quiz-score {
+.header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: auto;
 }
 
-.quiz-rate {
-  font-size: 0.85rem;
-  color: #64748b;
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
 }
 
-
-.quiz-detail-row {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-}
-
-
-#scoreZone {
-  display: flex;
-  justify-content: center;
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
 
-  padding: 10px 16px;
+.btn-header:hover {
+  border-color: var(--header-texte);
+  color: var(--header-texte-hover);
+}
 
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+.btn-header:active {
+  transform: scale(0.98);
+}
 
-  font-weight: 600;
-  font-size: 0.95rem;
+/* Seul bouton coloré du header : le mode actif (saisie libre / opération guidée) */
+.btn-header.accent {
+  border-color: var(--craie);
+  color: var(--header-accent);
+}
+.btn-header.accent:hover {
+  border-color: var(--header-accent);
+  color: var(--header-accent-vif);
+}
 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 240px;
+  width: 240px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier-encart);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   CONTENEUR DES CAPSULES (MODE LIBRE)
+   ========================================================================== */
+#inputContainer {
+    width: 100%;
+    margin-top: 10px;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.capsule-wrapper {
+    background-color: var(--papier-encart);
+    width: 100%;
+    max-width: 800px;
+    min-height: 75px;
+    margin-bottom: 15px;
+    padding: 15px 25px;
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille);
+
+    display: grid !important;
+    grid-template-columns: 1fr 6fr 3fr;
+    align-items: center;
+
+    box-sizing: border-box;
+    animation: slideUp 0.4s ease-out forwards;
+    opacity: 0;
+}
+
+.capsule-wrapper-final {
+    background-color: var(--succes-fond);
+    border: 1px solid var(--succes);
+}
+
+.capsule-wrapper-final .side-left,
+.capsule-wrapper-final .side-right {
+    font-weight: 700;
+    color: var(--succes);
+}
+
+/* Zone d'équivalence avec l'étape précédente, tout à gauche */
+.equiv-zone {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--craie);
+}
+
+.equiv-zone.non-equiv {
+    color: var(--erreur);
+    font-size: 16px;
+}
+
+/* Bloc équation : sous-grille interne qui garde le = comme pivot visuel,
+   tout en restant centré comme UN SEUL bloc dans sa colonne (6fr) — peu
+   importe que la zone d'équivalence à gauche soit vide ou pleine. */
+.equation-zone {
+    display: grid !important;
+    grid-template-columns: 1fr 40px 1fr;
+    align-items: center;
+}
+
+/* Membre de gauche : aligné à droite */
+.side-left {
+    text-align: right;
+    font-size: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    padding-right: 10px;
+}
+
+/* Zone centrale pour le symbole */
+.symbol-zone {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--craie);
+}
+
+/* Membre de droite : aligné à gauche */
+.side-right {
+    text-align: left;
+    font-size: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    padding-left: 10px;
+}
+
+/* On adapte l'input pour qu'il s'étende sur toute la zone équation lors de la saisie */
+.input-full {
+    grid-column: 1 / span 3;
+    width: 100% !important;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.feedback-zone {
+    font-size: 14px;
+    color: var(--encre-douce);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   ÉLÉMENTS INTERACTIFS (INPUTS & BOUTONS)
+   ========================================================================== */
+input[type="text"], input:not([type]) {
+    padding: 8px 14px;
+    width: 280px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    border: 1px solid var(--grille-forte);
+    border-radius: var(--rayon-petit);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: var(--papier-encart);
+    color: var(--encre);
+}
+
+input[type="text"]:focus, input:not([type]):focus {
+    border-color: var(--craie);
+    background: var(--papier);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(125, 51, 88, 0.15);
+}
+
+button.delete-button {
+    margin-left: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    opacity: 0.75;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+button.delete-button:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+/* Masque le bouton tout en réservant son espace dans la mise en page —
+   essentiel pour le mode opération guidée : sans ça, le texte de
+   l'opération se recentre différemment selon que le bouton est présent
+   ou non, ce qui crée un décalage visuel ligne à ligne. */
+button.delete-button.bouton-masque {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL — boutons et score
+   ========================================================================== */
+.panel-btn {
+    width: 100%;
+    background-color: var(--papier-panel);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    padding: 10px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--encre);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.panel-btn:hover {
+    border-color: var(--craie);
+    color: var(--craie);
+}
+
+.panel-btn.accent {
+    background-color: var(--craie);
+    border-color: var(--craie);
+    color: var(--papier);
+}
+
+.panel-btn.accent:hover {
+    background-color: var(--craie-hover);
+    color: var(--papier);
+}
+
+.panel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--papier-panel) !important;
+    border-color: var(--grille) !important;
+    color: var(--encre-douce) !important;
+}
+
+.panel-filet {
+    height: 1px;
+    background: var(--grille);
+    margin: 4px 0;
+}
+
+.panel-groupe {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.panel-groupe-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--encre-douce);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.panel-groupe-paire {
+    display: flex;
+    gap: 6px;
+}
+
+.panel-btn-half {
+    flex: 1 1 0;
+    width: auto;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 12.5px;
+}
+
+#score-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+#question-progress, #score, #skipButton {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--papier-panel);
+    padding: 8px 14px;
+    border-radius: var(--rayon-petit);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.82rem;
+    border: 1px solid var(--grille);
+    color: var(--encre-douce);
+    text-align: left;
+}
+
+#score {
+    color: var(--craie);
+    border-color: var(--craie);
+}
+
+#skipButton {
+    border-color: var(--header-bordure);
+    color: var(--encre-douce);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+
+#skipButton:hover {
+    border-color: var(--craie);
+    color: var(--craie);
+}
+
+/* Bouton Suivant */
+.center-button {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.center-button button {
+    padding: 10px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: var(--rayon-petit);
+    border: none;
+    background-color: var(--craie);
+    color: var(--papier);
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.center-button button:hover {
+    background-color: var(--craie-hover);
+}
+
+.center-button button:active {
+    transform: scale(0.98);
+}
+
+/* ==========================================================================
+   ÉCRAN DE FIN DE QUIZ
+   ========================================================================== */
+.fin-quiz {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 50px 30px;
+    background: var(--papier-encart);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon);
+}
+
+.fin-quiz-titre {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--encre);
+    margin: 0 0 16px;
+}
+
+.fin-quiz-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--craie);
+    margin-bottom: 8px;
+}
+
+.restart-btn {
+    margin-top: 25px;
+    padding: 10px 28px;
+    background: var(--craie);
+    color: var(--papier);
+    border: none;
+    border-radius: var(--rayon-petit);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.restart-btn:hover {
+    background: var(--craie-hover);
+}
+
+.restart-btn:active {
+    transform: scale(0.98);
+}
+
+/* ==========================================================================
+   OVERLAY DE PARAMÈTRES
+   ========================================================================== */
+.params-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 34, 38, 0.55);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    padding: 20px;
+}
+
+.params-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.params-modal {
+    background-color: var(--papier-encart);
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille-forte);
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(10px) scale(0.98);
+    transition: transform 0.2s ease;
+}
+
+.params-overlay.open .params-modal {
+    transform: translateY(0) scale(1);
+}
+
+.params-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--grille);
+    background: var(--papier-panel);
+    color: var(--encre-douce);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.params-close:hover {
+    border-color: var(--erreur);
+    color: var(--erreur);
+}
+
+.params-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--encre);
+    margin: 0 0 20px;
+}
+
+.param-group {
+    margin-bottom: 18px;
+}
+
+.param-group:last-child {
+    margin-bottom: 0;
+}
+
+.param-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--encre-douce);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+}
+
+.shuffle-hint {
+    font-weight: 400;
+    text-transform: none;
+    color: var(--encre-douce);
+    opacity: 0.7;
+    letter-spacing: normal;
+    font-size: 11.5px;
+}
+
+.param-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.param-btn {
+    background-color: var(--papier-panel);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    padding: 7px 13px;
+    font-size: 13.5px;
+    color: var(--encre-douce);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.param-btn:hover {
+    border-color: var(--craie);
+    color: var(--craie);
+}
+
+.param-btn.active {
+    background-color: var(--craie);
+    border-color: var(--craie);
+    color: var(--papier);
+    font-weight: 600;
+}
+
+.param-group-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--grille);
+    padding-top: 16px;
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--encre);
+    cursor: pointer;
+}
+
+.toggle-row input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--craie);
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   MODE OPÉRATION GUIDÉE
+   ========================================================================== */
+.op-row {
+    background-color: var(--papier-encart);
+    width: 100%;
+    max-width: 800px;
+    min-height: 65px;
+    margin-bottom: 12px;
+    padding: 14px 20px;
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille);
+
+    display: grid;
+    grid-template-columns: 1fr 6fr 2fr 3fr;
+    align-items: center;
+    gap: 10px;
+
+    box-sizing: border-box;
+    animation: slideUp 0.4s ease-out forwards;
+    opacity: 0;
+}
+
+.op-row-final {
+    background-color: var(--succes-fond);
+    border: 1px solid var(--succes);
+}
+
+.op-row-final .op-eq-cell {
+    font-weight: 700;
+    color: var(--succes);
+}
+
+.op-eq-cell {
+    text-align: center;
+    font-size: 20px;
+}
+
+.op-op-cell {
+    text-align: center;
+    font-size: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+}
+
+.op-op-cell .op-validee {
+    justify-self: stretch;
+}
+
+.op-op-cell button.delete-button {
+    justify-self: center;
+}
+
+.op-op-cell .op-input {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+}
+
+.op-feedback-cell {
+    font-size: 14px;
+    color: var(--encre-douce);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.op-input {
+    width: 100% !important;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 15px;
+}
+
+.op-validee {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--accent-clair);
+    color: var(--craie);
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: var(--rayon-petit);
+}
+
+.op-op-cell.op-erreur .op-input {
+    border-color: var(--erreur);
+}
+
+.op-msg-erreur {
+    color: var(--erreur);
+}
+
+/* ==========================================================================
+   ÉQUATION PERSONNALISÉE
+   ========================================================================== */
+.perso-saisie {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    padding: 30px;
+    background: var(--papier-encart);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon);
+}
+
+.perso-label {
+    font-size: 14px;
+    color: var(--encre-douce);
+    text-align: center;
+}
+
+.perso-label.perso-erreur {
+    color: var(--erreur);
+}
+
+.perso-input {
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes slideUp {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }

@@ -1,160 +1,67 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Équation Visuelle</title>
+  <title>Résolution d'équations</title>
   <link rel="stylesheet" href="style.css">
-
-  <!-- MathJax -->
-  <script>
-    MathJax = {
-      tex: {
-        inlineMath: [['\\(', '\\)'], ['$', '$']],
-        displayMath: [['$$', '$$']]
-      }
-    };
-  </script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  
+  <script src="calcul-litteral.js"></script>
+  <script src="Generateur.js"></script>
+  <script src="Fiche.js"></script>
+  <script src="OperationGuidee.js"></script>
+  <script src="ModeOperationGuidee.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
-
 <body>
 
+  <header>
+    <span id="titre_appli">Résolution d'<b>équations</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
 
-  <div id="layout">
+  <div id="paramsOverlay" class="params-overlay">
+    <div id="paramsModal" class="params-modal">
+      <button id="paramsClose" class="params-close" aria-label="Fermer">✕</button>
+      <h2 class="params-title">Paramètres</h2>
 
-    <div id="toolBar">
-
-      <div class="module">
-        <label for="categorieSelect">Catégorie</label>
-        <div id="categorieToggle" class="segmented">
-          <button data-value="equation">EqS.</button>
-          <button data-value="arithmetique">Ari.</button>
-          <button data-value="algebrique">Alg.</button>
-          <button data-value="mixte">🎲</button>
-        </div>
+      <div class="param-group">
+        <div class="param-label">Type d'équation <span class="shuffle-hint">(rien coché = aléatoire)</span></div>
+        <div class="param-buttons" id="grpTypeEquation" data-family="typeEquation"></div>
       </div>
 
-      <div class="module">
-        <label for="niveauSelect">Niveau</label>
-        <div id="niveauToggle" class="segmented">
-          <button data-value="1">1</button>
-          <button data-value="2">2</button>
-          <button data-value="3">3</button>
-          <button data-value="4">4</button>
-          <button data-value="mixte">🎲</button>
-        </div>
+      <div class="param-group">
+        <div class="param-label">Type de nombre <span class="shuffle-hint">(rien coché = aléatoire)</span></div>
+        <div class="param-buttons" id="grpTypeNombre" data-family="typeNombre"></div>
       </div>
 
-      <div class="module">
-        <label for="nombreSelect">Nombres</label>
-        <div id="nombreToggle" class="segmented">
-          <button data-value="petit">P</button>
-          <button data-value="moyen">M</button>
-          <button data-value="grand">G</button>
-          <button data-value="mixte">🎲</button>
-        </div>
-
+      <div class="param-group">
+        <div class="param-label">Type de solution x <span class="shuffle-hint">(rien coché = aléatoire)</span></div>
+        <div class="param-buttons" id="grpTypeSolution" data-family="typeSolution"></div>
       </div>
 
-      <div class="module">
-        <label>Nombres relatifs</label>
-        <div id="relatifToggle" class="segmented">
-          <button data-value="off">OFF</button>
-          <button data-value="on">ON</button>
-        </div>
-      </div>
-
-
-
-      <div class="module">
-        <label for="modeSelect">Mode</label>
-        <div id="modeToggle" class="segmented">
-          <button data-value="image">😊</button>
-          <button data-value="texte">🔤</button>
-          <button data-value="points">...</button>
-        </div>
-      </div>
-
-      <div class="module">
-        <label for="themeSelect">Thème</label>
-        <div id="themeToggle" class="segmented">
-          <button data-value="hasard">🎲</button>
-          <button data-value="fruit">🍎</button>
-          <button data-value="legume">🥕</button>
-          <button data-value="animal">🐶</button>
-          <button data-value="marin">🐟</button>
-          <button data-value="fantasy">🧙</button>
-        </div>
-        </div>
-        
-
-      <div class="module">
-        <label>Debug ID</label>
-        <div class="debug-row">
-          <input id="debugIdInput" type="number" placeholder="ID">
-          <button id="debugForceBtn">Forcer</button>
-        </div>
+      <div class="param-group param-group-toggle">
+        <label class="toggle-row">
+          <input type="checkbox" id="toggleCoefNeg">
+          <span>Autoriser les coefficients négatifs</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="toggleSolNeg">
+          <span>Autoriser une solution négative</span>
+        </label>
       </div>
     </div>
-    <div id="panneau">
-      
-      <div id="controle">
-        <div class="actions">
-          <button id="retryToggle" type="button">
-            Retry
-          </button>
-
-          <button id="quizToggle" type="button">
-            Quiz (10)
-          </button>
-        </div>
-        <div id="bilanToggle">📊 Bilan</div>
-
-        <div id="bilanOverlay">
-          <div id="bilanPanel">
-            <div id="bilanHeader">
-              <span id="bilanTitle">Bilan de la séance</span>
-              <button id="closeBilan">✕</button>
-            </div>
-            <div id="bilanContent"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div id="tableau">
-      <div id="equa">
-        <svg id="equationContainer" style="width:100%; aspect-ratio:7/4;"></svg>
-      </div>
-
-      <div id="rep">
-        <div id="ligneRep">
-          <input id="answerInput" type="text"
-             placeholder="Votre réponse"
-             inputmode="numeric"
-             autocomplete="off">
-
-          <button id="mainButton" type="button">Valider</button>
-        </div>
-         <div id="feedback"> </div>
-      </div>
-
-    </div>
-
-      <div id="scoreZone">
-      </div>
-
- 
   </div>
 
-</div>
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
 
+    <main>
+      <div id="inputContainer"></div>
+    </main>
+  </div>
 
-
-
-  <script type="module" src="main.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+  <script src="app.js"></script>
 
 </body>
-
 </html>
