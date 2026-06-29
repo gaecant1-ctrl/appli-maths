@@ -475,6 +475,30 @@ toString(opts={}) {
     return `${s < 0 ? '-' : ''}${ent}${dec ? '.' + dec : ''}`;
   }
 
+  // Renvoie la fraction décimale "brute" équivalente à ce nombre (ex: -9/4
+  // -> {numerateur:-225, denominateur:100}), c'est-à-dire la fraction sur
+  // une puissance de 10 dont on est parti avant de simplifier en -9/4.
+  // N'a de sens que pour un nombre dont l'écriture décimale est exacte
+  // (voir isDecimal()) : le dénominateur réduit ne contient alors que des
+  // facteurs 2 et 5, donc divise toujours une puissance de 10 — on calcule
+  // ici la plus petite puissance qui convient (autant de chiffres après la
+  // virgule que nécessaire, pas plus). Pensée comme étape pédagogique
+  // intermédiaire entre l'écriture décimale et la fraction simplifiée :
+  // "-2,25 = -225/100 = -9/4".
+  fractionDecimaleBrute() {
+    let { a, b } = this.valeurNum;
+    const d0 = gcd(Math.abs(a), Math.abs(b));
+    a = a / d0; b = b / d0;
+
+    let bRestant = b, k2 = 0, k5 = 0;
+    while (bRestant % 2 === 0) { bRestant /= 2; k2++; }
+    while (bRestant % 5 === 0) { bRestant /= 5; k5++; }
+    const k = Math.max(k2, k5);
+
+    const facteur = Math.pow(10, k) / b;
+    return { numerateur: a * facteur, denominateur: Math.pow(10, k) };
+  }
+
   scinderMixte() {
     const { a, b } = this.simplify().valeurNum;
     // partie entière vers 0 si positif, vers 0 si négatif ? On veut: a = ent*b + reste, avec 0 <= reste < b

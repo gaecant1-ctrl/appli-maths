@@ -131,7 +131,64 @@
     width:0%;
   }
 
+  /* ===== Zone score/progression, déplacée dans la colonne feedback ===== */
+  #scoreZone{
+    width:100%;
+    max-width:520px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-top:4px;
+  }
+  #scoreZone .info{
+    font-size:1.05em;
+    color:var(--craie-douce);
+    margin-bottom:8px;
+  }
+  #scoreZone .info strong{ color:var(--ocre-vif); }
+  #scoreZone #progression{ margin-top:0; }
+
   /* ===== Consigne / cible ===== */
+  /* ===== Layout deux colonnes : saisie à gauche, feedback à droite ===== */
+  #layout{
+    width:100%;
+    max-width:1100px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    align-items:start;
+    gap:24px;
+    padding:0 16px;
+    box-sizing:border-box;
+  }
+  #colonneSaisie, #colonneFeedback{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-width:0;
+  }
+  /* Sépare visuellement les deux colonnes sur desktop, sans casser le
+     centrage interne de chaque section (consigne, panel, message...) qui
+     reste géré par leur propre CSS (width:100%; max-width:Xpx). */
+  #colonneFeedback{
+    border-left:1px solid rgba(255,255,255,.08);
+    padding-left:24px;
+  }
+  /* Sous le seuil tablette, on repasse en une seule colonne empilée : la
+     saisie d'abord, le feedback ensuite — plus naturel sur petit écran que
+     deux colonnes étroites. */
+  @media (max-width: 860px){
+    #layout{
+      grid-template-columns:1fr;
+    }
+    #colonneFeedback{
+      border-left:none;
+      padding-left:0;
+      border-top:1px solid rgba(255,255,255,.08);
+      padding-top:20px;
+      margin-top:8px;
+    }
+  }
+
   #consigne-wrap{
     width:100%;
     display:flex;
@@ -263,6 +320,15 @@
     width:100%;
     max-width:420px;
   }
+  .btn-row-feedback{
+    display:flex;
+    gap:12px;
+    width:100%;
+    max-width:520px;
+    margin-top:18px;
+  }
+  .btn-row-feedback #btnRenoncer{ flex:0 0 auto; }
+  .btn-row-feedback #btnNext{ flex:1; }
   button.action{
     flex:1;
     font-family:"Space Grotesk", sans-serif;
@@ -272,13 +338,36 @@
     border-radius:12px;
     border:none;
     cursor:pointer;
-    transition:transform .12s ease, filter .12s ease;
+    transition:transform .12s ease, filter .12s ease, opacity .15s ease;
   }
   button.action:active{ transform:translateY(1px); }
+  button.action:disabled{
+    opacity:.4;
+    cursor:default;
+    pointer-events:none;
+  }
   #btnValider{ background:var(--ocre); color:var(--ardoise); }
   #btnValider:hover{ filter:brightness(1.08); }
-  #btnNext{ background:var(--sauge); color:var(--ardoise); display:none; }
+  #btnNext{ background:var(--sauge); color:var(--ardoise); }
   #btnNext:hover{ filter:brightness(1.08); }
+
+  #btnRenoncer{
+    background:transparent;
+    border:1px solid rgba(255,255,255,.18);
+    color:var(--gris-brun);
+    border-radius:10px;
+    padding:8px 16px;
+    font-family:"Space Grotesk", sans-serif;
+    font-size:.92em;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease, opacity .15s ease;
+  }
+  #btnRenoncer:hover{ border-color:var(--terracotta); color:var(--terracotta); }
+  #btnRenoncer:disabled{
+    opacity:.4;
+    cursor:default;
+    pointer-events:none;
+  }
 
   /* ===== Debug ===== */
   #debugSolution{
@@ -346,6 +435,17 @@
     padding:8px 10px;
     text-align:center;
   }
+  /* Hauteur fixe (~5 lignes de calcul) sur les deux colonnes, pour que la
+     carte de vérification ne change jamais de taille entre le gabarit vide
+     et un vrai résultat (court ou long) : un ascenseur discret apparaît
+     plutôt que de faire grandir toute la carte si le pas-à-pas dépasse
+     exceptionnellement 5 lignes (ex: une division avec règle de signe). */
+  .tableau-comparatif td.col-user,
+  .tableau-comparatif td.col-cible{
+    height:9.5em;
+    max-height:9.5em;
+    overflow-y:auto;
+  }
   .tableau-comparatif td.col-user{
     border-right:1px solid rgba(255,255,255,.1);
     color:var(--craie-douce);
@@ -356,6 +456,29 @@
   }
   .tableau-comparatif mjx-container{ color:inherit !important; }
 
+  /* ===== Zone Vérification (pas-à-pas) ===== */
+  #zoneVerification{
+    margin-top:33px;
+    width:100%;
+    max-width:520px;
+    padding:0 16px;
+    box-sizing:border-box;
+  }
+  #zoneVerification-label{
+    font-size:.85em;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--gris-brun);
+    margin-bottom:10px;
+    text-align:center;
+  }
+  #zoneVerification-contenu{
+    background:var(--ardoise-2);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--rayon);
+    padding:16px;
+    box-shadow:0 8px 24px var(--ombre);
+  }
   /* ===== Écran de fin ===== */
   #ecranFin{
     background:var(--ardoise-2);
@@ -611,53 +734,71 @@
     <button type="button" class="niveau-btn" data-niveau="4">4e</button>
   </div>
   <span class="sep"></span>
-  <span class="info" id="infoTexte"></span>
-  <span class="sep"></span>
   <button id="btnFichePapier" type="button" class="lien-fiche">📄 Fiche papier</button>
   <button id="btnNouvelOnglet" type="button" class="lien-fiche">🔗 Nouvel onglet</button>
 </div>
-<div id="progression"><div id="progressionBar"></div></div>
 
-<div id="consigne-wrap">
-  <div id="consigne-label">Trouve une expression qui donne</div>
-  <div id="consigne"></div>
-</div>
+<div id="layout">
 
-<div id="grille"></div>
+  <div id="colonneSaisie">
 
-<div id="operateurs">
-  <button class="op-btn" data-op="+" type="button" aria-label="Insérer un plus">+</button>
-  <button class="op-btn" data-op="-" type="button" aria-label="Insérer un moins">−</button>
-  <button class="op-btn" data-op="*" type="button" aria-label="Insérer une multiplication">×</button>
-  <button class="op-btn" data-op=":" type="button" aria-label="Insérer une division">÷</button>
-  <button class="op-btn" data-op="(" type="button" aria-label="Insérer une parenthèse ouvrante">(</button>
-  <button class="op-btn" data-op=")" type="button" aria-label="Insérer une parenthèse fermante">)</button>
-  <button class="op-btn" type="button" id="btnEffacer" aria-label="Effacer le dernier caractère">⌫</button>
-</div>
+    <div id="consigne-wrap">
+      <div id="consigne-label">Trouve une expression qui donne</div>
+      <div id="consigne"></div>
+    </div>
 
-<div id="panel">
-  <input
-    id="expr"
-    placeholder="Ex : (3×9)÷7"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
-    spellcheck="false"
-    inputmode="text"
-  />
+    <div id="grille"></div>
 
-  <div class="btn-row">
-    <button class="action" id="btnValider" type="button">Valider</button>
-    <button class="action" id="btnNext" type="button">Question suivante</button>
+    <div id="operateurs">
+      <button class="op-btn" data-op="+" type="button" aria-label="Insérer un plus">+</button>
+      <button class="op-btn" data-op="-" type="button" aria-label="Insérer un moins">−</button>
+      <button class="op-btn" data-op="*" type="button" aria-label="Insérer une multiplication">×</button>
+      <button class="op-btn" data-op=":" type="button" aria-label="Insérer une division">÷</button>
+      <button class="op-btn" data-op="(" type="button" aria-label="Insérer une parenthèse ouvrante">(</button>
+      <button class="op-btn" data-op=")" type="button" aria-label="Insérer une parenthèse fermante">)</button>
+      <button class="op-btn" type="button" id="btnEffacer" aria-label="Effacer le dernier caractère">⌫</button>
+    </div>
+
+    <div id="panel">
+      <input
+        id="expr"
+        placeholder="Ex : (3×9)÷7"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        inputmode="text"
+      />
+
+      <div class="btn-row">
+        <button class="action" id="btnValider" type="button">Valider</button>
+      </div>
+
+      <div id="debugSolution">
+        <div id="solutionTexte"></div>
+        <button id="btnDebugNext" type="button">Suivant (test)</button>
+      </div>
+    </div>
+
   </div>
 
-  <div id="debugSolution">
-    <div id="solutionTexte"></div>
-    <button id="btnDebugNext" type="button">Suivant (test)</button>
+  <div id="colonneFeedback">
+    <div id="scoreZone">
+      <span class="info" id="infoTexte"></span>
+      <div id="progression"><div id="progressionBar"></div></div>
+    </div>
+    <div class="btn-row-feedback">
+      <button id="btnRenoncer" type="button">Je renonce</button>
+      <button class="action" id="btnNext" type="button">Question suivante</button>
+    </div>
+    <div id="message"></div>
+    <div id="zoneVerification">
+      <div id="zoneVerification-label">Vérification</div>
+      <div id="zoneVerification-contenu"></div>
+    </div>
   </div>
-</div>
 
-<div id="message"></div>
+</div>
 
 <div id="zoneFin" style="display:none;width:100%;justify-content:center;margin-top:20px;">
   <div id="ecranFin"></div>
@@ -1018,6 +1159,33 @@ function extraireNombresArbre(noeud, acc = []){
   return acc;
 }
 
+// Construit l'opposé d'un Nombre, en conservant son typeEcriture pour un
+// affichage cohérent (un entier reste entier, une fraction simple reste
+// fraction simple, etc.) — utilisé par simplifierSigneNoeud ci-dessous.
+function opposeNombre(nb){
+  return Nombre.fromParts(-nb.valeurNum.a, nb.valeurNum.b, nb.typeEcriture);
+}
+
+// Détecte si un noeud BINOP (dont gauche et droite sont déjà des NUM,
+// c'est-à-dire entièrement réduits) correspond au motif "a - (-b)" ou
+// "a + (-b)", où le signe de l'opérande droit peut se simplifier en
+// changeant l'opérateur : "a-(-b)" -> "a+b", "a+(-b)" -> "a-b". Rend cette
+// règle ("soustraire un négatif = additionner l'opposé", et sa réciproque)
+// explicite comme étape à part, plutôt que de sauter directement au
+// résultat numérique. Renvoie le noeud transformé, ou null si le motif ne
+// s'applique pas (opérande droite non négative, ou opérateur */: où cette
+// règle de signe n'a pas de sens).
+function simplifierSigneNoeud(noeud){
+  if(noeud.droite.type !== "NUM") return null;
+  if(noeud.droite.nombre.valeurNum.a >= 0) return null;
+  if(noeud.op !== "+" && noeud.op !== "-") return null;
+
+  const opInverse = noeud.op === "-" ? "+" : "-";
+  const droiteOpposee = { type:"NUM", nombre: opposeNombre(noeud.droite.nombre), opts: noeud.droite.opts };
+
+  return { type:"BINOP", op: opInverse, gauche: noeud.gauche, droite: droiteOpposee };
+}
+
 // Évalue l'arbre ET produit, de façon purement fonctionnelle (sans mutation
 // ni recherche de référence dans une copie partiellement modifiée — voir
 // l'historique de bugs que cette réécriture corrige), la liste des arbres
@@ -1050,6 +1218,19 @@ function evaluerEtReduireArbre(noeud, estDerniereGlobale, optsFinal){
   d.etapes.forEach(etapeD => {
     etapes.push({ type:"BINOP", op: noeud.op, gauche: g.arbreReduit, droite: etapeD });
   });
+
+  // Juste avant l'étape finale (résultat numérique), on tente la
+  // simplification de signe "a-(-b)" -> "a+b" (et réciproquement). Le
+  // noeud testé est construit avec g.arbreReduit/d.arbreReduit (déjà
+  // entièrement réduits à ce stade), pas noeud.gauche/noeud.droite
+  // (potentiellement encore composés) — sinon la détection "droite est un
+  // NUM négatif" passerait à côté des cas où l'opérande droite est encore
+  // une sous-expression non calculée.
+  const noeudEntierementReduit = { type:"BINOP", op: noeud.op, gauche: g.arbreReduit, droite: d.arbreReduit };
+  const noeudSimplifie = simplifierSigneNoeud(noeudEntierementReduit);
+  if(noeudSimplifie){
+    etapes.push(noeudSimplifie);
+  }
 
   // Étape finale de CE noeud : tout remplacé par le résultat. Format
   // fractionSimple pour toute étape intermédiaire ; format demandé par la
@@ -1439,7 +1620,10 @@ const grille = document.getElementById("grille");
 const expr = document.getElementById("expr");
 const btnValider = document.getElementById("btnValider");
 const btnNext = document.getElementById("btnNext");
+const btnRenoncer = document.getElementById("btnRenoncer");
 const message = document.getElementById("message");
+const zoneVerification = document.getElementById("zoneVerification");
+const zoneVerificationContenu = document.getElementById("zoneVerification-contenu");
 const progressionBar = document.getElementById("progressionBar");
 const panel = document.getElementById("panel");
 const operateursZone = document.getElementById("operateurs");
@@ -1535,6 +1719,13 @@ function nouvellePartie(){
 
   majBandeau();
 
+  // Pas de texte verbeux ici : la zone reste simplement vide entre deux
+  // questions (et au chargement) — c'est la STRUCTURE qui doit rester
+  // stable et visible (voir afficherVerification ci-dessous pour le
+  // tableau pas-à-pas), pas un texte qui l'explique.
+  definirMessage("", "");
+  afficherVerification(null);
+
   consigne.innerHTML =
     "\\(" + game.target.toLatex(game.targetOpts) + "\\)";
 
@@ -1558,10 +1749,9 @@ function nouvellePartie(){
 
   expr.value = "";
   expr.disabled = false;
-  btnValider.style.display = "inline-block";
-  btnNext.style.display = "none";
-  message.textContent = "";
-  message.className = "";
+  btnValider.disabled = false;
+  btnRenoncer.disabled = false;
+  btnNext.disabled = true;
   expr.focus();
 
   const debug = document.getElementById("debugSolution");
@@ -1855,13 +2045,27 @@ function tableauComparatif(latexEtapesUser, cibleNombre, cibleOptsNaturels){
   const estDejaFractionSimple = cibleOptsNaturels?.nombreAff === 'fractionSimple'
     || cibleNombre.toLatex(cibleOptsNaturels) === cibleFractionSimple;
 
-  // Mêmes lignes que pour la colonne élève (forme naturelle, puis fraction
-  // simple), rendues dans le même format \begin{array}{l} — l'alignement
-  // visuel entre les deux colonnes reste donc cohérent même si le nombre de
-  // lignes diffère (souvent 1 seule ligne ici, contre plusieurs à gauche).
+  // Pour une cible en écriture décimale, on insère une étape intermédiaire
+  // montrant la fraction décimale "brute" (dénominateur en puissance de 10,
+  // ex: -225/100) avant la simplification finale (-9/4) : la transition
+  // décimal -> fraction n'est ainsi jamais un saut, mais un raisonnement
+  // explicite en deux temps, cohérent avec le pas-à-pas de la colonne élève.
+  let ligneFractionDecimale = null;
+  if(cibleOptsNaturels?.nombreAff === 'dec' && !estDejaFractionSimple){
+    const { numerateur, denominateur } = cibleNombre.fractionDecimaleBrute();
+    const signe = numerateur < 0 ? "-" : "";
+    ligneFractionDecimale = `${signe}\\frac{${Math.abs(numerateur)}}{${denominateur}}`;
+  }
+
+  // Mêmes lignes que pour la colonne élève (forme naturelle, éventuellement
+  // la fraction décimale brute, puis fraction simple), rendues dans le même
+  // format \begin{array}{l} — l'alignement visuel entre les deux colonnes
+  // reste donc cohérent même si le nombre de lignes diffère.
   const lignesCible = estDejaFractionSimple
     ? [cibleFractionSimple]
-    : [cibleNombre.toLatex(cibleOptsNaturels), cibleFractionSimple];
+    : ligneFractionDecimale
+      ? [cibleNombre.toLatex(cibleOptsNaturels), ligneFractionDecimale, cibleFractionSimple]
+      : [cibleNombre.toLatex(cibleOptsNaturels), cibleFractionSimple];
 
   const cibleAffichage = lignesCible.length === 1
     ? `\\[${lignesCible[0]}\\]`
@@ -1877,7 +2081,7 @@ ${lignesCible.slice(1).map(l=>`=& ${l}`).join(" \\\\ ")}
   return `
     <table class="tableau-comparatif">
       <thead>
-        <tr><th>Ton expression</th><th>Cible</th></tr>
+        <tr><th>Ton calcul</th><th>Cible</th></tr>
       </thead>
       <tbody>
         <tr>
@@ -1894,11 +2098,75 @@ function definirMessage(html, type){
   message.className = type || "";
 }
 
+// Remplit (ou vide) la zone "Vérification", distincte du message de résultat
+// (#message) : le label "Vérification" reste toujours visible dès qu'il y a
+// un contenu, pour que cette zone soit identifiable sans ambiguïté comme le
+// détail du calcul, séparée du verdict (Bravo / erreur / renoncé) affiché
+// juste au-dessus dans #message.
+// Remplit la zone "Vérification" : le cadre (bordure, fond, label) reste
+// TOUJOURS visible, qu'il y ait un résultat à montrer ou non — seul son
+// contenu change, entre un texte neutre par défaut et le vrai tableau
+// pas-à-pas une fois une réponse validée. Rien n'apparaît ni ne disparaît
+// brusquement : chaque zone de l'interface garde sa place et son rendu en
+// permanence.
+// Gabarit vide du tableau de vérification : mêmes en-têtes que le tableau
+// réel (tableauComparatif), mais avec 5 lignes sans contenu. Affiché par
+// défaut (avant toute validation, entre deux questions, après un
+// renoncement) pour que la FORME de la démarche de vérification — deux
+// colonnes, plusieurs lignes d'étapes — reste visible et stable en
+// permanence, même quand ce n'est pas encore à l'élève de la remplir :
+// l'objectif est de figer visuellement le gabarit de travail, pas
+// d'expliquer avec du texte ce qui va s'y passer.
+function tableauComparatifVide(){
+  return `
+    <table class="tableau-comparatif">
+      <thead>
+        <tr><th>Ton calcul</th><th>Cible</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-user">&nbsp;</td><td class="col-cible">&nbsp;</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+// Remplit la zone "Vérification" : le cadre (bordure, fond, label) et la
+// FORME du tableau (en-têtes + lignes) restent toujours visibles. Seul le
+// contenu des lignes change, entre le gabarit vide par défaut et le vrai
+// tableau pas-à-pas une fois une réponse validée.
+function afficherVerification(html){
+  zoneVerificationContenu.innerHTML = html || tableauComparatifVide();
+}
+
 function finQuestion(){
   phase = "next";
   expr.disabled = true;
-  btnValider.style.display = "none";
-  btnNext.style.display = "inline-block";
+  btnValider.disabled = true;
+  btnRenoncer.disabled = true;
+  btnNext.disabled = false;
+}
+
+// Abandon volontaire de la question en cours : compte comme une réponse
+// fausse (pas de point, mais pas de pénalité supplémentaire non plus), sans
+// révéler la cible ni une expression solution — contrairement à un échec
+// après tentative, où le tableau comparatif montre le détail du calcul.
+function renoncer(){
+  if(phase !== "saisie") return;
+
+  finQuestion();
+
+  document.querySelectorAll(".jeton").forEach(j=>{
+    j.classList.remove("vert","faux");
+    j.disabled = true;
+  });
+
+  definirMessage(
+    "Pas de souci, on passe à la suite. 🙂",
+    "erreur"
+  );
+  afficherVerification(null);
+
+  majBandeau();
 }
 
 function valider(){
@@ -1948,6 +2216,7 @@ function valider(){
       `<span class="detail">${expliquerStructureInvalide(expr.value)}</span>`,
       "erreur"
     );
+    afficherVerification(null);
 
     document.querySelectorAll(".jeton")
       .forEach(j => j.classList.add("vert"));
@@ -1980,13 +2249,11 @@ function valider(){
     document.querySelectorAll(".jeton")
       .forEach(j => j.classList.add("vert"));
 
-    definirMessage(
-      "Bravo, c'est exact !" + tableau,
-      "ok"
-    );
+    definirMessage("Bravo, c'est exact !", "ok");
+    afficherVerification(tableau);
 
     majBandeau();
-    MathJax.typesetPromise([message]);
+    MathJax.typesetPromise([message, zoneVerificationContenu]);
     return;
   }
 
@@ -1996,13 +2263,11 @@ function valider(){
   document.querySelectorAll(".jeton")
     .forEach(j => j.classList.add("vert"));
 
-  definirMessage(
-    "Ton expression donne un résultat différent de la cible." + tableau,
-    "erreur"
-  );
+  definirMessage("Ton expression donne un résultat différent de la cible.", "erreur");
+  afficherVerification(tableau);
 
   majBandeau();
-  MathJax.typesetPromise([message]);
+  MathJax.typesetPromise([message, zoneVerificationContenu]);
   return;
 }
 
@@ -2259,6 +2524,7 @@ document.addEventListener("keydown", (e)=>{
 nouvellePartie();
 btnValider.onclick = valider;
 btnNext.onclick = nouvellePartie;
+btnRenoncer.onclick = renoncer;
 
 </script>
 
