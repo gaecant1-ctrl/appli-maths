@@ -1177,8 +1177,13 @@ function validerCalculNumerique(saisie, formulaJSON, valeurSlider) {
     let saisiePrete = preparerExpression(brute, varName);
 
     // TEST DE PRÉSENCE DE LA VARIABLE : plus fiable qu'un try/catch sur evaluate
-    // On regarde si la chaîne contient la lettre de la variable (ex: 'n') isolee
-    let regexContientVar = new RegExp("\\b" + varName + "\\b", "i");
+    // On regarde si la chaîne contient la lettre de la variable (ex: 'n'), même
+    // collée à un chiffre (ex: "11n") : \b ne fonctionne pas dans ce cas car un
+    // chiffre et une lettre appartiennent tous deux à la classe \w, donc il n'y
+    // a pas de frontière de mot entre eux. On exige seulement qu'il n'y ait pas
+    // d'autre lettre immédiatement avant/après, pour éviter de matcher "n" à
+    // l'intérieur d'un autre mot (ex: une fonction "sin(...)").
+    let regexContientVar = new RegExp("(?:^|[^a-z])" + varName + "(?:$|[^a-z])", "i");
     let contientVariable = regexContientVar.test(brute);
 
     if (contientVariable) {
