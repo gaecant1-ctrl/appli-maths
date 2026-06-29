@@ -124,7 +124,8 @@ class FichePapier {
     const btnImprimer = document.createElement('button');
     btnImprimer.type = 'button';
     btnImprimer.textContent = '🖨️ Imprimer / Enregistrer en PDF';
-    btnImprimer.addEventListener('click', () => window.print());
+    btnImprimer.addEventListener('click', () => this._imprimer());
+    this.btnImprimer = btnImprimer;
 
     const btnTex = document.createElement('button');
     btnTex.type = 'button';
@@ -332,6 +333,45 @@ ${lignesTex}
     return String(s || '').replace(/([%&#_{}])/g, '\\$1');
   }
 
+  _imprimer() {
+    // Sur certaines plateformes (ex: Google Sites), la page est chargée dans une
+    // iframe sandboxée sans 'allow-modals' : window.print() est alors silencieusement
+    // ignoré par le navigateur (aucune erreur JS, juste un warning console), donc rien
+    // ne se passe visuellement. On détecte ce cas et on propose une issue de secours :
+    // ouvrir la page actuelle dans un nouvel onglet, hors du sandbox, où print() fonctionne.
+    const dansIframe = (() => {
+      try { return window.self !== window.top; } catch (e) { return true; } // cross-origin => on suppose iframe
+    })();
+
+    if (dansIframe) {
+      this._afficherAvertissementImpression();
+    }
+
+    // On tente quand même l'appel : si le sandbox autorise les modales, ça marchera.
+    try {
+      window.print();
+    } catch (e) {
+      this._afficherAvertissementImpression();
+    }
+  }
+
+  _afficherAvertissementImpression() {
+    if (this._avertissementImpression) return; // déjà affiché, pas de doublon
+    const div = document.createElement('div');
+    div.className = 'avertissement-impression';
+    div.innerHTML = `
+      ⚠️ L'impression est bloquée car cette page est intégrée dans un cadre restreint
+      (par ex. Google Sites).
+      <a href="${window.location.href}" target="_blank" rel="noopener">
+        Ouvrir la fiche dans un nouvel onglet
+      </a> pour pouvoir imprimer.
+    `;
+    // On insère juste après le bandeau d'actions pour rester visible.
+    this.overlay.querySelector('.fiche-actions')?.insertAdjacentElement('afterend', div);
+    this._avertissementImpression = div;
+  }
+
+
   _telechargerLatex() {
     if (!this._lastVariants) this._regenerer();
     const tex = this._genererLatex();
@@ -442,6 +482,26 @@ ${lignesTex}
         margin:10px 0 0;
       }
 
+      .avertissement-impression{
+        margin:12px 0 0;
+        padding:12px 14px;
+        background:#fff3cd;
+        border:1px solid #ffe69c;
+        border-radius:8px;
+        color:#664d03;
+        font-size:13.5px;
+        text-align:center;
+        line-height:1.5;
+      }
+      .avertissement-impression a{
+        display:inline-block;
+        margin-left:6px;
+        font-weight:700;
+        color:#664d03;
+        text-decoration:underline;
+      }
+      .avertissement-impression a:hover{ color:#000; }
+
       .espace-fiche{ height:22px; }
 
       .ligne-identite{
@@ -518,7 +578,7 @@ ${lignesTex}
           border-radius:0;
           padding:0;
         }
-        #btnFermerFiche, .fiche-actions, .note-impression{ display:none !important; }
+        #btnFermerFiche, .fiche-actions, .note-impression, .avertissement-impression{ display:none !important; }
       }
     `;
     document.head.appendChild(style);
