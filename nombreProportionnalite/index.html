@@ -21,6 +21,43 @@
 </head>
 <body>
 
+  <!-- ==========================================
+       BANDEAU "OUVRIR HORS GOOGLE SITES"
+       Utile quand cette page est intégrée dans une iframe Google Sites :
+       l'impression (window.print) y est bloquée par le sandbox. Ce lien
+       ouvre la même page dans un vrai onglet, où tout fonctionne normalement.
+       -> 100% réutilisable tel quel dans une autre appli : l'URL est
+          déduite automatiquement de la page courante (aucune URL en dur).
+  =========================================== -->
+  <div id="bandeau-ouvrir-onglet">
+    <a id="lien-ouvrir-onglet" href="#" target="_blank" rel="noopener">
+      🔗 Ouvrir cette page dans un nouvel onglet (recommandé pour imprimer)
+    </a>
+  </div>
+  <style>
+    #bandeau-ouvrir-onglet{
+      position:sticky;
+      top:0;
+      z-index:999998;
+      text-align:center;
+      padding:8px 12px;
+      background:#1e293b;
+      border-bottom:1px solid #334155;
+    }
+    #bandeau-ouvrir-onglet a{
+      color:#38bdf8;
+      font-size:14px;
+      font-weight:600;
+      text-decoration:none;
+    }
+    #bandeau-ouvrir-onglet a:hover{ text-decoration:underline; }
+  </style>
+  <script>
+    // L'URL est prise depuis window.location.href : aucune adresse en dur,
+    // donc ce bandeau fonctionne sans modification sur n'importe quelle appli.
+    document.getElementById('lien-ouvrir-onglet').href = window.location.href;
+  </script>
+
   <!-- Conteneur du quiz -->
   <div id="app"></div>
 
