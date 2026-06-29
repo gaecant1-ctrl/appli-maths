@@ -127,6 +127,13 @@ class FichePapier {
     btnImprimer.addEventListener('click', () => this._imprimer());
     this.btnImprimer = btnImprimer;
 
+    const btnOuvrir = document.createElement('button');
+    btnOuvrir.type = 'button';
+    btnOuvrir.textContent = '🔗 Ouvrir dans un nouvel onglet';
+    btnOuvrir.title = "Utile si la fiche est intégrée dans Google Sites : l'impression ne fonctionne que hors du cadre intégré.";
+    btnOuvrir.addEventListener('click', () => window.open(window.location.href, '_blank', 'noopener'));
+    this.btnOuvrir = btnOuvrir;
+
     const btnTex = document.createElement('button');
     btnTex.type = 'button';
     btnTex.textContent = '⬇️ Télécharger le LaTeX';
@@ -137,7 +144,7 @@ class FichePapier {
     btnRegen.textContent = '🔀 Régénérer une nouvelle série';
     btnRegen.addEventListener('click', () => this._regenerer());
 
-    actions.append(btnImprimer, btnTex, btnRegen);
+    actions.append(btnImprimer, btnOuvrir, btnTex, btnRegen);
 
     const note = document.createElement('p');
     note.className = 'note-impression';
