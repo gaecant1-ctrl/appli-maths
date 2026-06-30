@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Résolution d'équations</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <script src="calcul-litteral.js"></script>
+  <script src="Generateur.js"></script>
+  <script src="Fiche.js"></script>
+  <script src="OperationGuidee.js"></script>
+  <script src="ModeOperationGuidee.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">Résolution d'<b>équations</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="paramsOverlay" class="params-overlay">
+    <div id="paramsModal" class="params-modal">
+      <button id="paramsClose" class="params-close" aria-label="Fermer">✕</button>
+      <h2 class="params-title">Paramètres</h2>
+
+      <div class="param-group">
+        <div class="param-label">Type d'équation <span class="shuffle-hint">(rien coché = aléatoire)</span></div>
+        <div class="param-buttons" id="grpTypeEquation" data-family="typeEquation"></div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-label">Type de nombre <span class="shuffle-hint">(rien coché = aléatoire)</span></div>
+        <div class="param-buttons" id="grpTypeNombre" data-family="typeNombre"></div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-label">Type de solution x <span class="shuffle-hint">(rien coché = aléatoire)</span></div>
+        <div class="param-buttons" id="grpTypeSolution" data-family="typeSolution"></div>
+      </div>
+
+      <div class="param-group param-group-toggle">
+        <label class="toggle-row">
+          <input type="checkbox" id="toggleCoefNeg">
+          <span>Autoriser les coefficients négatifs</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="toggleSolNeg">
+          <span>Autoriser une solution négative</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+
+    <main>
+      <div id="inputContainer"></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
