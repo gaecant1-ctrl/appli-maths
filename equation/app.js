@@ -526,6 +526,24 @@ function demarrerQuestion() {
     }
 }
 
+/** Installe le bouton "Nouvel onglet" dans le header : rouvre la page courante
+ *  (même URL) dans un nouvel onglet, sans transmettre l'état de la partie en
+ *  cours — la nouvelle page démarre sa propre question au chargement, comme
+ *  dans le jeu "Le compte est bon". */
+function setupBoutonNouvelOnglet() {
+    const conteneur = document.getElementById("topButtonsBar");
+    if (!conteneur) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'btnNouvelOnglet';
+    btn.className = 'btn-header';
+    btn.textContent = 'Nouvel onglet';
+    btn.onclick = () => window.open(window.location.href, "_blank", "noopener");
+
+    conteneur.appendChild(btn);
+}
+
 /** Installe le bouton de bascule Atelier/Quiz dans le header. */
 function setupEtatToggle() {
     const conteneur = document.getElementById("topButtonsBar");
@@ -728,5 +746,6 @@ window.onload = () => {
         const fiche = new FichePapier();
         fiche.installerBouton(document.getElementById("topButtonsBar"));
     }
+    setupBoutonNouvelOnglet();
     demarrerQuestion();
 };
