@@ -65,6 +65,34 @@ body {
 }
 
 /* =========================
+   BOUTONS DU BANDEAU (nouvel onglet, fiche papier)
+========================= */
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-header {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(250,204,21,0.5);
+  color: #facc15;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-header:hover {
+  background: rgba(250,204,21,0.18);
+  transform: scale(1.04);
+}
+
+/* =========================
    STARS
 ========================= */
 

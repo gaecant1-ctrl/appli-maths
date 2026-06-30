@@ -10,7 +10,14 @@
       inlineMath: [['\\(', '\\)']]
     },
     svg: {
-      fontCache: 'global'
+      // 'local' plutôt que 'global' : chaque formule embarque ses propres
+      // tracés de glyphes, au lieu de référencer un <svg> de définitions
+      // partagé ajouté une seule fois en fin de <body>. Avec 'global', ce
+      // conteneur de définitions se retrouve hors de l'overlay #overlayFicheAppariement
+      // et donc masqué par notre CSS d'impression (body * { visibility:hidden })
+      // — ce qui peut faire retomber les formules imprimées sur un rendu de
+      // secours plus épais au lieu des vrais tracés MathJax.
+      fontCache: 'local'
     }
   };
 </script>
@@ -28,6 +35,8 @@
       <div class="stars" id="stars"></div>
 
     </div>
+
+    <div class="header-actions" id="headerActions"></div>
 
   </div>
 </header>
