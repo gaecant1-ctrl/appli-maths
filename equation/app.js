@@ -152,8 +152,8 @@ class InputWrapper {
         this.symbolPart.style.display = "block";
         this.rightPart.style.display = "block";
 
-        this.leftPart.innerHTML = `\\(${formatToLatex(eq.lhs)}\\)`;
-        this.rightPart.innerHTML = `\\(${formatToLatex(eq.rhs)}\\)`;
+        this.leftPart.innerHTML = `\\(${formatToLatex(eq.lhs, { preserverEcriture: true })}\\)`;
+        this.rightPart.innerHTML = `\\(${formatToLatex(eq.rhs, { preserverEcriture: true })}\\)`;
         if (window.MathJax) MathJax.typesetPromise();
     }
 
@@ -183,10 +183,32 @@ class InputWrapper {
         targetSol.equal(diagUser.solution)
     );
 
-    // Vérification si l'équation est résolue (x = nombre ou nombre = x)
-    const left = parts[0].trim();
-    const right = parts[1].trim();
-    const isSolved = (left === 'x' && !isNaN(right)) || (right === 'x' && !isNaN(left));
+    // Vérification si l'équation est résolue (x = constante ou constante = x).
+    // Conditions :
+    //   1. Forme polynomiale : "x seul" d'un côté, constante de l'autre.
+    //   2. La constante écrite est déjà en forme irréductible :
+    //      typeEcriture 'entier' ou 'fractionSimple' — jamais 'fraction' non
+    //      réduite (ex: 72/9 ou 30/3 sont refusés, l'élève doit simplifier).
+    let isSolved = false;
+    if (isEquivalent) {
+        try {
+            const { polyLhs, polyRhs } = userEq._parsePolynomes();
+            const lhsEstX = polyLhs.degre() === 1
+                && polyLhs.coeff(1).equal(new Nombre("1"))
+                && polyLhs.coeff(0).equal(new Nombre("0"));
+            const rhsEstX = polyRhs.degre() === 1
+                && polyRhs.coeff(1).equal(new Nombre("1"))
+                && polyRhs.coeff(0).equal(new Nombre("0"));
+            const formeValide = (lhsEstX && polyRhs.estConstant())
+                             || (rhsEstX && polyLhs.estConstant());
+            if (formeValide) {
+                const texteConstante = (lhsEstX ? parts[1] : parts[0]).trim();
+                const nombreConstante = new Nombre(texteConstante);
+                const te = nombreConstante.typeEcriture;
+                isSolved = (te === 'entier' || te === 'fractionSimple');
+            }
+        } catch (e) { /* isSolved reste false */ }
+    }
 
     this.renderStatic(userEq);
 
@@ -332,16 +354,23 @@ function startQuiz() {
 }
 
 /**
- * Rend une expression texte (lhs ou rhs d'une Equation) en LaTeX, via le
- * module calcul-litteral. Affiche la forme BRUTE telle que tapée (arbre non
- * évalué) — pas la version développée/réduite — pour que l'élève voie
- * fidèlement ce qu'il a écrit (ex: "2(x+3)" reste "2(x+3)", pas "2x+6").
- * Si l'expression ne parse pas (saisie en cours, invalide), on retombe sur
- * le texte brut, comme le faisait l'ancienne version en cas d'exception.
+/**
+ * Rend une expression texte en LaTeX via le module calcul-litteral.
+ * Affiche la forme BRUTE telle que tapée (arbre non évalué).
+ *
+ * Option : preserverEcriture (défaut false)
+ *   Quand true, remplace "/" par ":" avant parsing, de sorte que "30/3"
+ *   reste affiché \frac{30}{3} (Quotient brut) plutôt que simplifié en 10.
+ *   À utiliser en mode libre où l'élève écrit lui-même l'équation.
+ *   En mode guidé, Polynome.toLatex() est utilisé directement, donc cette
+ *   option n'a aucun effet sur ce mode.
  */
-function formatToLatex(exprText) {
+function formatToLatex(exprText, opts = {}) {
     try {
-        const os = new ObjetString(exprText, {});
+        const texte = opts.preserverEcriture
+            ? String(exprText).replace(/\//g, ':')
+            : exprText;
+        const os = new ObjetString(texte, {});
         if (!os.isValid() || !os.arbre) return exprText;
         return os.arbre.toLatex();
     } catch (e) {
