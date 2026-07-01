@@ -2,7 +2,12 @@ let questionCount = 0;
 let score = 0;
 let piocheEnCours = [];
 
-const BANQUE_DE_TYPES = [
+// ============================================================
+// NIVEAUX (5e / 4e / 3e) — cumulatifs : chaque niveau reprend la banque du
+// niveau précédent (révision) et y ajoute les nouveaux types de la classe.
+// ============================================================
+
+const BANQUE_5E = [
     { id: "Simple",  pattern: 'ux?w?vx?t', constants: ['u', 'v', 'w', 't'], forced: [] },
     { id: "Distrib", pattern: 'u(vx?w)', constants: ['u', 'v', 'w'], forced: ['u'] },
     { id: "Moins",   pattern: 'ux-(vx?w)', constants: ['u', 'v', 'w'], forced: [] },
@@ -11,6 +16,74 @@ const BANQUE_DE_TYPES = [
     { id: "Double2", pattern: 'ux(vx?w)+rx(tx?s)', constants: ['u', 'v', 'r', 't', 'w', 's'], forced: ['u', 'r'] },
     { id: "Mixte",   pattern: 'ux(vx?w)?(tx?s)', constants: ['u', 'v', 't', 'w', 's'], forced: ['u'] }
 ];
+
+// 4e : double distributivité — produit de deux binômes (ux±v)(wx±t).
+// "?" pris séparément pour chaque parenthèse : les 4 combinaisons de signes
+// (++, +-, -+, --) apparaissent toutes au fil des tirages.
+//
+// Double1 (5e) est le seul type à avoir DEUX parenthèses à coefficient
+// (u(vx+w)+r(tx+s)) : on reprend exactement cette structure en remplaçant
+// l'une, l'autre, ou les deux par une double distributivité — plus le signe
+// EXTÉRIEUR entre les deux termes, fixe en 5e ("+"), devient random ici.
+const BANQUE_4E_AJOUTS = [
+    { id: "DoubleDistrib",     pattern: '(ux?v)(wx?t)',   constants: ['u', 'v', 'w', 't'], forced: ['u', 'w'] },
+    { id: "DoubleDistribPrio", pattern: 's+(ux?v)(wx?t)', constants: ['s', 'u', 'v', 'w', 't'], forced: ['u', 'w'] },
+
+    // Double1 où seule la PREMIÈRE parenthèse devient double, la seconde reste simple.
+    { id: "Double1_1erDouble", pattern: '(ux?v)(wx?t)?r(sx?q)', constants: ['u', 'v', 'w', 't', 'r', 's', 'q'], forced: ['u', 'w', 'r'] },
+    // Double1 où seule la SECONDE parenthèse devient double, la première reste simple.
+    { id: "Double1_2ndDouble", pattern: 'u(vx?w)?(rx?s)(tx?q)', constants: ['u', 'v', 'w', 'r', 's', 't', 'q'], forced: ['u', 'r', 't'] },
+    // Double1 où LES DEUX parenthèses deviennent doubles.
+    { id: "Double1_2Doubles",  pattern: '(ux?v)(wx?t)?(rx?s)(qx?p)', constants: ['u', 'v', 'w', 't', 'r', 's', 'q', 'p'], forced: ['u', 'w', 'r', 'q'] }
+];
+
+// 3e : identités remarquables. Même lettre réutilisée aux deux occurrences
+// (ex: "u" et "v" dans les deux facteurs) : la substitution par lettre étant
+// globale sur tout le motif, la MÊME valeur y est injectée aux deux endroits
+// — exactement ce que l'identité exige. Le signe interne d'une IR fait
+// PARTIE de son identité (+v pour un carré de somme, -v pour un carré de
+// différence...) : il n'est donc jamais randomisé par "?", contrairement au
+// signe EXTÉRIEUR entre deux termes, qui lui reste random comme en 4e.
+//
+// Même logique que pour 4e : on reprend les structures à parenthèse(s) et on
+// remplace la double distributivité par une IR — l'une des deux parenthèses
+// seulement, ou les deux (au même type d'IR des deux côtés, pour rester
+// lisible plutôt que de multiplier les combinaisons croisées).
+const BANQUE_3E_AJOUTS = [
+    // IR seules (remplace directement une simple distributivité "u(vx+w)").
+    { id: "IdentiteCarreSomme", pattern: '(ux+v)^2',     constants: ['u', 'v'], forced: ['u'] },
+    { id: "IdentiteCarreDiff",  pattern: '(ux-v)^2',     constants: ['u', 'v'], forced: ['u'] },
+    { id: "IdentiteConjugue",   pattern: '(ux+v)(ux-v)', constants: ['u', 'v'], forced: ['u'] },
+
+    // IR à la place de la double dans "Prio" (w+u(vx+s) -> s+IR).
+    { id: "PrioCarreSomme", pattern: 's+(ux+v)^2',     constants: ['s', 'u', 'v'], forced: ['u'] },
+    { id: "PrioCarreDiff",  pattern: 's+(ux-v)^2',     constants: ['s', 'u', 'v'], forced: ['u'] },
+    { id: "PrioConjugue",   pattern: 's+(ux+v)(ux-v)', constants: ['s', 'u', 'v'], forced: ['u'] },
+
+    // Double1 : IR en PREMIÈRE position, parenthèse simple en seconde.
+    { id: "Double1_CarreSommePuisSimple", pattern: '(ux+v)^2?r(sx?q)',     constants: ['u', 'v', 'r', 's', 'q'], forced: ['u', 'r'] },
+    { id: "Double1_CarreDiffPuisSimple",  pattern: '(ux-v)^2?r(sx?q)',     constants: ['u', 'v', 'r', 's', 'q'], forced: ['u', 'r'] },
+    { id: "Double1_ConjuguePuisSimple",   pattern: '(ux+v)(ux-v)?r(sx?q)', constants: ['u', 'v', 'r', 's', 'q'], forced: ['u', 'r'] },
+
+    // Double1 : parenthèse simple en première position, IR en seconde.
+    { id: "Double1_SimplePuisCarreSomme", pattern: 'u(vx?w)?(rx+s)^2',     constants: ['u', 'v', 'w', 'r', 's'], forced: ['u', 'r'] },
+    { id: "Double1_SimplePuisCarreDiff",  pattern: 'u(vx?w)?(rx-s)^2',     constants: ['u', 'v', 'w', 'r', 's'], forced: ['u', 'r'] },
+    { id: "Double1_SimplePuisConjugue",   pattern: 'u(vx?w)?(rx+s)(rx-s)', constants: ['u', 'v', 'w', 'r', 's'], forced: ['u', 'r'] },
+
+    // Double1 : IR (même type) des DEUX côtés.
+    { id: "Double1_DeuxCarresSomme", pattern: '(ux+v)^2?(rx+s)^2',     constants: ['u', 'v', 'r', 's'], forced: ['u', 'r'] },
+    { id: "Double1_DeuxCarresDiff",  pattern: '(ux-v)^2?(rx-s)^2',     constants: ['u', 'v', 'r', 's'], forced: ['u', 'r'] },
+    { id: "Double1_DeuxConjugues",   pattern: '(ux+v)(ux-v)?(rx+s)(rx-s)', constants: ['u', 'v', 'r', 's'], forced: ['u', 'r'] }
+];
+
+const NIVEAUX_DISPONIBLES = {
+    "5": BANQUE_5E,
+    "4": BANQUE_5E.concat(BANQUE_4E_AJOUTS),
+    "3": BANQUE_5E.concat(BANQUE_4E_AJOUTS, BANQUE_3E_AJOUTS)
+};
+
+let niveauActuel = "5";
+let BANQUE_DE_TYPES = NIVEAUX_DISPONIBLES[niveauActuel];
 
 const LETTRES_POSSIBLES = ['x', 'y', 'z', 'a', 'b'];
 
@@ -244,6 +317,51 @@ class InputWrapper {
     }
 }
 
+// ==================== SÉLECTEUR DE NIVEAU (5e / 4e / 3e) ====================
+// Ajouter un niveau plus tard revient à ajouter une entrée dans
+// NIVEAUX_DISPONIBLES : aucune autre logique à toucher.
+
+function construireSelecteurNiveau(conteneur) {
+    const groupe = document.createElement('div');
+    groupe.id = 'selecteurNiveau';
+    groupe.setAttribute('role', 'group');
+    groupe.setAttribute('aria-label', 'Choix du niveau');
+
+    Object.keys(NIVEAUX_DISPONIBLES).forEach(code => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'niveau-btn' + (code === niveauActuel ? ' actif' : '');
+        btn.dataset.niveau = code;
+        btn.textContent = `${code}e`;
+        btn.addEventListener('click', () => choisirNiveau(code));
+        groupe.appendChild(btn);
+    });
+
+    conteneur.appendChild(groupe);
+    return groupe;
+}
+
+function choisirNiveau(code) {
+    if (!NIVEAUX_DISPONIBLES[code] || code === niveauActuel) return;
+    niveauActuel = code;
+    BANQUE_DE_TYPES = NIVEAUX_DISPONIBLES[code];
+    piocheEnCours = []; // pioche fraîche, cohérente avec la nouvelle banque
+
+    document.querySelectorAll('.niveau-btn').forEach(btn => {
+        btn.classList.toggle('actif', btn.dataset.niveau === code);
+    });
+
+    // Changer de niveau en cours de partie mélangerait deux difficultés dans
+    // le même score : on repart donc sur un quiz neuf, propre.
+    relancer();
+}
+
+function relancer() {
+    questionCount = 0;
+    score = 0;
+    startQuiz();
+}
+
 // --- Header (boutons "classiques" communs aux projets) ---
 
 /**
@@ -257,6 +375,8 @@ class InputWrapper {
 function construireHeader() {
     const bandeau = document.getElementById('topButtonsBar');
     if (!bandeau) return;
+
+    construireSelecteurNiveau(bandeau);
 
     const btnNouvelOnglet = document.createElement('button');
     btnNouvelOnglet.type = 'button';
@@ -276,9 +396,8 @@ function construireHeader() {
 
 // --- Fonctions de gestion du Quiz ---
 
-function genererExpressionBrute() {
-    if (piocheEnCours.length === 0) { piocheEnCours = [...BANQUE_DE_TYPES].sort(() => Math.random() - 0.5); }
-    const type = piocheEnCours.pop();
+/** Applique la substitution lettres/signes d'UN type donné (indépendant du tirage aléatoire du type lui-même) — réutilisable pour tester chaque type explicitement. */
+function genererDepuisType(type) {
     let expr = type.pattern;
     const v = LETTRES_POSSIBLES[Math.floor(Math.random() * LETTRES_POSSIBLES.length)];
     expr = expr.replace(/x/g, v);
@@ -297,6 +416,12 @@ function genererExpressionBrute() {
     expr = expr.replace(/\+\-/g, '-').replace(/\-\+/g, '-').replace(/\-\-/g, '+');
 
     return { expr, lettre: v };
+}
+
+function genererExpressionBrute() {
+    if (piocheEnCours.length === 0) { piocheEnCours = [...BANQUE_DE_TYPES].sort(() => Math.random() - 0.5); }
+    const type = piocheEnCours.pop();
+    return genererDepuisType(type);
 }
 
 /** Génère une expression valide pour le moteur exact (retire en pratique quasi jamais, filet de sécurité). */
@@ -344,7 +469,7 @@ function showScore() {
         <div style="text-align:center; padding:50px;">
             <h2>🎯 Quiz Terminé !</h2>
             <div style="font-size: 80px; color: #4CAF50; font-weight: bold;">${score} / 10</div>
-            <button onclick="location.reload()" style="margin-top:20px;">Recommencer</button>
+            <button onclick="relancer()" style="margin-top:20px;">Recommencer</button>
         </div>`;
 }
 

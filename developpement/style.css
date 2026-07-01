@@ -209,6 +209,40 @@ header {
     margin: 0 2px;
 }
 
+#selecteurNiveau {
+    display: inline-flex;
+    gap: 4px;
+    background: rgba(74, 144, 226, 0.08);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.niveau-btn {
+    background-color: transparent;
+    border: none;
+    color: #4A90E2;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.niveau-btn:hover {
+    background-color: rgba(74, 144, 226, 0.15);
+}
+
+.niveau-btn.actif {
+    background-color: #4A90E2;
+    color: white;
+}
+
+.niveau-btn.actif:hover {
+    background-color: #4A90E2;
+}
+
 #score-container {
     margin-top: 10px;
     display: flex;
