@@ -3,14 +3,16 @@ let score = 0;
 let piocheEnCours = [];
 
 const BANQUE_DE_TYPES = [
-    { id: "Simple", pattern: 'ux?w?vx?t', constants: ['u', 'v', 'w', 't'], forced: [] },
-    { id: "Distrib", pattern: 'u(vx?w)', constants: ['u', 'v', 'w'], forced: ['u'] }, 
-    { id: "Moins", pattern: 'ux-(vx?w)', constants: ['u', 'v', 'w'], forced: [] },
-    { id: "Prio", pattern: 'w+u(vx?s)', constants: ['u', 'v', 'w', 's'], forced: ['u'] },
+    { id: "Simple",  pattern: 'ux?w?vx?t', constants: ['u', 'v', 'w', 't'], forced: [] },
+    { id: "Distrib", pattern: 'u(vx?w)', constants: ['u', 'v', 'w'], forced: ['u'] },
+    { id: "Moins",   pattern: 'ux-(vx?w)', constants: ['u', 'v', 'w'], forced: [] },
+    { id: "Prio",    pattern: 'w+u(vx?s)', constants: ['u', 'v', 'w', 's'], forced: ['u'] },
     { id: "Double1", pattern: 'u(vx?w)+r(tx?s)', constants: ['u', 'v', 'r', 't', 'w', 's'], forced: ['u', 'r'] },
     { id: "Double2", pattern: 'ux(vx?w)+rx(tx?s)', constants: ['u', 'v', 'r', 't', 'w', 's'], forced: ['u', 'r'] },
-    { id: "Mixte", pattern: 'ux(vx?w)?(tx?s)', constants: ['u', 'v', 't', 'w', 's'], forced: ['u'] }
+    { id: "Mixte",   pattern: 'ux(vx?w)?(tx?s)', constants: ['u', 'v', 't', 'w', 's'], forced: ['u'] }
 ];
+
+const LETTRES_POSSIBLES = ['x', 'y', 'z', 'a', 'b'];
 
 /**
  * Rendu LaTeX "Miroir" : ce que l'élève tape est ce qu'il voit.
@@ -29,72 +31,114 @@ function formatToLatex(exprText) {
     if (!exprText) return "";
     let rendered = exprText
         .replace(/\*/g, ' \\times ')
-        .replace(/\s+/g, ' '); 
+        .replace(/\s+/g, ' ');
     return rendered;
 }
 
+// ============================================================
+// ExpressionLitterale — remplace l'ancienne classe Expression (math.js)
+// ============================================================
+// Le moteur exact (calcul-litteral.js : Nombre/Polynome/Atome/Expression/
+// Somme/Difference/Produit/Quotient/Puissance/ObjetString) ne connaît que
+// la variable "x". Ici, chaque exercice utilise une lettre choisie
+// aléatoirement (x, y, z, a, b) : on la substitue par "x" avant de confier
+// le texte au moteur, uniquement pour le calcul interne — l'affichage à
+// l'élève garde toujours sa lettre d'origine (formatToLatex sur le texte brut).
+//
+// Si l'élève utilise une AUTRE lettre que celle de l'énoncé, la substitution
+// ne la remplace pas : le moteur la voit comme un symbole inconnu et rejette
+// l'expression (Invalide) — comportement plus rigoureux que l'ancienne
+// vérification numérique, qui aurait pu (en théorie) accepter une mauvaise
+// lettre par coïncidence de valeurs.
+// ============================================================
 
-function prepareForMathJS(expr) {
-    if (!expr) return "";
-
-    return expr.toLowerCase()
-        // 1. LA LIGNE CRUCIALE : Ajoute * entre deux lettres (yy -> y*y, ab -> a*b)
-        // On cherche une lettre suivie d'une autre lettre
-        .replace(/([a-z])(?=[a-z])/g, '$1*') 
-        
-        // 2. Ajoute * entre un chiffre et une lettre (3x -> 3*x)
-        .replace(/([0-9])([a-z])/g, '$1*$2')
-        
-        // 3. Gère les parenthèses (2(x) -> 2*(x))
-        .replace(/([0-9a-z])(\()/g, '$1*$2')
-        .replace(/(\))([0-9a-z])/g, '$1*$2')
-        
-        // 4. Nettoyage final
-        .trim();
-}
-
-class Expression {
-    constructor(expr) { 
-        this.expr = expr; 
+class ExpressionLitterale {
+    constructor(expr, lettre) {
+        this.expr = expr;
+        this.lettre = lettre || (expr.match(/[a-z]/)?.[0] ?? 'x');
+        this._objetString = null;
+        this._resultat = null; // Atome final si le calcul a réussi (cache)
+        this._construire();
     }
 
-    // Vérifie si l'expression est mathématiquement correcte (syntaxe)
-evaluated() {
-    try {
-        const scope = { x: 2, y: 2, z: 2, a: 2, b: 2 };
-        // On prépare l'expression avant de demander à math.js si elle est valide
-        const prepared = prepareForMathJS(this.expr);
-        const result = math.evaluate(prepared, scope);
-        return isFinite(result);
-    } catch (e) { 
-        return false; 
+    /** Remplace UNIQUEMENT la lettre-variable de cet exercice par "x" (seule lettre connue du moteur). */
+    _versFormeX(texte) {
+        if (this.lettre === 'x') return texte;
+        return texte.replace(new RegExp(this.lettre, 'g'), 'x');
     }
-}
 
-    // Compare la valeur numérique avec des variables aléatoires (évite les collisions)
-checkEqual(other) {
-    try {
-        const scope = { x: 2.12, y: 3.45, z: 1.67, a: 0.89, b: 2.34 };
-        
-        // On normalise les deux chaînes pour math.js
-        const exprInitial = prepareForMathJS(this.expr);
-        const exprUser = prepareForMathJS(other.expr);
-
-        const val1 = math.evaluate(exprInitial, scope);
-        const val2 = math.evaluate(exprUser, scope);
-
-        // Log de secours pour voir ce que math.js a réellement calculé
-        logger("Comparaison Interne", {
-            calc_initial: `${exprInitial} = ${val1}`,
-            calc_user: `${exprUser} = ${val2}`
-        });
-
-        return Math.abs(val1 - val2) < 1e-6;
-    } catch (e) {
-        logger("Erreur fatale math.js", e.message);
-        return false;
+    _construire() {
+        if (!this._lettresCoherentes(this.expr)) { this._objetString = null; return; }
+        try {
+            this._objetString = new ObjetString(this._versFormeX(this.expr), {});
+        } catch (e) {
+            this._objetString = null;
+        }
     }
-}
+
+    /**
+     * Vérifie qu'aucune lettre AUTRE que celle de l'exercice n'apparaît dans le texte.
+     * Sans ce garde-fou, un élève qui écrit "x" par réflexe alors que l'exercice
+     * porte sur "y" passerait quand même : "x" est justement le symbole interne
+     * du moteur, donc _versFormeX ne le toucherait pas et il serait accepté à tort.
+     */
+    _lettresCoherentes(texte) {
+        const lettres = texte.match(/[a-zA-Z]/g) || [];
+        return lettres.every(l => l.toLowerCase() === this.lettre);
+    }
+
+    /** Valide si le texte se parse ET se calcule exactement, sans erreur (degré trop grand, ÷ par x, etc.). */
+    isValid() {
+        if (!this._objetString || !this._objetString.isValid()) return false;
+        if (this._resultat) return true;
+        try {
+            this._resultat = this._objetString.calculer().resultat;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /** Égalité EXACTE (comparaison de polynômes à coefficients rationnels), jamais d'approximation numérique. */
+    checkEqual(other) {
+        if (!this.isValid() || !other.isValid()) return false;
+        return this._resultat.equals(other._resultat);
+    }
+
+    /**
+     * Analyse la forme de l'expression TELLE QU'ÉCRITE (avant tout calcul) :
+     * - developpe : aucune parenthèse restante ;
+     * - reduit    : en plus, chaque terme additif est un monôme unique déjà
+     *   fusionné (pas de produit non calculé type "2*3x"), sans coefficient
+     *   "1" explicite, et deux termes de même degré ne coexistent pas
+     *   (ex: "6x+15+12x-8" a deux termes de degré 1 -> non réduit).
+     */
+    analyserForme() {
+        if (!this.isValid()) return { developpe: false, reduit: false };
+        if (this.expr.includes('(')) return { developpe: false, reduit: false };
+
+        const termes = ExpressionLitterale._extraireTermes(this._objetString.arbre);
+        const degresVus = new Set();
+
+        for (const terme of termes) {
+            if (!(terme instanceof Atome)) return { developpe: true, reduit: false };
+            if (/^[+-]?1[a-zA-Z]/.test(terme.texte)) return { developpe: true, reduit: false };
+            if (/\^1$/.test(terme.texte)) return { developpe: true, reduit: false };
+
+            const degre = terme.polynome.degre();
+            if (degresVus.has(degre)) return { developpe: true, reduit: false };
+            degresVus.add(degre);
+        }
+        return { developpe: true, reduit: true };
+    }
+
+    /** Éclate récursivement un arbre en ses termes additifs de plus haut niveau (Somme/Difference), sans tenir compte du signe. */
+    static _extraireTermes(node) {
+        if (node instanceof Somme || node instanceof Difference) {
+            return node.termes.flatMap(ExpressionLitterale._extraireTermes);
+        }
+        return [node];
+    }
 }
 
 class InputWrapper {
@@ -103,21 +147,21 @@ class InputWrapper {
         this.expressionObj = expressionObj;
         this.container = container;
         this.wrapper = document.createElement('div');
-        this.wrapper.className = 'expression capsule-wrapper'; 
+        this.wrapper.className = 'expression capsule-wrapper';
         this.wrapper.style.display = "flex";
         this.wrapper.style.alignItems = "center";
-        this.wrapper.style.width = "800px"; 
+        this.wrapper.style.width = "800px";
 
         this.symbolSpan = document.createElement('span');
         this.symbolSpan.className = 'symbol-zone';
-        this.symbolSpan.textContent = isQuestion ? '' : '='; 
+        this.symbolSpan.textContent = isQuestion ? '' : '=';
 
         this.inputPart = document.createElement('div');
         this.inputPart.className = 'input-part';
-        
+
         this.comment = document.createElement('div');
         this.comment.className = 'feedback-zone';
-        this.comment.style.marginLeft = "auto"; 
+        this.comment.style.marginLeft = "auto";
         this.comment.style.display = "flex";
         this.comment.style.alignItems = "center";
 
@@ -126,11 +170,11 @@ class InputWrapper {
         this.wrapper.appendChild(this.comment);
         this.container.appendChild(this.wrapper);
 
-        if (isQuestion) { 
-            this.renderStatic(this.expressionObj.expr); 
+        if (isQuestion) {
+            this.renderStatic(this.expressionObj.expr);
         } else {
             this.input = document.createElement('input');
-            this.input.type = "text"; 
+            this.input.type = "text";
             this.input.style.width = "250px";
             this.inputPart.appendChild(this.input);
             this.input.focus();
@@ -146,93 +190,97 @@ class InputWrapper {
 
     handleInput(e) {
         if (e.key === "Enter") {
-            e.stopPropagation(); 
+            e.stopPropagation();
             if (this.status === null && this.input.value.trim() !== "") {
-                this.userAnswer = new Expression(this.input.value);
+                this.userAnswer = new ExpressionLitterale(this.input.value, this.expressionObj.lettre);
                 this.validate();
             }
         }
     }
 
-
     // CENTRALISATION TOTALE DE L'AFFICHAGE
-updateUI(type, msg) {
-    const symbols = { 'success': '=', 'error': '≠', 'neutral': '?' };
-    this.wrapper.className = `expression capsule-wrapper state-${type}`;
-    this.symbolSpan.textContent = symbols[type];
-    this.comment.innerHTML = `<span>${msg}</span>`;
-    
-    if (msg !== "✅ Bravo !") {
-        const btnX = document.createElement('button');
-        btnX.className = 'delete-btn'; // On ne met rien dedans, le CSS s'en charge
-        btnX.onclick = () => this.wrapper.remove();
-        this.comment.appendChild(btnX);
-        
-        this.status = 'processed';
-        new InputWrapper(this.expressionObj, this.container);
+    updateUI(type, msg) {
+        const symbols = { 'success': '=', 'error': '≠', 'neutral': '?' };
+        this.wrapper.className = `expression capsule-wrapper state-${type}`;
+        this.symbolSpan.textContent = symbols[type];
+        this.comment.innerHTML = `<span>${msg}</span>`;
+
+        if (msg !== "✅ Bravo !") {
+            const btnX = document.createElement('button');
+            btnX.className = 'delete-btn';
+            btnX.onclick = () => this.wrapper.remove();
+            this.comment.appendChild(btnX);
+
+            this.status = 'processed';
+            new InputWrapper(this.expressionObj, this.container);
+        }
     }
-}
 
     validate() {
-        const isEval = this.userAnswer.evaluated();
-        const isEqual = this.expressionObj.checkEqual(this.userAnswer);
-        const devStatus = this.checkDevStatus();
-        
+        const isEval = this.userAnswer.isValid();
+        const isEqual = isEval && this.expressionObj.checkEqual(this.userAnswer);
+        const forme = isEval ? this.userAnswer.analyserForme() : { developpe: false, reduit: false };
+
         this.freeze();
 
         if (!isEval) return this.updateUI('neutral', "Invalide");
         if (!isEqual) return this.updateUI('error', "Pas égal");
 
-        // À partir d'ici, c'est forcément égal, donc forcément VERT (success)
-        if (devStatus === true) {
+        // À partir d'ici, c'est forcément égal (exactement, pas approximativement), donc forcément VERT (success)
+        if (forme.reduit) {
             this.updateUI('success', "✅ Bravo !");
             this.status = 'done';
             createNextBtn(this.container);
         } else {
-            const msg = (devStatus === 'nondev') ? "Non développé" : "Non réduit";
+            const msg = !forme.developpe ? "Non développé" : "Non réduit";
             this.updateUI('success', msg);
         }
     }
 
-    freeze() { 
-        if (this.input) { 
-            this.renderStatic(this.input.value); 
-        } 
-    }
-
-    checkDevStatus() {
-        const s = this.userAnswer.expr;
-        if (s.includes('(')) return 'nondev';
-        const termes = s.replace(/\s+/g, '').split(/(?=[+-])/).filter(t => t.length > 0);
-        const degresVus = new Set();
-        const vMatch = this.expressionObj.expr.match(/[a-z]/);
-        const v = vMatch ? vMatch[0] : 'x';
-
-        for (let t of termes) {
-            if (t.includes('*')) return 'nonred';
-            // Détection du 1b (non réduit)
-            if (new RegExp(`\\b1${v}\\b`).test(t)) return 'nonred';
-
-            let d = 0;
-            const powM = t.match(new RegExp(`${v}\\^(\\d+)`));
-            if (powM) d = parseInt(powM[1]);
-            else if (t.includes(v)) d = 1;
-            else d = 0;
-
-            if (degresVus.has(d)) return 'nonred';
-            degresVus.add(d);
+    freeze() {
+        if (this.input) {
+            this.renderStatic(this.input.value);
         }
-        return true;
     }
 }
 
-// --- Fonctions de gestion du Quiz (inchangées mais nettoyées) ---
+// --- Header (boutons "classiques" communs aux projets) ---
 
-function generateRandomExpression() {
+/**
+ * Installe les boutons standards du bandeau haut :
+ * - "Nouvel onglet" : fonctionnel dès maintenant.
+ * - Fiche papier : PAS encore implémenté ici — le bouton s'installera tout
+ *   seul dès que Fiche.js (avec sa classe FichePapier, comme dans le projet
+ *   équations) sera ajouté au projet. Rien à retoucher dans cette fonction
+ *   quand ce jour viendra.
+ */
+function construireHeader() {
+    const bandeau = document.getElementById('topButtonsBar');
+    if (!bandeau) return;
+
+    const btnNouvelOnglet = document.createElement('button');
+    btnNouvelOnglet.type = 'button';
+    btnNouvelOnglet.id = 'btnNouvelOnglet';
+    btnNouvelOnglet.className = 'btn-header';
+    btnNouvelOnglet.textContent = 'Nouvel onglet';
+    btnNouvelOnglet.addEventListener('click', () => {
+        window.open(window.location.href, '_blank', 'noopener');
+    });
+    bandeau.appendChild(btnNouvelOnglet);
+
+    if (typeof FichePapier === 'function') {
+        const fiche = new FichePapier();
+        fiche.installerBouton(bandeau);
+    }
+}
+
+// --- Fonctions de gestion du Quiz ---
+
+function genererExpressionBrute() {
     if (piocheEnCours.length === 0) { piocheEnCours = [...BANQUE_DE_TYPES].sort(() => Math.random() - 0.5); }
     const type = piocheEnCours.pop();
     let expr = type.pattern;
-    const v = ['x', 'y', 'z', 'a', 'b'][Math.floor(Math.random() * 5)];
+    const v = LETTRES_POSSIBLES[Math.floor(Math.random() * LETTRES_POSSIBLES.length)];
     expr = expr.replace(/x/g, v);
     const vals = {};
     type.constants.forEach(c => {
@@ -243,14 +291,26 @@ function generateRandomExpression() {
     expr = expr.replace(/\?/g, () => (Math.random() < 0.5 ? '+' : '-'));
 
     // On supprime les "1" devant les lettres (ex: 1x -> x)
-// La regex \b1([a-z])\b cible le chiffre 1 uniquement s'il est devant une lettre
-expr = expr.replace(/\b1([a-z])\b/g, '$1');
+    expr = expr.replace(/\b1([a-z])\b/g, '$1');
 
-// On nettoie aussi les doubles signes qui pourraient apparaître (+-)
-expr = expr.replace(/\+\-/g, '-').replace(/\-\+/g, '-').replace(/\-\-/g, '+');
+    // On nettoie aussi les doubles signes qui pourraient apparaître (+-)
+    expr = expr.replace(/\+\-/g, '-').replace(/\-\+/g, '-').replace(/\-\-/g, '+');
 
-logger("Génération propre", expr);
-    return new Expression(expr);
+    return { expr, lettre: v };
+}
+
+/** Génère une expression valide pour le moteur exact (retire en pratique quasi jamais, filet de sécurité). */
+function generateRandomExpression() {
+    for (let tentative = 0; tentative < 20; tentative++) {
+        const { expr, lettre } = genererExpressionBrute();
+        const candidat = new ExpressionLitterale(expr, lettre);
+        if (candidat.isValid()) {
+            logger("Génération propre", expr);
+            return candidat;
+        }
+        logger("Génération rejetée (invalide), nouvelle tentative", expr);
+    }
+    throw new Error("Impossible de générer une expression valide après 20 tentatives.");
 }
 
 function startQuiz() {
@@ -258,9 +318,9 @@ function startQuiz() {
     if (cont) cont.innerHTML = "";
     if (questionCount >= 10) { showScore(); return; }
     const obj = generateRandomExpression();
-    new InputWrapper(obj, cont, true); 
+    new InputWrapper(obj, cont, true);
     new InputWrapper(obj, cont, false);
-    questionCount++; 
+    questionCount++;
     updateScoreDisplay();
 }
 
@@ -288,7 +348,6 @@ function showScore() {
         </div>`;
 }
 
-
 // Gestion du bouton Renoncer
 document.getElementById("skipButton").addEventListener("click", () => {
     // On ne compte pas de point (score ne bouge pas)
@@ -310,4 +369,7 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
-window.onload = startQuiz;
+window.onload = () => {
+    construireHeader();
+    startQuiz();
+};
