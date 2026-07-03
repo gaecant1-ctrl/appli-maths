@@ -1,29 +1,323 @@
-/* ==========================================
-   1. STRUCTURE GLOBALE (HTML / BODY)
-   ========================================== */
+/* ==========================================================================
+   FACTORISATION — feuille de style
+   Structure alignée sur l'appli "équations" (header + panneau latéral),
+   accent unique bleu.
+   ========================================================================== */
+
+:root {
+  /* Fond & surfaces */
+  --papier:        #ffffff;
+  --papier-panel:  #eef4fc;
+  --papier-encart: #ffffff;
+
+  /* Lignes & structure */
+  --grille:        #d7e6fa;
+  --grille-forte:  #274870;
+
+  /* Texte */
+  --encre:         #22344a;
+  --encre-douce:   #5b6b7f;
+
+  /* Accent unique (bleu) */
+  --accent:        #4A90E2;
+  --accent-hover:  #357abd;
+  --accent-clair:  #e8f0fb;
+
+  /* Header (fond bleu très clair, même accent que le reste) */
+  --header-fond:        #eaf2fd;
+  --header-bordure:     #bcd6f5;
+  --header-texte:       #2c4a6e;
+  --header-texte-hover: #16283d;
+  --header-accent:      #4A90E2;
+  --header-accent-vif:  #357abd;
+
+  /* États fonctionnels */
+  --erreur:        #e74c3c;
+  --succes:        #28a745;
+  --succes-fond:   #e6f6ea;
+  --attention:     #e67e22;
+
+  --rayon:         12px;
+  --rayon-petit:   8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html, body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
 body {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    background-attachment: fixed; /* Le fond ne bouge pas au scroll */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Centre les capsules dans la page */
-    padding: 40px 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* ==========================================
-   2. CONTENEUR DES CAPSULES
-   ========================================== */
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0 20px;
+  min-height: 54px;
+  background: var(--header-fond);
+  color: var(--encre);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+header #titre_appli {
+  font-size: 1.2rem;
+  letter-spacing: .2px;
+  font-weight: 400;
+  color: var(--encre);
+  padding: 10px 0;
+}
+
+header #titre_appli b {
+  font-weight: 700;
+  color: var(--header-accent);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
+
+.btn-header:hover {
+  border-color: var(--header-texte);
+  color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+  transform: scale(0.98);
+}
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header (pas de fond plein) */
+.btn-header.active {
+  border-color: var(--header-accent);
+  color: var(--header-accent);
+}
+
+.btn-header.active:hover {
+  border-color: var(--header-accent-vif);
+  color: var(--header-accent-vif);
+}
+
+/* ==========================================================================
+   STRUCTURE : PANNEAU LATÉRAL + CONTENU
+   ========================================================================== */
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 240px;
+  width: 240px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier-encart);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: calc(100vh - 54px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL — boutons, groupes, score
+   ========================================================================== */
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-groupe-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shuffle-hint {
+  font-weight: 400;
+  text-transform: none;
+  color: var(--encre-douce);
+  opacity: 0.75;
+  letter-spacing: normal;
+  font-size: 11px;
+}
+
+.panel-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-filet {
+  height: 1px;
+  background: var(--grille);
+  margin: 4px 0;
+}
+
+.panel-groupe-paire {
+  display: flex;
+  gap: 6px;
+}
+
+.panel-btn-half {
+  flex: 1 1 0;
+  width: auto;
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 12.5px;
+}
+
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.panel-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.panel-btn.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--papier);
+}
+
+.panel-btn.active:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--papier);
+}
+
+.panel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--papier-panel) !important;
+  border-color: var(--grille) !important;
+  color: var(--encre-douce) !important;
+}
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+#question-progress, #score, #skipButton {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 10px 14px;
+  border-radius: var(--rayon-petit);
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 2px solid var(--grille);
+  text-align: left;
+}
+
+#question-progress {
+  color: var(--encre-douce);
+}
+
+#score {
+  color: var(--succes);
+  border-color: var(--succes);
+}
+
+#skipButton {
+  border-color: var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+#skipButton:hover {
+  background-color: var(--accent);
+  color: var(--papier);
+}
+
+/* ==========================================================================
+   CONTENEUR DES CAPSULES (ÉNONCÉ & RÉPONSES)
+   ========================================================================== */
 #inputContainer {
     width: 100%;
-    margin-top:20px;
-    max-width: 800px; /* Aligné sur la largeur des capsules */
+    margin-top: 10px;
+    max-width: 800px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -32,16 +326,15 @@ body {
     box-shadow: none !important;
 }
 
-/* ==========================================
-   3. LES CAPSULES (ÉNONCÉ & RÉPONSES)
-   ========================================== */
 .capsule-wrapper, .expression {
-    background-color: white;
-    width: 800px;
+    background-color: var(--papier-encart);
+    width: 100%;
+    max-width: 800px;
     min-height: 75px;
     margin-bottom: 15px;
     padding: 15px 25px;
-    border-radius: 12px;
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
@@ -57,7 +350,7 @@ body {
     text-align: center;
     font-size: 28px;
     font-weight: bold;
-    color: #4A90E2;
+    color: var(--accent);
 }
 
 /* Zone pour l'input ou le rendu LaTeX */
@@ -65,44 +358,43 @@ body {
     display: flex;
     align-items: center;
     font-size: 24px;
+    flex-wrap: wrap;
 }
 
 /* Zone feedback poussée à droite */
 .feedback-zone {
-    margin-left: auto; 
+    margin-left: auto;
     display: flex;
     align-items: center;
-    color: #e67e22;
+    color: var(--attention);
     font-size: 18px;
     font-style: italic;
     white-space: nowrap;
 }
 
-/* ==========================================
-   4. ÉLÉMENTS INTERACTIFS (INPUTS & BUTTONS)
-   ========================================== */
+/* ==========================================================================
+   ÉLÉMENTS INTERACTIFS (INPUTS & BOUTONS)
+   ========================================================================== */
 input {
     padding: 10px 15px;
     width: 280px;
     font-size: 18px;
-    border: 2px solid #eee;
-    border-radius: 8px;
+    border: 2px solid var(--grille);
+    border-radius: var(--rayon-petit);
     transition: all 0.3s ease;
     background: #fdfdfd;
 }
 
 input:focus {
-    border-color: #4A90E2;
+    border-color: var(--accent);
     background: white;
     outline: none;
     box-shadow: 0 0 8px rgba(74, 144, 226, 0.2);
 }
 
-/* === BLOC DE SUPPRESSION DEFINITIF : NE PLUS TOUCHER AU JS === */
-
 /* Couleurs de feedback */
-.state-success .symbol-zone, .state-success .feedback-zone span { color: #28a745 !important; }
-.state-error .symbol-zone, .state-error .feedback-zone span { color: #e74c3c !important; }
+.state-success .symbol-zone, .state-success .feedback-zone span { color: var(--succes) !important; }
+.state-error .symbol-zone, .state-error .feedback-zone span { color: var(--erreur) !important; }
 
 .delete-btn {
     position: relative;
@@ -120,7 +412,6 @@ input:focus {
     overflow: hidden;
 }
 
-/* Dessin de la croix (Barre 1) */
 .delete-btn::before, .delete-btn::after {
     content: '';
     position: absolute;
@@ -128,75 +419,29 @@ input:focus {
     left: 50%;
     width: 14px;
     height: 2.5px;
-    background-color: currentColor; /* Prend le vert ou le rouge */
+    background-color: currentColor;
     border-radius: 2px;
 }
 
 .delete-btn::before { transform: translate(-50%, -50%) rotate(45deg); }
 .delete-btn::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-/* Interaction au survol */
 .delete-btn:hover {
     background-color: currentColor !important;
     transform: scale(1.1);
 }
 
-/* Au survol, les barres deviennent blanches */
 .delete-btn:hover::before, .delete-btn:hover::after {
     background-color: white !important;
 }
 
-/* Application des couleurs auto */
-.state-success .delete-btn { color: #28a745 !important; }
-.state-error   .delete-btn { color: #e74c3c !important; }
-
-/* === FIN DU BLOC === */
-/* ==========================================
-   5. INTERFACE ET HUD (SCORE, TITRE)
-   ========================================== */
-h1 {
-    color: #4A90E2;
-    font-size: 30px;
-    margin-bottom: 20px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
-}
-
-#score-container {
-    margin-top: 10px;
-    display: flex;
-    gap: 20px;
-    align-items: center;
-}
-
-#score, #skipButton {
-    background-color: white;
-    padding: 10px 20px;
-    border-radius: 50px;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-#score {
-    color: #28a745;
-    border: 2px solid #28a745;
-}
-
-#skipButton {
-    border: 2px solid #3498db;
-    color: #3498db;
-    cursor: pointer;
-}
-
-#skipButton:hover {
-    background-color: #3498db;
-    color: white;
-    transform: translateY(-2px);
-}
+.state-success .delete-btn { color: var(--succes) !important; }
+.state-error   .delete-btn { color: var(--erreur) !important; }
 
 /* Bouton Suivant */
 .center-button {
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
     display: flex;
     justify-content: center;
     margin-top: 20px;
@@ -207,7 +452,7 @@ h1 {
     font-size: 18px;
     border-radius: 50px;
     border: none;
-    background-color: #28a745;
+    background-color: var(--succes);
     color: white;
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
@@ -219,11 +464,10 @@ h1 {
     background-color: #218838;
 }
 
-
 .restart-btn {
     margin-top: 25px;
     padding: 12px 30px;
-    background: #2196F3;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 12px;
@@ -235,7 +479,7 @@ h1 {
 }
 
 .restart-btn:hover {
-    background: #1976D2;
+    background: var(--accent-hover);
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
 }
@@ -243,9 +487,10 @@ h1 {
 .restart-btn:active {
     transform: translateY(0);
 }
-/* ==========================================
-   6. ANIMATIONS
-   ========================================== */
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
 @keyframes slideUp {
     0% {
         transform: translateY(30px);
