@@ -1,0 +1,182 @@
+{
+  "affichage_variable": "n",
+  "consignes": {
+    "titre": "Le cube et ses plaques",
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "x^3 + 6*x^2 - 24*x + 24"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "x+2",
+      "sizeZ": "x+2",
+      "sizeY": "x+2"
+    },
+    "position_camera": {
+      "cameraX": 20,
+      "cameraY": 16,
+      "cameraZ": 22,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "slider": {
+    "n_min": 3,
+    "n_max": 8,
+    "n_depart": 5,
+    "step": 1
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "1",
+        "y": "1",
+        "z": "1"
+      },
+      "point2": {
+        "x": "x",
+        "y": "1",
+        "z": "x"
+      },
+      "point3": {
+        "x": "x",
+        "y": "x",
+        "z": "x"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "operation": "add",
+      "point1": {
+        "x": "0",
+        "y": "2",
+        "z": "2"
+      },
+      "point2": {
+        "x": "0",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "point3": {
+        "x": "0",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "sequence": false
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "operation": "add",
+      "point1": {
+        "x": "x+1",
+        "y": "2",
+        "z": "2"
+      },
+      "point2": {
+        "x": "x+1",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "point3": {
+        "x": "x+1",
+        "y": "x-1",
+        "z": "x-1"
+      },
+      "sequence": false
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "operation": "add",
+      "point1": {
+        "x": "2",
+        "y": "0",
+        "z": "2"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "0",
+        "z": "x-1"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "0",
+        "z": "x-1"
+      },
+      "sequence": false
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "operation": "add",
+      "point1": {
+        "x": "2",
+        "y": "x+1",
+        "z": "2"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "x+1",
+        "z": "x-1"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "x+1",
+        "z": "x-1"
+      },
+      "sequence": false
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "operation": "add",
+      "point1": {
+        "x": "2",
+        "y": "2",
+        "z": "0"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "0"
+      },
+      "sequence": false
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "operation": "add",
+      "point1": {
+        "x": "2",
+        "y": "2",
+        "z": "x+1"
+      },
+      "point2": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "x+1"
+      },
+      "point3": {
+        "x": "x-1",
+        "y": "x-1",
+        "z": "x+1"
+      },
+      "sequence": false
+    }
+  ]
+}
