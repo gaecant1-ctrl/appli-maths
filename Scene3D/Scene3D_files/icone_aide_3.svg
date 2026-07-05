@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="128"
+   height="128"
+   viewBox="0 0 128 128"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="icone_aide_3.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="4.0000001"
+     inkscape:cx="23.874999"
+     inkscape:cy="55.499999"
+     inkscape:window-width="1920"
+     inkscape:window-height="995"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <g
+     id="g6"
+     style="stroke:#b3b3b3;fill:#f3f4f6;fill-opacity:1">
+    <g
+       id="g4"
+       transform="matrix(-0.57768647,0,0,0.58303268,127.31936,54.210041)"
+       style="stroke-width:1.72309;stroke:#b3b3b3;fill:#f3f4f6;fill-opacity:1">
+      <path
+         id="path3"
+         style="fill:#f3f4f6;stroke:#b3b3b3;stroke-width:10.3385;stroke-linecap:round;stroke-dasharray:none;fill-opacity:1"
+         d="m 19.26866,88.499993 h -3.028492 c -6.7810615,0 -12.240183,-4.682518 -12.240183,-10.498917 V 26.519718 c 0,-5.816401 5.4591215,-10.498918 12.240183,-10.498918 h 66.527019 c 6.781062,0 12.240183,4.682517 12.240183,10.498918 v 51.481358 c 0,5.816399 -5.459121,10.498917 -12.240183,10.498917 H 42.072853"
+         sodipodi:nodetypes="cssssssssc" />
+      <path
+         style="fill:#f3f4f6;stroke:#b3b3b3;stroke-width:10.3385;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;fill-opacity:1"
+         d="M 19.26866,88.499993 19.091883,121.44559 42.072853,88.499993"
+         id="path4"
+         sodipodi:nodetypes="ccc" />
+    </g>
+    <g
+       id="g2"
+       transform="matrix(1.0616113,0,0,1.0616102,-0.21562961,-12.977046)"
+       style="stroke-width:0.941965;stroke:#b3b3b3;fill:#f3f4f6;fill-opacity:1">
+      <path
+         id="rect1"
+         style="fill:#f3f4f6;stroke:#b3b3b3;stroke-width:7.53569;stroke-linecap:round;fill-opacity:1"
+         d="m 19.26866,88.499993 h -3.028492 c -6.7810615,0 -12.240183,-4.682518 -12.240183,-10.498917 V 26.519718 c 0,-5.816401 5.4591215,-10.498918 12.240183,-10.498918 h 66.527019 c 6.781062,0 12.240183,4.682517 12.240183,10.498918 v 51.481358 c 0,5.816399 -5.459121,10.498917 -12.240183,10.498917 H 42.072853"
+         sodipodi:nodetypes="cssssssssc" />
+      <path
+         style="fill:#f3f4f6;stroke:#b3b3b3;stroke-width:7.53572;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;fill-opacity:1"
+         d="M 19.26866,88.499993 19.091883,121.44559 42.072853,88.499993"
+         id="path2"
+         sodipodi:nodetypes="ccc" />
+    </g>
+  </g>
+  <path
+     style="font-weight:bold;font-size:77.0256px;line-height:1;font-family:'Comic Neue';-inkscape-font-specification:'Comic Neue Bold';text-align:center;letter-spacing:-13.8165px;text-anchor:middle;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;fill:#b3b3b3"
+     d="m 44.89685,50.96644 c -0.899484,0.73594 -1.390111,1.880735 -1.390111,2.943761 0,2.12605 1.717196,3.843244 3.843249,3.843244 0.981255,0 2.207823,-0.163542 11.366203,-8.667742 4.497417,-4.17033 10.54849,-8.667743 10.54849,-17.662571 0,-10.303166 -7.359412,-17.171943 -18.234987,-17.171943 -6.214615,0 -10.957347,3.352617 -13.574026,6.132837 -0.981256,1.144796 -2.044282,2.453134 -2.044282,3.761473 0,2.371363 1.880738,3.925016 3.925019,3.925016 0.981255,0 1.962511,-0.327085 2.61668,-1.063025 2.044281,-2.289593 4.824504,-5.069812 9.076609,-5.069812 7.850039,0 10.630261,4.90627 10.630261,9.485454 0,6.378151 -12.347458,15.863605 -16.763105,19.543308 z m -0.08178,19.78862 c 2.534909,0 4.824503,-2.371364 4.824503,-5.315126 0,-2.534905 -1.798968,-4.579184 -4.252105,-4.579184 -2.453137,0 -4.824503,2.534905 -4.824503,5.233354 0,2.616677 1.717196,4.660956 4.252105,4.660956 z"
+     id="text4"
+     aria-label="?" />
+</svg>
