@@ -1,0 +1,528 @@
+/* ==========================================================================
+   ÉVALUATION NUMÉRIQUE — feuille de style
+   Structure alignée sur les applis "équations" / "factorisation" /
+   "développement" (header + panneau latéral), accent unique orange.
+   ========================================================================== */
+
+:root {
+  /* Fond & surfaces */
+  --papier:        #ffffff;
+  --papier-panel:  #f8effa;
+  --papier-encart: #ffffff;
+
+  /* Lignes & structure */
+  --grille:        #e6cbe4;
+  --grille-forte:  #5c2a56;
+
+  /* Texte */
+  --encre:         #3d1a3a;
+  --encre-douce:   #7a5a78;
+
+  /* Accent unique (prune) */
+  --accent:        #8E4585;
+  --accent-hover:  #6E3568;
+  --accent-clair:  #f3e4f1;
+
+  /* Header (fond prune très clair, même accent que le reste) */
+  --header-fond:        #f8eef6;
+  --header-bordure:     #e0bcdd;
+  --header-texte:       #5c2a56;
+  --header-texte-hover: #3d1a3a;
+  --header-accent:      #8E4585;
+  --header-accent-vif:  #6E3568;
+
+  /* États fonctionnels */
+  --erreur:        #e74c3c;
+  --succes:        #28a745;
+  --succes-fond:   #e6f6ea;
+  --attention:     #e67e22;
+
+  --rayon:         12px;
+  --rayon-petit:   8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0 20px;
+  min-height: 54px;
+  background: var(--header-fond);
+  color: var(--encre);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+header #titre_appli {
+  font-size: 1.2rem;
+  letter-spacing: .2px;
+  font-weight: 400;
+  color: var(--encre);
+  padding: 10px 0;
+}
+
+header #titre_appli b {
+  font-weight: 700;
+  color: var(--header-accent);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
+
+.btn-header:hover {
+  border-color: var(--header-texte);
+  color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+  transform: scale(0.98);
+}
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header (pas de fond plein) */
+.btn-header.active {
+  border-color: var(--header-accent);
+  color: var(--header-accent);
+}
+
+.btn-header.active:hover {
+  border-color: var(--header-accent-vif);
+  color: var(--header-accent-vif);
+}
+
+/* ==========================================================================
+   STRUCTURE : PANNEAU LATÉRAL + CONTENU
+   ========================================================================== */
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 320px;
+  width: 320px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier-encart);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: calc(100vh - 54px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL — boutons, groupes, score
+   ========================================================================== */
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-groupe-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shuffle-hint {
+  font-weight: 400;
+  text-transform: none;
+  color: var(--encre-douce);
+  opacity: 0.75;
+  letter-spacing: normal;
+  font-size: 11px;
+}
+
+.panel-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-filet {
+  height: 1px;
+  background: var(--grille);
+  margin: 4px 0;
+}
+
+.panel-groupe-paire {
+  display: flex;
+  gap: 6px;
+}
+
+.panel-btn-half {
+  flex: 1 1 0;
+  width: auto;
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 12.5px;
+}
+
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.panel-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.panel-btn.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--papier);
+}
+
+.panel-btn.active:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--papier);
+}
+
+.panel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--papier-panel) !important;
+  border-color: var(--grille) !important;
+  color: var(--encre-douce) !important;
+}
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+#question-progress, #score, #skipButton {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 10px 14px;
+  border-radius: var(--rayon-petit);
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 2px solid var(--grille);
+  text-align: left;
+}
+
+#question-progress {
+  color: var(--encre-douce);
+}
+
+#score {
+  color: var(--succes);
+  border-color: var(--succes);
+}
+
+#skipButton {
+  border-color: var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+#skipButton:hover {
+  background-color: var(--accent);
+  color: var(--papier);
+}
+
+/* ==========================================================================
+   CONTENEUR DES CAPSULES (ÉNONCÉ & RÉPONSES)
+   ========================================================================== */
+#inputContainer {
+    width: 100%;
+    margin-top: 10px;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Label "Pour x = ... :" affiché au-dessus des cartouches, séparément. */
+.valeurs-label {
+    width: 100%;
+    max-width: 800px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--encre-douce);
+    margin-bottom: 6px;
+}
+
+.capsule-wrapper, .expression {
+    background-color: var(--papier-encart);
+    width: 100%;
+    max-width: 800px;
+    min-height: 75px;
+    margin-bottom: 15px;
+    padding: 15px 25px;
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    animation: slideUp 0.6s ease-out forwards;
+    opacity: 0; /* Géré par l'animation */
+}
+
+/* Zone fixe pour le symbole (=, ≠, ?) */
+.symbol-zone {
+    flex-shrink: 0;
+    width: 40px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+/* Zone pour l'input ou le rendu LaTeX */
+.input-part {
+    display: flex;
+    align-items: center;
+    font-size: 24px;
+    flex-wrap: wrap;
+}
+
+/* Zone feedback poussée à droite */
+.feedback-zone {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    color: var(--attention);
+    font-size: 18px;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   ÉLÉMENTS INTERACTIFS (INPUTS & BOUTONS)
+   ========================================================================== */
+input {
+    padding: 10px 15px;
+    width: 280px;
+    font-size: 18px;
+    border: 2px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    transition: all 0.3s ease;
+    background: #fdfdfd;
+}
+
+input:focus {
+    border-color: var(--accent);
+    background: white;
+    outline: none;
+    box-shadow: 0 0 8px rgba(74, 144, 226, 0.2);
+}
+
+/* Couleurs de feedback */
+.state-success .symbol-zone, .state-success .feedback-zone span { color: var(--succes) !important; }
+.state-error .symbol-zone, .state-error .feedback-zone span { color: var(--erreur) !important; }
+
+.delete-btn {
+    position: relative;
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 50% !important;
+    border: 2px solid currentColor !important;
+    background-color: white !important;
+    cursor: pointer;
+    margin-left: 12px;
+    padding: 0 !important;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.delete-btn::before, .delete-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 2.5px;
+    background-color: currentColor;
+    border-radius: 2px;
+}
+
+.delete-btn::before { transform: translate(-50%, -50%) rotate(45deg); }
+.delete-btn::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
+.delete-btn:hover {
+    background-color: currentColor !important;
+    transform: scale(1.1);
+}
+
+.delete-btn:hover::before, .delete-btn:hover::after {
+    background-color: white !important;
+}
+
+.state-success .delete-btn { color: var(--succes) !important; }
+.state-error   .delete-btn { color: var(--erreur) !important; }
+
+/* Bouton Suivant */
+.center-button {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.center-button button {
+    padding: 12px 40px;
+    font-size: 18px;
+    border-radius: 50px;
+    border: none;
+    background-color: var(--succes);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+.center-button button:hover {
+    transform: scale(1.05);
+    background-color: #218838;
+}
+
+.restart-btn {
+    margin-top: 25px;
+    padding: 12px 30px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(33, 150, 243, 0.2);
+}
+
+.restart-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
+}
+
+.restart-btn:active {
+    transform: translateY(0);
+}
+
+
+/* Surcharges pour l'état neutre / de validation (Invalide, À calculer) */
+.state-neutral .symbol-zone, 
+.state-neutral .feedback-zone span { 
+    color: var(--attention) !important; 
+}
+
+.state-neutral .delete-btn { 
+    color: var(--attention) !important; 
+}
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes slideUp {
+    0% {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
