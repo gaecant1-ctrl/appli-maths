@@ -1,0 +1,7 @@
+% A(-2,1) B(2.1,-0.7) C(-3,-3)
+tracer le segment [AC]
+tracer c le cercle de centre C passant par B
+tracer la droite perpendiculaire à (AC) passant par A
+nommer (d)
+placer X le point d'intersection visible entre c et (d)
+tracer [CX]

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programme de construction - Figure fantôme (GeoGebra)</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://unpkg.com/blockly/blockly.min.js"></script>
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+</head>
+<body>
+
+<header>
+    <span id="titre_appli">Programme de <b>construction</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="container">
+    <div id="prog">
+        <div id="barreMode" style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+            <button id="modeSaisieButton" disabled>Mode : Blocs</button>
+            <div class="filet-header"></div>
+            <div id="modeTexteOptions" style="display: none; gap: 10px; align-items: center; flex: 1;">
+                <button id="btnModeApprentissage" class="btn-mode actif" style="flex: 1;">1. Apprentissage</button>
+                <button id="btnModeEvaluation" class="btn-mode" style="flex: 1;">2. Évaluation</button>
+                <button id="btnModeExpert" class="btn-mode" style="flex: 1;">3. Sans Aide</button>
+            </div>
+        </div>
+        <div id="blocklyDiv"></div>
+        <div id="texteInterface" style="display:none;">
+    <div id="suggestionsWrapper" style="flex: 1; position: relative;">
+        <div id="editeurMiroir" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; padding: 10px; font-family: monospace; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; border: 2px solid transparent; pointer-events: none; overflow-y: auto;"></div>
+
+        <textarea id="ligneInput" placeholder="Écrivez votre programme ici..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; padding: 10px; font-family: monospace; font-size: 14px; line-height: 1.5; resize: none; background: transparent; color: transparent; border: 2px solid; border-radius: 6px; overflow-y: auto;"></textarea>
+
+        <div id="suggestionsListe"></div>
+    </div>
+    <button id="boutonRestaurerCode" style="display:none; background: linear-gradient(135deg, #f4a261, #e07a3e);">↩ Restaurer le code supprimé</button>
+</div>
+    </div>
+
+    <div id="rendu">
+        <div id="barreFigure">
+            <button id="nouvelleFigureButton" disabled>Nouvelle figure</button>
+            <button id="stylePointsButton" disabled>Points : +</button>
+        </div>
+
+        <div id="ggb-element"></div>
+
+        <div id="barreExecution">
+            <button id="btnModeExecution" disabled>Mode : Continu</button>
+            <button id="button" disabled>Chargement…</button>
+            <button id="resetButton" disabled>Réinitialiser</button>
+        </div>
+
+
+        <div id="messageContainer">
+            <span id="messageAlerte"></span>
+            <span id="closeAlert" onclick="fermerAlerte()">✖</span>
+        </div>
+    </div>
+</div>
+
+<script src="blockly-blocs.js"></script>
+<script src="moteur-construction.js"></script>
+<script src="editeur-texte.js"></script>
+<script src="Guide.js"></script>
+<script src="Fiche.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

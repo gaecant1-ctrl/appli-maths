@@ -1,0 +1,648 @@
+* { box-sizing: border-box; }
+
+:root {
+    /* Fond & surfaces */
+    --papier: #ffffff;
+    --papier-panel: #f1f8f3;
+
+    /* Lignes & structure */
+    --grille: #d3ead9;
+    --grille-forte: #1f5c33;
+
+    /* Texte */
+    --encre: #23302a;
+    --encre-douce: #5f7a68;
+
+    /* Accent unique */
+    --accent: #2f9e44;
+    --accent-hover: #237a35;
+    --accent-clair: #e6f7e9;
+
+    /* Header (même accent que le reste, fond très clair) */
+    --header-fond: #f1f8f3;
+    --header-bordure: #d3ead9;
+    --header-texte: #1f5c33;
+    --header-texte-hover: #123a20;
+
+    /* États fonctionnels */
+    --erreur: #c0392b;
+    --erreur-fond: #fbeceb;
+    --succes: #1e7e34;
+    --succes-fond: #e6f6ea;
+    --attention: #8a6d1a;
+    --attention-fond: #fbf3e0;
+
+    --rayon: 10px;
+    --rayon-petit: 6px;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--papier-panel);
+    color: var(--encre);
+    min-height: 100vh;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    margin: 0 0 20px 0;
+    padding: 0 20px;
+    min-height: 54px;
+    background: var(--header-fond);
+    border-bottom: 1px solid var(--header-bordure);
+    box-sizing: border-box;
+    flex-wrap: wrap;
+}
+
+header #titre_appli {
+    font-size: 1.2rem;
+    letter-spacing: .2px;
+    font-weight: 400;
+    color: var(--encre);
+    padding: 10px 0;
+}
+
+header #titre_appli b {
+    font-weight: 700;
+    color: var(--header-texte);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.filet-header {
+    width: 1px;
+    height: 22px;
+    background-color: var(--header-bordure);
+    flex-shrink: 0;
+}
+
+.btn-header {
+    background: transparent;
+    border: 0.5px solid var(--header-bordure);
+    height: 34px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: .1px;
+    border-radius: var(--rayon-petit);
+    cursor: pointer;
+    color: var(--header-texte);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color .12s, color .12s;
+    white-space: nowrap;
+}
+
+.btn-header:hover {
+    border-color: var(--header-texte);
+    color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+    transform: scale(0.98);
+}
+
+.btn-header:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ---------- Overlays (Guide & Fiche) ---------- */
+
+.overlay-fond {
+    display: none;
+    position: fixed;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: rgba(20, 30, 45, 0.45);
+    z-index: 1000000;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.overlay-fond.visible { display: flex; }
+
+.overlay-carte {
+    position: relative;
+    background: var(--papier);
+    color: var(--encre);
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille);
+    padding: 28px 32px;
+}
+
+.overlay-fermer {
+    position: absolute;
+    top: 10px; right: 14px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--encre-douce);
+}
+
+.overlay-fermer:hover { color: var(--erreur); }
+
+.overlay-carte h2 {
+    text-align: center;
+    margin: 10px 0 20px;
+    font-size: 1.3em;
+    color: var(--header-texte);
+}
+
+.overlay-carte h3 { color: var(--header-texte); margin-bottom: 4px; }
+.overlay-carte p { margin-top: 0; line-height: 1.5; color: var(--encre); }
+
+.fiche-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.fiche-actions button {
+    padding: 9px 16px;
+    border: 1px solid var(--accent);
+    border-radius: var(--rayon-petit);
+    background: var(--papier);
+    color: var(--accent);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.fiche-actions button:hover { background: var(--accent); color: #fff; }
+
+.fiche-identite {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 15px;
+    margin-bottom: 20px;
+}
+
+.fiche-identite .trait {
+    display: inline-block;
+    min-width: 220px;
+    border-bottom: 1px solid var(--encre-douce);
+    margin-left: 6px;
+}
+
+.fiche-identite .trait.court { min-width: 60px; }
+
+.fiche-exercice {
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+}
+
+.fiche-exercice-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--header-texte);
+}
+
+.fiche-exercice-corps {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+}
+
+.fiche-colonne-programme {
+    min-height: 380px;
+    background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--grille) 28px);
+}
+
+.fiche-colonne-figure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--grille);
+    min-height: 380px;
+}
+
+.fiche-colonne-figure img { max-width: 100%; max-height: 380px; }
+
+body.fiche-ouverte { overflow: hidden; }
+
+@media print {
+    @page { margin: 0.8cm; size: A4; }
+    body * { visibility: hidden; }
+    #overlayFiche, #overlayFiche * { visibility: visible; }
+    #overlayFiche {
+        position: absolute; inset: 0; background: #fff; padding: 0;
+        display: flex !important; align-items: flex-start; justify-content: flex-start;
+    }
+    .overlay-carte { box-shadow: none; max-height: none; max-width: none; width: 100%; border-radius: 0; padding: 0.5cm; }
+    .overlay-fermer, .fiche-actions { display: none !important; }
+}
+
+#container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 20px 20px 20px;
+}
+
+#rendu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 480px;
+    background: var(--papier);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon);
+    padding: 15px;
+}
+
+#prog {
+    width: 800px;
+    height: 620px;
+    background: var(--papier);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* #barreMode occupe sa hauteur naturelle ; blocklyDiv/texteInterface se
+   partagent tout le reste (jamais de dépassement, quelle que soit la hauteur
+   réelle de la barre de boutons du dessus). */
+#barreMode {
+    flex: 0 0 auto;
+}
+
+#blocklyDiv {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    background: var(--papier);
+}
+
+#modeSaisieButton {
+    margin-bottom: 8px;
+}
+
+#texteInterface {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    background: var(--papier);
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+#suggestionsWrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#ligneInput {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    font-family: monospace;
+    font-size: 14px;
+    border: 1px solid var(--accent);
+    border-radius: var(--rayon-petit);
+}
+
+#suggestionsListe {
+    position: absolute;
+    bottom: 45px; /* Évite de se superposer avec le bas */
+    left: 10px;
+    right: 10px;
+    background: var(--papier);
+    border: 1px solid var(--accent);
+    border-radius: var(--rayon-petit);
+    max-height: 180px;
+    overflow-y: auto;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    display: none;
+    z-index: 100;
+}
+
+#suggestionsListe div {
+    padding: 8px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+#suggestionsListe div:hover {
+    background: var(--accent-clair);
+}
+
+/* Variables portées par #prog, ancêtre commun de #barreMode (boutons de mode)
+   et #texteInterface (éditeur), pour que les deux partagent les mêmes couleurs. */
+#prog {
+    --editeur-bg: #ffffff;
+    --editeur-fg: #333333;
+    --editeur-border: #2f9e44;
+    --editeur-suggestion-hover: #e6f7e9;
+    --col-mot-cle: #27ae60;
+    --col-variable: #1b6ca8;
+    --col-erreur: #c0392b;
+    --col-nom-inline: #8e44ad;
+}
+
+#texteInterface {
+    background: var(--editeur-bg);
+    border-radius: var(--rayon-petit);
+    padding: 8px;
+}
+
+#texteInterface #editeurMiroir {
+    color: var(--editeur-fg);
+}
+
+#texteInterface #ligneInput {
+    border-color: var(--editeur-border);
+    caret-color: var(--editeur-fg);
+}
+
+#texteInterface #suggestionsListe {
+    background: var(--editeur-bg);
+    color: var(--editeur-fg);
+    border-color: var(--editeur-border);
+}
+
+#texteInterface #suggestionsListe div:hover {
+    background: var(--editeur-suggestion-hover);
+}
+
+.ligne-editeur {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.ligne-editeur.ligne-active {
+    background: var(--editeur-suggestion-hover);
+    border-radius: 3px;
+}
+
+/* Boutons de mode pédagogique et de thème : suivent les couleurs de l'éditeur
+   (clair/sombre) au lieu de couleurs fixes, pour ne pas jurer avec le thème actif.
+   Regroupés avec "Mode : Blocs/Texte" dans #barreMode, hors de #texteInterface :
+   les variables --editeur-* sont donc portées par #prog (voir plus haut). */
+#modeTexteOptions .btn-mode {
+    background: var(--editeur-bg);
+    color: var(--editeur-fg);
+    border: 1px solid var(--editeur-border);
+}
+
+#modeTexteOptions .btn-mode:hover {
+    border-color: var(--editeur-border);
+    color: var(--editeur-fg);
+}
+
+#modeTexteOptions .btn-mode.actif {
+    background: var(--editeur-border);
+    color: var(--editeur-bg);
+    border-color: var(--editeur-border);
+}
+
+.blocklyScrollbarVertical,
+.blocklyScrollbarHorizontal {
+    display: none !important;
+}
+
+#barreFigure {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Les 3 boutons restent toujours sur une seule ligne, quelle que soit la longueur
+   du texte de #button ("Exécuter" / "Étape suivante") ou #btnModeExecution
+   ("Mode : Continu" / "Mode : Pas à pas") : pas de retour à la ligne, ni de
+   redimensionnement de ces deux boutons quand leur texte change. Largeurs fixes
+   choisies pour tenir confortablement sur une ligne dans #rendu (440px), avec
+   "gap" plutôt que des marges pour ne pas gaspiller de place. */
+#barreExecution {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+#barreExecution button {
+    margin: 8px 0;
+    padding: 9px 6px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* white-space:nowrap (règle générale button) empêche le texte de passer à la
+   ligne, mais un flex-item refuse par défaut de descendre sous la largeur de
+   son contenu (min-width:auto) : un flex-basis trop petit se fait donc quand
+   même agrandir par le texte le plus long. On fixe width/min-width/max-width
+   ensemble, assez larges pour "Mode : Pas à pas" / "Étape suivante", pour que
+   la taille du bouton ne bouge jamais, quel que soit le texte affiché. */
+#barreExecution #btnModeExecution {
+    flex: 0 0 auto;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+}
+
+#barreExecution #button {
+    flex: 0 0 auto;
+    width: 130px;
+    min-width: 130px;
+    max-width: 130px;
+}
+
+#barreExecution #resetButton {
+    flex: 0 0 auto;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+#ggb-element {
+    width: 400px;
+    height: 400px;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    overflow: hidden;
+}
+
+button {
+    border-radius: var(--rayon-petit);
+    margin: 8px 4px;
+    padding: 9px 15px;
+    background: var(--papier);
+    color: var(--encre);
+    border: 1px solid var(--grille);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+/* Largeur fixe : le texte bascule entre "Exécuter" et "Étape suivante" (pas à pas)
+   sans faire changer la taille du bouton ni provoquer de retour à la ligne. */
+#button {
+    min-width: 150px;
+}
+
+button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+button:disabled {
+    background: var(--papier);
+    color: var(--encre-douce);
+    border-color: var(--grille);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#button {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+#button:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: #fff;
+}
+
+#resetButton {
+    border-color: var(--erreur);
+    color: var(--erreur);
+}
+
+#resetButton:hover {
+    background: var(--erreur);
+    color: #fff;
+}
+
+#nouvelleFigureButton {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#nouvelleFigureButton:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+#messageContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 15px;
+    margin-top: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    background: var(--papier);
+    color: var(--encre);
+}
+
+/* La zone n'est jamais vide : elle affiche la consigne par défaut, ou un
+   feedback (erreur/réussite/info) le temps qu'il est actif. */
+#messageContainer.consigne {
+    background: var(--succes-fond);
+    color: var(--succes);
+    border-color: var(--grille);
+}
+
+#messageContainer.erreur {
+    background: var(--erreur-fond);
+    color: var(--erreur);
+    border-color: var(--erreur);
+}
+
+#messageContainer.succes {
+    background: var(--succes-fond);
+    color: var(--succes);
+    border-color: var(--succes);
+}
+
+#messageContainer.info {
+    background: var(--accent-clair);
+    color: var(--header-texte);
+    border-color: var(--accent);
+}
+
+#messageAlerte {
+    flex: 1;
+    text-align: center;
+}
+
+#closeAlert {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--encre-douce);
+    background-color: transparent;
+    border-radius: 50%;
+    border: 1px solid var(--encre-douce);
+}
+
+#closeAlert:hover {
+    background-color: var(--erreur);
+    border-color: var(--erreur);
+    color: #fff;
+}
+
+/* Pas de bouton de fermeture sur la consigne par défaut : rien à "fermer". */
+#messageContainer.consigne #closeAlert {
+    display: none;
+}

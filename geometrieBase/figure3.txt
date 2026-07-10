@@ -1,0 +1,10 @@
+% A(-3,1.5) B(2,2) C(-2,-3)
+tracer le polygone ABC
+placer I le milieu de [AB]
+%coder AI=IB
+tracer la droite perpendiculaire à (AB) passant par I
+nommer (d)
+placer L le point d'intersection visible entre (d) et (BC)
+tracer la droite perpendiculaire à (d) passant par L
+nommer (g)
+placer X le point d'intersection visible entre (g) et (AC) 
