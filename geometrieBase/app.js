@@ -41,6 +41,7 @@ async function demarrerGeometrie() {
     document.getElementById("nouvelleFigureButton").disabled = false;
     document.getElementById("resetButton").disabled = false;
     document.getElementById("stylePointsButton").disabled = false;
+    document.getElementById("btnEtiquettesFantome").disabled = false;
     document.getElementById("modeSaisieButton").disabled = false;
     document.getElementById("btnFicheHeader").disabled = false;
     document.getElementById("btnModeExecution").disabled = false;

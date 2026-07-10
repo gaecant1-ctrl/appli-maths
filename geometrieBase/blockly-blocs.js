@@ -222,6 +222,34 @@ Blockly.JavaScript.forBlock['placer_intersection'] = function(block) {
     return `await construire.placerIntersection(${obj1}, ${obj2});\n`;
 };
 
+creerBlocTracer('placer_intersection_premiere', {
+    champs: function(b) {
+        b.appendValueInput("OBJ1").setCheck(["Droite", "Segment", "Cercle"]).appendField("placer le point d'intersection entre");
+        b.appendValueInput("OBJ2").setCheck(["Droite", "Segment", "Cercle"]).appendField("et");
+    },
+    tooltip: "Place un point d'intersection entre deux objets (sans désambiguïsation : premier point renvoyé)."
+});
+Blockly.JavaScript.forBlock['placer_intersection_premiere'] = function(block) {
+    var obj1 = Blockly.JavaScript.valueToCode(block, 'OBJ1', Blockly.JavaScript.ORDER_ATOMIC) || "null";
+    var obj2 = Blockly.JavaScript.valueToCode(block, 'OBJ2', Blockly.JavaScript.ORDER_ATOMIC) || "null";
+    return `await construire.placerIntersectionPremiere(${obj1}, ${obj2});\n`;
+};
+
+creerBlocTracer('placer_intersection_autre', {
+    champs: function(b) {
+        b.appendValueInput("EXCLU").setCheck("Point").appendField("placer le point d'intersection autre que");
+        b.appendValueInput("OBJ1").setCheck(["Droite", "Segment", "Cercle"]).appendField("entre");
+        b.appendValueInput("OBJ2").setCheck(["Droite", "Segment", "Cercle"]).appendField("et");
+    },
+    tooltip: "Place le point d'intersection qui n'est pas égal au point donné."
+});
+Blockly.JavaScript.forBlock['placer_intersection_autre'] = function(block) {
+    var exclu = Blockly.JavaScript.valueToCode(block, 'EXCLU', Blockly.JavaScript.ORDER_ATOMIC) || "null";
+    var obj1 = Blockly.JavaScript.valueToCode(block, 'OBJ1', Blockly.JavaScript.ORDER_ATOMIC) || "null";
+    var obj2 = Blockly.JavaScript.valueToCode(block, 'OBJ2', Blockly.JavaScript.ORDER_ATOMIC) || "null";
+    return `await construire.placerIntersectionAutre(${exclu}, ${obj1}, ${obj2});\n`;
+};
+
 Blockly.Blocks['tracer_polygone'] = {
     init: function() {
         this.appendDummyInput()
@@ -285,6 +313,8 @@ const workspace = Blockly.inject('blocklyDiv', {
         <block type="tracer_mediatrice"></block>
         <block type="placer_milieu"></block>
         <block type="placer_intersection"></block>
+        <block type="placer_intersection_premiere"></block>
+        <block type="placer_intersection_autre"></block>
         <block type="tracer_polygone"></block>
       </category>
       <category name="Nommer" colour="20">

@@ -51,6 +51,13 @@ async function executerLigneEleve(ligneBrute) {
         await construire.placerMilieu(ref(m[1]));
     } else if ((m = ligne.match(/^placer le point d'intersection visible entre (\S+) et (\S+)$/i))) {
         await construire.placerIntersection(ref(m[1]), ref(m[2]));
+    } else if ((m = ligne.match(/^placer le point d'intersection autre que (\S+) entre (\S+) et (\S+)$/i))) {
+        const refExclue = resoudre(m[1]);
+        const nom = creerIntersectionAutreQue(`Intersect(${ref(m[2])},${ref(m[3])})`, refExclue);
+        afficherSansEtiquette(nom); dernierObjet = nom; objetsConstruits.push(nom); await attendre(400);
+    } else if ((m = ligne.match(/^placer le point d'intersection entre (\S+) et (\S+)$/i))) {
+        const nom = creerIntersectionPremiere(`Intersect(${ref(m[1])},${ref(m[2])})`);
+        afficherSansEtiquette(nom); dernierObjet = nom; objetsConstruits.push(nom); await attendre(400);
     } else if ((m = ligne.match(/^tracer le polygone ([A-Za-z]+)$/i))) {
         await construire.tracerPolygone(m[1].split(''));
     } else if ((m = ligne.match(/^nommer\s+(.+)$/i))) {
@@ -104,7 +111,8 @@ const GRAMMAIRE_PREDICTION = {
     "droite": ["passant", "parallèle", "perpendiculaire"],
     "demi-droite": ["d'origine"], "segment": ["d'extrémités"],
     "cercle": ["de"], "milieu": ["du", "de"], "médiatrice": ["de"], "polygone": [],
-    "point": ["d'intersection"], "d'intersection": ["visible"], "visible": ["entre"],
+    "point": ["d'intersection"], "d'intersection": ["visible", "entre", "autre"],
+    "visible": ["entre"], "autre": ["que"], "que": [],
     "passant": ["par"], "parallèle": ["à"], "perpendiculaire": ["à"],
     // "de" est un noeud partagé par "cercle de" (-> centre) et "milieu de"/"médiatrice de"
     // (-> rien de plus, on attend directement une référence). Sans contexte on ne peut pas

@@ -1,0 +1,18 @@
+% E(-2.5,-3) F(2.5,-3) G(0,-1.5)
+tracer [EF]
+tracer [EG]
+tracer [GF]
+
+placer A le milieu de [EF]
+%coder EA=AF
+tracer (e) le cercle de centre E passant par A
+tracer (f) le cercle de centre F passant par A
+tracer (n) la droite perpendiculaire à (EG) passant par A
+tracer (p) la droite perpendiculaire à (FG) passant par A
+placer C le point d'intersection autre que A entre (n) et (e)
+placer D le point d'intersection autre que A entre (p) et (f)
+tracer [EC)
+tracer [FD)
+placer H le point d'intersection entre [EC) et [FD)
+tracer (h) le cercle de centre H passant par C
+

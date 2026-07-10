@@ -239,6 +239,48 @@ function creer(commande) {
     return nomRetenu;
 }
 
+// Cache tous les candidats sauf celui choisi (jamais supprimés : ils partagent le
+// même algorithme sous-jacent qu'un Intersect à solutions multiples, cf. bug
+// "G et H perdent leur définition" si on les supprime).
+function cacherAutresCandidats(noms, choisi) {
+    noms.forEach(autre => {
+        if (autre !== choisi && ggbApplet.exists(autre)) {
+            ggbApplet.setVisible(autre, false);
+            listeAuxiliaires().push(autre);
+        }
+    });
+}
+
+// "placer le point d'intersection entre X et Y" (sans "visible") : pas de
+// désambiguïsation, on garde simplement le premier point renvoyé par GeoGebra.
+function creerIntersectionPremiere(commande) {
+    const brut = creerBrut(commande);
+    const noms = brut.split(',').map(n => n.trim()).filter(n => n.length > 0 && ggbApplet.exists(n));
+    const choisi = noms[0];
+    cacherAutresCandidats(noms, choisi);
+    autoMarquer(commande, choisi);
+    return choisi;
+}
+
+// "placer le point d'intersection autre que Z entre X et Y" : garde le point qui
+// n'est PAS égal à Z (utile quand il y a deux solutions et qu'on veut explicitement
+// "l'autre" que celle déjà connue).
+function creerIntersectionAutreQue(commande, refExclue) {
+    const brut = creerBrut(commande);
+    const noms = brut.split(',').map(n => n.trim()).filter(n => n.length > 0 && ggbApplet.exists(n));
+    let choisi = noms.find(nom => {
+        if (ggbApplet.getObjectType(nom) !== 'point') return false;
+        ggbApplet.evalCommand(`verifRes=AreEqual(${nom},${refExclue})`);
+        const identique = ggbApplet.getValue('verifRes') === 1;
+        if (ggbApplet.exists('verifRes')) ggbApplet.deleteObject('verifRes');
+        return !identique;
+    });
+    if (!choisi) choisi = noms[0];
+    cacherAutresCandidats(noms, choisi);
+    autoMarquer(commande, choisi);
+    return choisi;
+}
+
 function obtenirDroite(p1, p2) {
     const cle = cleSymetrique(p1, p2);
     let nom = registre.droites[cle];
@@ -293,6 +335,10 @@ function afficherSansEtiquette(nom) {
         // un point créé après le premier réglage du bouton n'y était jamais branché.
         ggbApplet.setColor(nom, ...COULEUR_POINTS_BASE);
         STYLES_POINTS[indexStylePoints].appliquer(nom);
+    } else if (ggbApplet.getObjectType(nom) === 'circle') {
+        // Les cercles tracés par l'élève sont mauves, pour les distinguer des
+        // droites/segments (couleur par défaut de GeoGebra) dans sa construction.
+        ggbApplet.setColor(nom, 155, 89, 182);
     }
 }
 
@@ -427,6 +473,24 @@ const construire = {
     },
     async placerIntersection(obj1, obj2) {
         const nom = creer(`Intersect(${resoudre(obj1)},${resoudre(obj2)})`);
+        afficherSansEtiquette(nom);
+        dernierObjet = nom;
+        objetsConstruits.push(nom);
+        await attendre(400);
+    },
+    // "placer le point d'intersection entre X et Y" (sans "visible") : pas de
+    // désambiguïsation, on garde le premier point renvoyé par GeoGebra.
+    async placerIntersectionPremiere(obj1, obj2) {
+        const nom = creerIntersectionPremiere(`Intersect(${resoudre(obj1)},${resoudre(obj2)})`);
+        afficherSansEtiquette(nom);
+        dernierObjet = nom;
+        objetsConstruits.push(nom);
+        await attendre(400);
+    },
+    // "placer le point d'intersection autre que Z entre X et Y" : garde le point
+    // qui n'est PAS égal à Z.
+    async placerIntersectionAutre(refExclue, obj1, obj2) {
+        const nom = creerIntersectionAutreQue(`Intersect(${resoudre(obj1)},${resoudre(obj2)})`, resoudre(refExclue));
         afficherSansEtiquette(nom);
         dernierObjet = nom;
         objetsConstruits.push(nom);
@@ -625,11 +689,23 @@ function executerFigureTexte(texte) {
             dernier = creer(`${prefixe}Midpoint(${ref(m[1])})`); ciblesAuxiliaires.push(dernier); styliserCible(dernier);
         } else if ((m = ligne.match(/^placer le point d'intersection visible entre (\S+) et (\S+)$/i))) {
             dernier = creer(`${prefixe}Intersect(${ref(m[1])},${ref(m[2])})`); ciblesAuxiliaires.push(dernier); styliserCible(dernier);
+        } else if ((m = ligne.match(/^placer le point d'intersection autre que (\S+) entre (\S+) et (\S+)$/i))) {
+            const refExclue = etiquettesLocales[m[1]] || resoudre(m[1]);
+            dernier = creerIntersectionAutreQue(`${prefixe}Intersect(${ref(m[2])},${ref(m[3])})`, refExclue);
+            ciblesAuxiliaires.push(dernier); styliserCible(dernier);
+        } else if ((m = ligne.match(/^placer le point d'intersection entre (\S+) et (\S+)$/i))) {
+            dernier = creerIntersectionPremiere(`${prefixe}Intersect(${ref(m[1])},${ref(m[2])})`);
+            ciblesAuxiliaires.push(dernier); styliserCible(dernier);
         } else if ((m = ligne.match(/^nommer\s+(.+)$/i))) {
             const texteComplet = m[1].trim();
             const nomInterne = texteComplet.replace(/^[\(\[]|[\)\]]$/g, '');
             etiquettesLocales[nomInterne] = dernier; etiqueterCible(dernier, texteComplet);
             etiquettesCible[nomInterne] = dernier;
+        } else {
+            // Avant, une ligne non reconnue dans un figure*.txt était silencieusement
+            // ignorée (contrairement au mode texte élève, qui lève déjà une erreur claire) :
+            // une simple faute de frappe (ex: "visible" oublié) passait inaperçue.
+            throw new Error(`ligne non reconnue dans la figure fantôme : "${ligneBrute}"`);
         }
 
         if (nomInline && dernier) {
@@ -658,11 +734,11 @@ const FIGURES = [];
 // jamais de toucher au code : il suffit de respecter la numérotation continue.
 async function chargerFiguresTexte(prefixe, tableauCible) {
     const MAX_FICHIERS = 50; // garde-fou pour éviter une boucle infinie
-    let n = 1;
+    let n = 9;
     while (n <= MAX_FICHIERS) {
         const fichier = `${prefixe}${n}.txt`;
         try {
-            const url = new URL(fichier, document.baseURI).href;
+            const url =new URL(fichier, document.baseURI).href;
             const reponse = await fetch(url);
             if (!reponse.ok) break;
             const texte = await reponse.text();
@@ -691,7 +767,12 @@ function genererCible() {
     const texte = FIGURES[index];
     texteFigureActuelle = texte;
     appliquerPointsBase(parseEnteteFigureTexte(texte) || POINTS_BASE_DEFAUT);
-    executerFigureTexte(texte);
+    try {
+        executerFigureTexte(texte);
+    } catch (e) {
+        alerte(`Erreur dans figure${index + 1}.txt : ${e.message}`);
+    }
+    appliquerEtiquettesFantome(indexEtiquettesFantome);
     contexteMarquage = 'eleve';
 }
 
@@ -704,7 +785,12 @@ async function afficherFigureTemporairement(texte) {
     etiquettesCible = {};
     contexteMarquage = 'cible';
     appliquerPointsBase(parseEnteteFigureTexte(texte) || POINTS_BASE_DEFAUT);
-    executerFigureTexte(texte);
+    try {
+        executerFigureTexte(texte);
+    } catch (e) {
+        alerte(`Erreur dans une figure : ${e.message}`);
+    }
+    appliquerEtiquettesFantome(indexEtiquettesFantome);
     contexteMarquage = 'eleve';
     await new Promise(resolve => setTimeout(resolve, 150)); // laisse le temps au rendu de se stabiliser
 }
@@ -860,4 +946,33 @@ function appliquerStylePoints(index) {
 
 document.getElementById("stylePointsButton").onclick = function () {
     appliquerStylePoints((indexStylePoints + 1) % STYLES_POINTS.length);
+};
+
+// Cycle en boucle : toutes les étiquettes -> seulement les points -> aucune -> ...
+// Ne concerne QUE la figure fantôme (ciblesAuxiliaires), jamais la construction de l'élève.
+const ETATS_ETIQUETTES_FANTOME = [
+    { label: "Étiquettes fantôme : Toutes", appliquer: (nom) => ggbApplet.setLabelVisible(nom, true) },
+    { label: "Étiquettes fantôme : Points", appliquer: (nom) => ggbApplet.setLabelVisible(nom, ggbApplet.getObjectType(nom) === 'point') },
+    { label: "Étiquettes fantôme : Aucune", appliquer: (nom) => ggbApplet.setLabelVisible(nom, false) }
+];
+let indexEtiquettesFantome = 0;
+
+// Applique l'état d'index donné (sans avancer le cycle) : utilisé au clic ET à chaque
+// nouvelle figure générée, pour que le réglage choisi reste actif d'une figure à l'autre.
+function appliquerEtiquettesFantome(index) {
+    indexEtiquettesFantome = index;
+    const etat = ETATS_ETIQUETTES_FANTOME[indexEtiquettesFantome];
+    // Uniquement les objets explicitement nommés dans le figure*.txt (via "nommer"
+    // ou le nommage inline) — pas tous les objets de ciblesAuxiliaires, qui contient
+    // aussi les constructions intermédiaires jamais nommées par l'auteur de la figure
+    // (elles ne doivent jamais se retrouver avec une étiquette qu'on ne leur a pas donnée).
+    Object.values(etiquettesCible).forEach(nom => {
+        if (!ggbApplet.exists(nom) || !ggbApplet.getVisible(nom)) return;
+        etat.appliquer(nom);
+    });
+    document.getElementById("btnEtiquettesFantome").innerText = etat.label;
+}
+
+document.getElementById("btnEtiquettesFantome").onclick = function () {
+    appliquerEtiquettesFantome((indexEtiquettesFantome + 1) % ETATS_ETIQUETTES_FANTOME.length);
 };
