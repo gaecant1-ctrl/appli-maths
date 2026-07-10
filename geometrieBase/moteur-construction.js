@@ -734,7 +734,7 @@ const FIGURES = [];
 // jamais de toucher au code : il suffit de respecter la numérotation continue.
 async function chargerFiguresTexte(prefixe, tableauCible) {
     const MAX_FICHIERS = 50; // garde-fou pour éviter une boucle infinie
-    let n = 9;
+    let n = 1;
     while (n <= MAX_FICHIERS) {
         const fichier = `${prefixe}${n}.txt`;
         try {
