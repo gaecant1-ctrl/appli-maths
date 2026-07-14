@@ -59,11 +59,10 @@ class Recti {
     this.peri = peri;
   }
 
-drawFond(t) {
-
+/** Rejoue la géométrie de this.liste et renvoie la liste des sommets [x,y]. */
+_points() {
   let points = [];
 
-  // Rejouer la géométrie
   let x = 0;
   let y = 0;
   let angle = 0;
@@ -91,6 +90,13 @@ drawFond(t) {
       points.push([x, y]);
     }
   }
+
+  return points;
+}
+
+drawFond(t) {
+
+  const points = this._points();
 
   // Dessin du polygone
   ctx.beginPath();
@@ -185,51 +191,36 @@ t.goto(u[1], u[2]);
   this.drawContour(t);
 }
 
-evalExpression(expr, type) {
-
-  const revele = (f) => {
-    let ant = "$";
-    let g = "";
-
-    for (let i of f) {
-      if (
-        ("(abc".includes(i)) &&
-        ("0123456789abc)".includes(ant))
-      ) {
-        g += "*" + i;
-      } else {
-        g += i;
-      }
-      ant = i;
-    }
-    return g;
-  };
-
-  const prepare = (s) => {
-    return revele(s)
-      .replaceAll("a", this.a)
-      .replaceAll("b", this.b)
-      .replaceAll("c", this.c)
-      .replaceAll("^", "**");
-  };
+evalExpression(expr, type, format) {
 
   const expected = type === "aire" ? this.aire : this.peri;
 
-  try {
-    const userValue = eval(prepare(expr));
-    const expectedValue = eval(prepare(expected));
-
-    if (typeof userValue !== "number" || isNaN(userValue)) {
-      return { status: "invalid" };
-    }
-
-    return {
-      status: userValue === expectedValue ? "correct" : "wrong"
-    };
-
-  } catch {
+  const userPoly = evalMV(expr);
+  if (!userPoly) {
     return { status: "invalid" };
   }
+
+  let correct = false;
+
+  // ===== Réponse littérale : formule en fonction de a, b, c =====
+  if (format === "lit" || format === "both") {
+    const expectedLit = evalMV(expected);
+    if (expectedLit && userPoly.equal(expectedLit)) correct = true;
+  }
+
+  // ===== Réponse numérique : valeur calculée à partir de a, b, c =====
+  if (!correct && (format === "num" || format === "both")) {
+    const expectedNumExpr = expected
+      .replaceAll("a", this.a)
+      .replaceAll("b", this.b)
+      .replaceAll("c", this.c);
+    const expectedNum = evalMV(expectedNumExpr);
+    if (expectedNum && userPoly.equal(expectedNum)) correct = true;
+  }
+
+  return {
+    status: correct ? "correct" : "wrong"
+  };
 }
 
 
@@ -383,7 +374,7 @@ liste = [
   [90,b]
 ];
 
-return Recti(liste,a,b,c,"b^2+2*c^2","4*(b+c)");
+return new Recti(liste,a,b,c,"b^2+2*c^2","4*(b+c)");
 
 }
 // =========================
@@ -733,7 +724,7 @@ return new Recti(liste,a,b,c,"c*(a+2*b)","2*(a+2*b+c)");
 // 23
 // =========================
   if(ide === 23){
-c = randint(10,20)*5;
+c = randint(10,14)*5;
 a = 2*(c+randint(7,10)*2);
 b = randint(70,100);
 

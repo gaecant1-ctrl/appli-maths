@@ -5,15 +5,96 @@
 body {
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #dbeafe, #93c5fd);
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ===== HEADER ===== */
+
+.app-header {
   display: flex;
-  justify-content: center;
-  padding: 0px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0 24px;
+  min-height: 58px;
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.app-header h1 {
+  margin: 0;
+  padding: 10px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: #cbd5e1;
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid #cbd5e1;
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.btn-header:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-header:active {
+  transform: scale(0.98);
+}
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header */
+.btn-header.active {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.btn-header.active:hover {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
 }
 
 
 /* ===== SPLIT LAYOUT ===== */
-
-/* ===== SPLIT LAYOUT FIXE ===== */
 
 .split-layout {
   display: flex;
@@ -24,58 +105,53 @@ body {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-   background: rgba(0,0,0,0.12);
+  box-sizing: border-box;
+}
+
+.panel {
+  background: rgba(0,0,0,0.12);
   border-radius: 18px;
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  padding: 18px;
 }
 
+/* ===== PANNEAU CONTRÔLE (mode + quiz) ===== */
 
-/* ===== COLONNE REGLAGES ===== */
-
-.settings-panel {
-  width: 250px;       /* largeur fixe */
-  flex-shrink: 0;     /* ne rétrécit jamais */
+.control-panel {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-/* ===== COLONNE CANEVAS ===== */
+/* ===== PANNEAU RÉPONSE ===== */
+
+.answer-panel {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== PANNEAU CANEVAS ===== */
 
 .canvas-panel {
-  flex: 1;            /* prend tout l’espace restant */
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* On supprime le responsive vertical */
 @media (max-width: 900px) {
   .split-layout {
-    flex-direction: row;
+    flex-wrap: wrap;
   }
-}
-
-
-
-
-
-
-
-.app-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 25px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 15px;
-
+  .control-panel,
+  .answer-panel {
+    width: 100%;
+  }
 }
 
 
@@ -100,25 +176,79 @@ body {
 
   min-height: 28px;
   text-align: center;
+  border-radius: 8px;
 
   background: linear-gradient(145deg, #ffffff, #f1f5f9);
- 
+
   box-shadow:
-    0 14px 30px rgba(0,0,0,0.08),
-    0 5px 14px rgba(0,0,0,0.05);
+    0 10px 24px rgba(0,0,0,0.08),
+    0 4px 12px rgba(0,0,0,0.05);
 }
-
-
 
 #questionType.hidden {
   visibility: hidden;        /* invisible mais garde la place */
 }
 
-.game-mode-select {
+/* ===== PANNEAU CONTRÔLE : groupes ===== */
+
+.panel-group {
   display: flex;
-  align-items: center;
-  gap: 34px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.panel-filet {
+  height: 1px;
+  width: 100%;
+  background-color: rgba(30,41,59,0.15);
+  margin: 4px 0;
+}
+
+.mode-toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-toggle-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #475569;
+  border: 1.5px solid #cbd5e1;
+  font-weight: 600;
+}
+
+.mode-toggle-btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.mode-toggle-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.mode-toggle-btn.active:hover:not(:disabled) {
+  background: #1d4ed8;
+  color: white;
+}
+
+.mode-toggle-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 
@@ -130,7 +260,8 @@ body {
 
 #figureCanvas {
   border: 2px solid #1e3a8a;
-  border-radius: 10px;
+  border-radius: 12px;
+  background: white;
   margin-bottom: 0px;
 }
 
@@ -151,8 +282,6 @@ body {
   transition: all 0.25s ease;
 }
 
-
-
 .param {
   flex: 1;
   text-align: center;
@@ -165,10 +294,7 @@ body {
 .c-color { color: red; }
 
 
-
-
 .interaction-section {
-  margin-top: -8px;
   padding: 22px;
 
   background: linear-gradient(145deg, #ffffff, #f8fafc);
@@ -180,51 +306,6 @@ body {
 
   transition: all 0.25s ease;
 }
-
-
-
-.input-zone {
-  margin-top: 0px;
-  padding: 10px;
-
-
-
-  display: flex;
-  align-items: center;
-  gap: 12px;   /* ← ESPACE ENTRE LES ÉLÉMENTS */
-  background: linear-gradient(145deg, #ffffff, #f1f5f9);
-  border-radius: 18px;
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.08),
-    0 3px 8px rgba(0, 0, 0, 0.05);
-
-  box-sizing: border-box;
-}
-
-input {
-  width: 150px;   /* taille maîtrisée */
-  padding: 10px 14px;
-  font-size: 14px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  outline: none;
-  transition: all 0.2s ease;
-}
-
-.input-zone button {
-  flex: 1;
-  min-width: 120px;   /* ← verrouille la largeur */
-}
-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
-}
-
-input.invalid {
-  border: 2px solid #f97316;
-  background-color: #fff7ed;
-}
-
 
 
 button {
@@ -251,9 +332,6 @@ button:active {
 }
 
 
-
-
-
 #feedback {
   margin-top: 10px;
   padding: 14px 18px;
@@ -274,58 +352,61 @@ button:active {
     0 10px 24px rgba(0,0,0,0.08),
     0 4px 12px rgba(0,0,0,0.05);
 
-  transition: all 0.25s ease;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
 
-  visibility: hidden;  /* ← important */
+  visibility: hidden;  /* ← important : pas dans la transition, cachage immédiat */
 }
 
 #feedback {
   white-space: pre-line;
 }
 
-.score {
-  margin-top: 20px;
-  font-size: 18px;
+/* ===== PANNEAU QUIZ (dans le panneau contrôle) ===== */
+
+#quizPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.game-mode-select {
-  margin-bottom: 15px;
-  font-size: 18px;
-}
-
-.game-mode-select select {
-  padding: 6px 10px;
-  font-size: 16px;
-  border-radius: 6px;
-}
-
-#startControlBtn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
+#startQuizBtn {
+  width: 100%;
   background-color: #7c3aed;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-#startControlBtn:hover:not(:disabled) {
+#startQuizBtn:hover {
   background-color: #6d28d9;
 }
 
-#startControlBtn.control-active {
-  background-color: #9333ea;
-  transform: scale(0.98);
+#quizProgress,
+#quizScore {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background-color: #ede9fe;
+  color: #6d28d9;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
 }
 
-#startControlBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.85;
+/* ===== BOUTON ABANDONNER ===== */
+
+.panel-btn {
+  width: 100%;
 }
 
-.score {
+#skipButton {
   display: none;
+  background: transparent;
+  color: #64748b;
+  border: 1.5px solid #cbd5e1;
+}
+
+#skipButton:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
 #validateBtn {
@@ -353,26 +434,78 @@ button:active {
 }
 
 
-
-
 /* ===== INPUT AREA ===== */
 
 .input-wrapper {
+  position: relative;
   margin-bottom: 14px;
 }
 
+#latexPreview {
+  min-height: 32px;
+  padding: 6px 16px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: #1e293b;
+}
+
+/* Le vrai <input> : texte invisible, ne sert qu'à la saisie et au curseur. */
 .input-wrapper input {
+  position: relative;
+  z-index: 2;
   width: 100%;
   padding: 12px 16px;
+  font: inherit;
   font-size: 16px;
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid transparent;
+  background: transparent;
+  color: transparent;
+  caret-color: #1e293b;
+  outline: none;
   transition: all 0.2s ease;
 }
 
-.input-wrapper input:focus {
+.input-wrapper input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Calque visuel en dessous : reproduit exactement la boîte de l'input et affiche le texte coloré. */
+.input-highlight {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 16px;
+  line-height: normal;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.input-wrapper:focus-within .input-highlight {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+}
+
+input.invalid ~ .input-highlight {
+  border: 2px solid #f97316;
+  background-color: #fff7ed;
+}
+
+input.wrong ~ .input-highlight {
+  border: 2px solid #ef4444;
+  background-color: #fef2f2;
 }
 
 /* ===== BUTTONS AREA ===== */
@@ -388,13 +521,3 @@ button:active {
   font-size: 15px;
   border-radius: 10px;
 }
-
-
-
-#figureCanvas {
-  border: 2px solid #1e3a8a;
-  border-radius: 12px;
-  background: white;
-}
-
-
