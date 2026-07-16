@@ -1,7 +1,7 @@
 /**
  * CLASSE EXPRESSION : Moteur de calcul et de comparaison
  */
-class Expression {
+class ExpressionAffine {
     constructor(rawInput) {
         this.raw = rawInput.trim().replace(/\s+/g, '');
         this.maxLength = 7; // Augmenté légèrement pour plus de souplesse
@@ -209,7 +209,7 @@ const tenterValidation = (isBlur = false) => {
         return;
     }
 
-    const exp = new Expression(saisie);
+    const exp = new ExpressionAffine(saisie);
 
     // CAS SYNTAXE INVALIDE
     if (!exp.isValid) {
@@ -465,7 +465,7 @@ updateLogic() {
                     if (!c.isLocked) c.isAbsolute = false;
                 } else {
 
-                    const mathOK = Expression.sontEquivalentes(
+                    const mathOK = ExpressionAffine.sontEquivalentes(
                         c.expression,
                         a.expression,
                         b.expression
@@ -547,7 +547,7 @@ setBrique(i, j, content, isLocked = false, variable = null,aff="",affMode=true) 
     c.isPermanentlyLocked = false; 
 
     if (content !== "") {
-        c.expression = new Expression(content);
+        c.expression = new ExpressionAffine(content);
         c.status = isLocked ? "reduit" : "a-reduire";
     } else {
         c.expression = null;
@@ -585,8 +585,27 @@ estPyramideComplete() {
         }
     }
 
-    // Si on arrive ici, c'est qu'on a scanné TOUTES les briques 
+    // Si on arrive ici, c'est qu'on a scanné TOUTES les briques
     // et qu'elles sont TOUTES isScelled.
+
+    // GARDE-FOU (pyramide numérique uniquement) : "isScelled" sur la base ne
+    // vérifie que la cohérence interne (les cases x ont la même valeur entre
+    // elles, etc.), jamais l'exactitude par rapport à la vraie valeur cachée.
+    // On revérifie donc ici, une seule fois, avant de déclarer la pyramide
+    // vraiment complète (et de déclencher le halo or final), sans toucher au
+    // scellage visuel de chaque case.
+    if (this.grilleVraie) {
+        for (let j = 0; j < this.n; j++) {
+            const brique = this.grid[0][j];
+            const vraie = this.grilleVraie[0][j];
+            const exp = brique.expression;
+            const valeurSaisie = exp && exp.isValid ? exp.const : null;
+            if (exp?.coeffX !== 0 || valeurSaisie !== vraie.value) {
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -892,7 +911,10 @@ applyPattern(pattern, xSecret) {
 
     const grid = this.buildGrid(pattern, xSecret);
 
-
+    // Grille des vraies valeurs (avant tout masquage) : sert uniquement à la
+    // validation finale de la pyramide numérique (voir Pyramide.estPyramideComplete),
+    // pas au scellage individuel des cases, qui reste inchangé.
+    this.pyrVerif.grilleVraie = grid;
 
     const rows = grid.length;
 

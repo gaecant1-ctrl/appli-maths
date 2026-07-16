@@ -1,51 +1,59 @@
 /**
  * CLASSE EQUATION : Moteur de vérification par conservation de la solution
+ * S'appuie sur le module calcul-litteral (ObjetString/Polynome/Nombre) pour
+ * un calcul exact (fractions, pas d'arrondi flottant), au lieu de math.js.
  */
 class Equation {
     constructor(lhs, rhs) {
-        this.lhs = this.preparer(lhs);
-        this.rhs = this.preparer(rhs);
+        this.lhs = (lhs === undefined || lhs === null || lhs === "") ? "0" : lhs.toString();
+        this.rhs = (rhs === undefined || rhs === null || rhs === "") ? "0" : rhs.toString();
     }
 
-    preparer(e) {
-        if (!e) return "0";
-        return e.toString()
-            .trim()
-            // Ajoute des * entre un chiffre et une lettre (4x -> 4*x)
-            .replace(/([0-9])([a-z])/gi, '$1*$2')
-            // Ajoute des * entre deux parenthèses ou chiffre/parenthèse
-            .replace(/([0-9a-z)])\s*\(/gi, '$1*(')
-            .replace(/\)\s*([0-9a-z])/gi, ')*$1');
+    /** Parse lhs et rhs en Polynome via le module calcul-litteral. Lève une erreur si invalide. */
+    _parsePolynomes() {
+        const osLhs = new ObjetString(this.lhs, {});
+        const osRhs = new ObjetString(this.rhs, {});
+        if (!osLhs.isValid()) throw new Error(osLhs.erreur || "Membre gauche invalide.");
+        if (!osRhs.isValid()) throw new Error(osRhs.erreur || "Membre droit invalide.");
+        const polyLhs = osLhs.calculer().resultat.polynome;
+        const polyRhs = osRhs.calculer().resultat.polynome;
+        return { polyLhs, polyRhs };
     }
 
-getSolution() {
-    try {
-        const expr = `(${this.lhs}) - (${this.rhs})`;
-        const y0 = math.evaluate(expr, { x: 0 });
-        const y1 = math.evaluate(expr, { x: 1 });
-        
-        const pente = y1 - y0;
+    /** Polynome représentant (lhs - rhs), pour comparer deux équations exactement. */
+    getDiffPolynome() {
+        const { polyLhs, polyRhs } = this._parsePolynomes();
+        return polyLhs.sub(polyRhs);
+    }
 
-        // CAS : La pente est nulle (x a disparu)
-        if (Math.abs(pente) < 1e-9) {
-            // Si y0 est aussi 0, alors 0x + 0 = 0 -> Toujours vrai
-            if (Math.abs(y0) < 1e-9) {
-                // Ici, "Tout est solution", donc notre xSecret est AUSSI une solution.
-                // On retourne xSecret pour que le solveur valide l'étape.
-                return this.solutionCible; 
-            } else {
-                // Si y0 n'est pas 0 (ex: 38 = 40), c'est impossible.
-                return null;
-            }
+    /**
+     * Calcule la solution exacte pour x (sous forme de Nombre), ou null si :
+     *  - l'un des membres ne parse pas,
+     *  - l'équation n'est pas du premier degré (lhs - rhs non affine),
+     *  - le coefficient de x est nul (pas de solution unique, ex: "x disparu").
+     */
+    getSolution() {
+        try {
+            const diff = this.getDiffPolynome(); // lhs - rhs = 0
+            return diff.getSolution(); // Nombre exact, ou null si non affine / a=0
+        } catch (e) {
+            return null;
         }
-
-        // CAS NORMAL : Équation linéaire classique
-        const sol = -y0 / pente;
-        return sol;
-    } catch (e) { 
-        return null; 
     }
 }
+
+/**
+ * Rend une expression texte en LaTeX via le module calcul-litteral (forme
+ * brute telle que tapée, arbre non évalué) — remplace l'ancien math.parse().toTex().
+ */
+function formatToLatex(exprText) {
+    try {
+        const os = new ObjetString(exprText, {});
+        if (!os.isValid() || !os.arbre) return exprText;
+        return os.arbre.toLatex();
+    } catch (e) {
+        return exprText;
+    }
 }
 /**
  * CLASSE INPUTWRAPPER : Gère l'affichage d'une ligne (Saisie ou KaTeX)
@@ -106,9 +114,8 @@ class InputWrapper {
         const eq = new Equation(lhs, rhs);
         const sol = eq.getSolution();
 
-        const ok =
-            sol !== null &&
-            Math.abs(sol - this.solutionCible) < 1e-6;
+        const cible = Nombre.fromParts(this.solutionCible, 1, "entier");
+        const ok = sol !== null && sol.equal(cible);
 
         if (!ok) {
             this.figer(lhs, rhs);
@@ -171,23 +178,12 @@ this.solveur?.onComplete?.();
         this.wrapper.classList.remove('mode-saisie');
         this.input?.remove();
 
-        const toTex = (s) => {
-            try {
-                return math.parse(
-                    s.replace(/([0-9])x/g, '$1*x')
-                ).toTex({ implicit: 'hide' })
-                 .replace(/\\cdot/g, '');
-            } catch {
-                return s;
-            }
-        };
-
         const left = this.wrapper.querySelector('.side-left');
         const right = this.wrapper.querySelector('.side-right');
 
         if (window.katex) {
-            katex.render(toTex(lhs), left, { throwOnError: false });
-            katex.render(toTex(rhs), right, { throwOnError: false });
+            katex.render(formatToLatex(lhs), left, { throwOnError: false });
+            katex.render(formatToLatex(rhs), right, { throwOnError: false });
         } else {
             left.textContent = lhs;
             right.textContent = rhs;
