@@ -1,0 +1,494 @@
+/* =========================
+   VARIABLES
+========================= */
+
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+
+  --accent: #b45309;    /* doré assombri, lisible sur fond clair */
+  --fraction: #e11d48;  /* rose, assombri pour contraste sur clair */
+  --duree: #0891b2;     /* cyan, assombri pour contraste sur clair */
+  --select: #16a34a;
+  --text: #1e293b;
+  --text-soft: #475569;
+}
+
+/* =========================
+   BASE
+========================= */
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+/* position: sticky (et non fixed) : le header reste dans le flux normal,
+   donc le contenu qui suit ne peut jamais passer dessous — même quand le
+   header grandit (boutons qui passent à la ligne sur petit écran). */
+.game-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+
+  border-bottom: 3px solid var(--accent);
+}
+
+.header-inner {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-title {
+  font-weight: 800;
+  font-size: clamp(0.85rem, 1.6vw, 1.1rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+#zoneJeu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.jeu-info {
+  margin-top: 24px;
+  background: rgba(0,0,0,0.05);
+  padding: 6px 14px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vies,
+.stars {
+  display: flex;
+  align-items: center;
+}
+
+.vies {
+  padding-right: 16px;
+  border-right: 1px solid rgba(0,0,0,0.15);
+}
+
+/* =========================
+   BOUTONS DU BANDEAU (nouvel onglet, fiche papier)
+========================= */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background: rgba(180,83,9,0.4);
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(180,83,9,0.4);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 7px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-header:hover {
+  background: rgba(180,83,9,0.12);
+  transform: scale(1.04);
+}
+
+/* =========================
+   STARS
+========================= */
+
+/* =========================
+   STAR PROGRESSION
+========================= */
+
+.rond {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 0 4px;
+  border-radius: 50%;
+  vertical-align: middle;
+  transition: all 0.25s ease;
+}
+
+/* rond gagné : niveau terminé sans aucune erreur */
+.rond.gagne {
+  background: #FFD700;
+  box-shadow:
+    0 0 6px #FFD700,
+    0 0 12px rgba(255,215,0,0.7),
+    0 0 20px rgba(255,215,0,0.4);
+  animation: glow 0.4s ease;
+}
+
+/* rond argenté : ce niveau a déjà été retourné au moins une fois */
+.rond.argent {
+  background: #c7cdd6;
+  box-shadow:
+    0 0 6px #c7cdd6,
+    0 0 12px rgba(199,205,214,0.7),
+    0 0 20px rgba(199,205,214,0.4);
+  animation: glow 0.4s ease;
+}
+
+/* rond pas encore gagné */
+.rond.vide {
+  background: transparent;
+  border: 2px solid rgba(0,0,0,0.2);
+}
+
+/* étoile de niveau (gagnée sans aucune erreur) */
+.etoile {
+  display: inline-block;
+  font-size: 22px;
+  margin: 0 2px;
+  transition: all 0.25s ease;
+}
+
+.etoile.gagne {
+  color: #FFD700;
+  text-shadow:
+    0 0 5px #FFD700,
+    0 0 10px #FFD700,
+    0 0 15px rgba(255,215,0,0.6);
+  animation: glow 0.4s ease;
+}
+
+.etoile.argent {
+  color: #c7cdd6;
+  text-shadow:
+    0 0 5px #c7cdd6,
+    0 0 10px rgba(199,205,214,0.7),
+    0 0 15px rgba(199,205,214,0.4);
+  animation: glow 0.4s ease;
+}
+
+.etoile.vide {
+  color: rgba(0,0,0,0.2);
+  text-shadow: none;
+}
+
+
+@keyframes glow {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+/* =========================
+   GRID
+========================= */
+
+#grid {
+  margin-top: 20px;
+  padding: 30px;
+  border-radius: 24px;
+  background: rgba(0,0,0,0.03);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+  display: grid;
+  gap: 16px;
+}
+
+#grid {
+  position: relative;
+  perspective: 900px;
+}
+
+#grid {
+  overflow: hidden;
+}
+/* =========================
+   CELLS
+========================= */
+
+.cell {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 16px;
+  padding: 4px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  user-select: none;
+  color: black;
+  
+}
+
+.cell.fraction,
+.cell.duree {
+  border-radius: 18px;
+  border: 3px solid var(--accent);
+  box-shadow:
+    0 0 6px rgba(180,83,9,0.35),
+    0 0 12px rgba(180,83,9,0.2);
+}
+
+.cell.fraction {
+  background: #fecdd3;
+  box-shadow: 0 4px 12px rgba(225,29,72,0.25);
+}
+
+.cell.duree {
+  background: #a5f3fc;
+  box-shadow: 0 4px 12px rgba(8,145,178,0.25);
+}
+
+/* durée mixte "h + min" : texte plus large, police réduite pour tenir */
+.cell.long {
+  font-size: 9px;
+}
+
+/* Hover = léger agrandissement */
+
+
+/* Bande brillante */
+
+.cell {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bande brillante initiale (hors écran) */
+.cell::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255,255,255,0.7) 50%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+}
+
+/* Animation uniquement au hover */
+.cell:hover::before {
+  animation: shine 0.7s forwards;
+}
+
+@keyframes shine {
+  0%   { left: -100%; }
+  100% { left: 150%; }
+}
+
+.cell.selected {
+  background: var(--select);
+  transform: scale(1);
+  box-shadow:
+    0 0 15px rgba(255,255,255,0.6),
+    0 0 30px rgba(255,255,255,0.3);
+}
+
+/* Si sélectionné + hover = reste au max */
+
+
+
+@keyframes shakeError {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+.cell.error {
+  animation: shakeError 0.35s ease;
+}
+
+/* Disparition */
+
+@keyframes popFade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.cell.disappearing {
+  animation: popFade 0.25s ease forwards;
+  pointer-events: none;
+}
+
+/* Retournement de la grille (recommencement après 3 erreurs) */
+
+.cell {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@keyframes flipOut {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(90deg); opacity: 0.2; }
+}
+
+@keyframes flipIn {
+  0%   { transform: rotateY(90deg); opacity: 0.2; }
+  100% { transform: rotateY(0deg); opacity: 1; }
+}
+
+.cell.flip-out {
+  animation: flipOut 0.3s ease forwards;
+  pointer-events: none;
+}
+
+.cell.flip-in {
+  animation: flipIn 0.3s ease forwards;
+}
+
+/* =========================
+   ECRAN FINAL GAMER
+========================= */
+
+/* =========================
+   ECRAN FINAL GAMER
+========================= */
+
+.ecran-final {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  border-radius: 24px; /* même radius que la grille */
+}
+
+.ecran-final {
+  overflow: hidden;
+}
+
+.cinematic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- HALO ---------- */
+
+.halo {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+      rgba(34,211,238,0.25) 0%,
+      rgba(34,211,238,0.08) 40%,
+      transparent 70%);
+  animation: pulseHalo 3s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes pulseHalo {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+/* ---------- PHÉNIX ---------- */
+
+/* ---------- PHÉNIX ---------- */
+
+.phoenix-container {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.phoenix-container svg {
+  width: 60%;
+  max-width: 500px;
+  height: auto;
+}
+
+@keyframes zoomReveal {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- TEXTE ---------- */
+.final-ui {
+  position: absolute;
+  bottom: 10%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  z-index: 3;
+}
+
+.victory-text {
+  font-size: clamp(24px, 5vw, 48px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--duree);
+  text-shadow:
+    0 0 10px rgba(34,211,238,0.8),
+    0 0 20px rgba(34,211,238,0.5);
+}
+
+.replay-btn {
+  padding: clamp(8px, 1.2vw, 14px)
+           clamp(18px, 3vw, 30px);
+  font-size: clamp(14px, 2vw, 18px);
+  border-radius: 30px;
+  border: none;
+  background: var(--fraction);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.replay-btn:hover {
+  transform: scale(1.08);
+}
