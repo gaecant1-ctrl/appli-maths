@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Droite graduée</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="Nombre.js"></script>
+    <script src="Configuration.js"></script>
+  </head>
+
+  <body>
+    <header>
+      <span id="titre_appli">Droite graduée</span>
+      <div class="header-actions" id="topButtonsBar"></div>
+    </header>
+
+    <div id="appBody">
+      <aside id="panneauLateral">
+        <div class="panel-groupe">
+          <div class="panel-groupe-label">Niveau</div>
+          <select id="niveau-select">
+            <option value="1">Niveau 1</option>
+            <option value="2">Niveau 2</option>
+            <option value="3">Niveau 3</option>
+            <option value="4">Niveau 4</option>
+            <option value="5" selected>Niveau 5</option>
+            <option value="6">Niveau 6</option>
+            <option value="7">Mixte</option>
+          </select>
+        </div>
+
+        <div class="panel-filet"></div>
+
+        <div class="panel-groupe">
+          <div class="panel-groupe-label">Type</div>
+          <select id="type-select">
+            <option value="placer">Placer</option>
+            <option value="lire" selected>Lire</option>
+            <option value="mixte">Mixte</option>
+          </select>
+        </div>
+
+        <div class="panel-filet"></div>
+
+        <div class="panel-groupe">
+          <div class="panel-groupe-label">Curseur</div>
+          <div class="panel-groupe-checkbox">
+            <input type="checkbox" id="curseur-checkbox" checked>
+            <label for="curseur-checkbox">Curseur mobile</label>
+          </div>
+        </div>
+
+        <div class="panel-filet"></div>
+
+        <div class="panel-groupe" id="groupeQuiz">
+          <div class="panel-groupe-label">Quiz</div>
+          <button type="button" id="btnCommencerQuiz" class="panel-btn active">Commencer le Quiz</button>
+          <div id="score-container" style="display:none;">
+            <div id="question-progress">Question 0/10</div>
+            <div id="score">Score : 0</div>
+          </div>
+        </div>
+      </aside>
+
+      <main>
+        <div id="consigne">
+          Consigne : <span id="cible"></span>
+        </div>
+
+        <div id="zone-canvas"></div>
+
+        <div id="zone-reponse">
+          <input id="reponse" type="text" placeholder="Réponse ici" autocomplete="off">
+          <button id="validation" onclick="verifier()">Valider</button>
+          <button id="suivant" onclick="initialize()">Suivant</button>
+        </div>
+
+        <p id="feedback"></p>
+
+        <div id="quizFin">
+          <h2>🎯 Quiz Terminé !</h2>
+          <p id="quizFinScore"></p>
+          <button class="restart-btn" onclick="location.reload()">Recommencer</button>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+    <script src="DroiteGraduee.js"></script>
+    <script src="FicheAbscisse.js"></script>
+    <script src="GuideAbscisse.js"></script>
+    <script>
+
+      const app = new DroiteGraduee("zone-canvas");
+
+      function initialize() {
+        app.initie();
+      }
+
+      function verifier() {
+        app.verifier();
+      }
+
+      /** Installe le bouton "Nouvel onglet" dans le bandeau.
+       *  Repli si window.open() est bloqué (iframe sandbox) : affiche un lien
+       *  cliquable à côté du bouton. */
+      function setupBoutonNouvelOnglet() {
+        const conteneur = document.getElementById("topButtonsBar");
+        if (!conteneur) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'btnNouvelOnglet';
+        btn.className = 'btn-header';
+        btn.textContent = 'Nouvel onglet';
+
+        const repli = document.createElement('span');
+        repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
+        repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+
+        btn.onclick = () => {
+          const w = window.open(window.location.href, "_blank", "noopener");
+          if (!w) repli.style.display = 'inline';
+        };
+
+        conteneur.appendChild(btn);
+        conteneur.appendChild(repli);
+      }
+
+      /** Installe le bouton de bascule Atelier/Quiz dans le header. */
+      function setupEtatToggle() {
+        const conteneur = document.getElementById("topButtonsBar");
+        if (!conteneur) return;
+
+        const btnAtelier = document.createElement('button');
+        btnAtelier.type = 'button';
+        btnAtelier.id = 'btnAtelier';
+        btnAtelier.textContent = 'Atelier';
+
+        const btnQuiz = document.createElement('button');
+        btnQuiz.type = 'button';
+        btnQuiz.id = 'btnQuiz';
+        btnQuiz.textContent = 'Quiz';
+
+        const majClasses = () => {
+          btnAtelier.className = 'btn-header' + (app.etatJeu === 'atelier' ? ' active' : '');
+          btnQuiz.className = 'btn-header' + (app.etatJeu === 'quiz' ? ' active' : '');
+        };
+        majClasses();
+
+        const basculer = (nouvelEtat) => {
+          if (app.etatJeu === nouvelEtat) return;
+          app.etatJeu = nouvelEtat;
+          app.quizDemarre = false;
+          app.questionCount = 0;
+          app.score = 0;
+          majClasses();
+          mettreAJourPanneauQuiz();
+          document.getElementById("quizFin").style.display = "none";
+          document.getElementById("consigne").style.display = "block";
+          document.getElementById("zone-canvas").style.display = "inline-block";
+          document.getElementById("zone-reponse").style.display = "block";
+          app.initie();
+        };
+
+        btnAtelier.onclick = () => basculer('atelier');
+        btnQuiz.onclick = () => basculer('quiz');
+
+        const filet = document.createElement('div');
+        filet.className = 'filet-header';
+
+        conteneur.append(btnAtelier, btnQuiz, filet);
+      }
+
+      /** Verrouille/déverrouille les réglages et bascule l'affichage du
+       *  bouton "Commencer le Quiz" / de la progression selon l'état. */
+      function mettreAJourPanneauQuiz() {
+        const groupeQuiz = document.getElementById("groupeQuiz");
+        const btnCommencer = document.getElementById("btnCommencerQuiz");
+        const scoreContainer = document.getElementById("score-container");
+        const verrouille = app.etatJeu === 'quiz' && app.quizDemarre;
+
+        groupeQuiz.style.display = app.etatJeu === 'quiz' ? 'flex' : 'none';
+        btnCommencer.style.display = app.quizDemarre ? 'none' : 'block';
+        scoreContainer.style.display = app.quizDemarre ? 'flex' : 'none';
+
+        document.getElementById("niveau-select").disabled = verrouille;
+        document.getElementById("type-select").disabled = verrouille;
+        document.getElementById("curseur-checkbox").disabled = verrouille;
+      }
+
+      window.addEventListener('load', () => {
+        setupEtatToggle();
+        setupBoutonNouvelOnglet();
+        if (typeof FicheAbscisse !== 'undefined') {
+          const fiche = new FicheAbscisse();
+          fiche.installerBouton(document.getElementById("topButtonsBar"));
+        }
+        if (typeof GuideAbscisse !== 'undefined') {
+          const guide = new GuideAbscisse();
+          guide.installerBouton(document.getElementById("topButtonsBar"));
+        }
+
+        document.getElementById("btnCommencerQuiz").addEventListener('click', () => {
+          app.quizDemarre = true;
+          app.questionCount = 0;
+          app.score = 0;
+          mettreAJourPanneauQuiz();
+          app.initie();
+        });
+
+        mettreAJourPanneauQuiz();
+      });
+
+    </script>
+  </body>
+</html>

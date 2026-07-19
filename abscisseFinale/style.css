@@ -1,0 +1,441 @@
+/* ==========================================================================
+   DROITE GRADUÉE — feuille de style
+   Structure alignée sur les autres applis (header + panneau latéral),
+   accent unique bleu (identité visuelle d'origine de l'appli).
+   ========================================================================== */
+
+:root {
+  --papier:        #ffffff;
+  --papier-panel:  #eef6fb;
+  --papier-encart: #ffffff;
+
+  --grille:        #cfe3f2;
+  --grille-forte:  #007acc;
+
+  --encre:         #17324a;
+  --encre-douce:   #4a6c85;
+
+  --accent:        #007acc;
+  --accent-hover:  #005e99;
+  --accent-clair:  #e3f1fb;
+
+  --header-fond:        #eaf4fb;
+  --header-bordure:     #bcdcf2;
+  --header-texte:       #0d5f96;
+  --header-texte-hover: #17324a;
+  --header-accent:      #007acc;
+  --header-accent-vif:  #005e99;
+
+  --erreur:        #e74c3c;
+  --succes:        #28a745;
+  --succes-fond:   #e6f6ea;
+  --attention:     #007acc;
+
+  --rayon:         12px;
+  --rayon-petit:   8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0 20px;
+  min-height: 54px;
+  background: var(--header-fond);
+  color: var(--encre);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+header #titre_appli {
+  font-size: 1.2rem;
+  letter-spacing: .2px;
+  font-weight: 700;
+  color: var(--header-accent);
+  padding: 10px 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
+
+.btn-header:hover {
+  border-color: var(--header-texte);
+  color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+  transform: scale(0.98);
+}
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header (pas de fond plein) */
+.btn-header.active {
+  border-color: var(--header-accent);
+  color: var(--header-accent);
+}
+
+.btn-header.active:hover {
+  border-color: var(--header-accent-vif);
+  color: var(--header-accent-vif);
+}
+
+/* ==========================================================================
+   STRUCTURE : PANNEAU LATÉRAL + CONTENU
+   ========================================================================== */
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 280px;
+  width: 280px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier-encart);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: calc(100vh - 54px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL — réglages
+   ========================================================================== */
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-groupe-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.panel-filet {
+  height: 1px;
+  background: var(--grille);
+  margin: 4px 0;
+}
+
+.panel-groupe select {
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: var(--rayon-petit);
+  border: 2px solid var(--grille);
+  background: var(--papier-panel);
+  color: var(--encre);
+}
+
+.panel-groupe select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.panel-groupe-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-groupe-checkbox label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--encre);
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL — QUIZ (score, progression, bouton de lancement)
+   ========================================================================== */
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+  margin-top: 0;
+}
+
+.panel-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.panel-btn.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--papier);
+}
+
+.panel-btn.active:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--papier);
+}
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+#question-progress, #score {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 10px 14px;
+  border-radius: var(--rayon-petit);
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 2px solid var(--grille);
+  text-align: left;
+}
+
+#question-progress {
+  color: var(--encre-douce);
+}
+
+#score {
+  color: var(--succes);
+  border-color: var(--succes);
+}
+
+/* ==========================================================================
+   BOUTONS & CHAMPS DE L'EXERCICE
+   ========================================================================== */
+button {
+  font-size: 16px;
+  padding: 10px 18px;
+  margin-top: 5px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+button:hover {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  background: #cccccc;
+  color: #666666;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+input[type="text"] {
+  font-size: 16px;
+  padding: 10px 14px;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 0 5px rgba(0, 122, 204, 0.2);
+  background-color: #fff;
+  width: 70px;
+  max-width: 100%;
+}
+
+input[type="text"]:focus {
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 8px rgba(0, 94, 153, 0.4);
+}
+
+input[type="text"]::placeholder {
+  color: #888;
+  opacity: 1;
+  font-style: italic;
+}
+
+input:-webkit-autofill {
+  box-shadow: 0 0 0px 1000px white inset !important;
+  -webkit-text-fill-color: #000 !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* La bordure/l'ombre sont posées sur ce conteneur, PAS sur le <canvas>
+   lui-même : avec box-sizing:border-box (règle globale), une bordure sur le
+   canvas réduirait sa zone de dessin réelle de 2×4px par rapport à la
+   largeur logique (canvasWidth) que tout le code utilise pour calculer les
+   positions — provoquant une compression progressive de tout ce qui est
+   dessiné dessus (graduations, points) par rapport aux étiquettes HTML
+   posées à côté, non affectées. En mettant la bordure sur le wrapper, le
+   canvas garde une largeur de rendu exactement égale à canvasWidth. */
+#zone-canvas {
+  position: relative;
+  display: inline-block;
+  margin: 20px 0;
+  border: 4px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 122, 204, 0.5);
+  line-height: 0; /* évite un espace blanc parasite sous le canvas (élément inline par défaut) */
+}
+
+#zone-canvas canvas {
+  display: block;
+}
+
+/* Overlay HTML superposé au canvas p5.js : étiquettes de points (lettres +
+   valeurs), positionné en pixels par DroiteGraduee.js. Les valeurs
+   fractionnaires/mixtes sont des SVG (voir _svgFraction/_svgMixte dans
+   Configuration.js) : positionnement des glyphes par coordonnées explicites
+   (dominant-baseline="central"), pas de centrage flex/MathJax approximatif. */
+.points-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.point-letter,
+.point-value {
+  position: absolute;
+  display: inline-block;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+#consigne {
+  font-size: 18px;
+  margin-top: 10px;
+  font-weight: bold;
+  text-align: center;
+}
+
+#cible {
+  font-size: 20px;
+  margin-top: 20px;
+  font-weight: normal;
+}
+
+#zone-reponse {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#feedback {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+}
+
+#quizFin {
+  display: none;
+  text-align: center;
+  margin-top: 50px;
+}
+
+#quizFin h2 {
+  color: var(--accent);
+}
+
+#quizFin p {
+  font-size: 24px;
+}
+
+.restart-btn {
+  margin-top: 25px;
+  padding: 12px 30px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.restart-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
