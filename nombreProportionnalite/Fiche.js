@@ -46,8 +46,8 @@ class FichePapier {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'btnFichePapier';
-    btn.className = 'btn-fiche-papier';
-    btn.textContent = '📄 Fiche papier';
+    btn.className = 'btn-header';
+    btn.textContent = 'Fiche papier';
     btn.addEventListener('click', () => this.ouvrir());
     conteneur.appendChild(btn);
     return btn;
@@ -127,13 +127,6 @@ class FichePapier {
     btnImprimer.addEventListener('click', () => this._imprimer());
     this.btnImprimer = btnImprimer;
 
-    const btnOuvrir = document.createElement('button');
-    btnOuvrir.type = 'button';
-    btnOuvrir.textContent = '🔗 Ouvrir dans un nouvel onglet';
-    btnOuvrir.title = "Utile si la fiche est intégrée dans Google Sites : l'impression ne fonctionne que hors du cadre intégré.";
-    btnOuvrir.addEventListener('click', () => window.open(window.location.href, '_blank', 'noopener'));
-    this.btnOuvrir = btnOuvrir;
-
     const btnTex = document.createElement('button');
     btnTex.type = 'button';
     btnTex.textContent = '⬇️ Télécharger le LaTeX';
@@ -144,7 +137,7 @@ class FichePapier {
     btnRegen.textContent = '🔀 Régénérer une nouvelle série';
     btnRegen.addEventListener('click', () => this._regenerer());
 
-    actions.append(btnImprimer, btnOuvrir, btnTex, btnRegen);
+    actions.append(btnImprimer, btnTex, btnRegen);
 
     const note = document.createElement('p');
     note.className = 'note-impression';
@@ -400,31 +393,6 @@ ${lignesTex}
     const style = document.createElement('style');
     style.id = 'fiche-papier-css';
     style.textContent = `
-      .btn-fiche-papier{
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        align-self:stretch;
-        flex:1 1 auto;
-        min-width:0;
-        height:100%;
-        width:100%;
-        margin-left:8px;
-        padding:4px 10px;
-        border:1px solid var(--panel-border, #334155);
-        border-radius:8px;
-        background:var(--muted, #334155);
-        color:var(--text, #f1f5f9);
-        font-size:13px;
-        line-height:1.2;
-        font-weight:600;
-        cursor:pointer;
-        white-space:normal;
-        word-break:keep-all;
-        overflow-wrap:break-word;
-        text-align:center;
-      }
-      .btn-fiche-papier:hover{ background:var(--accent, #818cf8); }
 
       #overlayFiche{
         display:none;

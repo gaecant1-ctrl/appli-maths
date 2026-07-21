@@ -179,9 +179,6 @@ class ExerciceExpression extends Exercice {
   }
 
   _correction() {
-      if (this.btnCorrection) this.btnCorrection.remove();
-      if (this.actionsDiv) this.actionsDiv.remove();
-      
       const host = this.correctionDiv;
       host.style.display = 'block';
       host.style.padding = '14px';
@@ -279,21 +276,6 @@ _render() {
     this.reponseDiv = document.createElement('div');
     this.reponseDiv.className = 'reponse';
     this.container.appendChild(this.reponseDiv);
-
-    this.actionsDiv = document.createElement('div');
-    this.actionsDiv.className = 'bouton-correction';
-    this.container.appendChild(this.actionsDiv);
-
-    this.btnCorrection = document.createElement('button');
-    this.btnCorrection.textContent = 'Abandon';
-    this.btnCorrection.className = 'btn-correction';
-    this.btnCorrection.addEventListener('click', () => {
-        this._correction();
-        if (this.status !== 'correct') {
-            this._finish('incorrect', { status: 'forced_by_correction' });
-        }
-    });
-    this.actionsDiv.appendChild(this.btnCorrection);
 
     this.correctionDiv = document.createElement('div');
     this.correctionDiv.className = 'correction-content';
@@ -433,6 +415,16 @@ _onGradeResult(e) {
       }));
   }
 }
+
+  /** API publique : abandonner l'exercice en cours (appelée par le bouton
+   *  "Abandon" du panneau latéral). Affiche la correction puis termine
+   *  l'exercice comme incorrect, si ce n'était pas déjà réussi. */
+  abandonner() {
+    this._correction();
+    if (this.status !== 'correct') {
+      this._finish('incorrect', { status: 'forced_by_correction' });
+    }
+  }
 
 _shouldContinue(status) {
     const s = this.policies?.suite || {};

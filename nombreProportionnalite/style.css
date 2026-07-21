@@ -13,41 +13,69 @@
   --input-v-gap: 6px;
   --input-w: 280px;
 
-  /* --- THÈME COULEUR --- */
-  --text: #f1f5f9;               /* Texte clair */
-  --text-dark: #1e293b;          /* Texte sombre pour contrastes */
-  
-  /* Fond */
-  --bg-grad-a: #0f172a; 
-  --bg-grad-b: #1e293b;
-  --bg-gradient: linear-gradient(135deg, var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
+  /* --- THÈME COULEUR (aligné sur geometrieBase) --- */
+  /* Fond & surfaces */
+  --papier: #ffffff;
+  --papier-panel: #f1f8f3;
 
-  /* Panneaux / bordures / ombres */
-  --panel-bg: rgba(30, 41, 59, 0.9);
-  --panel-border: #334155;
-  --muted: #334155;              /* Fond des scores */
-  --shadow: 0 6px 20px rgba(0,0,0,.30);
+  /* Lignes & structure */
+  --grille: #d3ead9;
+  --grille-forte: #1f5c33;
 
-  /* Boutons & accents */
-  --primary: #38bdf8;            /* Bleu ciel */
-  --primary-hover: #0ea5e9;
-  --primary-dark: var(--primary-hover);
-  --accent: #818cf8;             /* Indigo */
-  --accent-rgb: 129, 140, 248;
+  /* Texte */
+  --encre: #23302a;
+  --encre-douce: #5f7a68;
 
-  /* États / signalétique */
-  --success: #4ade80;
-  --error: #fb7185;
-  --warning: #fbbf24;
+  /* Accent unique */
+  --accent: #2f9e44;
+  --accent-hover: #237a35;
+  --accent-clair: #e6f7e9;
+  --accent-rgb: 47, 158, 68;
 
-  /* Correction (fond pâle) */
-  --accent-pale: rgba(129, 140, 248, 0.1);
-  --accent-pale-border: #475569;
-  
-  /* Inputs */
-  --input-bg: #0f172a;
-  --input-border: #475569;
-  --card-bg: #1e293b;            /* Fond des lignes */
+  /* Header (même accent que le reste, fond très clair) */
+  --header-fond: #f1f8f3;
+  --header-bordure: #d3ead9;
+  --header-texte: #1f5c33;
+  --header-texte-hover: #123a20;
+
+  /* États fonctionnels */
+  --erreur: #c0392b;
+  --erreur-fond: #fbeceb;
+  --succes: #1e7e34;
+  --succes-fond: #e6f6ea;
+  --attention: #8a6d1a;
+  --attention-fond: #fbf3e0;
+
+  --rayon: 10px;
+  --rayon-petit: 6px;
+
+  /* Alias des anciens noms de variables (utilisés plus bas et dans Fiche.js)
+     pour porter le thème clair sans réécrire toutes les règles. */
+  --text: var(--encre);
+  --text-dark: #ffffff;          /* Texte clair pour les boutons pleins (fond accent) */
+  --text-muted: var(--encre-douce);
+
+  --bg-gradient: var(--papier-panel);
+
+  --panel-bg: var(--papier);
+  --panel-border: var(--grille);
+  --muted: var(--papier-panel);
+  --shadow: 0 4px 14px rgba(35, 48, 42, .10);
+
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --primary-dark: var(--accent-hover);
+
+  --success: var(--succes);
+  --error: var(--erreur);
+  --warning: var(--attention);
+
+  --accent-pale: var(--accent-clair);
+  --accent-pale-border: var(--grille);
+
+  --input-bg: var(--papier);
+  --input-border: var(--grille);
+  --card-bg: var(--papier);
 
   --rows-min: 4;
   --reponse-min-h: calc(var(--wrapper-h) * var(--rows-min));
@@ -69,110 +97,235 @@ html, body {
 }
 
 /* ===============================
-   HEADER PRINCIPAL
+   BANDEAU TITRE (page, façon geometrieBase)
 =================================*/
-#titre {
-  display: grid;
-  grid-template-columns: 220px 1fr 220px;
-  gap: 12px;
-  padding: 10px 14px;
-  box-sizing: border-box;
-  align-items: stretch;
-  background: var(--card-bg);
-  box-shadow: 0 2px 10px rgba(0,0,0,.2);
+header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    margin: 0 0 20px 0;
+    padding: 0 20px;
+    min-height: 54px;
+    background: var(--header-fond);
+    border-bottom: 1px solid var(--header-bordure);
+    box-sizing: border-box;
+    flex-wrap: wrap;
+}
+
+header #titre_appli {
+    font-size: 1.2rem;
+    letter-spacing: .2px;
+    font-weight: 400;
+    color: var(--encre);
+    padding: 10px 0;
+}
+
+header #titre_appli b {
+    font-weight: 700;
+    color: var(--header-texte);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.filet-header {
+    width: 1px;
+    height: 22px;
+    background-color: var(--header-bordure);
+    flex-shrink: 0;
+}
+
+.btn-header {
+    background: transparent;
+    border: 0.5px solid var(--header-bordure);
+    height: 34px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: .1px;
+    border-radius: var(--rayon-petit);
+    cursor: pointer;
+    color: var(--header-texte);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color .12s, color .12s;
+    white-space: nowrap;
+}
+
+.btn-header:hover {
+    border-color: var(--header-texte);
+    color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+    transform: scale(0.98);
+}
+
+.btn-header:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header (pas de fond plein) */
+.btn-header.active {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-header.active:hover {
+    border-color: var(--accent-hover);
+    color: var(--accent-hover);
 }
 
 /* ===============================
-   COLONNES HEADER
+   STRUCTURE : PANNEAU LATÉRAL + CONTENU
 =================================*/
-.header-left,
-.header-center,
-.header-right {
-  display: flex;
+#appBody {
   width: 100%;
-  min-width: 0;
-  align-self: stretch;
-}
-
-.header-right {
-  height: 100%;
-  align-items: stretch;
-  gap: 8px;
-}
-
-.header-fiche-slot{
   display: flex;
-  align-items: stretch;
-  height: 100%;
-  min-width: 0;
-  flex-grow: 2;
-  flex-shrink: 1;
-  flex-basis: 0;
+  align-items: flex-start;
 }
 
-/* ===============================
-   BLOCS PRINCIPAUX
-=================================*/
-#score,
-#resultat {
-  width: 100%;
-  min-width: 0;
+#panneauLateral {
+  flex: 0 0 300px;
+  width: 300px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
   box-sizing: border-box;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-#nextButton {
-  min-width: 0;
-  box-sizing: border-box;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* ===============================
-   SCORE
-=================================*/
-#score {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 10px 14px;
-  border: 1px solid var(--panel-border);
-  background: var(--muted);
-  color: var(--text);
+  gap: 10px;
 }
 
-.score-main {
-  font-size: 1.1rem;
+main#app {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: calc(100vh - 54px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* ===============================
+   PANNEAU LATÉRAL — label, score, bouton d'action
+=================================*/
+.panel-groupe-label {
+  font-size: 11.5px;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+#score-container:empty { display: none; }
+
+#question-progress,
+#score {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 10px 14px;
+  border-radius: var(--rayon-petit);
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 2px solid var(--grille);
+  text-align: left;
+}
+
+#question-progress { color: var(--encre-douce); }
+
+#score {
+  color: var(--succes);
+  border-color: var(--succes);
 }
 
 .score-average {
   margin-top: 4px;
   padding-top: 4px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  border-top: 1px solid var(--panel-border);
+  font-size: 0.8rem;
+  color: var(--encre-douce);
+  border-top: 1px solid var(--grille);
 }
 
 .score-local {
   min-height: 18px;
-  margin-top: 4px;
 }
 
 .score-local-error {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--error);
+  color: var(--erreur);
+}
+
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.panel-btn.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--papier);
+}
+
+.panel-btn.active:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.panel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--papier-panel) !important;
+  border-color: var(--grille) !important;
+  color: var(--encre-douce) !important;
+}
+
+#nextButton:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ===============================
-   RESULTAT
+   MESSAGE (résultat / consigne)
 =================================*/
 #resultat {
   width: 100%;
-  height: 100%;
+  max-width: 800px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -183,12 +336,13 @@ html, body {
   border-radius: 10px;
   background: var(--input-bg);
   border: 1px solid var(--panel-border);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 2px rgba(0,0,0,.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 2px rgba(35,48,42,.10);
   text-align: center;
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: 0.2px;
+  margin-bottom: 16px;
   opacity: 0;
   transform: translateY(-6px);
   transition:
@@ -214,7 +368,7 @@ html, body {
 }
 
 #resultat.correct {
-  background: rgba(74, 222, 128, 0.1);
+  background: var(--succes-fond);
   color: var(--success);
   border-color: var(--success);
   font-weight: 700;
@@ -222,7 +376,7 @@ html, body {
 #resultat.correct::before { content: "✅"; }
 
 #resultat.incorrect {
-  background: rgba(251, 113, 133, 0.1);
+  background: var(--erreur-fond);
   color: var(--error);
   border-color: var(--error);
   font-weight: 700;
@@ -230,7 +384,7 @@ html, body {
 #resultat.incorrect::before { content: "❌"; }
 
 #resultat.invalide {
-  background: rgba(251, 191, 36, 0.1);
+  background: var(--attention-fond);
   color: var(--warning);
   border-color: var(--warning);
   font-weight: 600;
@@ -238,66 +392,12 @@ html, body {
 #resultat.invalide::before { content: "⚠️"; }
 
 /* ===============================
-   BOUTON SUIVANT
-=================================*/
-#nextButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  flex-grow: 3;
-  flex-shrink: 1;
-  flex-basis: 0;
-  padding: 10px 18px;
-  border: none;
-  background: var(--primary);
-  color: var(--text-dark);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background .25s ease,
-    box-shadow .15s ease,
-    transform .1s ease;
-}
-
-#nextButton:hover:not(:disabled) {
-  background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(0,0,0,.3);
-}
-
-#nextButton:active:not(:disabled) { transform: translateY(1px); }
-
-#nextButton:disabled {
-  background: var(--muted);
-  color: var(--text-muted);
-  cursor: default;
-}
-
-#nextButton:focus {
-  outline: 3px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* ===============================
    Panneau exercice
 =================================*/
-.exercice-zone {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center; 
-  padding: 20px 0;
-  margin-top: 30px;
-}
-
 #exercice-container {
   width: 95%;
-  max-width: 800px; 
-  margin: 0 auto 16px auto; 
-  margin-top : 30px;
+  max-width: 800px;
+  margin: 0 auto 16px auto;
   padding: 20px;
   background: var(--panel-bg);
   backdrop-filter: blur(6px);
@@ -443,7 +543,7 @@ html, body {
 }
 .input-error {
   border-color: var(--error) !important;
-  background: rgba(251, 113, 133, 0.1) !important;
+  background: var(--erreur-fond) !important;
 }
 
 .comment {
@@ -465,9 +565,9 @@ html, body {
   white-space: nowrap;
 }
 .comment:empty { display:none; }
-.comment.error   { background: rgba(251, 113, 133, 0.15); color: var(--error); }
-.comment.success { background: rgba(74, 222, 128, 0.15); color: var(--success); }
-.comment.info    { background: rgba(74, 222, 128, 0.1); color: var(--primary); }
+.comment.error   { background: var(--erreur-fond); color: var(--error); }
+.comment.success { background: var(--succes-fond); color: var(--success); }
+.comment.info    { background: var(--accent-clair); color: var(--primary); }
 
 .close-button{
   display:inline-flex;
@@ -503,10 +603,10 @@ html, body {
   font-weight:600;
   color: var(--text-dark);
   background: var(--accent);
-  box-shadow: 0 2px 4px rgba(0,0,0,.3);
+  box-shadow: 0 2px 4px rgba(35,48,42,.15);
   transition: background .2s, transform .1s, box-shadow .2s;
 }
-.btn-correction:hover{ background: var(--primary); transform:translateY(-1px); }
+.btn-correction:hover{ background: var(--accent-hover); transform:translateY(-1px); }
 
 /* ===============================
    Correction (bloc)
@@ -516,7 +616,7 @@ html, body {
   background: var(--accent-pale);
   border: 1px solid var(--accent-pale-border);
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,.2);
+  box-shadow: 0 4px 6px rgba(35,48,42,.08);
   margin-top: 12px;
   padding: 14px;
 }
