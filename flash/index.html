@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>⚡ FLASH – Maths</title>
+
+<!-- =========================
+     MathJax (CONFIG AVANT SCRIPT)
+     ========================= -->
+<script>
+window.MathJax = {
+  tex: {
+    displayMath: [['\\[','\\]'], ['$$','$$']],
+    inlineMath: [['$','$']]
+  },
+  options: {
+    skipHtmlTags: ['script','noscript','style','textarea','pre']
+  }
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+<!-- =========================
+     Styles
+     ========================= -->
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- =========================
+     EN-TÊTE CLASSIQUE (identique à la référence calculPrioritaire,
+     non modifiée) — titre + actions génériques.
+     ========================= -->
+<header>
+  <span id="titre_appli">⚡ <b>Automatismes</b></span>
+  <div class="header-actions" id="topButtonsBar">
+    <button type="button" id="btnAtelier" class="btn-header active">Atelier</button>
+    <button type="button" id="btnQuiz" class="btn-header">Quiz</button>
+    <div class="filet-header"></div>
+    <button type="button" id="btnNouvelOnglet" class="btn-header">Nouvel onglet</button>
+    <button type="button" id="btnFichePapier" class="btn-header">Fiche papier</button>
+    <div class="filet-header"></div>
+    <button type="button" id="btnGuide" class="btn-header">Guide</button>
+  </div>
+</header>
+
+<!-- =========================
+     PANNEAU DE CONTRÔLE CLASSIQUE (identique à la référence, non modifié)
+     ========================= -->
+<div id="appBody">
+
+  <aside id="panneauLateral">
+    <!-- Toujours visible (atelier comme quiz) : se verrouille (désactive)
+         une fois le quiz lancé, plutôt que d'être caché — comme dans la
+         référence (construireSelecteurNiveau(verrouille)). -->
+    <div class="panel-groupe" id="groupeNiveau">
+      <div class="panel-groupe-label">Niveau</div>
+      <div class="panel-type-list" id="selecteurNiveau">
+        <button class="panel-btn active" type="button" data-code="6">6e</button>
+        <button class="panel-btn" type="button" data-code="5">5e</button>
+        <button class="panel-btn" type="button" data-code="4">4e</button>
+        <button class="panel-btn" type="button" data-code="3">3e</button>
+      </div>
+    </div>
+
+    <div class="panel-filet"></div>
+
+    <!-- Toujours visible, comme le sélecteur de niveau : filtre les
+         exercices de calcul tagués negatif:"oui" (valeurs négatives dans
+         l'énoncé). Désactivé par défaut. -->
+    <div class="panel-groupe" id="groupeType">
+      <div class="panel-groupe-label">Type</div>
+      <button class="panel-btn" type="button" id="btnNegatifs">Avec relatifs</button>
+    </div>
+
+    <div class="panel-filet"></div>
+
+    <!-- Avant le quiz : nombre de questions + bouton de lancement.
+         Masqué par défaut : ne se révèle qu'au clic sur "Quiz" (header). -->
+    <div class="panel-groupe" id="quizControles" hidden>
+      <div class="panel-groupe-label">Quiz</div>
+      <input type="number" id="quizNbQuestions" class="panel-input" min="1" max="50" value="10">
+      <button class="panel-btn active" type="button" id="btnCommencerQuiz">Commencer le Quiz</button>
+    </div>
+
+    <!-- Pendant le quiz : remplace le bloc ci-dessus. -->
+    <div id="quizEtat" hidden>
+      <div class="panel-groupe-label">Quiz</div>
+      <div id="score-container">
+        <div id="question-progress">Question : 0/0</div>
+        <div id="score">Score : 0</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =========================
+       ZONE APPLI : exactement ce que flash avait déjà (bandeau + boutons
+       + questions), inchangée, simplement imbriquée ici.
+       ========================= -->
+  <main id="contenuApp">
+
+    <div id="flash-header">
+
+      <div id="fash-button" class="flash-left">
+        <button type="button" class="flash-badge" id="btnCompact"
+                title="Mode compact (masque les boutons de régénération)">⚡ FLASH</button>
+      </div>
+
+      <div id="timer"></div>
+
+      <script type="module">
+        import TimerWidget from "./TimerWidget.js";
+
+        new TimerWidget(
+          document.getElementById("timer"),
+          { duration: 5 * 60 }
+        );
+      </script>
+
+      <div class="flash-controls">
+
+        <button onclick="engine.shuffleAll()"
+                title="Régénérer toutes les questions">
+          🔀
+        </button>
+
+        <button id="btnShuffleOne"
+                title="Tout du même thème">
+          🎯
+        </button>
+
+        <button onclick="engine.addQuestion()"
+                title="Ajouter une question">
+          +
+        </button>
+
+        <button onclick="engine.removeQuestion()"
+                title="Retirer une question">
+          −
+        </button>
+
+        <button id="btnCorrection"
+                title="Afficher / masquer la correction">
+          ✓
+        </button>
+
+        <button id="btnSaisie"
+                title="Mode réponse en ligne (individuel)">
+          ✏️
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="flash">
+      <!-- Les QuestionDiv sont injectées ici par l’engine -->
+    </div>
+
+  </main>
+
+</div>
+
+
+<footer class="app-footer">
+  Application développée par <strong>G. Cantrelle</strong>
+</footer>
+
+<!-- =========================
+     ENGINE
+     ========================= -->
+<script type="module">
+  import engine from "./engine.js";
+  import FichePapier from "./fiche.js";
+  import GuideAppli from "./guide.js";
+  window.engine = engine;
+  engine.init(3); // nombre initial de questions
+
+  // ---------- Nouvel onglet ----------
+  // Repli si window.open() est bloqué (iframe sandbox) : affiche un lien
+  // cliquable à côté du bouton.
+  (() => {
+    const btn = document.getElementById("btnNouvelOnglet");
+    const repli = document.createElement("span");
+    repli.style.cssText = "display:none; font-size:0.8em; margin-left:8px;";
+    repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+    btn.after(repli);
+    btn.addEventListener("click", () => {
+      const w = window.open(window.location.href, "_blank", "noopener");
+      if (!w) repli.style.display = "inline";
+    });
+  })();
+
+  // ---------- Fiche papier ----------
+  // Reprend telles quelles les questions actuellement affichées dans
+  // l'atelier (engine.getQuestionsData()) : jamais de génération séparée.
+  const fiche = new FichePapier(engine);
+  fiche.installerBouton(document.getElementById("btnFichePapier"));
+
+  // ---------- Guide ----------
+  const guide = new GuideAppli();
+  guide.installerBouton(document.getElementById("btnGuide"));
+
+  document
+  .getElementById("btnCorrection")
+  .addEventListener("click", (e) => {
+    engine.toggleCorrection();
+    e.currentTarget.classList.toggle("actif", engine.isCorrectionMode());
+  });
+  document
+  .getElementById("btnShuffleOne")
+  .addEventListener("click", () => engine.shuffleOneTheme());
+  document
+  .getElementById("btnSaisie")
+  .addEventListener("click", (e) => {
+    engine.toggleSaisie();
+    e.currentTarget.classList.toggle("actif", engine.isSaisieMode());
+  });
+
+  // Bouton "⚡ FLASH" : mode compact. Cache tout le bandeau de contrôles
+  // sauf le minuteur et le bouton de correction globale ; les boutons de
+  // régénération de chaque question laissent place à un bouton de
+  // correction individuelle.
+  document
+  .getElementById("btnCompact")
+  .addEventListener("click", (e) => {
+    engine.toggleCompact();
+    const actif = engine.isCompactMode();
+    e.currentTarget.classList.toggle("actif", actif);
+    document.querySelector(".flash-controls").classList.toggle("mode-compact", actif);
+  });
+
+  // Panneau "Niveau" : plusieurs niveaux peuvent être actifs à la fois
+  // (voir engine.toggleNiveau) ; chaque bouton bascule indépendamment.
+  document.getElementById("selecteurNiveau")
+    .addEventListener("click", (e) => {
+      const btn = e.target.closest(".panel-btn");
+      if (!btn) return;
+      engine.toggleNiveau(btn.dataset.code);
+      btn.classList.toggle("active", engine.getNiveaux().includes(btn.dataset.code));
+    });
+
+  // Panneau "Type" : simple bascule (pas de multi-sélection).
+  document.getElementById("btnNegatifs").addEventListener("click", (e) => {
+    engine.toggleNegatifs();
+    e.currentTarget.classList.toggle("active", engine.getAvecNegatifs());
+  });
+
+  // ---------- Atelier / Quiz (header) ----------
+  // Le panneau "Niveau" reste TOUJOURS visible (atelier ou quiz) ; seul le
+  // bloc "Quiz" (nombre de questions + Commencer) apparaît/disparaît selon
+  // le bouton actif du header — comme renderPanneauLateral() dans la
+  // référence, qui ne cache jamais le sélecteur de niveau, elle le
+  // verrouille seulement une fois le quiz lancé (cf. btnCommencerQuiz).
+
+  function niveauVerrouille(oui) {
+    document.querySelectorAll("#selecteurNiveau .panel-btn")
+      .forEach(b => b.disabled = oui);
+    document.getElementById("btnNegatifs").disabled = oui;
+  }
+
+  document.getElementById("btnAtelier").addEventListener("click", (e) => {
+    e.currentTarget.classList.add("active");
+    document.getElementById("btnQuiz").classList.remove("active");
+    document.getElementById("quizControles").hidden = true;
+    document.getElementById("quizEtat").hidden = true;
+    document.querySelector(".flash-controls").hidden = false;
+    niveauVerrouille(false);
+
+    // Retour à l'atelier : on quitte le quiz, donc plus de saisie
+    // individuelle, et on repart des 3 questions de base.
+    if (engine.isSaisieMode()) {
+      engine.toggleSaisie();
+      document.getElementById("btnSaisie").classList.remove("actif");
+    }
+    engine.relancer(3);
+  });
+
+  document.getElementById("btnQuiz").addEventListener("click", (e) => {
+    e.currentTarget.classList.add("active");
+    document.getElementById("btnAtelier").classList.remove("active");
+    document.getElementById("quizControles").hidden = false;
+    document.getElementById("quizEtat").hidden = true;
+  });
+
+  // ---------- Quiz ----------
+
+  function majEtatQuiz() {
+    const { repondues, correct, total } = engine.getScore();
+    document.getElementById("question-progress").textContent = `Question : ${repondues}/${total}`;
+    document.getElementById("score").textContent = `Score : ${correct}`;
+
+    if (repondues === total) afficherFinDeQuiz(correct, total);
+  }
+
+  function afficherFinDeQuiz(correct, total) {
+    document.getElementById("quizEtat").innerHTML = `
+      <div class="panel-groupe-label">Quiz</div>
+      <div id="score-container">
+        <div id="question-progress">Quiz terminé !</div>
+        <div id="score">Score final : ${correct} / ${total}</div>
+        <button class="restart-btn" type="button" onclick="location.reload()">Recommencer</button>
+      </div>
+    `;
+  }
+
+  document.getElementById("btnCommencerQuiz").addEventListener("click", () => {
+    const nb = Math.max(1, Math.min(50, parseInt(document.getElementById("quizNbQuestions").value, 10) || 10));
+
+    // "Commencer" inactive tout sauf le header : le niveau se verrouille
+    // (comme la référence), le bandeau flash-controls disparaît.
+    niveauVerrouille(true);
+    document.querySelector(".flash-controls").hidden = true;
+
+    // Le bloc "nombre de questions + Commencer" laisse place à
+    // "répondu / score".
+    document.getElementById("quizControles").hidden = true;
+    document.getElementById("quizEtat").hidden = false;
+
+    // Choisit les questions et lance le mode réponse en ligne.
+    engine.relancer(nb);
+    if (!engine.isSaisieMode()) {
+      engine.toggleSaisie();
+      document.getElementById("btnSaisie").classList.add("actif");
+    }
+
+    engine.onReponse(majEtatQuiz);
+    majEtatQuiz();
+  });
+</script>
+
+</body>
+</html>

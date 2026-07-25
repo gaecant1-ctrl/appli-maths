@@ -1,0 +1,744 @@
+/* =========================
+   Thème & variables
+   ========================= */
+
+:root {
+  --bg: #1e2a45;              /* fond global */
+  --card: #f8fafc;            /* cartouche clair */
+  --card-border: #c7d2fe;     /* bord bleu clair */
+  --text: #020617;            /* texte très sombre */
+  --muted: #475569;
+  --border-soft: #93c5fd;
+  --radius: 16px;
+  --shadow: 0 6px 20px rgba(0,0,0,0.25);
+  --row-height: 84px;
+
+
+  --papier:        #ffffff;
+  --papier-panel:  #f8effa;
+  --papier-encart: #ffffff;
+
+  --grille:        #e6cbe4;
+  --grille-forte:  #5c2a56;
+
+  /* Texte */
+  --encre:         #3d1a3a;
+  --encre-douce:   #7a5a78;
+
+  /* Accent unique (prune) */
+  --accent:        #8E4585;
+  --accent-strong: #8E4585;
+  --accent-hover:  #6E3568;
+  --accent-clair:  #f3e4f1;
+
+  /* En-tête / panneau latéral classiques */
+  --header-fond:        #f8eef6;
+  --header-bordure:     #e0bcdd;
+  --header-texte:       #5c2a56;
+  --header-texte-hover: #3d1a3a;
+  --header-accent:      #8E4585;
+  --header-accent-vif:  #6E3568;
+
+  --panneau-fond: #eef1f8;
+  --panneau-bordure: #c7d2fe;
+  --panneau-label: #5b6685;
+  --panneau-texte: #1e293b;
+
+    --rayon-petit:   8px;
+}
+
+/* =========================
+   Reset léger
+   ========================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+
+/* =========================
+   En-tête classique
+   ========================= */
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  width: 100%;
+  padding: 0 1.2em;
+  min-height: 58px;
+  background: var(--header-fond);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+#titre_appli {
+  font-size: 1.3em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: var(--header-accent-vif);
+  padding: 0.5em 0;
+  white-space: nowrap;
+}
+
+#titre_appli b {
+  color: var(--header-accent-vif);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
+
+.btn-header:hover {
+  border-color: var(--accent);
+  color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+  transform: scale(0.98);
+}
+
+.btn-header.active {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #ffffff;
+}
+
+/* =========================
+   Corps : panneau latéral + questions
+   ========================= */
+
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 220px;
+  width: 220px;
+  min-height: calc(100vh - 58px);
+  background: var(--panneau-fond);
+  border-right: 1px solid var(--panneau-bordure);
+  padding: 1.4em 1.1em;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+}
+
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.panel-groupe-label {
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--panneau-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.panel-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.panel-btn {
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid var(--panneau-bordure);
+  border-radius: 10px;
+  padding: 0.55em 0.8em;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--panneau-texte);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.panel-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.panel-btn.active {
+  background-color: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #ffffff;
+}
+
+.panel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #ffffff !important;
+  border-color: var(--panneau-bordure) !important;
+  color: var(--panneau-label) !important;
+}
+
+.panel-filet {
+  height: 1px;
+  background: var(--panneau-bordure);
+  margin: 0.3em 0;
+}
+
+.panel-input {
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid var(--panneau-bordure);
+  border-radius: 10px;
+  padding: 0.55em 0.8em;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--panneau-texte);
+  box-sizing: border-box;
+}
+
+.panel-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.panel-info {
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--panneau-texte);
+}
+
+/* =========================
+   Quiz : score, progression, écran de fin
+   ========================= */
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 100%;
+}
+
+#question-progress,
+#score {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--panneau-fond);
+  padding: 0.6em 0.8em;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85em;
+  border: 1px solid var(--panneau-bordure);
+  text-align: left;
+}
+
+#question-progress {
+  color: var(--panneau-label);
+}
+
+#score {
+  color: #15803d;
+  border-color: #15803d;
+}
+
+.restart-btn {
+  margin-top: 0.6em;
+  width: 100%;
+  padding: 0.6em 0.8em;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.restart-btn:hover {
+  background: var(--accent-strong);
+}
+
+/* =========================
+   Zone appli : contenu flash d'origine (bandeau + boutons + questions),
+   imbriqué tel quel dans le nouveau <main>.
+   ========================= */
+
+#contenuApp {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--papier-panel);
+}
+
+#flash-header {
+  max-width: 1200px;
+  margin: 1.6em auto 0.8em auto;
+  padding: 0 1.2em;
+
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+/* Ratio fixe 3:1:3 entre les 3 zones (badge / minuteur / contrôles) :
+   flex-basis:0 partout, la largeur dépend de l'espace disponible, jamais
+   du contenu — même principe que .enonce/.saisie/.controls (voir plus
+   bas), pas de saut de mise en page. */
+#flash-header > .flash-left {
+  flex: 3 3 0%;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-start;
+}
+
+#flash-header > #timer {
+  flex: 1 1 0%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+#flash-header > .flash-controls {
+  flex: 3 3 0%;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.flash-badge {
+  font-size: 1.4em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  padding: 0.35em 0.9em;
+  border-radius: 999px;
+
+  color: #ffffff;
+  background: linear-gradient(
+    100deg,
+    #8E4585 0%,
+    #6E3568 50%,
+    #f3e4f1 100%
+  );
+
+
+
+  box-shadow:
+    0 0 0 2px rgba(59,130,246,0.35),
+    0 6px 18px rgba(37,99,235,0.6);
+
+  user-select: none;
+
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.flash-badge.actif {
+  box-shadow:
+    0 0 0 3px rgba(59,130,246,0.7),
+    0 6px 18px rgba(37,99,235,0.6);
+}
+
+.flash-controls {
+  display: flex;
+  gap: 0.6em;
+}
+
+/* Mode compact : ne garde que le bouton de correction globale. */
+.flash-controls.mode-compact button:not(#btnCorrection) {
+  display: none;
+}
+
+.flash-controls button {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+
+  background: #e0e7ff;
+  color: #1e3a8a;
+
+  font-size: 1.15em;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: background 0.15s ease,
+              transform 0.12s ease,
+              box-shadow 0.15s ease;
+}
+
+.flash-controls button:hover {
+  background: #c7d2fe;
+  box-shadow: 0 0 0 2px var(--border-soft);
+  transform: scale(1.06);
+}
+
+.flash-controls button.actif {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #ffffff;
+}
+
+#flash {
+  max-width: 1200px;
+  margin: 0 auto 2.4em auto;
+  padding: 0 1.2em;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1.1em;
+
+  /* Beaucoup de questions (quiz) : défilement interne plutôt qu'une page
+     qui grandit sans fin ou des cartouches rapetissées pour tout faire
+     tenir — la hauteur de chaque question (--row-height) ne change jamais
+     (voir flex-shrink:0 sur .question). Ascenseur non visible mais
+     toujours fonctionnel (molette, tactile, clavier). */
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* anciens Edge/IE */
+}
+
+#flash::-webkit-scrollbar {
+  display: none;              /* Chrome, Safari */
+}
+
+/* =========================
+   Cartouche question
+   ========================= */
+
+.question {
+  height: var(--row-height);
+  flex-shrink: 0; /* jamais compressée par le défilement de #flash */
+
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f1f5f9 100%
+  );
+
+  border-radius: var(--radius);
+  border: 2px solid var(--card-border);
+  box-shadow: var(--shadow);
+
+  padding: 0.75em 1.1em;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9em;
+
+  overflow: hidden;
+}
+
+/* Numéro */
+
+.question .numero {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 1.1em;
+  color: var(--muted);
+}
+
+/* Énoncé */
+
+.question .enonce {
+  /* Ratio fixe 5:1:1 avec .saisie et .controls (flex-basis: 0 partout) :
+     la largeur de chaque zone dépend de l'espace disponible, jamais de son
+     contenu — pas de saut de mise en page quand le texte change. */
+  flex: 5 5 0%;
+  min-width: 0;
+  font-size: 1.28em;
+  line-height: 1.3;
+  text-align: left;
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* =========================
+   Boutons QuestionDiv
+   ========================= */
+
+.question .controls {
+  /* Même ratio fixe que .enonce/.saisie : voir commentaire sur .enonce. */
+  flex: 1 1 0%;
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: repeat(2, 34px);
+  grid-template-rows: repeat(2, 34px);
+  gap: 0.35em;
+
+  justify-items: center;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mode saisie : .controls affiche le feedback de réponse + la bascule de
+   correction individuelle à la place des boutons de régénération. */
+.question .controls.feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+
+.question button {
+  width: 34px;
+  height: 34px;
+
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+
+  background: #e0e7ff;
+  color: #1e3a8a;
+
+  font-size: 1.15em;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: background 0.15s ease,
+              transform 0.12s ease,
+              box-shadow 0.15s ease;
+}
+
+.question button:hover {
+  background: #c7d2fe;
+  box-shadow: 0 0 0 2px var(--border-soft);
+  transform: scale(1.06);
+}
+
+/* =========================
+   Saisie de réponse (mode individuel, option)
+   ========================= */
+
+.question .saisie {
+  /* Même ratio fixe que .enonce/.controls : voir commentaire sur .enonce. */
+  flex: 2 2 0%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+.question .saisie .reponse-input {
+  width: 9.5em;
+  flex: 0 0 auto;
+  height: 54px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 2px solid var(--border-soft);
+  padding: 0 0.5em;
+  font-size: 1em;
+  text-align: center;
+  color: var(--text);
+  background: #ffffff;
+}
+
+.question .saisie .reponse-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.question .saisie .reponse-input.ok {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.question .saisie .reponse-input.ko {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.question .saisie .reponse-rendue {
+  /* Même taille exacte que .reponse-input : rien ne bouge au verrouillage. */
+  width: 9.5em;
+  flex: 0 0 auto;
+  height: 54px;
+  padding: 0 0.5em;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 2px solid var(--border-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 1em;
+}
+
+.question .saisie .reponse-rendue.ok {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.question .saisie .reponse-rendue.ko {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.question .controls .feedback-invalide {
+  font-size: 0.85em;
+  white-space: nowrap;
+  color: #b45309;
+}
+
+.question .controls .statut {
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.question .controls .statut.ok {
+  color: #16a34a;
+}
+
+.question .controls .statut.ko {
+  color: #dc2626;
+}
+
+.question .saisie button.toggle-correction.actif {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #ffffff;
+}
+
+/* Bouton "changer d'exercice" mis en avant */
+
+.question button.exo {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #ffffff;
+}
+
+
+
+
+/* =========================
+   MathJax : discipline minimale
+   ========================= */
+
+mjx-container {
+  color: var(--text);
+}
+
+.question .enonce mjx-container[display="true"] {
+  text-align: left;
+  margin: 0;
+}
+
+/* =========================
+   Correction MathJax : hauteur stable
+   ========================= */
+
+.question .enonce {
+  display: flex;
+  align-items: center;
+  min-height: 100%;
+}
+
+.question .enonce mjx-container {
+  margin: 0 !important;
+  padding: 0.02em 0;
+  line-height: 1.1;
+}
+
+/* Énoncé à deux lignes (plusieurs blocs \[...\] dans un <div>, séparés
+   par un <br> — cf. QuestionDiv._latexEnLignes) : le <br> hérite sinon du
+   line-height de .enonce (1.3 × 1.28em ≈ 26px), bien plus grand que les
+   blocs MathJax qu'il sépare (line-height:1.1 ci-dessus, propre à
+   mjx-container et donc pas affecté par ce line-height:0 sur le div). */
+.question .enonce > div {
+  line-height: 0;
+}
+
+.app-footer {
+  margin-top: 2rem;
+  padding: 0.5rem 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #666;
+  border-top: 1px solid #ddd;
+}
+
+#timer-widget {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+#timer-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+[hidden] {
+  display: none !important;
+}
