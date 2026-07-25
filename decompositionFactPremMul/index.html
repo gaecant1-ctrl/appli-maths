@@ -2,176 +2,117 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Exercice de Conversion</title>
-  <link rel="stylesheet" href="style-conversion.css">
-  <!-- MathJax pour les formules mathématiques -->
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <!-- Confetti pour l’animation de fin -->
+  <title>Diviseurs d'un Nombre</title>
+  <link rel="stylesheet" href="style.css?v=1">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['$$', '$$']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <!-- Confetti (optionnel) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <div id="container">
-    <div id="titre"><h1>Exercice</h1></div>
-    <div id="score">Score : 0/0</div>
-    <div id="resultat"></div>
-    <div id="exercice-zone"></div>
-    <div>
-      <button id="nextButton">Nouvel exercice</button>
-    </div>
-  </div>
-  <!-- Iframe cachée pour certains usages éventuels (ex : soumission silencieuse) -->
-  <iframe name="dummyFrame" style="display:none;"></iframe>
 
-  <!-- Dépendances métiers (doivent être présentes dans le dossier) -->
-  <script src="IdentifiantAccess.js"></script>
+  <header>
+    <span id="titre_appli">Diviseurs <b>d'un Nombre</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+
+    <!-- Conteneur du quiz -->
+    <main id="app"></main>
+  </div>
+
+  <!-- Scripts de ton projet -->
   <script src="Grandeur.js"></script>
-  <script src="Exercice.js"></script>
-  <script src="ScoreSender.js"></script>
+  <script src="Exercice.js?v=3"></script>
   <script src="AnimationFinale.js"></script>
   <script src="Generateur.js"></script>
+  <script src="Fiche.js?v=14"></script>
+  <script src="Guide.js?v=1"></script>
+  <script src="Quiz.js?v=2"></script>
+
   <script>
-    // --- Variables globales du quiz ---
-    let identifiantAccess;         // Pour gérer l’identifiant utilisateur (voir IdentifiantAccess.js)
-    let exercice;                  // L’instance courante d’exercice
-    let total = 0, bonnes = 0;     // Compteurs de questions et de bonnes réponses
-    const nbQuestions = 10;         // Nombre de questions du quiz
-   
 
-   
-    // Pour activer/désactiver l’envoi du score, dé-commente la ligne suivante :
-    // const scoreSender = new ScoreSender({ debug: true });
-    const scoreSender = null;      // Pas d’envoi de score par défaut
-    
-    let questionValidee = false;   // Indique si la question courante a été validée
+/** Installe le bouton "Nouvel onglet" dans le header.
+ *  Repli si window.open() est bloqué (iframe sandbox) : affiche un lien
+ *  cliquable à côté du bouton. */
+function setupBoutonNouvelOnglet() {
+  const conteneur = document.getElementById("topButtonsBar");
+  if (!conteneur) return;
 
-    // --- Initialisation du quiz au chargement de la page ---
-    window.addEventListener("load", () => {
-      // On attend que MathJax soit prêt avant de démarrer
-      if (window.MathJax) {
-        MathJax.startup.promise.then(() => {
-          // On récupère (ou demande) l’identifiant utilisateur, puis on démarre le quiz
-          identifiantAccess = new IdentifiantAccess(() => {
-            demarrerQuiz();
-          });
-        });
-      } else {
-        console.error("MathJax n'a pas été chargé.");
-      }
-    });
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'btnNouvelOnglet';
+  btn.className = 'btn-header';
+  btn.textContent = 'Nouvel onglet';
 
-    /**
-     * Démarre ou redémarre le quiz.
-     * Réinitialise les compteurs, l’affichage du score et le bouton.
-     * Lance la première question.
-     */
-    function demarrerQuiz() {
-      total = 0;
-      bonnes = 0;
-      resultat.innerHTML = "";
-      document.getElementById("score").textContent = `Score : 0/0`;
-      document.getElementById("nextButton").textContent = "Nouvel exercice";
-      document.getElementById("nextButton").style.display = "";
-      nouvelleQuestion();
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
+  repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+
+  btn.onclick = () => {
+    const w = window.open(window.location.href, "_blank", "noopener");
+    if (!w) repli.style.display = 'inline';
+  };
+
+  conteneur.appendChild(btn);
+  conteneur.appendChild(repli);
+}
+
+window.addEventListener('load', () => {
+
+  function buildQcm(zone, index, onRejet) {
+    const questionData = diviseurDecFullQCM();
+    return new ExerciceFullQcm(zone, questionData, onRejet);
+  }
+
+  const quiz = new Quiz({
+    mount: '#app',
+    nbQuestions: 10,
+    buildExercise: buildQcm,
+    texts: {
+      ready: "Diviseurs d'un Nombre",
+      readyImage: "",
+      readyContent: `
+        <p style="font-size:1.2em; line-height:1.5; margin:20px 0; text-align:center;">
+          Un nombre est décomposé en produit de facteurs premiers. Coche, parmi une liste de nombres proposés, ceux qui le divisent.
+        </p>
+      `
     }
+  });
 
-    /**
-     * Affiche une nouvelle question.
-     * Réinitialise l’état de validation, crée un nouvel exercice et gère l’activation du bouton.
-     * Met à jour le score et le texte du bouton dès que la réponse est validée.
-     */
-    function nouvelleQuestion() {
-      questionValidee = false;
-      const zone = document.getElementById("exercice-zone");
-      zone.innerHTML = "";
-      
-      const cas=false;
-      if(cas){
-      const qcmFunctions = [grandeurQCM,droiteQCM, polygoneNameQCM,echelleQCM,proportionQCM,dureeQCM,echelleMasseQCM,vocabulaireOperationQCM];
-      const idx = Math.floor(Math.random() * qcmFunctions.length)*0+7; // 0, 1 ou 2
-      const questionData=qcmFunctions[idx]();
-      document.getElementById("titre").innerHTML = "<h1>"+questionData.type+"</h1>";
-      exercice = new ExerciceQcm(zone,questionData);
-      }
-      else{
-      const fullqcmFunctions = [diviseurFullQCM,diviseurDecFullQCM];
-      const idx = Math.floor(Math.random() * fullqcmFunctions.length)*0+1; // 0, 1 ou 2
-      const questionData=fullqcmFunctions[idx]();
-      document.getElementById("titre").innerHTML = "<h1>"+questionData.type+"</h1>";  
-      exercice = new ExerciceFullQcm(zone, questionData); 
-      }
+  setupBoutonNouvelOnglet();
 
+  // ==========================================
+  // FICHE PAPIER (overlay LaTeX + impression PDF)
+  // ==========================================
+  const fiche = new FichePapier({
+    genererQuestion: diviseurDecFullQCM,
+    nbExercices: 8,
+    titre: "Diviseurs d'un Nombre",
+    sousTitre: ""
+  });
+  fiche.installerBouton(document.getElementById('topButtonsBar'));
 
-      nextButton.disabled = true; // On désactive le bouton tant que la question n’est pas validée
+  // ==========================================
+  // GUIDE (mode d'emploi)
+  // ==========================================
+  const guide = new GuideAppli();
+  guide.installerBouton(document.getElementById('topButtonsBar'));
+});
 
-      // Quand l’exercice émet l’événement "reponseValidee", on gère l’activation du bouton et le score
-      zone.addEventListener("reponseValidee", function handler(e) {
-        if (e.detail.status === "correct" || e.detail.status === "incorrect") {
-          questionValidee = true;
-          total++;
-          bonnes += exercice.points(); // .points() doit retourner 1 si correct, 0 sinon
-          document.getElementById("score").textContent = `Score : ${bonnes}/${total}`;
-
-          // Si c’est la dernière question, on prépare le bilan
-          nextButton.textContent = (total === nbQuestions) ? "Bilan" : "Nouvel exercice";
-          nextButton.disabled = false;
-          setTimeout(() => nextButton.focus(), 0); // Pour l’accessibilité
-          zone.removeEventListener("reponseValidee", handler);
-        }
-      });
-    }
-
-    /**
-     * Gestion du bouton "suivant" :
-     * - Si la question n’est pas validée, on force la validation.
-     * - Sinon, on passe à la question suivante ou au bilan.
-     */
-    document.getElementById("nextButton").onclick = function() {
-      if (!questionValidee) {
-        exercice.valider();
-        return;
-      }
-      if (total < nbQuestions) {
-        nouvelleQuestion();
-      } else {
-        afficherFin();
-      }
-      this.blur();
-    };
-
-    /**
-     * Accessibilité : permet d’activer le bouton avec Entrée/Espace au clavier.
-     * (La plupart des navigateurs le gèrent déjà, mais c’est une bonne pratique.)
-     */
-    document.getElementById("nextButton").addEventListener("keydown", function(e) {
-      if ((e.key === "Enter" || e.key === " ") && !this.disabled) {
-        e.preventDefault();
-        this.click();
-      }
-    });
-
-    /**
-     * Affiche le bilan final du quiz avec animation.
-     * Utilise la classe AnimationFinale pour gérer l’affichage, l’animation et l’envoi du score.
-     */
-    function afficherFin() {
-      const resultat=document.getElementById("resultat");
-      document.getElementById("nextButton").style.display = "none";
-      document.getElementById("exercice-zone").innerHTML = "";
-
-
-      const anim = new AnimationFinale({
-      score: bonnes,
-        total: total,
-        nbQuestions: nbQuestions,
-        resultat: resultat, // <--- obligatoire
-        onRestart: demarrerQuiz,
-        scoreSender: scoreSender,
-        identifiant: identifiantAccess ? identifiantAccess.valeur : "anonyme"
-      });
-      anim.afficher();
-
-    }
   </script>
+
 </body>
 </html>

@@ -94,13 +94,38 @@ function normalizePolicies(p) {
 }
 
 
-function collectAtomsOpsFromAnalyser(objetString) {
+/**
+ * Un token brut "base^exposant" (ex: "2^3") reste affiché tel quel dans
+ * l'arbre (voir Nombre.js : this.puissanceAffichage) — mais POUR LA
+ * COMPARAISON memesAtomes/memesOperations, on le développe en multiplication
+ * répétée ("2^3" -> atomes [2,2,2], opérations [*,*]) afin qu'une saisie en
+ * notation puissance soit reconnue équivalente à une correction écrite
+ * "2*2*2". Renvoie null si le token n'est pas de cette forme.
+ */
+function expandirTokenPuissance(token) {
+  const EXPOSANT_MAX = 12; // borne de sécurité (évite un développement absurde)
+  const m = typeof token === 'string' ? token.match(/^([+-]?\d+(?:[.,]\d+)?)\^(\d+)$/) : null;
+  if (!m) return null;
+  const base = m[1];
+  const exp = parseInt(m[2], 10);
+  if (exp < 0 || exp > EXPOSANT_MAX) return null;
+  if (exp === 0) return { atoms: ['1'], ops: [] };
+  return { atoms: Array(exp).fill(base), ops: Array(exp - 1).fill('*') };
+}
+
+function collectAtomsOpsFromAnalyserTopLevel(objetString) {
   const toks = objetString?.analyserTokens?.() || [];
   const atoms = [];
   const ops = [];
   const unaries = [];
 
   for (const t of toks) {
+    const expansion = expandirTokenPuissance(t.token);
+    if (expansion) {
+      atoms.push(...expansion.atoms);
+      ops.push(...expansion.ops);
+      continue;
+    }
     if (t.sigAtom) atoms.push(t.sigAtom);
     if (t.sigOp)   ops.push(t.sigOp);
     if (t.unarySign === '+' || t.unarySign === '-') unaries.push('u' + t.unarySign); // ex: 'u-'
@@ -182,16 +207,9 @@ window.verifier = function verifier(initialObj, answerObj, regles = {}) {
   const sequenceEqual = (a, b) =>
     Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => v === b[i]);
 
-  const collectAtomsOpsFromAnalyser = (objetString) => {
-    const toks = objetString?.analyserTokens?.() || [];
-    const atoms = [], ops = [], unaries = [];
-    for (const t of toks) {
-      if (t?.sigAtom) atoms.push(t.sigAtom);
-      if (t?.sigOp)   ops.push(t.sigOp);
-      if (t?.unarySign === '+' || t?.unarySign === '-') unaries.push('u' + t.unarySign);
-    }
-    return { atoms, ops, unaries };
-  };
+  // Délègue à la fonction top-level (même logique, y compris le
+  // développement des tokens "base^exposant" — voir expandirTokenPuissance).
+  const collectAtomsOpsFromAnalyser = collectAtomsOpsFromAnalyserTopLevel;
 
   // ---------- A) Entrées minimales ----------
   if (!answerObj || answerObj.valid !== true) {

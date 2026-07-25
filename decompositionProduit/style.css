@@ -1,44 +1,91 @@
-/* === Variables (tuning facile) === */
+/* ===============================
+   Variables (tuning centralisé)
+=================================*/
 :root{
-  /* Hauteurs & snapping */
-  --wrapper-h: 40px;                      /* hauteur exacte d’une ligne (.input-wrapper) */
-  --rows-visible: 4;                      /* nb de lignes visibles dans .reponse */
+  /* Hauteurs & snapping (INCHANGÉS) */
+  --wrapper-h: 40px;
+  --rows-visible: 4;
   --reponse-h: calc(var(--wrapper-h) * var(--rows-visible));
 
-  /* Espacements wrapper / input */
-  --wrap-pad-v: 6px;                      /* padding vertical du wrapper */
-  --wrap-pad-h: 10px;                     /* padding horizontal du wrapper */
-  --input-v-gap: 6px;                     /* “air” vertical autour de l’input dans le wrapper */
+  /* Espacements (INCHANGÉS) */
+  --wrap-pad-v: 6px;
+  --wrap-pad-h: 10px;
+  --input-v-gap: 6px;
+  --input-w: 280px;
 
-  /* Couleurs globales */
-  --text: #222;
+  /* --- THÈME COULEUR (aligné sur geometrieBase) --- */
+  /* Fond & surfaces */
+  --papier: #ffffff;
+  --papier-panel: #f1f8f3;
 
-  /* Fond (2 clés + gradient prêt) */
-  --bg-grad-a: #c2e9fb;
-  --bg-grad-b: #a1c4fd;
-  --bg-gradient: linear-gradient(135deg, var(--bg-grad-a) 0%, var(--bg-grad-b) 100%);
+  /* Lignes & structure */
+  --grille: #d3ead9;
+  --grille-forte: #1f5c33;
 
-  /* Panneaux / bordures / ombres */
-  --panel-bg: rgba(255,255,255,.9);
-  --panel-border: #e5e7eb;
-  --muted: #e9eef8;                       /* fond discret pour score/niveau */
-  --shadow: 0 6px 20px rgba(0,0,0,.10);
+  /* Texte */
+  --encre: #23302a;
+  --encre-douce: #5f7a68;
 
-  /* Boutons & accents */
-  --primary: #1fa2ff;                     /* normal */
-  --primary-hover: #1666c1;               /* hover bien plus sombre (contraste) */
-  --primary-dark: var(--primary-hover);   /* compat éventuelle */
-  --accent: #7b2cbf;
+  /* Accent unique */
+  --accent: #2f9e44;
+  --accent-hover: #237a35;
+  --accent-clair: #e6f7e9;
+  --accent-rgb: 47, 158, 68;
 
-  /* États */
-  --success: #2d6a4f;
-  --error: #d00000;
-  --warning: #ffb703;
-  
-  --accent-rgb: 123 44 191;
+  /* Header (même accent que le reste, fond très clair) */
+  --header-fond: #f1f8f3;
+  --header-bordure: #d3ead9;
+  --header-texte: #1f5c33;
+  --header-texte-hover: #123a20;
+
+  /* États fonctionnels */
+  --erreur: #c0392b;
+  --erreur-fond: #fbeceb;
+  --succes: #1e7e34;
+  --succes-fond: #e6f6ea;
+  --attention: #8a6d1a;
+  --attention-fond: #fbf3e0;
+
+  --rayon: 10px;
+  --rayon-petit: 6px;
+
+  /* Alias des anciens noms de variables (utilisés plus bas et dans Fiche.js)
+     pour porter le thème clair sans réécrire toutes les règles. */
+  --text: var(--encre);
+  --text-dark: #ffffff;          /* Texte clair pour les boutons pleins (fond accent) */
+  --text-muted: var(--encre-douce);
+
+  --bg-gradient: var(--papier-panel);
+
+  --panel-bg: var(--papier);
+  --panel-border: var(--grille);
+  --muted: var(--papier-panel);
+  --shadow: 0 4px 14px rgba(35, 48, 42, .10);
+
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --primary-dark: var(--accent-hover);
+
+  --success: var(--succes);
+  --error: var(--erreur);
+  --warning: var(--attention);
+
+  --accent-pale: var(--accent-clair);
+  --accent-pale-border: var(--grille);
+
+  --input-bg: var(--papier);
+  --input-border: var(--grille);
+  --card-bg: var(--papier);
+
+  --rows-min: 4;
+  --reponse-min-h: calc(var(--wrapper-h) * var(--rows-min));
+  --reponse-max-h: calc(var(--wrapper-h) * var(--rows-visible));
 }
 
-/* === Base === */
+/* ===============================
+   Base
+=================================*/
+* { box-sizing: border-box; }
 html, body {
   height: 100%;
   margin: 0;
@@ -48,132 +95,359 @@ html, body {
   color: var(--text);
   background: var(--bg-gradient);
 }
-* { box-sizing: border-box; }
 
-/* === Layout principal === */
-#container {
-  display: grid;
-  grid-template-rows: auto auto 1fr;  /* #titre / #resultat / #exercice-container */
-  height: 100vh;
-  min-height: 0;
+/* ===============================
+   BANDEAU TITRE (page, façon geometrieBase)
+=================================*/
+header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    margin: 0 0 0px 0;
+    padding: 0 20px;
+    min-height: 54px;
+    background: var(--header-fond);
+    border-bottom: 1px solid var(--header-bordure);
+    box-sizing: border-box;
+    flex-wrap: wrap;
 }
-#titre, #resultat { flex: 0 0 auto; }
 
-/* === Header === */
-#titre {
+header #titre_appli {
+    font-size: 1.2rem;
+    letter-spacing: .2px;
+    font-weight: 400;
+    color: var(--encre);
+    padding: 10px 0;
+}
+
+header #titre_appli b {
+    font-weight: 700;
+    color: var(--header-texte);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.filet-header {
+    width: 1px;
+    height: 22px;
+    background-color: var(--header-bordure);
+    flex-shrink: 0;
+}
+
+.btn-header {
+    background: transparent;
+    border: 0.5px solid var(--header-bordure);
+    height: 34px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: .1px;
+    border-radius: var(--rayon-petit);
+    cursor: pointer;
+    color: var(--header-texte);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color .12s, color .12s;
+    white-space: nowrap;
+}
+
+.btn-header:hover {
+    border-color: var(--header-texte);
+    color: var(--header-texte-hover);
+}
+
+.btn-header:active {
+    transform: scale(0.98);
+}
+
+.btn-header:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header (pas de fond plein) */
+.btn-header.active {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-header.active:hover {
+    border-color: var(--accent-hover);
+    color: var(--accent-hover);
+}
+
+/* ===============================
+   STRUCTURE : PANNEAU LATÉRAL + CONTENU
+=================================*/
+#appBody {
+  width: 100%;
   display: flex;
+  align-items: flex-start;
+
+}
+
+#panneauLateral {
+  flex: 0 0 300px;
+  width: 300px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main#app {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: calc(100vh - 54px);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  color: #000;
-  padding: 10px;
-  font-size: 20px;
+  padding: 30px 20px 60px;
+  min-width: 0;
+  box-sizing: border-box;
+  background: var(--bg-gradient);
+}
+
+/* ===============================
+   PANNEAU LATÉRAL — label, score, bouton d'action
+=================================*/
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-groupe-label {
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.05);
-}
-#score {
-  font-size: 15px;
-  color: #333;
-  text-align: center;
-  font-weight: 600;
-  line-height: 40px;
-  border: 1px solid var(--panel-border);
-  border-radius: .5rem;
-  background: var(--muted);
-  width: 160px;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* === Bouton principal === */
-#nextButton {
-  width: 160px; height: 40px;
-  padding: .35rem .5rem;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: background .25s, box-shadow .15s;
-  user-select: none;
-  appearance: none; -webkit-appearance: none;
-  background-image: none;
+.panel-filet {
+  height: 1px;
+  background: var(--grille);
+  margin: 4px 0;
 }
-#nextButton:hover:not(:disabled) { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
-#nextButton:active:not(:disabled) { box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-#nextButton:disabled { background: var(--muted); opacity:1; }
-#nextButton:focus { outline: 3px solid var(--primary); outline-offset: 2px; }
 
-/* === Niveau (sélecteur) === */
-/* Slot aligné 160x40 comme #score et #nextButton */
-#niveau-slot{
-  flex: 0 0 160px;
+.panel-groupe-paire {
   display: flex;
-  justify-content: center;
+  gap: 6px;
 }
 
-/* Wrapper du sélecteur : label visible + select blanc */
-.niveau-picker{
+.panel-btn-half {
+  flex: 1 1 0;
+  width: auto;
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 12.5px;
+}
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
-  height: 40px;
-  display: grid;
-  grid-template-columns: auto 1fr; /* label | select qui prend le reste */
-  align-items: center;
-  gap: .35rem;
-  padding: 0 .4rem;               /* un peu d’air */
-  border: 1px solid var(--panel-border);
-  border-radius: .5rem;
-  background: var(--muted);
-  overflow: hidden;
 }
 
-.niveau-picker > label{
+#score-container:empty { display: none; }
+
+#question-progress,
+#score {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 10px 14px;
+  border-radius: var(--rayon-petit);
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 2px solid var(--grille);
+  text-align: left;
+}
+
+#question-progress { color: var(--encre-douce); }
+
+#score {
+  color: var(--succes);
+  border-color: var(--succes);
+}
+
+.score-average {
+  margin-top: 4px;
+  padding-top: 4px;
+  font-size: 0.8rem;
+  color: var(--encre-douce);
+  border-top: 1px solid var(--grille);
+}
+
+.score-local {
+  min-height: 18px;
+}
+
+.score-local-error {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--erreur);
+}
+
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 12px 14px;
+  font-family: inherit;
   font-size: 14px;
-  color: #111;
-  margin: 0;                      /* on garde le texte “Niveau :” */
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
 }
 
-.niveau-picker select{
-  min-width: 0;                   /* évite les débordements */
-  width: 100%;
-  height: 30px;
-  border: 1px solid #d1d5db;
-  border-radius: .35rem;
-  background: #fff;               /* <-- select en blanc */
-  padding: 0 .5rem;
-  appearance: none;
-  -webkit-appearance: none;
+.panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.panel-btn.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--papier);
 }
 
-/* Focus cohérent */
-.niveau-picker select:focus{
-  outline: 3px solid var(--primary);
+.panel-btn.active:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.panel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--papier-panel) !important;
+  border-color: var(--grille) !important;
+  color: var(--encre-douce) !important;
+}
+
+/* Le bouton actif (choix retenu) doit rester visuellement distinct même
+   verrouillé — sinon la règle générale ci-dessus (background/border/color en
+   !important) écrase aussi son style .active, et on ne voit plus quelle
+   option avait été choisie une fois désactivé. */
+.panel-btn.active:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--papier) !important;
+}
+
+#nextButton:focus {
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 
+/* ===============================
+   MESSAGE (résultat / consigne)
+=================================*/
+#resultat {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 2px rgba(35,48,42,.10);
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+  margin-bottom: 16px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity .18s ease,
+    transform .18s ease,
+    background .25s ease,
+    color .25s ease,
+    border-color .25s ease;
+  pointer-events: none;
+}
 
-/* === Zone exercice (panneau) === */
+#resultat.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+#resultat::before {
+  content: "";
+  font-size: 1.2rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+#resultat.correct {
+  background: var(--succes-fond);
+  color: var(--success);
+  border-color: var(--success);
+  font-weight: 700;
+}
+#resultat.correct::before { content: "✅"; }
+
+#resultat.incorrect {
+  background: var(--erreur-fond);
+  color: var(--error);
+  border-color: var(--error);
+  font-weight: 700;
+}
+#resultat.incorrect::before { content: "❌"; }
+
+#resultat.invalide {
+  background: var(--attention-fond);
+  color: var(--warning);
+  border-color: var(--warning);
+  font-weight: 600;
+}
+#resultat.invalide::before { content: "⚠️"; }
+
+/* ===============================
+   Panneau exercice
+=================================*/
 #exercice-container {
-  width: 90%;
-  margin: 10px auto 16px;
+  width: 95%;
+  max-width: 800px;
+  margin: 0 auto 16px auto;
   padding: 20px;
   background: var(--panel-bg);
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   border-radius: 10px;
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
-
-  flex: 1 1 auto;
-  min-height: 0;
-
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* === Titre / question === */
 .titre {
   font-size: 28px;
   font-weight: 700;
@@ -186,181 +460,233 @@ html, body {
   margin: 0 0 12px;
   font-weight: 600;
   font-size: 18px;
-  color: #2c3e50;
+  color: var(--text);
 }
 
-/* === Wrappers communs (centrage + hauteur fixe) === */
+/* ===============================
+   Zones scrollables & snapping
+=================================*/
+.reponse {
+  width: 100%;
+  height: auto;
+  min-height: var(--reponse-min-h);
+  max-height: var(--reponse-max-h);
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.reponse > .input-wrapper {
+  height: var(--wrapper-h);
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+#exercice-container:has(.correction-content:not(:empty)) .reponse {
+  min-height: 0;
+}
+
+.initial-zone {
+  display:flex; flex-direction:column; gap:0; width:100%;
+  scroll-snap-type: y proximity;
+}
+.initial-zone .initial-wrapper {
+  height: var(--wrapper-h);
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+.reponse::-webkit-scrollbar,
+#exercice-container::-webkit-scrollbar { width: 0; height: 0; }
+.reponse { scrollbar-width: none; }
+
+/* ===============================
+   Wrappers: initial & input
+=================================*/
 .initial-wrapper,
 .input-wrapper {
   height: var(--wrapper-h);
   padding: var(--wrap-pad-v) var(--wrap-pad-h);
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: .6em;
   width: 100%;
-  margin: 0;
-
-  background: #fff;
-  border: 1px solid #e0e5ec;
+  background: var(--card-bg);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,.08);
+  box-shadow: 0 4px 6px rgba(0,0,0,.1);
   font-size: 16px;
 }
 
-/* Partie gauche : lettre + signe + expression/input */
 .left-part {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex: 1 1 auto;
   gap: .6em;
-  min-width: 0;                     /* autorise le rétrécissement */
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
-/* Lettre éventuelle (A) */
-.lhs-letter {
+.prefix {
+  display: flex;
+  align-items: baseline;
+  gap: .35rem;
   flex: 0 0 auto;
-  display: inline-block;
-  min-width: 1ch;
 }
+.prefix > .lhs-letter,
+.prefix > .equal-sign { margin-right: 0 !important; }
 
-/* Signe "=" (ou "?" / "≠") */
+.lhs-letter,
 .equal-sign {
-  flex: 0 0 auto;
   display: inline-block;
   min-width: 1ch;
-  text-align: center;
-  white-space: nowrap;               /* “A =” reste sur une ligne */
-  font-weight: bold;
 }
-.ghost-equal { opacity: 0; }         /* “= fantôme” */
+.equal-sign { text-align: center; }
+.equal-sign.state-correct   { color: var(--success); }
+.equal-sign.state-incorrect { color: var(--error); }
+.equal-sign.state-invalid,
+.equal-sign.state-ok        { color: var(--warning); }
+.ghost-equal { visibility: hidden; }
 
-/* Expression en LaTeX / rendu */
+.input-wrapper-input,
 .latex-formula {
   flex: 1 1 auto;
-  min-width: 0;                      /* clé anti-débordement en flex */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.latex-formula .mjx-container {
-  display: inline-block;
-  line-height: 1;
-  vertical-align: middle;
+  min-width: 0;
+  width: auto;
 }
 
-/* Input (réponse) */
 .input-wrapper input {
   height: calc(var(--wrapper-h) - (1 * var(--wrap-pad-v)) - var(--input-v-gap));
   align-self: center;
   line-height: 1.2;
   padding: 0 14px;
-  flex: 0 1 var(--input-w, 280px);   /* largeur contrôlée et rétractable */
-  width: var(--input-w, 280px);
+  flex: 0 1 var(--input-w);
+  width: var(--input-w);
   min-width: 100px;
   font-size: 16px;
-  border: 2px solid #e0e5ec;
+  border: 2px solid var(--input-border);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--input-bg);
+  color: var(--text);
   transition: border-color .2s, box-shadow .2s, background .2s;
 }
 .input-wrapper input:focus {
   border-color: var(--accent);
-  background: #fff;
+  background: var(--card-bg);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(52,152,219,.2);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
 }
-.input-error { border-color:#e74c3c !important; background:#fdecea !important; }
+.input-error {
+  border-color: var(--error) !important;
+  background: var(--erreur-fond) !important;
+}
 
-/* Commentaire (badge) */
 .comment {
   margin-left: auto;
-  display:flex; align-items:center; justify-content:center;
-  text-align:center;
-  padding: 6px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+  padding: 4px 8px;
   border-radius: 8px;
-  min-width: 20px;
-  font-size: 12px; font-weight: 500;
-  background: #f8f9fa;
-  align-self: center;
+  min-width: 0;
+  max-height: 100%;
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic; /* comme .feedback-zone dans évaluation */
+  background: var(--muted);
+  align-self: stretch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .comment:empty { display:none; }
-.comment.error   { background: rgba(231, 76, 60, .1); color:#e74c3c; }
-.comment.success { background: rgba(46, 204,113,.1); color:#2ecc71; }
-.comment.info    { background: rgba(46, 204,113,.1); color: rgba(0, 255, 0, .9); }
+.comment.error   { background: var(--erreur-fond); color: var(--error); }
+.comment.success { background: var(--succes-fond); color: var(--success); }
+.comment.info    { background: var(--accent-clair); color: var(--primary); }
 
-/* === Bouton “croix” (close) — visible et centré) === */
+/* Croix (retirer une ligne) : reprise du design de évaluation/style.css
+   (.delete-btn) — cercle bordé de la couleur d'état courante (héritée du
+   badge .comment.error/success/info parent via currentColor), fond blanc au
+   repos, se remplit de la couleur au survol avec l'icône qui passe en blanc. */
 .close-button{
   display:inline-flex;
   align-items:center;
   justify-content:center;
   width:22px; height:22px; min-width:22px;
   border-radius:50%;
-  margin-left:6px;
-  background:#eee;
-  font-size:12px; line-height:1;
-  cursor:pointer; user-select:none;
-  align-self: center;
+  border: 2px solid currentColor;
+  background: #fff;
+  margin-right:6px;
+  padding: 0;
+  cursor:pointer;
+  user-select:none;
+  flex-shrink:0;
+  color: var(--text-muted);
+  transition: background .2s ease, transform .15s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
 }
-.close-button:hover{ background: rgba(255,100,100,0.5); }
+.close-button svg{ width:12px; height:12px; }
+.close-button:hover{
+  background: currentColor;
+  transform: scale(1.08);
+}
+.close-button:hover svg path{ stroke:#fff; }
 
-/* === Bouton correction === */
+.comment.error .close-button   { color: var(--error); }
+.comment.success .close-button { color: var(--success); }
+.comment.info .close-button    { color: var(--primary); }
 
-/* === Bouton Correction (autonome) === */
-/* === Bouton Correction (autonome) === */
+/* ===============================
+   Bouton Correction
+=================================*/
 .bouton-correction{
   display:flex;
   justify-content:center;
   margin:18px 0 6px;
 }
-
 .btn-correction{
   display:inline-block;
-  width:auto;
-  max-width:100%;
   padding:10px 24px;
   border:none;
   border-radius:8px;
   cursor:pointer;
   font-size:16px;
   font-weight:600;
-  color:#fff;
+  color: var(--text-dark);
   background: var(--accent);
-  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+  box-shadow: 0 2px 4px rgba(35,48,42,.15);
   transition: background .2s, transform .1s, box-shadow .2s;
 }
-.btn-correction:hover{ background:#6630a0; transform:translateY(-1px); }
-.btn-correction:active{ transform:translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
-.btn-correction:focus{ outline:3px solid rgba(123,44,191,.35); outline-offset:2px; }
+.btn-correction:hover{ background: var(--accent-hover); transform:translateY(-1px); }
+.btn-correction:focus{
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
 
-
-
-/* === Correction (ouverture animée + fond accent pâle) === */
-/* Correction : masquée si vide + ouverture simple (fade/slide) */
-/* ===== Correction — styles simples, robustes, SANS color-mix ===== */
-
-/* (optionnel) masquer quand vide */
-/* ===== Correction — simple, lisible, SANS transparence, SANS animation ===== */
+/* ===============================
+   Correction (bloc)
+=================================*/
 .correction-content:empty { display: none; }
-
 .correction-content{
-  background: var(--accent-pale, #f3e8ff);    /* plein, pas transparent */
-  border: 1px solid var(--accent-pale-border, #eadcff);
+  background: var(--accent-pale);
+  border: 1px solid var(--accent-pale-border);
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,.08);
+  box-shadow: 0 4px 6px rgba(35,48,42,.08);
   margin-top: 12px;
   padding: 14px;
 }
-
-/* Titres */
 .correction-content h3{
   margin: 6px 0 8px;
   text-align: center;
   font-weight: 600;
   font-size: 16px;
-  color: #2c3e50;
+  color: var(--primary);
 }
-
-/* Lignes d’étapes */
 .correction-content .etape{
   display: flex;
   align-items: center;
@@ -372,7 +698,7 @@ html, body {
 .correction-content .etape-egal,
 .correction-content .equal-sign{
   flex: 0 0 auto;
-  white-space: nowrap;   /* “A =” d’un seul tenant */
+  white-space: nowrap;
   font-weight: 600;
   opacity: .9;
 }
@@ -381,71 +707,11 @@ html, body {
 /* Expression LaTeX */
 .correction-content .etape-expr{
   flex: 1 1 auto;
-  min-width: 0;          /* anti-débordement en flex */
+  min-width: 0;
   overflow-wrap: anywhere;
   word-break: break-word;
   text-align: left;
 }
-
-
-/* === Résultat (bandeau) === */
-#resultat {
-  width: 90%;
-  margin: 12px auto 0;
-  display: none;
-  align-items: center; justify-content: center; gap: .6rem;
-  min-height: 44px;
-  border-radius: 8px;
-  border: 1px solid var(--panel-border);
-  background: #fff; color:#111827;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
-  opacity: 0; transform: translateY(-4px);
-  transition: opacity .18s ease, transform .18s ease, background .25s, color .25s;
-}
-#resultat.show { display:flex; opacity:1; transform: translateY(0); }
-#resultat::before { content:"ℹ️"; font-size:1.05rem; }
-#resultat.correct   { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
-#resultat.correct::before { content:"✅"; }
-#resultat.incorrect { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
-#resultat.incorrect::before { content:"❌"; }
-#resultat.invalide  { background:#fffbeb; color:#92400e; border-color:#fde68a; }
-#resultat.invalide::before { content:"⚠️"; }
-
-/* === Zones scrollables et snapping === */
-/* IMPORTANT: on impose la hauteur exacte pour voir N wrappers entiers */
-.reponse {
-  width: 100%;
-  height: var(--reponse-h);      /* multiple exact de --wrapper-h */
-  flex: 0 0 auto;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-
-  display: flex;
-  flex-direction: column;
-  gap: 0;                        /* pas d’espace entre lignes */
-}
-.reponse > .input-wrapper {
-  height: var(--wrapper-h);
-  margin: 0;
-  scroll-snap-align: start;
-}
-
-/* Si tu as aussi une zone initiale scrollable, même logique */
-.initial-zone {
-  display:flex; flex-direction:column; gap:0; width:100%;
-  scroll-snap-type: y proximity;
-}
-.initial-zone .initial-wrapper {
-  height: var(--wrapper-h);
-  margin: 0;
-  scroll-snap-align: start;
-}
-
-/* Optionnel: masquer visuellement les barres de scroll (garde l’accessibilité clavier) */
-.reponse::-webkit-scrollbar,
-#exercice-container::-webkit-scrollbar { width: 0; height: 0; }
-.reponse { scrollbar-width: none; } /* Firefox */
 
 /* === Mobile tweaks === */
 @media (max-width: 640px){
@@ -454,7 +720,7 @@ html, body {
   .comment { align-self: flex-end; margin-left: 0; margin-top: 8px; }
 }
 
-/* === Patch : limiter la largeur de l’input dans .input-wrapper === */
+/* === Patch : limiter la largeur de l'input dans .input-wrapper === */
 :root{
   /* largeur responsive de l'input : mini / idéal / maxi */
   --input-w: clamp(180px, 36vw, 360px);
@@ -467,7 +733,7 @@ html, body {
 }
 
 /* Garder de la place à droite pour le badge & la croix */
-.input-wrapper .comment{ margin-left: 12px; } /* au lieu de auto si besoin */
+.input-wrapper .comment{ margin-left: 12px; }
 .input-wrapper .close-button{ margin-left: 8px; }
 
 /* Mobile : repasse en plein largeur quand on empile en colonne */
@@ -486,4 +752,3 @@ html, body {
     margin-left: 0;
   }
 }
-

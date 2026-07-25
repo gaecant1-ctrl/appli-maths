@@ -213,7 +213,10 @@ class EnonceDivisionEuclidienne extends Enonce {
       },
       suite: {
         continuerSiInvalide: true,
-        continuerSiInegale: false,
+        // Retry (sélecteur du panneau latéral) : true → une réponse fausse
+        // laisse réessayer ; false (par défaut, comportement historique) →
+        // validé dès la première réponse.
+        continuerSiInegale: (typeof opts.continuerSiInegale === 'boolean') ? opts.continuerSiInegale : false,
         continuerSiMauvaiseNature: true,
         continuerSiFormatIncorrect: true
       }
@@ -231,7 +234,10 @@ class EnonceDivisionEuclidienne extends Enonce {
     const S = w.reduce((s, x) => s + Math.max(0, x || 0), 0) || 5;
     let r = this.rng.next() * S;
     for (let i = 0; i < 5; i++) {
-      r -= Math.max(0, w[i] || 0) || 1;
+      // "?? 1" (pas "|| 1") : un poids explicitement à 0 (patron désactivé
+      // via le sélecteur Type) doit RESTER à 0, pas retomber sur 1 — sinon
+      // "0 est falsy" en JS fait réapparaître ce patron malgré tout.
+      r -= Math.max(0, (w[i] ?? 1));
       if (r <= 0) return i + 1;
     }
     return 5;
@@ -327,11 +333,32 @@ class EnonceDivisionEuclidienne extends Enonce {
   toQuestionData(v /*, index */) {
 
 
-    const correctionExpr = `${v.q}*${v.b}+${v.r}`;
+    // Reste nul : on accepte l'écriture "q*b" sans "+0" superflu.
+    const correctionExpr = v.r === 0 ? `${v.q}*${v.b}` : `${v.q}*${v.b}+${v.r}`;
+
+    // Sans lettre (ex: fiche papier, où l'expression n'est pas affichée sur
+    // une ligne séparée), on l'insère directement dans l'énoncé — rendue en
+    // LaTeX (× au lieu de *, etc.) plutôt qu'en texte JS brut, pour un rendu
+    // propre à l'écran (MathJax) comme à l'export LaTeX. Le diviseur "b" est
+    // rendu en LaTeX de la même façon.
+    // ⚠️ Ce $...$ ne doit PAS être utilisé quand une lettre est affichée : le
+    // questionDiv de l'exercice interactif l'injecte via textContent (pas de
+    // MathJax dessus), donc des "$" y apparaîtraient tels quels.
+    let sujet = this.lettre;
+    let bAffiche = v.b;
+    if (!sujet) {
+      try {
+        const objExpr = new ObjetString(v.exprStr, this.modeCorrectionBase);
+        sujet = `$${objExpr.arbre.toLatex(this.affichageInitial)}$`;
+      } catch (e) {
+        sujet = v.exprStr;
+      }
+      bAffiche = `$${v.b}$`;
+    }
 
     return {
       // ⬇️ ENONCÉ avec LETTRE (et pas l’expression)
-      question: this.textTemplate(this.lettre, v.b),
+      question: this.textTemplate(sujet, bAffiche),
 
       // l’expression initiale s’affiche sur la ligne avec la lettre (A = …)
       expressionInitiale: String(v.exprStr),

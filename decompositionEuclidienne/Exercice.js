@@ -102,21 +102,6 @@ _render() {
   this.reponseDiv.className = 'reponse';
   this.container.appendChild(this.reponseDiv);
 
-  // Bouton correction
-  this.actionsDiv = document.createElement('div');
-  this.actionsDiv.className = 'bouton-correction';
-  this.container.appendChild(this.actionsDiv);
-
-  this.btnCorrection = document.createElement('button');
-  this.btnCorrection.textContent = 'Correction';
-  this.btnCorrection.className = 'btn-correction';
-  this.btnCorrection.addEventListener('click', () => {
-    if (this.inputWrapper) this.inputWrapper.disable();
-    this._correction();  // supprime le bouton + affiche avec animation
-    if (!this.status) this._finish('incorrect', { status: 'forced_by_correction' });
-  });
-  this.actionsDiv.appendChild(this.btnCorrection);
-
   // Conteneur unique de correction (vide au départ, donc masqué par :empty)
   this.correctionDiv = document.createElement('div');
   this.correctionDiv.className = 'correction-content';
@@ -219,16 +204,11 @@ _updateEqualSigns() {
 
   // --------- correction ---------
 // Dans class ExerciceExpression
-// Dans class ExerciceExpression
 _correction() {
-  // 1) Retirer le bouton/ligne pour libérer l’espace
-  if (this.btnCorrection) { try { this.btnCorrection.remove(); } catch {} this.btnCorrection = null; }
-  if (this.actionsDiv && this.actionsDiv.parentNode) {
-    this.actionsDiv.parentNode.removeChild(this.actionsDiv);
-  }
-  this.actionsDiv = null;
+  if (this._correctionAffichee) return;
+  this._correctionAffichee = true;
 
-  // 2) Conteneur unique de correction (créé si besoin)
+  // 1) Conteneur unique de correction (créé si besoin)
   const host = this.correctionDiv || (() => {
     const d = document.createElement('div');
     d.className = 'correction-content';
@@ -374,7 +354,16 @@ _correction() {
   _finish(finalStatus, verdict) {
     this.status = finalStatus;
     this.inputWrapper?.disable();
+    if (finalStatus === 'incorrect') this._correction();
     this._emitValidationWithVerdict(verdict);
+  }
+
+  /** API publique : abandonner l'exercice en cours (bouton "Abandon" du panneau).
+   *  Affiche la correction et clôt l'exercice comme un échec, comme une
+   *  réponse finale incorrecte. */
+  abandonner() {
+    if (this.status) return; // déjà terminé
+    this._finish('incorrect', { status: 'forced_by_abandon' });
   }
 
   _emitValidationWithVerdict(verdict) {

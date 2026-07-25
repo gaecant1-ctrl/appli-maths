@@ -174,40 +174,167 @@ class Enonce {
 // ------------------------------------------------------------
 class EnonceFacteursPremiers extends Enonce {
 
-genVariant() {
+  constructor(opts = {}) {
+    super(opts);
+    // Retry (sélecteur du panneau latéral) : true → une réponse fausse
+    // laisse réessayer ; false (par défaut, comportement historique) →
+    // validé dès la première réponse.
+    this.continuerSiInegale = (typeof opts.continuerSiInegale === 'boolean') ? opts.continuerSiInegale : false;
 
-  const petits = [2,3,5];
-  const moyens = [7,11,13];
-  const grands = [17,19,23];
-
-  const nbFacteurs = this.rng.int(2,4);
-
-  let facteurs = [];
-
-  const useGrand = this.rng.random() < 0.3;
-
-  if (useGrand) {
-
-    const g = this.rng.pick(grands);
-    facteurs.push(g);
-
-    for (let i = 1; i < nbFacteurs; i++) {
-      facteurs.push(this.rng.pick(petits));
-    }
-
-  } else {
-
-    const pool = [...petits, ...moyens];
-
-    for (let i = 0; i < nbFacteurs; i++) {
-      facteurs.push(this.rng.pick(pool));
-    }
-
+    // Pondérations des 5 patrons (sélecteur "Type" Simple/Complexe) :
+    // 1 = Simple (comportement historique) ; 2-5 = les 4 sous-types de
+    // "Complexe" (voir _genererType1..4 ci-dessous).
+    this.patternWeights = opts.patternWeights || [1, 1, 1, 1, 1];
   }
 
-  const n = facteurs.reduce((a,b)=>a*b,1);
+  // tirage pondéré 1..5 (même mécanique que EnonceDivisionEuclidienne)
+  _pickPattern() {
+    const w = this.patternWeights;
+    const S = w.reduce((s, x) => s + Math.max(0, x || 0), 0) || 5;
+    let r = this.rng.next() * S;
+    for (let i = 0; i < 5; i++) {
+      // "?? 1" (pas "|| 1") : un poids explicitement à 0 (patron désactivé
+      // via le sélecteur Type) doit RESTER à 0, pas retomber sur 1 — sinon
+      // "0 est falsy" en JS fait réapparaître ce patron malgré tout.
+      r -= Math.max(0, (w[i] ?? 1));
+      if (r <= 0) return i + 1;
+    }
+    return 5;
+  }
 
-  return { n, facteurs };
+  /** Décomposition en facteurs premiers par division successive — utilisée
+   *  pour la CORRECTION, quel que soit le patron (l'énoncé peut afficher un
+   *  produit/une somme dont les facteurs "affichés" ne sont pas eux-mêmes
+   *  premiers ou pas la vraie décomposition : seule cette fonction fait foi). */
+  _factoriser(n) {
+    const facteurs = [];
+    let reste = n;
+    for (let p = 2; p * p <= reste; p++) {
+      while (reste % p === 0) {
+        facteurs.push(p);
+        reste /= p;
+      }
+    }
+    if (reste > 1) facteurs.push(reste);
+    return facteurs;
+  }
+
+  _estPremier(n) {
+    if (n < 2) return false;
+    for (let i = 2; i * i <= n; i++) {
+      if (n % i === 0) return false;
+    }
+    return true;
+  }
+
+  /** Nombre composé (non premier) tiré dans [min, max]. */
+  _tirerNonPremier(min, max) {
+    let n;
+    do { n = this.rng.int(min, max); } while (this._estPremier(n) || n < 4);
+    return n;
+  }
+
+  // ---------------- Patron 1 : Simple (comportement historique) ----------------
+  _genererSimple() {
+    const petits = [2, 3, 5];
+    const moyens = [7, 11, 13];
+    const grands = [17, 19, 23];
+
+    const nbFacteurs = this.rng.int(2, 4);
+    let facteurs = [];
+    const useGrand = this.rng.random() < 0.3;
+
+    if (useGrand) {
+      facteurs.push(this.rng.pick(grands));
+      for (let i = 1; i < nbFacteurs; i++) facteurs.push(this.rng.pick(petits));
+    } else {
+      const pool = [...petits, ...moyens];
+      for (let i = 0; i < nbFacteurs; i++) facteurs.push(this.rng.pick(pool));
+    }
+
+    const n = facteurs.reduce((a, b) => a * b, 1);
+    return { n, exprStr: String(n) };
+  }
+
+  // ---------------- Patron 2 (Complexe, type 1) ----------------
+  // Produit de facteurs dont UN n'est pas premier (ex: 4×15×7).
+  _genererType1() {
+    const petits = [2, 3, 5, 7, 11];
+    const nbFacteurs = this.rng.int(2, 3);
+    let facteurs = [];
+    for (let i = 0; i < nbFacteurs; i++) facteurs.push(this.rng.pick(petits));
+
+    const idx = this.rng.int(0, facteurs.length - 1);
+    facteurs[idx] = facteurs[idx] * this.rng.pick([2, 3]);
+
+    const n = facteurs.reduce((a, b) => a * b, 1);
+    return { n, exprStr: facteurs.join('*') };
+  }
+
+  // ---------------- Patron 3 (Complexe, type 2) ----------------
+  // Produit de deux nombres non premiers entre 1 et 100.
+  _genererType2() {
+    const c1 = this._tirerNonPremier(4, 30);
+    const c2 = this._tirerNonPremier(4, 30);
+    const n = c1 * c2;
+    return { n, exprStr: `${c1}*${c2}` };
+  }
+
+  // ---------------- Patron 4 (Complexe, type 3) ----------------
+  // Somme de produits de facteurs premiers avec 1 ou 2 facteurs communs
+  // (ex: 2×3×5 + 2×3×7).
+  _genererType3() {
+    const petits = [2, 3, 5, 7];
+    const nbCommuns = this.rng.int(1, 2);
+
+    let communs = [];
+    while (communs.length < nbCommuns) {
+      const p = this.rng.pick(petits);
+      if (!communs.includes(p)) communs.push(p);
+    }
+
+    const autresPool = petits.filter(p => !communs.includes(p));
+    const pool = autresPool.length ? autresPool : petits;
+    const f1 = this.rng.pick(pool);
+    let f2;
+    do { f2 = this.rng.pick(pool); } while (f2 === f1);
+
+    const terme1 = [...communs, f1];
+    const terme2 = [...communs, f2];
+    const p1 = terme1.reduce((a, b) => a * b, 1);
+    const p2 = terme2.reduce((a, b) => a * b, 1);
+
+    const n = p1 + p2;
+    return { n, exprStr: `${terme1.join('*')}+${terme2.join('*')}` };
+  }
+
+  // ---------------- Patron 5 (Complexe, type 4) ----------------
+  // Somme d'un produit de facteurs premiers et d'un des facteurs du produit
+  // (ex: 2×3×5 + 3).
+  _genererType4() {
+    const petits = [2, 3, 5, 7, 11];
+    const nbFacteurs = this.rng.int(2, 3);
+    let facteurs = [];
+    for (let i = 0; i < nbFacteurs; i++) facteurs.push(this.rng.pick(petits));
+
+    const produit = facteurs.reduce((a, b) => a * b, 1);
+    const facteurAjoute = this.rng.pick(facteurs);
+
+    const n = produit + facteurAjoute;
+    return { n, exprStr: `${facteurs.join('*')}+${facteurAjoute}` };
+  }
+
+genVariant() {
+  const patron = this._pickPattern();
+  let res;
+  if (patron === 1) res = this._genererSimple();
+  else if (patron === 2) res = this._genererType1();
+  else if (patron === 3) res = this._genererType2();
+  else if (patron === 4) res = this._genererType3();
+  else res = this._genererType4();
+
+  const facteurs = this._factoriser(res.n);
+  return { n: res.n, exprStr: res.exprStr, facteurs };
 }
 
 toQuestionData(variant) {
@@ -217,7 +344,7 @@ toQuestionData(variant) {
   return {
     question: "Donner la décomposition en produit de facteurs premiers",
 
-    expressionInitiale: String(n),
+    expressionInitiale: String(variant.exprStr),
 
 options: {
 
@@ -242,6 +369,10 @@ options: {
       exigerExpression: true,   // refuse "66"
       memesOperations: true,   // ordre libre
       memesAtomes: true        // ordre libre des facteurs
+    },
+
+    suite: {
+      continuerSiInegale: this.continuerSiInegale
     }
   }
 }

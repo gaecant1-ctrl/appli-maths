@@ -1,17 +1,5 @@
-// Quiz.js — version claire, mêmes IDs/classes que l'original + support texts.readyImage
 class Quiz {
-  /**
-   * @param {Object} options
-   * @param {HTMLElement|string} options.mount              Conteneur (élément ou sélecteur)
-   * @param {number} [options.nbQuestions=10]              Nombre total d'exercices
-   * @param {(zone:HTMLElement, index:number)=>any} options.buildExercise
-   * @param {Object} [options.texts]                       Libellés et options d'affichage
-   *   - score: (bonnes,total)=>string
-   *   - btnStart, btnNext, btnBilan, ready, ok(n), ko(n)
-   *   - header: (n)=>string
-   *   - readyImage: string|null (URL d'image pour la page d'accueil)
-   */
-  constructor({ mount, nbQuestions = 10, buildExercise, texts = {} }) {
+  constructor({ mount, nbQuestions = 30, buildExercise, texts = {}, onQuizDemarre = null, onRetourAtelier = null }) {
     if (!mount) throw new Error("Quiz: l'option 'mount' est requise.");
     if (typeof buildExercise !== 'function') {
       throw new Error("Quiz: 'buildExercise(zone, index)' est requis.");
@@ -23,268 +11,358 @@ class Quiz {
     this.nbQuestions = nbQuestions;
     this.buildExercise = buildExercise;
 
-    // Libellés (avec surcharges possibles)
+    // Callbacks optionnels pour verrouiller/déverrouiller un panneau de
+    // réglages externe (ex: sélecteurs "Type"/"Retry" installés par la page
+    // hôte dans #panneauLateral, hors du contrôle de Quiz.js) : onQuizDemarre
+    // quand le Quiz (pas l'Atelier) démarre réellement, onRetourAtelier dès
+    // qu'on revient à un état "prêt" (Atelier, ou nouveau Quiz pas encore lancé).
+    this.onQuizDemarre = onQuizDemarre;
+    this.onRetourAtelier = onRetourAtelier;
+
     this.texts = {
       score: (b, t) => `Score : ${b}/${t}`,
       btnStart: 'Commencer',
+      btnStartQuiz: 'Commencer le Quiz',
+      btnAbandon: 'Abandon',
       btnNext: 'Nouvel exercice',
       btnBilan: 'Bilan',
-      header: n => `Exercice ${n}`,
       ready: 'Choisissez le niveau puis cliquez sur Commencer',
       ok: n => `Exercice ${n} réussi`,
       ko: n => `Vous avez échoué l’exercice ${n}`,
-      readyImage: null, // ex: 'assets/accueil.png'
+      readyImage: null,
       ...texts,
     };
 
-    // État
+    // Délai (ms) avant d'enchaîner automatiquement sur un nouvel exercice
+    // après un abandon ou un échec, le temps de voir la correction affichée.
+    this.DELAI_RELANCE_APRES_ECHEC = 1500;
+
+    // État initial : 'atelier' (illimité, rien n'est compté) ou 'quiz' (compté, bilan final)
+    this.etatJeu = 'atelier';
+    this.quizDemarre = false;
     this.total = 0;
     this.bonnes = 0;
+    this.rejetsCumules = 0; // La caisse commune des erreurs
     this.hasStarted = false;
     this.questionValidee = false;
     this.exercice = null;
 
-    // UI & events
     this._onNextClick = this._onNextClick.bind(this);
     this._buildUi();
-    this.readyForNext = false;
+    this.start();
   }
 
   // --------- API publique ---------
-start() {
-  this._resetState();
-  this._updateScore();
-  this.hasStarted = false;
+  start() {
+    this._resetState();
+    this.hasStarted = false;
+    this.quizDemarre = false;
+    if (this.onRetourAtelier) this.onRetourAtelier();
+    this._annulerRelanceAutomatique();
+    this._clearMessage();
+    this.zone.innerHTML = '';
+    this._buildPanel();
+    this._updateScore();
+    this._showReadyScreen();
+    this._setNextLabel(this.etatJeu === 'quiz' ? this.texts.btnStartQuiz : this.texts.btnStart);
+    this.nextButton.disabled = false;
+    this.nextButton.focus();
+  }
 
-  // UI clean + réouverture des contrôles
-  this._unlockLevelUI();
-  this._clearMessage();
-  this.zone.innerHTML = '';
-  this.nextButton.style.display = '';     // <-- ré-affiche le bouton si caché
-  this._showReadyScreen();
+_updateScore(rejetsActuels = 0) {
+  if (!this.scoreEl) return;
 
-  this._setNextLabel(this.texts.btnStart);
-  this.nextButton.disabled = false;
+  if (this.etatJeu !== 'quiz' || !this.quizDemarre) {
+    this.scoreEl.innerHTML = '';
+    return;
+  }
+
+  const diviseur = Math.max(this.total, 1);
+  const moyenne = (this.rejetsCumules / diviseur).toFixed(1);
+  const indexAffiche = Math.min(this.total + 1, this.nbQuestions);
+
+  this.scoreEl.innerHTML = `
+  <div id="question-progress">Exercice ${indexAffiche}/${this.nbQuestions}</div>
+
+  <div id="score">
+    ${this.texts.score(this.bonnes, this.nbQuestions)}
+  </div>
+
+  <div class="score-average">
+    Moyenne erreur : <strong>${moyenne}</strong> / ex
+  </div>
+
+  <div class="score-local">
+    ${
+      rejetsActuels > 0
+        ? `<span class="score-local-error">
+             ⚠️ ${rejetsActuels} erreur${rejetsActuels > 1 ? 's' : ''} ici
+           </span>`
+        : ''
+    }
+  </div>
+`;
+
 }
 
+_nouvelleQuestion() {
+    this._annulerRelanceAutomatique();
+    this.questionValidee = false;
+    this.zone.innerHTML = '';
+    const index = this.total + 1;
+    this._clearMessage();
 
-  destroy() {
-    if (this.root && this.root.parentNode) this.root.parentNode.removeChild(this.root);
-    this.root = null;
-  }
+    const onRejetAction = (v) => {
+        // v : nombre d'erreurs à comptabiliser pour cet appel (ex: nombre de
+        // cases mal cochées/oubliées dans un QCM). Par défaut (apps à retry
+        // classique, qui appellent onRejetAction() sans argument à chaque
+        // tentative ratée), on compte +1 comme avant.
+        this.rejetsCumules += (typeof v === 'number') ? v : 1;
+        // On récupère le nombre de tentatives de l'exercice actuel
+        this._updateScore(this.exercice ? this.exercice.tentativesEchouees : 0);
+    };
 
-  /** Renvoie le slot <div id="niveau-slot"> pour y monter ton sélecteur de niveau */
-  getLevelSlot() { return this.levelSlot; }
-    _lockLevelUI() {
-    try {
-      const sel = this.levelSlot && this.levelSlot.querySelector('select');
-      if (sel) sel.disabled = true;
-      this.levelSlot?.classList.add('is-locked');
-    } catch (_) {}
-  }
-  _unlockLevelUI() {
-    try {
-      const sel = this.levelSlot && this.levelSlot.querySelector('select');
-      if (sel) sel.disabled = false;
-      this.levelSlot?.classList.remove('is-locked');
-    } catch (_) {}
-  }
+    // Sécurité : On retire un éventuel ancien écouteur résiduel sur la zone
+    if (this._currentHandler) {
+        this.zone.removeEventListener('reponseValidee', this._currentHandler);
+        this._currentHandler = null;
+    }
 
-  // --------- UI ---------
-  _buildUi() {
-    // Racine
-    this.root = document.createElement('div');
-    this.root.id = 'container';
+    this.exercice = this.buildExercise(this.zone, index, onRejetAction);
 
-    // En-tête
-    this.header = document.createElement('div');
-    this.header.id = 'titre';
+    const handler = (e) => {
+        const { status, points } = e.detail || {};
 
-    this.scoreEl = document.createElement('div');
-    this.scoreEl.id = 'score';
-    this.scoreEl.textContent = this.texts.score(0, 0);
+        if (status === 'correct' || status === 'incorrect') {
+            // Désactivation immédiate de l'écouteur pour éviter les doubles déclenchements
+            this.zone.removeEventListener('reponseValidee', handler);
+            this._currentHandler = null;
 
-    this.levelSlot = document.createElement('div');
-    this.levelSlot.id = 'niveau-slot';
+            // Plus de bandeau de feedback global ("Exercice N réussi" / "Vous
+            // avez échoué l'exercice N") : le retour correct/incorrect est
+            // déjà porté par l'exercice lui-même (badge .comment coloré près
+            // de l'input, bloc "Réponse" en cas d'échec/abandon).
+            if (status === 'correct') {
+                this.bonnes += (typeof points === 'number') ? points : 1;
+            }
 
-    this.nextButton = document.createElement('button');
-    this.nextButton.id = 'nextButton';
-    this.nextButton.type = 'button';
-    this.nextButton.textContent = this.texts.btnStart;
-    this.nextButton.addEventListener('click', this._onNextClick);
+            this.total++;
+            this.questionValidee = true;
+            this._updateScore(this.exercice ? this.exercice.tentativesEchouees : 0);
 
-    this.header.appendChild(this.scoreEl);
-    this.header.appendChild(this.levelSlot);
-    this.header.appendChild(this.nextButton);
+            // Le bouton "Abandon" du panneau ne s'applique plus une fois la question terminée.
+            this.nextButton.disabled = true;
 
-    // Zone résultat
-    this.resultEl = document.createElement('div');
-    this.resultEl.id = 'resultat';
-    this.resultEl.className = 'resultat';
-    this.resultEl.style.display = 'none';
+            const quizTermine = this.etatJeu === 'quiz' && this.total >= this.nbQuestions;
 
-    // Zone exercice
-    this.zone = document.createElement('div');
-    this.zone.id = 'exercice-container';
+            // Correct ou incorrect (abandon compris) : la correction est déjà
+            // affichée par l'exercice, on propose un bouton "Nouvel exercice"
+            // (ou "Bilan") dans la zone d'exercice elle-même, sans relance auto.
+            this._afficherBoutonContinuer(
+                quizTermine ? this.texts.btnBilan : this.texts.btnNext,
+                () => { if (quizTermine) this._finQuiz(); else this._nouvelleQuestion(); }
+            );
+        }
+    };
 
-    // Injection
-    this.root.appendChild(this.header);
-    this.root.appendChild(this.resultEl);
-    this.root.appendChild(this.zone);
-    this.mount.appendChild(this.root);
-    
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-
-  // on ne passe à la suite que si la question est déjà validée
-  if (this.questionValidee && !this.nextButton.disabled) {
-    e.preventDefault();
-    this.nextButton.click();
-  }
-});
-    
-    
-
-  }
-
-  _clearMessage() {
-    this.resultEl.className = 'resultat';
-    this.resultEl.textContent = '';
-    this.resultEl.classList.remove('show');
-    this.resultEl.style.display = 'none';
-  }
-
-  _showMessage(msg, css = '') {
-    this.resultEl.className = 'resultat ' + css;
-    this.resultEl.innerHTML = '';                // reset avant injection
-    this.resultEl.textContent = msg || '';
-    this.resultEl.style.display = 'flex';
-    // si ton CSS utilise .show pour l'animation/affichage
-    this.resultEl.classList.add('show');
-  }
-
- _showReadyScreen() {
-  this._clearMessage();
-  this.resultEl.style.display = 'flex';
-  this.resultEl.classList.add('show');
-
-  // Toujours partir d'une zone vide
-  this.zone.innerHTML = '';
-
-  if (this.texts.readyImage) {
-    const wrap = document.createElement('div');
-    wrap.style.textAlign = 'center';
-    wrap.style.width = '100%';
-
-    const img = document.createElement('img');
-    img.src = this.texts.readyImage;
-    img.alt = 'Accueil';
-    img.style.maxWidth = '180px';
-    img.style.display = 'block';
-    img.style.margin = '0 auto 1rem';
-
-    wrap.appendChild(img);
-    this.resultEl.textContent = this.texts.ready || '';
-    this.zone.appendChild(wrap);
-  } else {
-    this.resultEl.textContent = this.texts.ready || '';
-  }
+    this._currentHandler = handler;
+    this.zone.addEventListener('reponseValidee', handler);
+    this._updateScore(0);
+    this._setNextLabel(this.texts.btnAbandon);
+    this.nextButton.disabled = false;
 }
 
-
-  _updateScore() {
-    this.scoreEl.textContent = this.texts.score(this.bonnes, this.total);
+  /** Bouton affiché DANS la zone d'exercice (à la place de l'ancien "Abandon"),
+   *  uniquement en cas de réussite. */
+  _afficherBoutonContinuer(label, onClick) {
+    const div = document.createElement('div');
+    div.className = 'bouton-correction';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-correction';
+    btn.textContent = label;
+    btn.addEventListener('click', onClick);
+    div.appendChild(btn);
+    this.zone.appendChild(div);
+    btn.focus();
   }
 
-  _setNextLabel(label) {
-    this.nextButton.textContent = label;
+  _annulerRelanceAutomatique() {
+    if (this._relanceAuto) {
+      clearTimeout(this._relanceAuto);
+      this._relanceAuto = null;
+    }
   }
 
-  // --------- Flux ---------
   _resetState() {
     this.total = 0;
     this.bonnes = 0;
+    this.rejetsCumules = 0;
     this.questionValidee = false;
     this.exercice = null;
   }
 
+  // --------- Structure (header-actions + panneau latéral + main) ---------
+  _buildUi() {
+    this.topButtonsBar = document.getElementById('topButtonsBar');
+    const panneauLateral = document.getElementById('panneauLateral');
+    if (!panneauLateral) throw new Error("Quiz: #panneauLateral introuvable.");
+
+    // Zone dédiée au Quiz DANS le panneau latéral : laisse la place, au-dessus,
+    // à un éventuel contenu de config installé par la page hôte (ex: un
+    // sélecteur "Type") sans que _buildPanel() ne l'efface à chaque rebuild.
+    this.panneau = document.getElementById('panneauQuizZone');
+    if (!this.panneau) {
+      this.panneau = document.createElement('div');
+      this.panneau.id = 'panneauQuizZone';
+      this.panneau.className = 'panel-groupe';
+      panneauLateral.appendChild(this.panneau);
+    }
+
+    this.resultEl = document.createElement('div');
+    this.resultEl.id = 'resultat';
+    this.mount.appendChild(this.resultEl);
+
+    this.zone = document.createElement('div');
+    this.zone.id = 'exercice-container';
+    this.mount.appendChild(this.zone);
+
+    this._setupEtatToggle();
+  }
+
+  /** Panneau latéral : label (Atelier/Quiz) + zone de score (quiz uniquement) + bouton d'action. */
+  _buildPanel() {
+    this.panneau.innerHTML = '';
+
+    this.labelEl = document.createElement('div');
+    this.labelEl.className = 'panel-groupe-label';
+    this.labelEl.textContent = this.etatJeu === 'atelier' ? 'Atelier' : 'Quiz';
+    this.panneau.appendChild(this.labelEl);
+
+    this.scoreEl = document.createElement('div');
+    this.scoreEl.id = 'score-container';
+    this.panneau.appendChild(this.scoreEl);
+
+    this.nextButton = document.createElement('button');
+    this.nextButton.id = 'nextButton';
+    this.nextButton.className = 'panel-btn active';
+    this.nextButton.addEventListener('click', this._onNextClick);
+    this.panneau.appendChild(this.nextButton);
+  }
+
+  /** Boutons "Atelier" / "Quiz" installés dans le header, pour basculer de mode. */
+  _setupEtatToggle() {
+    this.btnAtelier = document.createElement('button');
+    this.btnAtelier.type = 'button';
+    this.btnAtelier.textContent = 'Atelier';
+    this.btnAtelier.addEventListener('click', () => this._basculerEtat('atelier'));
+
+    this.btnQuiz = document.createElement('button');
+    this.btnQuiz.type = 'button';
+    this.btnQuiz.textContent = 'Quiz';
+    this.btnQuiz.addEventListener('click', () => this._basculerEtat('quiz'));
+
+    this._majToggleClasses();
+
+    const filet = document.createElement('div');
+    filet.className = 'filet-header';
+
+    if (this.topButtonsBar) this.topButtonsBar.append(this.btnAtelier, this.btnQuiz, filet);
+  }
+
+  _majToggleClasses() {
+    this.btnAtelier.className = 'btn-header' + (this.etatJeu === 'atelier' ? ' active' : '');
+    this.btnQuiz.className = 'btn-header' + (this.etatJeu === 'quiz' ? ' active' : '');
+  }
+
+  _basculerEtat(nouvelEtat) {
+    if (this.etatJeu === nouvelEtat) return;
+    this.etatJeu = nouvelEtat;
+    this._majToggleClasses();
+    this.start();
+  }
+
   _onNextClick() {
-    if (!this.hasStarted) {
-      this.hasStarted = true;
-      this._lockLevelUI();  
-      this._nouvelleQuestion();
-      return;
-    }
-
-    if (!this.questionValidee) {
-      if (this.exercice && typeof this.exercice.valider === 'function') {
-        this.exercice.valider();
+    try {
+      if (!this.hasStarted) {
+        this.hasStarted = true;
+        if (this.etatJeu === 'quiz') {
+          this.quizDemarre = true;
+          if (this.onQuizDemarre) this.onQuizDemarre();
+        }
+        this._nouvelleQuestion();
+        return;
       }
-      return;
-    }
-
-    if (this.total < this.nbQuestions) {
-      this._nouvelleQuestion();
-    } else {
-      this._finQuiz();
-    }
-  }
-
-  _nouvelleQuestion() {
-    this.questionValidee = false;
-    this.zone.innerHTML = '';
-
-    const index = this.total + 1;
-    this._showMessage(this.texts.header(index));
-
-    // Le builder ne reçoit PAS le niveau : il le capture de l'extérieur si nécessaire
-    this.exercice = this.buildExercise(this.zone, index);
-
-    this.nextButton.disabled = true;
-
-    const handler = (e) => {
-      const { status, points } = e.detail || {};
-      const correct = status === 'correct';
-
-      this._showMessage(
-        correct ? this.texts.ok(index) : this.texts.ko(index),
-        correct ? 'correct' : 'incorrect'
-      );
-
-      this.total++;
-      this.bonnes += (typeof points === 'number') ? points : (correct ? 1 : 0);
-      this._updateScore();
-
-      this.questionValidee = true;
-      this._setNextLabel(this.total === this.nbQuestions ? this.texts.btnBilan : this.texts.btnNext);
+      if (!this.questionValidee) {
+        // Tant que la question n'est pas terminée, ce bouton sert à abandonner
+        // l'exercice en cours (affiche la correction puis enchaîne automatiquement).
+        if (this.exercice && typeof this.exercice.abandonner === 'function') {
+          try {
+            this.exercice.abandonner();
+          } catch (e) {
+            console.warn('Quiz: exercice.abandonner() a levé une exception (ignorée) :', e);
+          }
+        }
+        return;
+      }
+      // Une fois la question terminée, ce bouton n'a plus d'action : on avance
+      // via le bouton "Nouvel exercice"/"Bilan" (réussite) ou automatiquement (échec).
+    } catch (e) {
+      // Filet de sécurité : une exception ici ne doit jamais laisser le bouton
+      // "mort" sans aucun retour visible. On la log et on tente de réactiver le bouton.
+      console.error('Quiz: erreur dans _onNextClick :', e);
       this.nextButton.disabled = false;
-
-      this.zone.removeEventListener('reponseValidee', handler);
-    };
-
-    this.zone.addEventListener('reponseValidee', handler);
+    }
   }
 
-_finQuiz() {
-  this.nextButton.style.display = 'none';
-  this.zone.innerHTML = '';
-  this._showMessage(`Quiz terminé — ${this.texts.score(this.bonnes, this.total)}`);
+  _clearMessage() {
+    this.resultEl.className = 'resultat';
+    this.resultEl.style.display = 'none';
+    this.resultEl.textContent = '';
+  }
 
-  const anim = new AnimationFinale({
-    score: this.bonnes,
-    total: this.total,
-    nbQuestions: this.nbQuestions,
-    resultat: this.zone,
-    // ⚠️ on passe une fonction qui rappelle start() sur CETTE instance
-    onRestart: () => {
-      this.nextButton.style.display = '';
-      this.start();
+  _showMessage(msg, css = '') {
+    this.resultEl.textContent = msg;
+this.resultEl.className = 'resultat show ' + css;
+    this.resultEl.style.display = 'flex';
+  }
+
+  _showReadyScreen() {
+    if (this.texts.readyContent) {
+      const wrap = document.createElement('div');
+      wrap.style.textAlign = 'center';
+      wrap.innerHTML = this.texts.readyContent;
+      this.zone.appendChild(wrap);
     }
-  });
-  anim.afficher();
-}
+    this.resultEl.textContent = this.texts.ready || '';
+    this.resultEl.style.display = 'flex';
+  }
 
-}
+  _setNextLabel(l) { this.nextButton.textContent = l; }
 
-// Exposer globalement
+  _finQuiz() {
+    this.panneau.style.display = 'none';
+    this.resultEl.style.display = 'none';
+    this.mount.setAttribute('style', 'position:fixed;inset:0;background:#002;display:flex;align-items:center;justify-content:center;z-index:1;');
+    this.zone.setAttribute('style', 'max-width:min(720px,92vw);color:#fff;border:none;background:#002;');
+    this.zone.innerHTML = '';
+    const efficacite = this.rejetsCumules === 0 ? 100 : Math.max(0, 100 - (this.rejetsCumules * 5));
+
+    new AnimationFinale({
+      score: this.bonnes,
+      total: this.total,
+      rejets: this.rejetsCumules,
+      efficacite: efficacite,
+      nbQuestions: this.nbQuestions,
+      resultat: this.zone,
+      onRestart: () => {
+          this.mount.removeAttribute('style'); // On nettoie les styles inline
+          this.zone.removeAttribute('style');
+          this.panneau.style.display = '';
+          this.start();
+      }
+    }).afficher();
+
+  }
+}
 window.Quiz = Quiz;

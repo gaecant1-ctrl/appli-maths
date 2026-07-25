@@ -275,10 +275,15 @@ class ExerciceQcm extends Exercice {
 
 
 class ExerciceFullQcm extends Exercice {
-  constructor(container, questionData) {
+  constructor(container, questionData, onRejet = null) {
     super(container);
     this.questionData = questionData;
     this.selected = new Set();
+    // Nombre de cases mal cochées/oubliées à la dernière validation — sert
+    // de base à la "Moyenne erreur" du Quiz (pas de retry en QCM, donc pas
+    // de tentatives ratées à compter : on compte plutôt les cases fausses).
+    this.tentativesEchouees = 0;
+    this.onRejet = onRejet;
     this._render();
     this._setupEvents();
     this.afficherQuestionEtChoix();
@@ -339,9 +344,17 @@ class ExerciceFullQcm extends Exercice {
 
   }
 
+  /** Abandon : révèle la correction (cases cochées comparées à rien si
+   *  l'élève n'a encore rien coché) sans attendre un clic sur "Valider". */
+  abandonner() {
+    if (this.status) return;
+    this.valider();
+  }
+
   valider() {
     const bonnes = new Set(this.questionData.bonnesReponses);
     let ok = true;
+    let nbErreurs = 0;
 
     // Réinitialiser styles et interactions
     this.choixDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -357,14 +370,18 @@ class ExerciceFullQcm extends Exercice {
       } else if (this.selected.has(idx) && !bonnes.has(idx)) {
         cb.classList.add("ex-qcm-mauvais");
         ok = false;
+        nbErreurs++;
       } else if (!this.selected.has(idx) && bonnes.has(idx)) {
         cb.classList.add("ex-qcm-oublie");
         ok = false;
+        nbErreurs++;
       }
     });
 
     this.status = ok ? "correct" : "incorrect";
     this.resultatDiv.textContent = this.feedback[this.status];
+    this.tentativesEchouees = nbErreurs;
+    if (this.onRejet && nbErreurs > 0) this.onRejet(nbErreurs);
     this._emitValidation();
   }
 

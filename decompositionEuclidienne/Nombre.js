@@ -3,6 +3,25 @@ class Nombre {
   constructor(s) {
     if (typeof s !== 'string') s = String(s);
     this.initial = s;
+
+    // Notation puissance "base^exposant" (ex: "2^3") : on calcule bien la
+    // VALEUR (2^3 = 8) mais on garde base/exposant à part pour un AFFICHAGE
+    // fidèle à ce qui a été tapé (voir toString/toLatex ci-dessous) — sans
+    // ça, taper "2^3" afficherait "8" au lieu de "2^3". La comparaison
+    // memesAtomes/memesOperations (Grader.js) développe séparément en
+    // multiplication répétée pour juger de l'égalité de FORME avec une
+    // correction écrite "2*2*2" ; ceci ne concerne que la valeur/l'affichage.
+    const mPuissance = /^([+-]?\d+(?:[.,]\d+)?)\^(\d+)$/.exec(s);
+    if (mPuissance) {
+      const base = mPuissance[1];
+      const exposant = parseInt(mPuissance[2], 10);
+      this.puissanceAffichage = { base, exposant };
+      this.valeurNum = { a: Math.round(Math.pow(parseFloat(base.replace(',', '.')), exposant)), b: 1 };
+      this.valeur = s;
+      this.typeEcriture = 'dec';
+      return;
+    }
+
     this.valeurNum = this.parse(s);
     this.valeur = s;
     this.typeEcriture = s.includes('/') ? 'frac' : 'dec';
@@ -155,6 +174,10 @@ class Nombre {
   }
 
   toString(opts = {}) {
+    if (this.puissanceAffichage) {
+      const { base, exposant } = this.puissanceAffichage;
+      return `${base}^${exposant}`;
+    }
     const simp = this.simplify().valeurNum;
     const { nombreAff = "auto", precision = 10, arrondi = false } = opts;
 
@@ -185,6 +208,10 @@ class Nombre {
   }
 
   toLatex(opts = {}) {
+    if (this.puissanceAffichage) {
+      const { base, exposant } = this.puissanceAffichage;
+      return `${base}^{${exposant}}`;
+    }
     const { a, b } = this.valeurNum;
     const simp = this.simplify().valeurNum;
     const {

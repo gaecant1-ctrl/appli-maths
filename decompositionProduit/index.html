@@ -1,11 +1,9 @@
-
- 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Quiz Euclide</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Décomposition en Facteurs Premiers</title>
+  <link rel="stylesheet" href="style.css?v=5">
 
   <!-- MathJax (si tu veux du LaTeX dans les énoncés) -->
   <script>
@@ -23,60 +21,249 @@
 </head>
 <body>
 
+  <header>
+    <span id="titre_appli">Décomposition en <b>Facteurs Premiers</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
 
-  <!-- Conteneur du quiz -->
-  <div id="app"></div>
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+
+    <!-- Conteneur du quiz -->
+    <main id="app"></main>
+  </div>
 
   <!-- Scripts de ton projet -->
   <script src="Utils.js"></script>
-  <script src="Nombre.js"></script>
+  <script src="Nombre.js?v=2"></script>
   <script src="Grandeur.js"></script>
   <script src="Expression.js"></script>
   <script src="Somme.js"></script>
   <script src="Produit.js"></script>
-  <script src="ObjetString.js"></script>
-  <script src="Grader.js"></script>
-  <script src="Exercice.js"></script>
+  <script src="ObjetString.js?v=3"></script>
+  <script src="Grader.js?v=2"></script>
+  <script src="Exercice.js?v=2"></script>
   <script src="InputWrapper.js"></script>
   <script src="Niveau.js"></script>
-  <script src="Enonce.js"></script>
+  <script src="Enonce.js?v=5"></script>
   <script src="AnimationFinale.js"></script>
-  <script src="Quiz.js"></script>
+  <script src="Fiche.js?v=6"></script>
+  <script src="Guide.js?v=2"></script>
+  <script src="Quiz.js?v=7"></script>
 
   <script>
+
+// ==========================================
+// TYPE D'EXERCICE (Simple / Complexe)
+// ----------------------------------------------
+// Simple  → patron 1 (ce qu'on avait déjà : un produit "propre" de facteurs
+//           premiers, affiché comme un simple nombre).
+// Complexe → patrons 2 à 5, 4 sous-types tirés au hasard :
+//   1. produit de facteurs dont un n'est pas premier (ex: 4×15×7)
+//   2. produit de deux nombres non premiers entre 1 et 100
+//   3. somme de produits de facteurs premiers avec 1 ou 2 facteurs communs
+//   4. somme d'un produit de facteurs premiers et d'un de ses facteurs
+// Multi-sélection (comme dans decompositionEuclidienne) : au moins un des
+// deux doit toujours rester actif.
+// ==========================================
+const typesExerciceActifs = new Set(['simple', 'complexe']);
+
+function patternWeightsSelonTypesActifs() {
+  const simple = typesExerciceActifs.has('simple') ? 1 : 0;
+  const complexe = typesExerciceActifs.has('complexe') ? 1 : 0;
+  return [simple, complexe, complexe, complexe, complexe];
+}
+
+// Boutons de réglages (Type + Retry) à verrouiller une fois le Quiz démarré
+// (pas l'Atelier, qui reste librement modifiable) — voir verrouillerParametres().
+const boutonsParametres = [];
+
+/** Verrouille/déverrouille tous les boutons de réglages (Type, Retry). */
+function verrouillerParametres(locked) {
+  boutonsParametres.forEach(btn => { btn.disabled = locked; });
+}
+
+/** Installe le groupe "Type" (Simple / Complexe) dans le panneau latéral,
+ *  au-dessus de la zone gérée par Quiz.js (voir #panneauQuizZone). */
+function setupSelecteurTypeExercice() {
+  const panneau = document.getElementById("panneauLateral");
+  if (!panneau) return;
+
+  const groupe = document.createElement('div');
+  groupe.className = 'panel-groupe';
+
+  const label = document.createElement('div');
+  label.className = 'panel-groupe-label';
+  label.textContent = 'Type';
+  groupe.appendChild(label);
+
+  const paire = document.createElement('div');
+  paire.className = 'panel-groupe-paire';
+
+  const labels = { simple: 'Simple', complexe: 'Complexe' };
+
+  Object.keys(labels).forEach(type => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn panel-btn-half' + (typesExerciceActifs.has(type) ? ' active' : '');
+    btn.textContent = labels[type];
+    btn.addEventListener('click', () => {
+      if (typesExerciceActifs.has(type)) {
+        if (typesExerciceActifs.size > 1) { // garder au moins un actif
+          typesExerciceActifs.delete(type);
+          btn.classList.remove('active');
+        }
+      } else {
+        typesExerciceActifs.add(type);
+        btn.classList.add('active');
+      }
+    });
+    boutonsParametres.push(btn);
+    paire.appendChild(btn);
+  });
+
+  groupe.appendChild(paire);
+  panneau.appendChild(groupe);
+
+  const filet = document.createElement('div');
+  filet.className = 'panel-filet';
+  panneau.appendChild(filet);
+}
+
+// ==========================================
+// RETRY (Oui / Non)
+// ----------------------------------------------
+// Non (par défaut, comportement historique) : la question est validée dès
+// la première réponse, correcte ou non.
+// Oui : une réponse fausse laisse réessayer (continuerSiInegale=true côté
+// policies), la question n'est validée incorrecte qu'après épuisement.
+// Sélection unique (comme "Écriture simplifiée" dans calcul prioritaire).
+// ==========================================
+let retryActif = false;
+
+/** Installe le groupe "Retry" (Oui / Non) dans le panneau latéral. */
+function setupSelecteurRetry() {
+  const panneau = document.getElementById("panneauLateral");
+  if (!panneau) return;
+
+  const groupe = document.createElement('div');
+  groupe.className = 'panel-groupe';
+
+  const label = document.createElement('div');
+  label.className = 'panel-groupe-label';
+  label.textContent = 'Retry';
+  groupe.appendChild(label);
+
+  const paire = document.createElement('div');
+  paire.className = 'panel-groupe-paire';
+
+  [{ val: true, label: 'Oui' }, { val: false, label: 'Non' }].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn panel-btn-half' + (retryActif === opt.val ? ' active' : '');
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => {
+      if (retryActif === opt.val) return;
+      retryActif = opt.val;
+      paire.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    boutonsParametres.push(btn);
+    paire.appendChild(btn);
+  });
+
+  groupe.appendChild(paire);
+  panneau.appendChild(groupe);
+
+  const filet = document.createElement('div');
+  filet.className = 'panel-filet';
+  panneau.appendChild(filet);
+}
+
+/** Installe le bouton "Nouvel onglet" dans le header.
+ *  Repli si window.open() est bloqué (iframe sandbox) : affiche un lien
+ *  cliquable à côté du bouton. */
+function setupBoutonNouvelOnglet() {
+  const conteneur = document.getElementById("topButtonsBar");
+  if (!conteneur) return;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'btnNouvelOnglet';
+  btn.className = 'btn-header';
+  btn.textContent = 'Nouvel onglet';
+
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
+  repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+
+  btn.onclick = () => {
+    const w = window.open(window.location.href, "_blank", "noopener");
+    if (!w) repli.style.display = 'inline';
+  };
+
+  conteneur.appendChild(btn);
+  conteneur.appendChild(repli);
+}
+
 window.addEventListener('load', () => {
-//const niv = new Niveau({ levels:{ facile:'Facile', moyen:'Moyen', difficile:'Difficile' }, defaultKey:'moyen' });
 
- const SEED_BASE = "quiz-euclide-2025";
-
-function buildEuclide(zone, index) {
-  const opts={
-   sharedOptions: { affichageAvecLettre: "" }
+function buildFacteursPremiers(zone, index, onRejet) {
+  const opts = {
+    sharedOptions: { affichageAvecLettre: "" },
+    patternWeights: patternWeightsSelonTypesActifs(),
+    continuerSiInegale: retryActif
   };
 
   const inst = new EnonceFacteursPremiers(opts);
-  return inst.buildExercise(zone, index);
+  return inst.buildExercise(zone, index, onRejet);
 }
 
+  // Installés AVANT le Quiz : la zone que Quiz.js gère (#panneauQuizZone) est
+  // ajoutée après tout contenu déjà présent dans #panneauLateral, ce qui
+  // place "Type"/"Retry" au-dessus d'Atelier/Quiz dans le panneau.
+  setupSelecteurTypeExercice();
+  setupSelecteurRetry();
 
   const quiz = new Quiz({
     mount: '#app',
     nbQuestions: 10,
-    buildExercise: buildEuclide,
+    buildExercise: buildFacteursPremiers,
     texts: {
-      ready: "Decomposition en produit de facteurs premiers",
-      readyImage:""  // <-- optionnel
-    }
+      ready: "Décomposition en Facteurs Premiers",
+      readyImage: "",
+      readyContent: `
+        <p style="font-size:1.2em; line-height:1.5; margin:20px 0; text-align:center;">
+          Il s'agit ici de décomposer un nombre entier en produit de ses facteurs premiers.
+        </p>
+      `
+    },
+    onQuizDemarre: () => verrouillerParametres(true),
+    onRetourAtelier: () => verrouillerParametres(false)
   });
 
-  // Monter le sélecteur de niveau dans le slot du quiz
-  //niv.renderInto(quiz.getLevelSlot());
+  setupBoutonNouvelOnglet();
 
-  // Afficher l'écran d'accueil
-  quiz.start();
+  // ==========================================
+  // FICHE PAPIER (overlay LaTeX + impression PDF)
+  // ==========================================
+  const fiche = new FichePapier({
+    EnonceClass: EnonceFacteursPremiers,
+    sharedOptions: { affichageAvecLettre: "" },
+    nbExercices: 10,
+    titre: "Décomposition en Facteurs Premiers",
+    sousTitre: ""
+  });
+  fiche.installerBouton(document.getElementById('topButtonsBar'));
+
+  // ==========================================
+  // GUIDE (mode d'emploi)
+  // ==========================================
+  const guide = new GuideAppli();
+  guide.installerBouton(document.getElementById('topButtonsBar'));
 });
 
   </script>
-  
+
 </body>
 </html>
