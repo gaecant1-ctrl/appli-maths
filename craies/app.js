@@ -72,16 +72,29 @@ function choisirTypeExercicePourExercice() {
   return actifs[Math.floor(Math.random() * actifs.length)];
 }
 
-function generateExpression() {
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("hidden"));
+/** Tire un exercice (liste de termes {repeat, sign, val}), selon les types actifs du panneau —
+ *  pure fonction sans toucher au DOM ; utilisée par le quiz courant et par la fiche papier. */
+function tirerUnExercice() {
   const typeTire = choisirTypeExercicePourExercice();
   const nb = randInt(2, 3), motifs = [];
-  window.currentData = [];
+  const data = [];
   for (let i = 0; i < nb; i++) motifs.push({ sign: Math.random() < 0.5 ? "+" : "-", val: randInt(1, 9) });
   motifs.forEach((m, i) => {
     const repeat = (typeTire === 'simple') ? 1 : ((i === 0) ? randInt(1, 2) : 1);
-    window.currentData.push({ repeat, ...m });
+    data.push({ repeat, ...m });
   });
+  return data;
+}
+
+/** Construit l'énoncé LaTeX (lettre x) d'un exercice — même formule que le mode "abc" de
+ *  renderContent, réutilisée par la fiche papier. */
+function construireEnonceLatex(data) {
+  return data.map(t => t.repeat > 1 ? `${t.repeat}\\times(x ${t.sign} ${t.val})` : `(x ${t.sign} ${t.val})`).join(" + ");
+}
+
+function generateExpression() {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("hidden"));
+  window.currentData = tirerUnExercice();
   renderContent();
 }
 
@@ -425,6 +438,11 @@ function construireHeader() {
     window.open(window.location.href, '_blank');
   });
   bandeau.appendChild(btnNouvelOnglet);
+
+  if (window.FichePapier) {
+    const fiche = new FichePapier();
+    fiche.installerBouton(bandeau);
+  }
 
   if (window.GuideCraies) {
     const guide = new GuideCraies();
