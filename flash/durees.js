@@ -11,13 +11,15 @@ function latexHeureMinute(h, min) {
 
 // Réponse à deux trous ("...h + ...min") : pas un cas couvert par
 // reponse.js (grandeur/litteral/texte), donc parsing local dédié.
-// Accepte "3h24min", "3 h 24 min", "3h24", etc.
+// Accepte "3h24min", "3 h 24 min", "3h24", etc. — et, minutes optionnelles
+// (implicitement 0 si absentes) : "5h" doit être accepté tel quel pour une
+// durée ronde, pas seulement "5h+0min" ou "5h0min".
 function verifierHeureMinute(h, min, saisie) {
   const attendu = latexHeureMinute(h, min);
-  const m = String(saisie).trim().match(/^(-?\d+)\s*h[a-zéû]*\D*(\d+)/i);
+  const m = String(saisie).trim().match(/^(-?\d+)\s*h[a-zéû]*(?:\D*(\d+))?/i);
   if (!m) return { ok: false, invalide: true, attendu };
   const hSaisi = parseInt(m[1], 10);
-  const minSaisi = parseInt(m[2], 10);
+  const minSaisi = m[2] !== undefined ? parseInt(m[2], 10) : 0;
   const ok = hSaisi === h && minSaisi === min;
   // Rendu LaTeX reconstruit depuis les valeurs reconnues (pas le texte brut).
   const saisieLatex = latexHeureMinute(hSaisi, minSaisi);
@@ -71,11 +73,13 @@ const duree = [
       const denominateurs = [2, 3, 4, 5, 6];
       const b = denominateurs[Math.floor(Math.random() * denominateurs.length)];
 
-      // fraction strictement > 1
-      const a = b + 1 + Math.floor(Math.random() * (2 * b));
-
-      const h = Math.floor(a / b);
-      const reste = a % b;
+      // Partie entière (1 ou 2 h) + reste NON NUL entre 1 et b-1 : on
+      // construit directement une fraction qui ne tombe jamais sur une
+      // durée ronde (reste=0, donc 0 min) — 60 est divisible par chacun
+      // des dénominateurs ci-dessus, reste*60/b est toujours entier.
+      const h = 1 + Math.floor(Math.random() * 2);
+      const reste = 1 + Math.floor(Math.random() * (b - 1));
+      const a = h * b + reste;
       const minutes = (reste * 60) / b;
 
       const dureeGrandeur = new Grandeur(Nombre.fromParts(a, b, "fraction"), { h: 1 });

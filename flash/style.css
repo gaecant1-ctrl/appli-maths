@@ -11,7 +11,7 @@
   --border-soft: #93c5fd;
   --radius: 16px;
   --shadow: 0 6px 20px rgba(0,0,0,0.25);
-  --row-height: 84px;
+  --row-height: 110px;
 
 
   --papier:        #ffffff;
@@ -57,7 +57,16 @@
   box-sizing: border-box;
 }
 
+/* Page verrouillée sur exactement 100vh, jamais d'ascenseur global : seul
+   #flash (voir plus bas) défile en interne au delà de 5 questions. */
+html {
+  height: 100%;
+}
+
 body {
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   background: var(--papier-panel);
   color: var(--encre);
@@ -79,6 +88,7 @@ header {
   width: 100%;
   padding: 0 1.2em;
   min-height: 58px;
+  flex-shrink: 0;
   background: var(--header-fond);
   border-bottom: 1px solid var(--header-bordure);
   box-sizing: border-box;
@@ -153,16 +163,21 @@ header {
    Corps : panneau latéral + questions
    ========================= */
 
+/* flex:1 + min-height:0 : #appBody prend tout le reste de la hauteur de la
+   page (100vh - header - footer), jamais plus — c'est ce qui garantit
+   qu'aucun ascenseur global n'apparaît (voir body ci-dessus). */
 #appBody {
   width: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 #panneauLateral {
-  flex: 0 0 220px;
-  width: 220px;
-  min-height: calc(100vh - 58px);
+  flex: 0 0 260px;
+  width: 260px;
+  overflow-y: auto;
   background: var(--panneau-fond);
   border-right: 1px solid var(--panneau-bordure);
   padding: 1.4em 1.1em;
@@ -192,6 +207,21 @@ header {
   gap: 0.5em;
 }
 
+/* Variante côte à côte (ex: Thème "Tous"/"Paramétrer", Cours
+   "Aucun"/"Tous"/"Mélanger") : boutons exclusifs à largeur égale, sur une
+   seule ligne plutôt qu'empilés. */
+.panel-type-list.panel-type-list--row {
+  flex-direction: row;
+}
+
+.panel-type-list--row .panel-btn {
+  flex: 1 1 0%;
+  min-width: 0;
+  text-align: center;
+  padding-left: 0.4em;
+  padding-right: 0.4em;
+}
+
 .panel-btn {
   width: 100%;
   background-color: #ffffff;
@@ -218,12 +248,25 @@ header {
   color: #ffffff;
 }
 
+/* Verrouillé (quiz en cours) : on n'annule plus l'état "active" — pour
+   raison pratique, il faut pouvoir voir d'un coup d'œil quel niveau/type/
+   thème est sélectionné même si on ne peut plus le changer. Seul l'aspect
+   général (opacité, curseur) indique que le bouton est désactivé. */
 .panel-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
-  background-color: #ffffff !important;
-  border-color: var(--panneau-bordure) !important;
-  color: var(--panneau-label) !important;
+}
+
+.panel-btn:disabled:not(.active) {
+  background-color: #ffffff;
+  border-color: var(--panneau-bordure);
+  color: var(--panneau-label);
+}
+
+.panel-btn.active:disabled {
+  background-color: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #ffffff;
 }
 
 .panel-filet {
@@ -316,13 +359,19 @@ header {
 #contenuApp {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--papier-panel);
 }
 
 #flash-header {
   max-width: 1200px;
+  width: 100%;
   margin: 1.6em auto 0.8em auto;
   padding: 0 1.2em;
+  flex-shrink: 0;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
@@ -435,9 +484,12 @@ header {
 }
 
 #flash {
+  position: relative; /* contexte de positionnement pour les overlays (guide, thèmes...) */
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto 2.4em auto;
   padding: 0 1.2em;
+  box-sizing: border-box;
 
   display: flex;
   flex-direction: column;
@@ -447,8 +499,17 @@ header {
      qui grandit sans fin ou des cartouches rapetissées pour tout faire
      tenir — la hauteur de chaque question (--row-height) ne change jamais
      (voir flex-shrink:0 sur .question). Ascenseur non visible mais
-     toujours fonctionnel (molette, tactile, clavier). */
-  max-height: calc(100vh - 220px);
+     toujours fonctionnel (molette, tactile, clavier).
+     Hauteur plafonnée pour accueillir EXACTEMENT 5 questions (5 ×
+     --row-height + 4 espacements .gap) — pas une fraction du viewport : au
+     delà de 5, c'est l'ascenseur interne qui prend le relais, jamais celui
+     de la page entière. flex:1 + min-height:0 : si la fenêtre est trop
+     basse pour atteindre ce plafond, #flash rétrécit plutôt que de faire
+     déborder la page (le plafond de 5 lignes n'est alors plus garanti,
+     mais l'ascenseur reste interne). */
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(5 * var(--row-height) + 4 * 1.1em);
   overflow-y: auto;
   scrollbar-width: none;      /* Firefox */
   -ms-overflow-style: none;   /* anciens Edge/IE */
@@ -503,8 +564,8 @@ header {
      contenu — pas de saut de mise en page quand le texte change. */
   flex: 5 5 0%;
   min-width: 0;
-  font-size: 1.28em;
-  line-height: 1.3;
+  font-size: 1.2em;
+  line-height: 1.4;
   text-align: left;
   color: var(--text);
   overflow: hidden;
@@ -515,12 +576,14 @@ header {
    ========================= */
 
 .question .controls {
-  /* Même ratio fixe que .enonce/.saisie : voir commentaire sur .enonce. */
+  /* Même ratio fixe que .enonce/.saisie : voir commentaire sur .enonce.
+     3 colonnes x 2 lignes : les 4 boutons historiques (🔁🎲🧩⬆) plus
+     choix-theme (🗂️) et cours (📖). */
   flex: 1 1 0%;
   min-width: 0;
 
   display: grid;
-  grid-template-columns: repeat(2, 34px);
+  grid-template-columns: repeat(3, 34px);
   grid-template-rows: repeat(2, 34px);
   gap: 0.35em;
 
@@ -706,7 +769,7 @@ mjx-container {
 .question .enonce mjx-container {
   margin: 0 !important;
   padding: 0.02em 0;
-  line-height: 1.1;
+  line-height: 1.4;
 }
 
 /* Énoncé à deux lignes (plusieurs blocs \[...\] dans un <div>, séparés
@@ -719,12 +782,15 @@ mjx-container {
 }
 
 .app-footer {
-  margin-top: 2rem;
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: 0rem;
   padding: 0.5rem 0;
   text-align: center;
   font-size: 0.85rem;
   color: #666;
   border-top: 1px solid #ddd;
+  box-sizing: border-box;
 }
 
 #timer-widget {

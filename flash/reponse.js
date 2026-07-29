@@ -33,12 +33,31 @@
      "litteral"  — attendu : instance Polynome (calcul-litteral, variable x).
                    Parse la saisie via ObjetString ; accepte toute forme
                    algébriquement égale (réduite ou non, ordre libre).
-     "texte"     — attendu : string ou string[] selon le mode.
-                   mode "identique" : égalité stricte après normalisation.
-                   mode "in"        : la saisie doit correspondre à l'une
-                                      des formes de la liste attendu.
-                   mode "has"       : la saisie doit contenir l'un des
-                                      mots-clés de attendu.
+     "factorisation" — attendu : instance PolynomeMV (calcul-mv, forme
+                   développée d'origine). Parse la saisie via ObjetStringMV ;
+                   exige une égalité algébrique exacte ET une forme
+                   effectivement/complètement factorisée sur l'arbre brut
+                   (racine = produit, aucun facteur commun ni monôme en
+                   double ne subsiste dans une somme-facteur) — sinon
+                   `invalide` (juste mais pas fini, l'élève peut continuer).
+     "texte"     — attendu : string ou string[] selon le mode. opts.mode :
+                   "identique" (défaut) : égalité stricte (après
+                                normalisation, voir plus bas).
+                   "in"        : la saisie doit correspondre à l'une des
+                                formes de la liste attendu.
+                   "has"       : la saisie doit contenir l'un des mots-clés
+                                de attendu.
+                   Trois passes systématiques, dans cet ordre :
+                     1. exact, SANS normalisation — rien à signaler.
+                     2. exact seulement APRÈS normalisation (accents/casse/
+                        espaces) — PAS validé (invalide:true), signalé
+                        (malEcrit:true) : correct sur le fond mais mal
+                        écrit, l'élève corrige avant que ce soit compté.
+                     3. opts.presqueJuste (string[] d'erreurs fréquentes
+                        identifiées à l'avance, ex: confondre deux notations
+                        proches) — jamais verrouillé (invalide:true), avec
+                        presque:true pour un message dédié plutôt que
+                        "format inattendu".
 ================================================================ */
 
 'use strict';
@@ -46,6 +65,7 @@
 import { ObjetString, estFormeReduite } from './calcul-litteral.js';
 import { Grandeur } from './calcul-grandeur.js';
 import { evalGrandeurExpr } from './calcul-grandeur-expr.js';
+import { parseMV, estProduit, facteursSommes } from './calcul-mv.js';
 
 /* ---------- texte : normalisation ---------- */
 
@@ -70,25 +90,50 @@ function _latexTexte(saisie) {
   return `\\text{${_echapperHtml(_echapperLatex(String(saisie).trim()))}}`;
 }
 
-function verifierTexte(attendu, saisie, mode = "identique") {
-  const s = normaliserTexte(saisie);
+// Trois passes, dans l'ordre :
+//   1. Exact, SANS normalisation — rien à signaler, réponse impeccable.
+//   2. Exact seulement APRÈS normalisation (accents/casse/espaces) — juste
+//      sur le fond mais mal écrit : PAS validé (invalide:true, comme un
+//      format non reconnu) — on le signale (malEcrit:true) et l'élève
+//      corrige, sans que ce soit verrouillé comme correct ou faux.
+//   3. "Presque juste" (opts.presqueJuste, liste d'erreurs fréquentes et
+//      identifiées à l'avance, ex: confondre deux notations proches) —
+//      jamais verrouillé (invalide:true, comme un format non reconnu),
+//      l'élève peut se corriger ; signalé via presque:true pour un message
+//      dédié plutôt que le "format inattendu" générique.
+// Sinon : faux, verrouillé.
+function verifierTexte(attendu, saisie, opts = {}) {
+  const mode = opts.mode || "identique";
+  const presqueJuste = opts.presqueJuste || [];
+  const liste = Array.isArray(attendu) ? attendu : [attendu];
+  const brut = String(saisie ?? "");
   const saisieLatex = _latexTexte(saisie);
 
-  if (mode === "in") {
-    const liste = Array.isArray(attendu) ? attendu : [attendu];
-    const ok = liste.some(a => normaliserTexte(a) === s);
-    return { ok, attendu: liste[0], saisieLatex };
+  const correspond = (candidats, texteBrut, texteNormalise) => {
+    if (mode === "has") {
+      return {
+        exact: candidats.some(c => texteBrut.includes(c)),
+        normalise: candidats.some(c => texteNormalise.includes(normaliserTexte(c)))
+      };
+    }
+    return {
+      exact: candidats.some(c => texteBrut === String(c)),
+      normalise: candidats.some(c => normaliserTexte(c) === texteNormalise)
+    };
+  };
+
+  const s = normaliserTexte(saisie);
+  const { exact, normalise } = correspond(liste, brut, s);
+
+  if (exact) return { ok: true, attendu: liste[0], saisieLatex };
+  if (normalise) return { ok: false, invalide: true, malEcrit: true, attendu: liste[0], saisieLatex };
+
+  const estPresqueJuste = presqueJuste.some(p => normaliserTexte(p) === s);
+  if (estPresqueJuste) {
+    return { ok: false, invalide: true, presque: true, attendu: liste[0], saisieLatex };
   }
 
-  if (mode === "has") {
-    const motsCles = Array.isArray(attendu) ? attendu : [attendu];
-    const ok = motsCles.some(m => s.includes(normaliserTexte(m)));
-    return { ok, attendu: motsCles[0], saisieLatex };
-  }
-
-  // "identique" par défaut
-  const ok = s === normaliserTexte(attendu);
-  return { ok, attendu: String(attendu), saisieLatex };
+  return { ok: false, attendu: liste[0], saisieLatex };
 }
 
 /* ---------- grandeur : parsing "nombre + unité" (ou expression complète) ---------- */
@@ -166,6 +211,50 @@ function verifierLitteral(attendu, saisie) {
   };
 }
 
+/* ---------- factorisation (multivarié, calcul-mv.js) ---------- */
+
+// Porte getConclusionStatus (appli-maths/factorisation/app.js) : une somme
+// directement facteur d'un produit ne doit plus avoir de facteur commun
+// extractible (facteurCommun()), ni de monômes de même signature encore à
+// regrouper (ex: "x^2+x^2" au lieu de "2x^2"). "exigerFacteurScalaire" reste
+// à false ici (pas de réglage exposé côté flash) : un facteur purement
+// numérique (sans variable commune) n'est pas jugé indispensable.
+function _statutFactorisation(arbre) {
+  const sommes = facteursSommes(arbre);
+  for (const sommeNode of sommes) {
+    const poly = sommeNode.evaluer();
+    const fc = poly.facteurCommun();
+    if (fc !== null && Object.keys(fc.degres).length > 0) return "CAN_FACTORIZE";
+
+    const sigs = poly.monomes.map(m => m.signature());
+    if (sigs.some((s, i) => sigs.indexOf(s) !== i)) return "CAN_SIMPLIFY";
+  }
+  return "OK";
+}
+
+function verifierFactorisation(attenduPoly, saisie) {
+  const attenduLatex = attenduPoly.toLatex();
+  const invalide = { ok: false, invalide: true, attendu: attenduLatex };
+
+  const os = parseMV(saisie);
+  if (!os.isValid()) return invalide;
+
+  let polyUser;
+  try { polyUser = os.calculer().resultat; }
+  catch (e) { return invalide; }
+
+  const saisieLatex = os.toLatex(); // forme telle qu'écrite, préserve la factorisation
+  const egal = attenduPoly.equal(polyUser);
+  if (!egal) return { ok: false, attendu: attenduLatex, saisieLatex };
+
+  // Juste algébriquement, mais pas (encore) complètement factorisé : pas
+  // verrouillé, l'élève doit continuer — même philosophie que
+  // estFormeReduite pour "litteral".
+  if (!estProduit(os.arbre) || _statutFactorisation(os.arbre) !== "OK") return invalide;
+
+  return { ok: true, attendu: attenduLatex, saisieLatex };
+}
+
 /* ---------- dispatch commun ---------- */
 
 export function verifier(type, attendu, saisie, opts = {}) {
@@ -174,8 +263,10 @@ export function verifier(type, attendu, saisie, opts = {}) {
       return verifierGrandeur(attendu, saisie);
     case "litteral":
       return verifierLitteral(attendu, saisie);
+    case "factorisation":
+      return verifierFactorisation(attendu, saisie);
     case "texte":
-      return verifierTexte(attendu, saisie, opts.mode);
+      return verifierTexte(attendu, saisie, opts);
     default:
       throw new Error(`reponse.verifier : type inconnu "${type}"`);
   }

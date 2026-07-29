@@ -11,7 +11,7 @@ class FichePapier {
   constructor(engine, opts = {}) {
     this.engine = engine;
     this.titre = opts.titre || "Fiche d'exercices — Automatismes";
-    this.sousTitre = opts.sousTitre || "Calcule chaque exercice ci-dessous.";
+    this.sousTitre = opts.sousTitre || "Donner la réponse sans détailler.";
 
     this.overlay = null;
     this.grilleWrap = null;
@@ -197,15 +197,18 @@ class FichePapier {
   // au \parbox, ne fuit pas sur le reste du document).
   _tableauTex(page) {
     const HAUTEUR_CELLULE_CM = 2;
+    const HAUTEUR_ENTETE_CM = 1;
 
     const lignesTex = page.map(item => {
       const consigne = `\\parbox[c][${HAUTEUR_CELLULE_CM}cm][c]{\\linewidth}{\\renewcommand{\\baselinestretch}{1.3}\\selectfont\\RaggedRight ${this._consigneTex(item.latex)}}`;
       return `${item.numero} & ${consigne} & \\\\ \\hline`;
     });
 
+    const entete = `\\parbox[c][${HAUTEUR_ENTETE_CM}cm][c]{1.5cm}{\\centering\\textbf{N°}} & \\parbox[c][${HAUTEUR_ENTETE_CM}cm][c]{\\linewidth}{\\centering\\textbf{Consigne}} & \\parbox[c][${HAUTEUR_ENTETE_CM}cm][c]{3cm}{\\centering\\textbf{Réponse}} \\\\ \\hline`;
+
     return `\\noindent\\begin{tabular}{|c|>{\\RaggedRight\\arraybackslash}p{14cm}|>{\\RaggedRight\\arraybackslash}p{3cm}|}
 \\hline
-\\textbf{N°} & \\textbf{Consigne} & \\textbf{Réponse} \\\\ \\hline
+${entete}
 ${lignesTex.join("\n")}
 \\end{tabular}`;
   }
@@ -359,8 +362,8 @@ ${pagesTex}
         flex-wrap:wrap;
         gap:16px;
         font-size:15px;
-        margin-top: 20px;
-        margin-bottom: 50px;
+        margin-top: 10px;
+        margin-bottom: 30px;
       }
       .trait{
         display:inline-block;
@@ -386,7 +389,7 @@ ${pagesTex}
       .fiche-table{
         width: 100%;
         border-collapse: collapse;
-        margin-top: 30px;
+        margin-top: 20px;
         font-size: 14px;
       }
 
@@ -421,15 +424,22 @@ ${pagesTex}
         line-height: 1.3;
       }
       .fiche-table .col-consigne .consigne-inner{
-        height: 2cm;
+        height: 2.2cm;
         overflow: hidden;
         display: flex;
         align-items: center;
       }
+      /* Le <br> entre les blocs \[...\] (voir _latexEnLignes) hérite sinon
+         du line-height 1.3 ci-dessus, bien plus grand que les blocs MathJax
+         qu'il sépare (line-height:1 sur mjx-container ci-dessous) — même
+         correctif que .question .enonce > div dans style.css. */
+      .fiche-table .col-consigne .consigne-inner > div{
+        line-height: 0.5;
+      }
       .fiche-table .col-consigne mjx-container{
         margin: 0 !important;
         padding: 0.02em 0;
-        line-height: 1.1;
+        line-height: 1;
       }
       .fiche-table .col-consigne mjx-container[display="true"]{
         text-align: left;
@@ -441,13 +451,13 @@ ${pagesTex}
       }
 
       .fiche-table + .fiche-table{
-        margin-top: 20px;
+        margin-top: 10px;
       }
 
       body.fiche-ouverte{ overflow:hidden; }
 
       @media print{
-        @page{ margin: 0.8cm; size: A4; }
+        @page{ margin: 0.5cm; size: A4; }
         body *{ visibility:hidden; }
         #overlayFiche, #overlayFiche *{ visibility:visible; }
         #overlayFiche{

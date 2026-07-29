@@ -97,7 +97,7 @@ const aires = [
 
       return {
         latex: `
-        \\text{Calculer l’aire d’un rectangle de dimensions }
+        \\text{Calculer l’aire d’un rectangle de dimensions : }\\\\
         ${a}\\,\\text{cm} \\text{ et } ${b}\\,\\text{cm}.
         `,
         correction: `

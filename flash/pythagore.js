@@ -131,9 +131,8 @@ const pythagore = [
 
       return {
         latex: `
-        \\text{Le triangle } ${X}${Y}${Z} \\text{ est tel que :}\\\\
-        ${X}${Y} = ${a}\\,\\text{cm}\\text{, } ${X}${Z} = ${b}\\,\\text{cm} \\text{ et } ${Y}${Z} = ${c}\\,\\text{cm}.\\,
-        \\text{Ce triangle est-il rectangle ?}
+        \\text{Le triangle } ${X}${Y}${Z} \\text{ est-il rectangle, sachant que :}\\\\
+        ${X}${Y} = ${a}\\,\\text{cm}\\text{, } ${X}${Z} = ${b}\\,\\text{cm} \\text{ et } ${Y}${Z} = ${c}\\,\\text{cm}?
         `,
         correction: `
         ${Y}${Z}^2 = ${w}\\,\\text{cm}^2 \\quad ${X}${Y}^2 + ${X}${Z}^2 = ${u}\\,\\text{cm}^2 + ${v}\\,\\text{cm}^2 = ${u + v}\\,\\text{cm}^2\\\\

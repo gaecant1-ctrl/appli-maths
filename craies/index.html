@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réduction d'expressions</title>
+<link rel="stylesheet" href="style.css">
+
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11/lib/browser/math.js"></script>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">Réduction d'<b>expressions</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+
+    <main>
+      <div id="container">
+        <div class="section zone-visuelle" id="zone-visuelle">
+          <div id="expression-zone" class="expression hidden-visu"></div>
+        </div>
+
+        <div class="section zone-total" id="zone-total">
+          <div id="translation"></div>
+        </div>
+
+        <div class="section zone-reduite" id="zone-reduite">
+          <div id="input-row">
+            <input type="text" id="answer" placeholder="Réponse" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <div id="latex-res"></div>
+            <button id="check-btn">✅ Vérifier</button>
+          </div>
+          <div id="feedback"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="Guide.js?v=4"></script>
+  <script src="app.js?v=4"></script>
+
+</body>
+</html>

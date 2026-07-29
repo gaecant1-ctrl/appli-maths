@@ -52,6 +52,27 @@ window.MathJax = {
 <div id="appBody">
 
   <aside id="panneauLateral">
+    <!-- En tête de panneau : nombre de questions + lancement (avant le
+         quiz), puis progression + score (pendant) — le plus pertinent tant
+         qu'un quiz est en cours, avant les réglages niveau/type/thème/cours
+         qui se verrouillent de toute façon une fois lancé. -->
+    <div class="panel-groupe" id="quizControles" hidden>
+      <div class="panel-groupe-label">Quiz</div>
+      <input type="number" id="quizNbQuestions" class="panel-input" min="1" max="50" value="10">
+      <button class="panel-btn active" type="button" id="btnCommencerQuiz">Commencer le Quiz</button>
+    </div>
+
+    <!-- Pendant le quiz : remplace le bloc ci-dessus. -->
+    <div id="quizEtat" hidden>
+      <div class="panel-groupe-label">Quiz</div>
+      <div id="score-container">
+        <div id="question-progress">Question : 0/0</div>
+        <div id="score">Score : 0</div>
+      </div>
+    </div>
+
+    <div class="panel-filet"></div>
+
     <!-- Toujours visible (atelier comme quiz) : se verrouille (désactive)
          une fois le quiz lancé, plutôt que d'être caché — comme dans la
          référence (construireSelecteurNiveau(verrouille)). -->
@@ -77,22 +98,32 @@ window.MathJax = {
 
     <div class="panel-filet"></div>
 
-    <!-- Avant le quiz : nombre de questions + bouton de lancement.
-         Masqué par défaut : ne se révèle qu'au clic sur "Quiz" (header). -->
-    <div class="panel-groupe" id="quizControles" hidden>
-      <div class="panel-groupe-label">Quiz</div>
-      <input type="number" id="quizNbQuestions" class="panel-input" min="1" max="50" value="10">
-      <button class="panel-btn active" type="button" id="btnCommencerQuiz">Commencer le Quiz</button>
-    </div>
-
-    <!-- Pendant le quiz : remplace le bloc ci-dessus. -->
-    <div id="quizEtat" hidden>
-      <div class="panel-groupe-label">Quiz</div>
-      <div id="score-container">
-        <div id="question-progress">Question : 0/0</div>
-        <div id="score">Score : 0</div>
+    <!-- "Tous" pioche parmi tous les thèmes accessibles pour les niveaux
+         actifs ; "Paramétrer" ouvre un overlay à cocher (voir
+         themes-overlay.js) et restreint le tirage à la sélection. -->
+    <div class="panel-groupe" id="groupeTheme">
+      <div class="panel-groupe-label">Thème</div>
+      <div class="panel-type-list panel-type-list--row">
+        <button class="panel-btn active" type="button" id="btnThemeTous">Tous</button>
+        <button class="panel-btn" type="button" id="btnThemeParametrer">Paramétrer</button>
       </div>
     </div>
+
+    <div class="panel-filet"></div>
+
+    <!-- Trois boutons exclusifs : "aucun" (défaut, aucune question de
+         cours), "tous" (uniquement des questions de cours), "melanger"
+         (cours et exercices classiques mélangés) — voir coursEligible()
+         dans engine.js. -->
+    <div class="panel-groupe" id="groupeCours">
+      <div class="panel-groupe-label">Cours</div>
+      <div class="panel-type-list panel-type-list--row">
+        <button class="panel-btn active" type="button" id="btnCoursAucun" data-mode="aucun">Aucun</button>
+        <button class="panel-btn" type="button" id="btnCoursTous" data-mode="tous">Tous</button>
+        <button class="panel-btn" type="button" id="btnCoursMelanger" data-mode="melanger">Mélange</button>
+      </div>
+    </div>
+
   </aside>
 
   <!-- =========================
@@ -175,8 +206,10 @@ window.MathJax = {
   import engine from "./engine.js";
   import FichePapier from "./fiche.js";
   import GuideAppli from "./guide.js";
+  import SelecteurThemes from "./themes-overlay.js";
+  import SelecteurThemeQuestion from "./theme-question-overlay.js";
   window.engine = engine;
-  engine.init(3); // nombre initial de questions
+  engine.init(5); // nombre initial de questions
 
   // ---------- Nouvel onglet ----------
   // Repli si window.open() est bloqué (iframe sandbox) : affiche un lien
@@ -202,6 +235,16 @@ window.MathJax = {
   // ---------- Guide ----------
   const guide = new GuideAppli();
   guide.installerBouton(document.getElementById("btnGuide"));
+
+  // ---------- Thème (Tous / Paramétrer) ----------
+  const selecteurThemes = new SelecteurThemes(engine);
+  selecteurThemes.installerBoutons(
+    document.getElementById("btnThemeTous"),
+    document.getElementById("btnThemeParametrer")
+  );
+
+  // ---------- Choix direct du thème d'une question (bouton 🗂️) ----------
+  new SelecteurThemeQuestion(engine).installerDansEngine();
 
   document
   .getElementById("btnCorrection")
@@ -240,12 +283,25 @@ window.MathJax = {
       if (!btn) return;
       engine.toggleNiveau(btn.dataset.code);
       btn.classList.toggle("active", engine.getNiveaux().includes(btn.dataset.code));
+      // Un changement de niveau peut avoir fait retomber le filtre de
+      // thèmes sur "tous" (plus rien d'accessible parmi les thèmes cochés).
+      selecteurThemes.rafraichirBoutons();
     });
 
   // Panneau "Type" : simple bascule (pas de multi-sélection).
   document.getElementById("btnNegatifs").addEventListener("click", (e) => {
     engine.toggleNegatifs();
     e.currentTarget.classList.toggle("active", engine.getAvecNegatifs());
+    selecteurThemes.rafraichirBoutons();
+  });
+
+  // Panneau "Cours" : trois boutons exclusifs (aucun/tous/melanger).
+  document.getElementById("groupeCours").addEventListener("click", (e) => {
+    const btn = e.target.closest(".panel-btn");
+    if (!btn) return;
+    engine.setModeCours(btn.dataset.mode);
+    document.querySelectorAll("#groupeCours .panel-btn")
+      .forEach(b => b.classList.toggle("active", b.dataset.mode === engine.getModeCours()));
   });
 
   // ---------- Atelier / Quiz (header) ----------
@@ -259,6 +315,10 @@ window.MathJax = {
     document.querySelectorAll("#selecteurNiveau .panel-btn")
       .forEach(b => b.disabled = oui);
     document.getElementById("btnNegatifs").disabled = oui;
+    document.getElementById("btnThemeTous").disabled = oui;
+    document.getElementById("btnThemeParametrer").disabled = oui;
+    document.querySelectorAll("#groupeCours .panel-btn")
+      .forEach(b => b.disabled = oui);
   }
 
   document.getElementById("btnAtelier").addEventListener("click", (e) => {
@@ -329,6 +389,7 @@ window.MathJax = {
     engine.onReponse(majEtatQuiz);
     majEtatQuiz();
   });
+
 </script>
 
 </body>

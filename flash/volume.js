@@ -35,7 +35,7 @@ const volume = [
 
       return {
         latex: `
-        \\text{Calculer le volume d’un pavé droit de dimensions }
+        \\text{Calculer le volume d’un pavé droit de dimensions :}\\\\
         ${a}\\,\\text{cm} \\text{, } ${b}\\,\\text{cm} \\text{ et } ${c}\\,\\text{cm}.
         `,
         correction: `

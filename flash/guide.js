@@ -70,9 +70,10 @@ class GuideAppli {
 
     carte.append(btnFermer, h2, contenu);
     overlay.appendChild(carte);
-    // Attaché à <main> (pas à body) : l'overlay ne couvre que la zone de
-    // contenu, le header et le panneau latéral restent visibles et utilisables.
-    (document.querySelector("main") || document.body).appendChild(overlay);
+    // Attaché à #flash (le conteneur des questions), pas à <main> : le
+    // header, le bandeau de contrôles et le panneau latéral restent
+    // visibles et utilisables.
+    (document.getElementById("flash") || document.querySelector("main") || document.body).appendChild(overlay);
 
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) this.fermer();

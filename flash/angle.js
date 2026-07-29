@@ -24,7 +24,38 @@ function verifierAngle(valeurDeg, input) {
   return reponse.verifier("grandeur", new Grandeur(new Nombre(String(valeurDeg)), { "°": 1 }), input);
 }
 
+// Question de cours : vocabulaire des angles (aigu/droit/obtus/plat) — un
+// des 4 énoncés à trou tiré au hasard à chaque génération.
+const vocabulaireAngles = [
+  { debut: `\\text{Un angle compris entre } ${deg(0)} \\text{ et } ${deg(90)} \\text{ est dit}`, reponse: "aigu" },
+  { debut: `\\text{Un angle de } ${deg(90)} \\text{ est dit}`, reponse: "droit" },
+  { debut: `\\text{Un angle compris entre } ${deg(90)} \\text{ et } ${deg(180)} \\text{ est dit}`, reponse: "obtus" },
+  { debut: `\\text{Un angle de } ${deg(180)} \\text{ est dit}`, reponse: "plat" }
+];
+
 const angle = [
+
+  // ---------------------------------------------------
+  // Cours : vocabulaire des angles
+  // ---------------------------------------------------
+  {
+    id: "vocabulaire_angles",
+    theme: "angle",
+    niveau: "6",
+    negatif: "non",
+    cours: "oui",
+    gen() {
+      const choix = vocabulaireAngles[randInt(0, vocabulaireAngles.length - 1)];
+
+      return {
+        latex: `${choix.debut} \\text{.............}`,
+        correction: `${choix.debut} \\text{ ${choix.reponse}.}`,
+        verifier(input) {
+          return reponse.verifier("texte", choix.reponse, input);
+        }
+      };
+    }
+  },
 
   // ---------------------------------------------------
   // Troisième angle d'un triangle (somme = 180°)
