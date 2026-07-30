@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Devine l'expression de la variable n</title>
+  <link rel="stylesheet" href="style.css">
+
+  <script src="Nombre.js"></script>
+  <script src="calcul-mv.js"></script>
+  <script>
+    window.MathJax = { startup: { typeset: false } };
+  </script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+  <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+</head>
+
+<body>
+
+<header>
+  <span id="titre_appli">fonction <b>Mystère</b></span>
+  <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="appBody">
+  <aside id="panneauLateral">
+
+    <div class="panel-groupe">
+      <span class="panel-groupe-label">Mode</span>
+      <div class="panel-n-selector" id="mode-selector">
+        <button class="panel-btn" data-mode="simple">Simple</button>
+        <button class="panel-btn" data-mode="affine">Affine</button>
+      </div>
+    </div>
+
+    <div class="panel-filet"></div>
+
+    <div class="panel-groupe">
+      <span class="panel-groupe-label">Type</span>
+      <div class="panel-n-selector" id="type-selector">
+        <button class="panel-btn" data-type="simple">Simple</button>
+        <button class="panel-btn" data-type="negatif">Négatif</button>
+        <button class="panel-btn" data-type="fraction">Fraction</button>
+      </div>
+    </div>
+
+    <div class="panel-filet"></div>
+
+    <div class="panel-groupe">
+      <div class="panel-groupe-cote-a-cote">
+        <div class="panel-sous-groupe">
+          <span class="panel-groupe-label">Valeur initiale</span>
+          <div class="panel-input-dice" id="startn-selector">
+            <input type="number" class="panel-input mode-fixe" id="startn-input" value="0">
+            <button class="panel-btn panel-btn-dice" id="startn-dice" type="button">🎲</button>
+          </div>
+        </div>
+        <div class="panel-filet-vertical"></div>
+        <div class="panel-sous-groupe">
+          <span class="panel-groupe-label">Pas</span>
+          <div class="panel-input-dice" id="pas-selector">
+            <input type="number" class="panel-input mode-fixe" id="pas-input" value="1" min="1">
+            <button class="panel-btn panel-btn-dice" id="pas-dice" type="button">🎲</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-filet"></div>
+
+    <div class="panel-groupe">
+      <button class="panel-btn" id="representation-btn" type="button">📈 Représentation</button>
+    </div>
+
+    <div class="panel-filet"></div>
+
+    <div id="panneauQuizZone"></div>
+
+  </aside>
+
+  <main>
+
+    <div id="jeuZone">
+      <table>
+      <thead>
+      <tr>
+        <th id="n-cell"></th>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      </thead>
+
+        <tbody>
+          <tr id="user-row">
+            <th>
+    <input
+      type="text"
+      id="expression"
+      placeholder="Mystère"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    />      </th>
+            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div id="feedback-check"></div>
+
+      <div id="boutons">
+        <button id="retry-btn">Réessayer</button>
+        <button id="new-btn">Nouvelle fonction</button>
+      </div>
+    </div>
+
+    <div id="finQuiz"></div>
+
+    <div id="debug-fonction"></div>
+
+  </main>
+</div>
+
+<div id="overlay-representation">
+  <div id="overlay-representation-panel">
+    <button id="overlay-representation-fermer" type="button" aria-label="Fermer">&times;</button>
+    <div id="ggb-element"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+<script type="module">
+const DEBUG = true; // Passe à false pour masquer l'affichage de la fonction mystère.
+
+import { GenerateurMystere } from "./GenerateurMystere.js";
+const generateur = new GenerateurMystere();
+
+let allValues = [];
+let timeouts = [];
+
+const QUIZ_TOTAL = 10;
+let etatJeu = 'atelier';   // 'atelier' | 'quiz' — atelier : illimité, sans score.
+let quizDemarre = false;
+let questionCount = 0;
+let score = 0;
+let quizHistorique = new Set(); // expressions déjà tirées dans le quiz en cours (évite les doublons)
+
+const pasInput = document.getElementById("pas-input");
+const pasDiceBtn = document.getElementById("pas-dice");
+const startnInput = document.getElementById("startn-input");
+const startnDiceBtn = document.getElementById("startn-dice");
+
+pasInput.addEventListener("input", () => {
+  const val = parseInt(pasInput.value, 10);
+  if (isNaN(val)) return;
+  generateur.pasMode = 'fixe';
+  generateur.pas = val;
+  pasInput.classList.add("mode-fixe");
+  pasDiceBtn.classList.remove("active");
+  newFunction();
+});
+
+pasDiceBtn.onclick = () => {
+  generateur.pasMode = 'de';
+  pasInput.classList.remove("mode-fixe");
+  pasDiceBtn.classList.add("active");
+  newFunction();   // initializeTable() tire le pas, remplit l'input, met à jour l'en-tête
+};
+
+startnInput.addEventListener("input", () => {
+  const val = parseInt(startnInput.value, 10);
+  if (isNaN(val)) return;
+  generateur.startNMode = 'fixe';
+  generateur.startN = val;
+  startnInput.classList.add("mode-fixe");
+  startnDiceBtn.classList.remove("active");
+  newFunction();
+});
+
+startnDiceBtn.onclick = () => {
+  generateur.startNMode = 'de';
+  startnInput.classList.remove("mode-fixe");
+  startnDiceBtn.classList.add("active");
+  newFunction();   // initializeTable() tire la valeur initiale, remplit l'input, met à jour l'en-tête
+};
+
+function getNValues() {
+  return generateur.getNValues();
+}
+
+
+const retryBtn = document.getElementById("retry-btn");
+const newBtn = document.getElementById("new-btn");
+const boutonsDiv = document.getElementById("boutons");
+const jeuZone = document.getElementById("jeuZone");
+const finQuiz = document.getElementById("finQuiz");
+const feedbackCheck = document.getElementById("feedback-check");
+const panneauQuizZone = document.getElementById("panneauQuizZone");
+const debugFonction = document.getElementById("debug-fonction");
+
+let input = document.getElementById("expression");
+const userRow = document.getElementById("user-row");
+
+let currentFunction = null;
+
+// ============================================================
+// REPRÉSENTATION GRAPHIQUE (overlay + applet GeoGebra)
+// ============================================================
+const representationBtn = document.getElementById("representation-btn");
+const overlayRepresentation = document.getElementById("overlay-representation");
+const overlayRepresentationFermer = document.getElementById("overlay-representation-fermer");
+const ggbElement = document.getElementById("ggb-element");
+
+// Dernière expression validée par l'élève (après vérification) : tracée en
+// plus de f(x) sur le graphique, remise à null dès qu'on réessaie.
+let expressionEleveValidee = null;
+
+// Valeur numérique (JS number) d'un PolynomeMV constant (voir calcul-mv.js).
+function valeurNumerique(poly) {
+  if (poly.monomes.length === 0) return 0;
+  const { a, b } = poly.monomes[0].coeff.valeurNum;
+  return a / b;
+}
+
+function ouvrirRepresentation() {
+  overlayRepresentation.classList.add('ouvert');
+
+  // On réinjecte un applet neuf à chaque ouverture : plus simple et plus
+  // fiable que de réutiliser l'instance précédente pour changer la courbe.
+  ggbElement.innerHTML = '';
+
+  const exprGeoGebra = currentFunction.replace(/n/g, 'x');
+
+  const nValues = generateur.getNValues();
+  const yValues = allValues.map(valeurNumerique);
+
+  const xmin = Math.min(...nValues) - generateur.pas;
+  const xmax = Math.max(...nValues) + generateur.pas;
+
+  const u = Math.min(Math.min(...yValues), 0);
+  const v = Math.max(...yValues);
+  const ymin = u - 0.1 * (v - u);
+  const ymax = v + 0.1 * (v - u);
+
+  const params = {
+    appName: 'classic',
+    perspective: 'G', // vue graphique seule : pas de panneau Algèbre
+    width: ggbElement.clientWidth || 700,
+    height: ggbElement.clientHeight || 500,
+    showToolBar: false,
+    showAlgebraInput: false,
+    showMenuBar: false,
+    showResetIcon: false,
+    language: 'fr',
+    appletOnLoad: (api) => {
+      api.setPerspective('G'); // au cas où le paramètre initial soit ignoré
+
+      const POINT_STYLE_PLUS = 3;
+
+      api.evalCommand(`f(x)=${exprGeoGebra}`);
+
+      nValues.forEach((n, i) => {
+        const nom = `P${i + 1}`;
+        api.evalCommand(`${nom}=(${n},${yValues[i]})`);
+        api.setLabelVisible(nom, false);
+        api.setPointStyle(nom, POINT_STYLE_PLUS);
+      });
+
+      if (expressionEleveValidee !== null) {
+        const propositionGeoGebra = expressionEleveValidee.replace(/n/g, 'x');
+        api.evalCommand(`g(x)=${propositionGeoGebra}`);
+        api.setColor('g', 230, 126, 34); // orange, pour la distinguer de f (bleu par défaut)
+        api.setLineStyle('g', 1); // tirets
+
+        // Points de la courbe de l'élève, calculés par GeoGebra lui-même via g(n).
+        nValues.forEach((n, i) => {
+          const nom = `Q${i + 1}`;
+          api.evalCommand(`${nom}=(${n},g(${n}))`);
+          api.setLabelVisible(nom, false);
+          api.setPointStyle(nom, POINT_STYLE_PLUS);
+          api.setColor(nom, 230, 126, 34);
+        });
+      }
+
+      api.setCoordSystem(xmin, xmax, ymin, ymax);
+    }
+  };
+
+  new GGBApplet(params, true).inject('ggb-element');
+}
+
+function fermerRepresentation() {
+  overlayRepresentation.classList.remove('ouvert');
+  ggbElement.innerHTML = '';
+}
+
+representationBtn.onclick = ouvrirRepresentation;
+overlayRepresentationFermer.onclick = fermerRepresentation;
+
+overlayRepresentation.addEventListener('click', (e) => {
+  if (e.target === overlayRepresentation) fermerRepresentation();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && overlayRepresentation.classList.contains('ouvert')) {
+    fermerRepresentation();
+  }
+});
+
+// MathJax est chargé en async : ses appels doivent attendre son démarrage.
+// Le texte LaTeX brut ("\(...\)") est masqué (mj-pending) le temps du rendu,
+// pour éviter le flash de source non convertie pendant l'attente.
+// window.MathJax n'est qu'un objet de config tant que le script async n'a
+// pas fini de charger : on attend que typesetPromise existe réellement.
+const mathJaxReady = new Promise(resolve => {
+  (function check() {
+    if (window.MathJax && MathJax.typesetPromise) resolve();
+    else setTimeout(check, 30);
+  })();
+});
+
+function typeset(elements) {
+  elements.forEach(el => el.classList.add('mj-pending'));
+
+  return mathJaxReady
+    .then(() => MathJax.typesetPromise(elements))
+    .then(() => {
+      elements.forEach(el => el.classList.remove('mj-pending'));
+    });
+}
+
+const nCell = document.getElementById("n-cell");
+
+// LATEX
+nCell.innerHTML = '\\( n \\)';
+typeset([nCell]);
+
+// UTILS
+// evalMV (calcul-mv.js) gère nativement la multiplication implicite
+// ("3(4)", "3n" une fois n substitué) : pas besoin de préinsérer des "*".
+// On entoure toujours la valeur substituée de parenthèses pour éviter toute
+// collision textuelle avec les chiffres voisins (ex: "3n" → "3(5)", pas "35").
+function calculateValues(expr) {
+  return getNValues().map(n => {
+    const substitue = expr.replace(/n/g, `(${n})`);
+    return evalMV(substitue); // PolynomeMV (constante exacte), ou null si invalide
+  });
+}
+
+// \frac → \dfrac pour un rendu en taille pleine (plus lisible qu'inline).
+function dfrac(latex) {
+  return latex.replace(/\\frac/g, '\\dfrac');
+}
+
+
+function updateHeader() {
+
+  const values = getNValues(); // ou ton tableau nValues
+
+  const headerCells = document.querySelectorAll("thead td");
+
+  values.forEach((v, i) => {
+    headerCells[i].innerHTML = `\\(${v}\\)`;
+  });
+
+  typeset(Array.from(headerCells));
+}
+
+// Répercute la plage du générateur sur l'input manuel (attribut min) :
+// -10 si Négatif est actif, 0 sinon. Si la valeur courante devient
+// hors-plage (ex: Négatif désactivé alors que la valeur initiale était
+// négative), on la ramène au minimum.
+function updateStartNBounds() {
+  const { min } = generateur.plageValeurInitiale();
+  startnInput.min = min;
+
+  if (generateur.startN < min) {
+    generateur.startN = min;
+    startnInput.value = min;
+  }
+}
+
+function initializeTable() {
+  let choix = generateur.nouvelleFonction();
+
+  // En quiz, on évite de retomber sur une fonction déjà tirée dans la même
+  // partie (le pool étant restreint, ça arrive vite sur 10 questions).
+  // Nombre d'essais borné pour ne jamais bloquer si le pool est épuisé.
+  if (etatJeu === 'quiz' && quizDemarre) {
+    let essais = 0;
+    while (quizHistorique.has(choix.expr) && essais < 30) {
+      choix = generateur.nouvelleFonction();
+      essais++;
+    }
+    quizHistorique.add(choix.expr);
+  }
+
+  currentFunction = choix.expr;
+
+  // generateur.nouvelleFonction() a déjà tiré pas/startN si les modes "dé"
+  // sont actifs ; on se contente de refléter le résultat dans les inputs.
+  if (generateur.pasMode === 'de') pasInput.value = generateur.pas;
+  if (generateur.startNMode === 'de') startnInput.value = generateur.startN;
+  updateHeader();
+
+  allValues = calculateValues(currentFunction);
+
+  updateRow();
+  updateDebugFonction();
+}
+
+// DEBUG : affiche la fonction mystère en clair (à retirer avant mise en prod).
+function updateDebugFonction() {
+  if (!debugFonction) return;
+
+  if (!DEBUG) {
+    debugFonction.style.display = 'none';
+    return;
+  }
+
+  debugFonction.style.display = 'block';
+  const latex = dfrac(parseMV(currentFunction).toLatex());
+  debugFonction.innerHTML = `<span class="debug-label">Debug</span>\\(f(n) = ${latex}\\)`;
+  typeset([debugFonction]);
+}
+
+function updateRow() {
+
+  const cellsToTypeset = [];
+
+  for (let i = 0; i < 6; i++) {
+
+    const cell = userRow.cells[i + 1];
+
+    // 🔥 affichage LaTeX (fraction exacte le cas échéant)
+    cell.innerHTML = `\\(${dfrac(allValues[i].toLatex())}\\)`;
+    cellsToTypeset.push(cell);
+
+    cell.classList.remove("correct", "incorrect");
+  }
+
+  // 🔥 rendu MathJax
+  typeset(cellsToTypeset);
+}
+
+// CHECK
+function checkEquality() {
+
+  // 🔥 stop anciennes animations
+  timeouts.forEach(t => clearTimeout(t));
+  timeouts = [];
+
+
+  const rawExpr = input.value.trim();
+  input.disabled = true;
+  const userValues = calculateValues(rawExpr);
+const isInvalid = userValues.every(v => v === null);
+
+// 🔥 NOUVEAU : valeurs partielles invalides
+const hasInvalid = userValues.some(v => v === null);
+  
+if (isInvalid || hasInvalid) {
+
+  // expression en rouge
+  userRow.cells[0].classList.add("incorrect");
+
+  feedbackCheck.textContent = '❌ Expression non valide.';
+  feedbackCheck.className = 'erreur';
+
+  // 🔓 débloquer boutons
+  retryBtn.disabled = false;
+  newBtn.disabled = false;
+
+  if (etatJeu === 'quiz' && quizDemarre) {
+    resoudreQuestionQuiz(false);
+  }
+
+  return; // 🔥 on arrête tout
+}
+
+  // 🔒 bloquer boutons
+  retryBtn.disabled = true;
+  newBtn.disabled = true;
+
+  // =========================
+  // 1. EXPRESSION → LATEX IMMEDIAT
+  // =========================
+  // parseMV garde la forme telle que tapée (pas de développement) mais la
+  // rend proprement : "1/4n+3" → "\dfrac{1}{4}n + 3" au lieu du texte brut.
+  const exprCell = userRow.cells[0];
+  const exprLatex = parseMV(rawExpr).toLatex();
+  exprCell.innerHTML = `\\(${dfrac(exprLatex)}\\)`;
+  typeset([exprCell]);
+
+  expressionEleveValidee = rawExpr;
+
+  // =========================
+  // 2. ANIMATION → COULEURS UNIQUEMENT
+  // =========================
+  let toutCorrect = true;
+
+  for (let i = 0; i < 6; i++) {
+
+    const t = setTimeout(() => {
+
+      const cell = userRow.cells[i + 1];
+      const expected = allValues[i];
+      const correct = userValues[i].equal(expected);
+
+      cell.classList.toggle("correct", correct);
+      cell.classList.toggle("incorrect", !correct);
+
+      if (!correct) toutCorrect = false;
+
+      // 🔓 fin animation
+      if (i === 5) {
+        retryBtn.disabled = false;
+        newBtn.disabled = false;
+
+        if (toutCorrect) {
+          feedbackCheck.textContent = '✅ Bravo, c\'est la bonne fonction !';
+          feedbackCheck.className = 'succes';
+        } else {
+          feedbackCheck.textContent = '❌ Ce n\'est pas la bonne fonction.';
+          feedbackCheck.className = 'erreur';
+        }
+
+        if (etatJeu === 'quiz' && quizDemarre) {
+          resoudreQuestionQuiz(toutCorrect);
+        }
+      }
+
+    }, i * 550);
+
+    timeouts.push(t);
+  }
+}
+
+// RETRY
+function retry() {
+
+  input.disabled = false;
+  feedbackCheck.className = '';
+  feedbackCheck.textContent = '';
+  expressionEleveValidee = null;
+  Array.from(userRow.cells).forEach(cell => {
+  cell.classList.remove("correct", "incorrect");
+});
+
+  userRow.cells[0].innerHTML = `
+<input 
+  type="text"
+  id="expression"
+  placeholder="Mystère"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+/>`;
+
+  input = document.getElementById("expression");
+
+  updateRow(); // 🔥 IMPORTANT
+
+  bindInput();
+  input.focus();
+}
+
+// NEW
+function newFunction() {
+  initializeTable();
+  retry();
+}
+
+// EVENTS
+function bindInput() {
+  input.onkeydown = (e)=>{
+    if(e.key==="Enter"){
+      checkEquality();
+    }
+  };
+}
+
+document.getElementById("retry-btn").onclick = retry;
+document.getElementById("new-btn").onclick = () => {
+  if (etatJeu === 'quiz' && quizDemarre) {
+    avancerQuiz();
+  } else {
+    newFunction();
+  }
+};
+
+// MODE : Simple / Affine — sélection non exclusive (au moins un actif)
+const btnSimple = document.querySelector('#mode-selector [data-mode="simple"]');
+const btnAffine = document.querySelector('#mode-selector [data-mode="affine"]');
+
+function updateModeUI() {
+  btnSimple.classList.toggle("active", generateur.simpleActif);
+  btnAffine.classList.toggle("active", generateur.affineActif);
+}
+
+btnSimple.onclick = () => {
+  if (generateur.simpleActif && !generateur.affineActif) return; // garder au moins un mode actif
+  generateur.simpleActif = !generateur.simpleActif;
+  updateModeUI();
+  newFunction();
+};
+
+btnAffine.onclick = () => {
+  if (generateur.affineActif && !generateur.simpleActif) return; // garder au moins un mode actif
+  generateur.affineActif = !generateur.affineActif;
+  updateModeUI();
+  newFunction();
+};
+
+// TYPE DE NOMBRES : Simple / Négatif / Fraction — multi-sélection (au moins un actif)
+document.querySelectorAll('#type-selector .panel-btn').forEach(btn => {
+  btn.classList.toggle('active', generateur.typesNombresActifs.has(btn.dataset.type));
+
+  btn.onclick = () => {
+    const type = btn.dataset.type;
+
+    if (generateur.typesNombresActifs.has(type)) {
+      if (generateur.typesNombresActifs.size === 1) return; // garder au moins un type actif
+      generateur.typesNombresActifs.delete(type);
+      btn.classList.remove('active');
+    } else {
+      generateur.typesNombresActifs.add(type);
+      btn.classList.add('active');
+    }
+
+    updateStartNBounds();
+    newFunction();
+  };
+});
+
+// ============================================================
+// ATELIER / QUIZ
+// ============================================================
+
+function verrouillerParametres(lock) {
+  pasInput.disabled = lock;
+  pasDiceBtn.disabled = lock;
+  startnInput.disabled = lock;
+  startnDiceBtn.disabled = lock;
+  document.querySelectorAll('#type-selector .panel-btn').forEach(b => b.disabled = lock);
+  btnSimple.disabled = lock;
+  btnAffine.disabled = lock;
+}
+
+function updateScoreDisplay() {
+  const progressElem = document.getElementById("question-progress");
+  if (progressElem) progressElem.textContent = `Question ${questionCount}/${QUIZ_TOTAL}`;
+  const scoreElem = document.getElementById("score");
+  if (scoreElem) scoreElem.textContent = `Score : ${score}`;
+}
+
+function renderPanneauQuizZone() {
+  panneauQuizZone.innerHTML = "";
+
+  if (etatJeu === 'atelier') return;
+
+  const groupe = document.createElement('div');
+  groupe.className = 'panel-groupe';
+
+  const label = document.createElement('span');
+  label.className = 'panel-groupe-label';
+  label.textContent = 'Quiz';
+  groupe.appendChild(label);
+
+  if (!quizDemarre) {
+    const btnStart = document.createElement('button');
+    btnStart.type = 'button';
+    btnStart.className = 'panel-btn active';
+    btnStart.textContent = 'Commencer le Quiz';
+    btnStart.onclick = demarrerQuiz;
+    groupe.appendChild(btnStart);
+
+  } else {
+    const scoreContainer = document.createElement('div');
+    scoreContainer.id = 'score-container';
+
+    const progress = document.createElement('div');
+    progress.id = 'question-progress';
+
+    const scoreDiv = document.createElement('div');
+    scoreDiv.id = 'score';
+
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.id = 'skipButton';
+    skip.className = 'panel-btn';
+    skip.textContent = 'Renoncer';
+    skip.onclick = renoncerQuiz;
+
+    scoreContainer.append(progress, scoreDiv, skip);
+    groupe.appendChild(scoreContainer);
+  }
+
+  panneauQuizZone.appendChild(groupe);
+  updateScoreDisplay();
+}
+
+function updateJeuZoneAffichage() {
+  const enAttenteQuiz = etatJeu === 'quiz' && !quizDemarre;
+  const enQuizActif = etatJeu === 'quiz' && quizDemarre;
+
+  jeuZone.style.display = enAttenteQuiz ? 'none' : 'flex';
+  boutonsDiv.style.display = 'flex';
+  // En quiz, on avance uniquement via "Question suivante" (ou Renoncer) —
+  // pas de retour possible sur la question déjà notée.
+  retryBtn.style.display = enQuizActif ? 'none' : 'inline-block';
+  newBtn.textContent = enQuizActif ? 'Question suivante' : 'Nouvelle fonction';
+
+  if (enAttenteQuiz) {
+    finQuiz.style.display = 'flex';
+    finQuiz.innerHTML = `<p class="quiz-attente">Clique sur « Commencer le Quiz » dans le panneau pour démarrer.</p>`;
+  } else {
+    finQuiz.style.display = 'none';
+  }
+}
+
+function demarrerQuiz() {
+  quizDemarre = true;
+  questionCount = 1;
+  score = 0;
+  quizHistorique = new Set();
+  verrouillerParametres(true);
+  renderPanneauQuizZone();
+  updateJeuZoneAffichage();
+  newFunction();
+}
+
+function renoncerQuiz() {
+  timeouts.forEach(t => clearTimeout(t));
+  timeouts = [];
+  input.disabled = true;
+  resoudreQuestionQuiz(false);
+  avancerQuiz();
+}
+
+// Marque la question courante (score), sans avancer : l'élève garde la
+// main via le bouton "Nouvelle fonction"/"Question suivante".
+function resoudreQuestionQuiz(correct) {
+  if (correct) score++;
+  updateScoreDisplay();
+}
+
+// Passe à la question suivante (ou termine le quiz) — appelé par le clic
+// sur "Question suivante" ou par "Renoncer".
+function avancerQuiz() {
+  if (questionCount >= QUIZ_TOTAL) {
+    showScore();
+  } else {
+    questionCount++;
+    updateScoreDisplay();
+    newFunction();
+  }
+}
+
+function showScore() {
+  jeuZone.style.display = 'none';
+  finQuiz.style.display = 'flex';
+  finQuiz.innerHTML = `
+    <h2>🎯 Quiz terminé !</h2>
+    <p style="font-size:22px;">Score final : <strong>${score} / ${QUIZ_TOTAL}</strong></p>
+    <button class="restart-btn" id="restart-quiz-btn">Recommencer</button>
+  `;
+  document.getElementById('restart-quiz-btn').onclick = demarrerQuiz;
+
+  if (typeof confetti !== 'undefined') {
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+  }
+}
+
+function setupEtatToggle() {
+  const conteneur = document.getElementById("topButtonsBar");
+  if (!conteneur) return;
+
+  const btnAtelier = document.createElement('button');
+  btnAtelier.type = 'button';
+  btnAtelier.id = 'btnAtelier';
+  btnAtelier.textContent = 'Atelier';
+
+  const btnQuiz = document.createElement('button');
+  btnQuiz.type = 'button';
+  btnQuiz.id = 'btnQuiz';
+  btnQuiz.textContent = 'Quiz';
+
+  const majClasses = () => {
+    btnAtelier.className = 'btn-header' + (etatJeu === 'atelier' ? ' active' : '');
+    btnQuiz.className = 'btn-header' + (etatJeu === 'quiz' ? ' active' : '');
+  };
+  majClasses();
+
+  const basculer = (nouvelEtat) => {
+    if (etatJeu === nouvelEtat) return;
+    etatJeu = nouvelEtat;
+    quizDemarre = false;
+    questionCount = 0;
+    score = 0;
+    verrouillerParametres(false);
+    majClasses();
+    renderPanneauQuizZone();
+    updateJeuZoneAffichage();
+    newFunction();
+  };
+
+  btnAtelier.onclick = () => basculer('atelier');
+  btnQuiz.onclick = () => basculer('quiz');
+
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+
+  conteneur.append(btnAtelier, btnQuiz, filet);
+}
+
+// INIT
+setupEtatToggle();
+renderPanneauQuizZone();
+updateJeuZoneAffichage();
+updateModeUI();
+updateStartNBounds();
+initializeTable();
+bindInput();
+
+</script>
+
+</body>
+</html>
