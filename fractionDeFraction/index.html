@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Fraction de l'unité</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
+    <style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  text-align: center;
+  background-color: #f3f3f3;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  margin-top: 20px;
+  font-size: 28px;
+  color: #333;
+}
+
+canvas {
+  display: block;
+  margin: 20px auto;
+  border: 3px solid #444;
+  background-color: white;
+}
+
+#score {
+  margin: 10px auto;
+  font-size: 18px;
+  font-weight: bold;
+  color: #2a2a2a;
+}
+
+#zone-reponse {
+  margin-top: 20px;
+}
+
+form {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+input[type="text"] {
+  font-size: 16px;
+  padding: 6px 10px;
+  border: 2px solid #888;
+  border-radius: 5px;
+  min-width: 150px;
+}
+
+button {
+  padding: 7px 14px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #007acc;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover:not(:disabled) {
+  background-color: #005fa3;
+}
+
+button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+#feedback {
+  height: 2em;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 18px;
+  color: #444;
+}
+
+    </style>
+  </head>
+  <body>
+    <h1>Fraction de l'unité ?</h1>
+    <div id="zone-canvas"></div>
+    <p id="score"></p>
+
+    <div id="zone-reponse">
+      <form onsubmit="verifierReponse(); return false;">
+        <input id="reponse" type="text" placeholder="Entrez la fraction..." autocomplete="off">
+        <button type="submit" id="btn-valider">Valider</button>
+        <button type="button" id="btn-suivant" onclick="passerQuestion()" disabled>Suivant</button>
+      </form>
+    </div>
+
+    <p id="feedback"></p>
+
+    <script>
+      let currentPuzzle;
+      let currentAnswer;
+      let totalQuestions = 10;
+      let compteur = 0;
+      let bonnesReponses = 0;
+      let enCours = false;
+      let canvasSize = 400; // taille par défaut
+
+      function setup() {
+       canvasSize = windowWidth * 0.7;
+
+        let c = createCanvas(canvasSize, canvasSize);
+        c.parent('zone-canvas');
+        frameRate(1);
+        nouvelleQuestion();
+      }
+
+      function draw() {
+        background(150);
+        if (currentPuzzle) {
+          currentPuzzle.dessine();
+        }
+      }
+
+      function nouvelleQuestion() {
+        if (compteur >= totalQuestions) {
+          document.getElementById("feedback").textContent = `Série terminée ! Score final : ${bonnesReponses} / ${totalQuestions}`;
+          document.getElementById("score").innerHTML = '<button onclick="relancerSerie()">Recommencer</button>';
+          document.getElementById("zone-reponse").style.display = "none";
+          return;
+        }
+
+        let marge = canvasSize * 0.125;
+        let cote = canvasSize * 0.75;
+        let zoneH = canvasSize * 0.15;
+        let zoneY = canvasSize * 0.425;
+
+        let m = Math.floor(random(0, 6));
+        let p;
+
+        if (m === 0) {
+          p = new Puzzle(new Rect(marge, marge, cote, cote), 1, true);
+          p.partageV(1, 0);
+        } else if (m === 1) {
+          p = new Puzzle(new Rect(marge, marge, cote, cote), 1, true);
+          let n = Math.floor(random(2, 5));
+          let a = Math.floor(random(0, n));
+          p.partageV(n, a);
+          let n2 = Math.floor(random(2, 5));
+          let b = Math.floor(random(0, n2));
+          p.filles[a].partageH(n2, b);
+        } else if (m === 2) {
+          p = new Puzzle(new Rect(marge, zoneY, cote, zoneH), 1, true);
+          let n = Math.floor(random(2, 5));
+          p.partageH(n, 0);
+          let n2 = Math.floor(random(2, 5));
+          p.filles[0].partageH(n2, 0);
+        } else if (m === 3) {
+          p = new Puzzle(new Rect(marge, zoneY, cote, zoneH), 1, true);
+          let n = Math.floor(random(2, 5));
+          p.partageH(n, 0);
+          let n2 = Math.floor(random(2, 5));
+          p.filles[0].partageV(n2, 0);
+        } else if (m === 4) {
+          p = new Puzzle(new Rect(marge, zoneY, cote, zoneH), 1, true);
+          let n = Math.floor(random(2, 7));
+          let a = Math.floor(random(0, n));
+          p.partageH(n, a);
+          let b = Math.floor(random(0, 2));
+          p.filles[a].partageH(2, b);
+          let c = Math.floor(random(0, 2));
+          if (b === 0) {
+            p.filles[a].filles[0].partageV(2, c);
+            p.filles[a].filles[1].partageV(2, -1);
+          } else {
+            p.filles[a].filles[0].partageV(2, -1);
+            p.filles[a].filles[1].partageV(2, c);
+          }
+        } else if (m === 5) {
+          p = new Puzzle(new Rect(marge, marge, cote, cote), 1, true);
+          let n = Math.floor(random(2, 5));
+          let a = Math.floor(random(0, n));
+          p.partageV(n, a);
+          let n2 = Math.floor(random(2, 5));
+          let b = Math.floor(random(0, n2));
+          p.filles[a].partageH(n2, b);
+          let n3 = Math.floor(random(2, 5));
+          let c = Math.floor(random(0, n3));
+          p.filles[a].filles[b].partageV(n3, c);
+        }
+
+        currentPuzzle = p;
+        currentAnswer = "1/" + currentPuzzle.getRep();
+        document.getElementById("feedback").textContent = "";
+        document.getElementById("reponse").value = "";
+        document.getElementById("score").textContent = `Question ${compteur + 1} / ${totalQuestions} — Score : ${bonnesReponses}`;
+        document.getElementById("zone-reponse").style.display = "block";
+        document.getElementById("btn-suivant").disabled = true;
+        document.getElementById("btn-valider").disabled = false;
+        enCours = true;
+      }
+
+      function verifierReponse() {
+        if (!enCours) return;
+        const rep = document.getElementById("reponse").value.trim();
+        if (rep === currentAnswer) {
+          document.getElementById("feedback").textContent = "Bravo !";
+          bonnesReponses++;
+        } else {
+          document.getElementById("feedback").textContent = "Raté. La bonne réponse était : " + currentAnswer;
+        }
+        enCours = false;
+        document.getElementById("btn-valider").disabled = true;
+        document.getElementById("btn-suivant").disabled = false;
+      }
+
+      function passerQuestion() {
+        if (!enCours) {
+          compteur++;
+          nouvelleQuestion();
+        }
+      }
+
+      function relancerSerie() {
+        compteur = 0;
+        bonnesReponses = 0;
+        nouvelleQuestion();
+      }
+
+      class Rect {
+        constructor(x, y, w, h) {
+          this.x = x;
+          this.y = y;
+          this.w = w;
+          this.h = h;
+        }
+
+        dessine(c) {
+          fill(c);
+          rect(this.x, this.y, this.w, this.h);
+        }
+      }
+
+      class Puzzle {
+        constructor(rect, part, cible = false) {
+          this.mere = rect;
+          this.filles = [];
+          this.part = part;
+          this.cible = cible;
+        }
+
+        partageV(n, u = 0) {
+          let y = this.mere.y;
+          let h = this.mere.h / n;
+          for (let i = 0; i < n; i++) {
+            let cible = (i === u && this.cible);
+            let fille = new Puzzle(new Rect(this.mere.x, y, this.mere.w, h), this.part * n, cible);
+            this.filles.push(fille);
+            y += h;
+          }
+        }
+
+        partageH(n, u = -1) {
+          let x = this.mere.x;
+          let w = this.mere.w / n;
+          for (let i = 0; i < n; i++) {
+            let cible = (i === u && this.cible);
+            let fille = new Puzzle(new Rect(x, this.mere.y, w, this.mere.h), this.part * n, cible);
+            this.filles.push(fille);
+            x += w;
+          }
+        }
+
+        dessine() {
+          if (this.part === 1) {
+            strokeWeight(5);
+            rect(this.mere.x, this.mere.y, this.mere.w, this.mere.h);
+            strokeWeight(1);
+          }
+          if (this.filles.length === 0) {
+            let c = this.cible ? color(random(255), random(255), random(255)) : color(255);
+            this.mere.dessine(c);
+          } else {
+            for (let f of this.filles) {
+              f.dessine();
+            }
+          }
+        }
+
+        getRep() {
+          for (let f of this.filles) {
+            if (f.cible) {
+              return f.filles.length === 0 ? f.part : f.getRep();
+            }
+          }
+          console.warn("Aucune case cible trouvée !");
+          return 1;
+        }
+      }
+    </script>
+  </body>
+</html>
