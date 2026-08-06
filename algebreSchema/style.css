@@ -1,0 +1,757 @@
+/* ==========================================================================
+   ALGÈBRE — PROBLÈMES & SCHÉMAS EN BARRES — feuille de style
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root {
+  --papier:        #ffffff;
+  --papier-panel:  #f7f2f5;
+  --papier-encart: #ffffff;
+
+  --grille:        #e3d8de;
+  --grille-forte:  #2c2226;
+
+  --encre:         #2c2226;
+  --encre-douce:   #6b5b62;
+
+  --craie:         #7d3358;
+  --craie-hover:   #5f2742;
+  --accent-clair:  #f3e6ed;
+
+  --header-fond:        #f3e6ed;
+  --header-bordure:     #d9bccb;
+  --header-texte:       #3a2430;
+  --header-texte-hover: #20121a;
+  --header-accent:      #7d3358;
+  --header-accent-vif:  #5f2742;
+
+  --erreur:        #c44336;
+  --succes:        #2e9e5b;
+  --succes-fond:   #e3f4ea;
+  --attention:     #c47a1f;
+
+  --rayon:         6px;
+  --rayon-petit:   4px;
+
+  /* Largeur unique pour tous les blocs de la zone principale (énoncé,
+     schéma, réponse, bouton "suivant", victoire) — pour que leurs bords
+     s'alignent au lieu d'avoir chacun sa propre largeur (800/700/480px). */
+  --contenu-largeur: 700px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0 20px;
+  height: 54px;
+  background: var(--header-fond);
+  color: var(--encre);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
+}
+
+header #titre_appli {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: .2px;
+  font-weight: 400;
+  color: var(--encre);
+}
+
+header #titre_appli b { font-weight: 700; }
+
+.badge-facile {
+  font-size: 0.55em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--succes);
+  background: var(--succes-fond);
+  border: 1px solid var(--succes);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
+
+.btn-header:hover {
+  border-color: var(--header-texte);
+  color: var(--header-texte-hover);
+}
+
+.btn-header:active { transform: scale(0.98); }
+
+/* Boutons de bascule Atelier/Quiz : seul état coloré du header (pas de fond plein) */
+.btn-header.active {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.btn-header.active:hover {
+  border-color: var(--craie-hover);
+  color: var(--craie-hover);
+}
+
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 340px;
+  width: 340px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier-encart);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  min-width: 0;
+}
+
+/* ==========================================================================
+   ÉNONCÉ ILLUSTRÉ — texte du problème + carte de réponse
+   ========================================================================== */
+.probleme-intro {
+  width: 100%;
+  max-width: var(--contenu-largeur);
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--encre);
+  margin-top: 30px;
+  margin-bottom: 18px;
+  padding: 1.1em 1.3em;
+  background: var(--accent-clair);
+  border: 2px solid var(--craie);
+  border-radius: var(--rayon);
+}
+
+.probleme-intro-label {
+  font-weight: 700;
+  color: var(--craie);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+.probleme-grille {
+  width: 100%;
+  max-width: var(--contenu-largeur);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 0;
+}
+
+.probleme-carte {
+  background: var(--papier-encart);
+   border: 2px solid var(--craie);
+  border-radius: var(--rayon);
+  padding: 16px 18px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   SAISIE DE RÉPONSE — bouton valider / feedback
+   ========================================================================== */
+.constructeur-valider {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: var(--rayon);
+  border: 1px solid var(--craie);
+  background: var(--craie);
+  color: white;
+  cursor: pointer;
+}
+
+.constructeur-valider:hover {
+  filter: brightness(1.05);
+}
+
+.constructeur-feedback {
+  margin-top: 10px;
+  min-height: 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.constructeur-feedback.erreur {
+  color: var(--erreur);
+}
+
+.constructeur-feedback.succes {
+  color: var(--succes);
+}
+
+/* ==========================================================================
+   CONTENEUR DE SAISIE
+   ========================================================================== */
+#inputContainer {
+  width: 100%;
+  margin-top: 4px;
+  max-width: var(--contenu-largeur);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ==========================================================================
+   ÉLÉMENTS INTERACTIFS
+   ========================================================================== */
+input[type="text"], input:not([type]) {
+  padding: 8px 14px;
+  width: 280px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  border: 1px solid var(--grille-forte);
+  border-radius: var(--rayon-petit);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background: var(--papier-encart);
+  color: var(--encre);
+}
+
+input[type="text"]:focus, input:not([type]):focus {
+  border-color: var(--craie);
+  background: var(--papier);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(125, 51, 88, 0.15);
+}
+
+button.delete-button {
+  margin-left: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 0.75;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+button.delete-button:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL
+   ========================================================================== */
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.panel-btn:hover {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.panel-btn.accent {
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: var(--papier);
+}
+
+.panel-btn.accent:hover {
+  background-color: var(--craie-hover);
+  color: var(--papier);
+}
+
+.panel-btn:disabled {
+  cursor: default;
+  background-color: var(--papier-panel);
+  border-color: var(--grille);
+  color: #9a9a9a;
+}
+
+.panel-btn.accent:disabled {
+  opacity: 0.55;
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: #d8c9d1;
+}
+
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-filet {
+  height: 1px;
+  background: var(--grille);
+  margin: 4px 0;
+}
+
+.panel-groupe-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.param-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.param-btn {
+  background-color: var(--papier-panel);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 7px 13px;
+  font-size: 13.5px;
+  color: var(--encre-douce);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.param-btn:hover {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.param-btn.active {
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: var(--papier);
+  font-weight: 600;
+}
+
+.param-btn:disabled {
+  cursor: default;
+  background-color: var(--papier-panel);
+  border-color: var(--grille);
+  color: #9a9a9a;
+}
+
+.param-btn.active:disabled {
+  opacity: 0.55;
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: #d8c9d1;
+}
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+#question-progress, #score, #skipButton {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 8px 14px;
+  border-radius: var(--rayon-petit);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border: 1px solid var(--grille);
+  color: var(--encre-douce);
+  text-align: left;
+}
+
+#question-progress { color: var(--encre-douce); }
+
+#score {
+  color: var(--craie);
+  border-color: var(--craie);
+}
+
+#skipButton {
+  border-color: var(--header-bordure);
+  color: var(--encre-douce);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+#skipButton:hover {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.fin-quiz {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 50px 30px;
+  background: var(--papier-encart);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon);
+}
+
+.fin-quiz-titre {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--encre);
+  margin: 0 0 16px;
+}
+
+.fin-quiz-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--craie);
+  margin-bottom: 8px;
+}
+
+.restart-btn {
+  margin-top: 25px;
+  padding: 10px 28px;
+  background: var(--craie);
+  color: var(--papier);
+  border: none;
+  border-radius: var(--rayon-petit);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.restart-btn:hover { background: var(--craie-hover); }
+.restart-btn:active { transform: scale(0.98); }
+
+/* Bouton "Nouveau problème" */
+.center-button {
+  width: 100%;
+  max-width: var(--contenu-largeur);
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.center-button button {
+  padding: 10px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--rayon-petit);
+  border: none;
+  background-color: var(--craie);
+  color: var(--papier);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.center-button button:hover { background-color: var(--craie-hover); }
+.center-button button:active { transform: scale(0.98); }
+
+.victoire-bloc {
+  width: 100%;
+  max-width: var(--contenu-largeur);
+  text-align: center;
+  padding: 18px;
+  margin-top: 6px;
+  background: var(--succes-fond);
+  border: 1px solid var(--succes);
+  border-radius: var(--rayon);
+  color: var(--succes);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes slideUp {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .probleme-grille { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   SCHÉMA EN BARRES
+   ========================================================================== */
+.schema-carte {
+  width: 100%;
+  max-width: var(--contenu-largeur);
+  background: var(--papier-encart);
+  border: 2px solid var(--craie);
+  border-radius: var(--rayon);
+  padding: 18px 24px 18px;
+  margin-bottom: 26px;
+  box-sizing: border-box;
+}
+
+.schema-carte-label {
+  font-weight: 700;
+  color: var(--craie);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+/* Segments "parts" toujours au-dessus, barre "total" toujours en dessous
+   (catégories somme / complement / produit / quotient) — le total
+   représente l'ensemble des parts réunies, donc il vient après elles. */
+.schema-parts {
+  display: flex;
+  height: 46px;
+  border: 2px solid var(--grille-forte);
+  border-radius: var(--rayon-petit);
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.schema-parts .schema-segment {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 16px;
+  border-right: 1px solid var(--grille-forte);
+  background: var(--papier-panel);
+}
+
+.schema-parts .schema-segment:last-child { border-right: none; }
+
+.schema-segment-ellipsis {
+  color: var(--encre-douce);
+  font-weight: 700;
+  background: var(--papier-panel);
+}
+
+.schema-total {
+  display: flex;
+  height: 46px;
+  border: 2px solid var(--grille-forte);
+  border-radius: var(--rayon-petit);
+  overflow: hidden;
+}
+
+.schema-total .schema-segment {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 16px;
+  border-right: 1px solid var(--grille-forte);
+}
+
+.schema-total .schema-segment:last-child { border-right: none; }
+
+/* Répétition (produit / quotient) : nombre de parts égales, affiché
+   au-dessus d'une flèche double qui souligne leur regroupement — visuel
+   volontairement différent des segments (badge arrondi, pas une case). */
+.schema-repet-badge {
+  width: 100%;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--craie);
+  margin-bottom: 4px;
+}
+
+.schema-repet-fleche {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  margin-bottom: 4px;
+}
+
+.schema-repet-fleche::before,
+.schema-repet-fleche::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transform: translateY(-50%);
+}
+
+.schema-repet-fleche::before { left: 0; border-right: 7px solid var(--encre-douce); }
+.schema-repet-fleche::after { right: 0; border-left: 7px solid var(--encre-douce); }
+
+.schema-repet-ligne {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: 50%;
+  height: 1px;
+  background: var(--encre-douce);
+  transform: translateY(-50%);
+}
+
+.schema-segment.connue { color: var(--encre); }
+
+.schema-segment.inconnue { color: var(--encre); }
+
+
+/* ==========================================================================
+   SAISIE EN DEUX TEMPS — expression puis valeur
+   ========================================================================== */
+.reponse-carte {
+  width: 100%;
+  max-width: var(--contenu-largeur);
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.reponse-resolution-label {
+  font-weight: 700;
+  color: var(--craie);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+.reponse-etape-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.reponse-ligne {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.reponse-prefixe {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--encre);
+}
+
+.reponse-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  padding: 8px 12px;
+  border-radius: var(--rayon);
+  border: 1px solid var(--grille);
+  background: var(--papier);
+  color: var(--encre);
+  width: 200px;
+  text-align: left;
+}
+
+.reponse-frozen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.reponse-frozen-ligne {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 17px;
+  color: var(--succes);
+}
+
+.reponse-frozen-ligne .reponse-prefixe {
+  color: var(--succes);
+}
