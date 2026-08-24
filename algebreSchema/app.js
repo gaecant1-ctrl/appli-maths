@@ -565,12 +565,21 @@ function construireBoutonsAffichage(disabled = false) {
   const conteneur = document.createElement('div');
   conteneur.className = 'param-buttons';
 
+  // Schéma et Construction se partagent la même zone (la grille) et ne
+  // peuvent donc jamais être visibles tous les deux à la fois : activer
+  // l'un désactive systématiquement l'autre. Énoncé est indépendant, sauf
+  // pendant Construction où il est verrouillé actif (l'atelier a besoin
+  // des valeurs de l'énoncé pour savoir quelles tuiles proposer — voir
+  // ConstructionSchema.js). Contrainte commune : il faut toujours au
+  // moins un élément visible (Énoncé, ou la zone schéma/construction).
   const btnEnonce = document.createElement('button');
   btnEnonce.type = 'button';
   btnEnonce.className = 'param-btn' + (afficherEnonce ? ' active' : '');
   btnEnonce.disabled = disabled;
   btnEnonce.textContent = 'Énoncé';
   btnEnonce.onclick = () => {
+    if (modeConstructionActif) return; // verrouillé actif pendant Construction
+    if (afficherEnonce && !afficherDiagramme) return; // dernier élément visible
     afficherEnonce = !afficherEnonce;
     btnEnonce.classList.toggle('active');
     rendreProbleme();
@@ -579,32 +588,39 @@ function construireBoutonsAffichage(disabled = false) {
 
   const btnSchema = document.createElement('button');
   btnSchema.type = 'button';
-  btnSchema.className = 'param-btn' + (!modeConstructionActif ? ' active' : '');
+  btnSchema.className = 'param-btn' + (afficherDiagramme ? ' active' : '');
   btnSchema.disabled = disabled;
   btnSchema.textContent = 'Schéma';
   btnSchema.onclick = () => {
-    if (!modeConstructionActif) return; // déjà actif
-    modeConstructionActif = false;
-    afficherDiagramme = true;
+    if (modeConstructionActif) {
+      // On quitte Construction pour afficher le schéma normal.
+      modeConstructionActif = false;
+      schemaConstruitValide = false;
+      afficherDiagramme = true;
+    } else {
+      if (afficherDiagramme && !afficherEnonce) return; // dernier élément visible
+      afficherDiagramme = !afficherDiagramme;
+    }
     renderPanneauLateral();
     rendreProbleme();
     synchroniserZoneReponse();
   };
   conteneur.appendChild(btnSchema);
 
-  // Activer "Construction" force aussi Énoncé actif — indispensable pour
-  // savoir quelles valeurs placer dans l'atelier de reconstitution (voir
-  // rendreProbleme et ConstructionSchema.js).
   const btnConstruction = document.createElement('button');
   btnConstruction.type = 'button';
   btnConstruction.className = 'param-btn' + (modeConstructionActif ? ' active' : '');
   btnConstruction.disabled = disabled;
   btnConstruction.textContent = 'Construction';
   btnConstruction.onclick = () => {
-    if (modeConstructionActif) return; // déjà actif
-    modeConstructionActif = true;
-    afficherEnonce = true;
-    afficherDiagramme = false;
+    modeConstructionActif = !modeConstructionActif;
+    schemaConstruitValide = false;
+    if (modeConstructionActif) {
+      afficherEnonce = true;
+      afficherDiagramme = false;
+    }
+    // La désactiver ne touche pas Schéma : il reste éteint, Énoncé
+    // (resté actif) suffit à respecter la contrainte de visibilité.
     renderPanneauLateral();
     rendreProbleme();
     synchroniserZoneReponse();

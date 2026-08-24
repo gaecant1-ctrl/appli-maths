@@ -34,18 +34,33 @@ class FicheProblemes {
     return btn;
   }
 
+  /** Respecte exactement les réglages courants de l'atelier (voir
+   *  demarrerQuestion, app.js) : Taille, Complexité (plusieurs cochées à
+   *  la fois possibles), et surtout Forme/Contexte — s'ils sont figés
+   *  (Suivant, pas Aléatoire), la fiche reprend la MÊME forme/contexte
+   *  pour tous les exercices (juste avec des nombres différents), au
+   *  lieu d'un tirage totalement indépendant. */
   _genererProblemesAleatoires(combien) {
     const taille = (typeof tailleActuelle === 'string') ? tailleActuelle : 'moyen';
-    // complexitesActuelles est un Set (plusieurs complexités peuvent être
-    // cochées à la fois, voir construireBoutonsComplexite) — on en tire
-    // une au hasard PAR exercice, pour varier la fiche.
+    const niveau = (typeof NIVEAUX_SCHEMA !== 'undefined')
+      ? (NIVEAUX_SCHEMA[taille] || NIVEAUX_SCHEMA.moyen)
+      : { min: 5, max: 60 };
     const complexites = (typeof complexitesActuelles !== 'undefined' && complexitesActuelles.size)
-      ? [...complexitesActuelles]
-      : ['facile'];
+      ? complexitesActuelles
+      : new Set(['facile']);
+
     const liste = [];
     for (let i = 0; i < combien; i++) {
-      const complexite = complexites[Math.floor(Math.random() * complexites.length)];
-      liste.push(genererProbleme(taille, complexite));
+      let forme = (typeof formeActuelle !== 'undefined') ? formeActuelle : null;
+      if (typeof formeAleatoireActif === 'undefined' || formeAleatoireActif || !forme) {
+        forme = choisirAleatoire(formesPourComplexites(complexites));
+      }
+      const naturesValides = naturesPourForme(forme);
+      let nature = (typeof natureActuelle !== 'undefined') ? natureActuelle : null;
+      if (typeof natureAleatoireActif === 'undefined' || natureAleatoireActif || !naturesValides.includes(nature)) {
+        nature = choisirAleatoire(naturesValides);
+      }
+      liste.push(genererProblemeDepuis(forme, nature, niveau));
     }
     return liste;
   }
@@ -332,6 +347,7 @@ class FicheProblemes {
       '}',
       '',
       '\\begin{document}',
+      '\\pagestyle{empty}',
       '\\noindent',
       'Nom et prénom : \\underline{\\hspace{6cm}} \\hfill Note : \\underline{\\hspace{1cm}} / \\underline{\\hspace{1cm}}',
             '',
@@ -546,27 +562,30 @@ class FicheProblemes {
            page A4 : les marges/hauteurs pensées pour l'écran (h2, espace
            de résolution, barres du schéma...) sont bien plus généreuses
            que nécessaire à l'impression. */
-        #ficheProblemesCarte h2{ margin-top: 10px; font-size: 1.15em; }
+        #ficheProblemesCarte h2{ margin-top: 20px; font-size: 1.15em; }
         .sous-titre{ margin: 4px 0 0; }
-        .ligne-identite{ margin-top: 8px; font-size: 13px; }
+        .ligne-identite{ margin-top: 20px;margin-bottom: 20px; font-size: 13px; }
         .fiche-grille{ margin-top: 12px; gap: 8px; }
         .fiche-exercice{ padding: 8px 12px; }
-        .exo-titre{ margin-bottom: 6px; font-size: 0.95em; }
+        .exo-titre{ margin-bottom: 10px; font-size: 0.95em; }
         .exo-corps{ gap: 16px; }
-        .exo-enonce{ font-size: 12.5px; margin-bottom: 8px; }
-        .exo-consigne{ font-size: 12.5px; margin-bottom: 6px; }
+        .exo-enonce{ font-size: 11px; margin-bottom: 15px; }
+        .exo-consigne{ font-size: 11px; margin-bottom: 15px; }
         .exo-droite{ min-height: 110px; padding-left: 16px; }
 
+        #overlayFicheProblemes .exo-schema{ margin-bottom: 6px; }
         #overlayFicheProblemes .exo-schema .schema-carte{
-          padding: 10px 14px 8px;
+          padding: 6px 10px 6px;
           margin-bottom: 0;
+          border-width: 1px;
         }
+        #overlayFicheProblemes .schema-carte-label{ font-size: 9px; margin-bottom: 3px; }
         #overlayFicheProblemes .schema-parts,
-        #overlayFicheProblemes .schema-total{ height: 34px; }
+        #overlayFicheProblemes .schema-total{ height: 26px; margin-bottom: 3px; }
         #overlayFicheProblemes .schema-parts .schema-segment,
-        #overlayFicheProblemes .schema-total .schema-segment{ font-size: 13px; }
-        #overlayFicheProblemes .schema-repet-badge{ font-size: 12px; margin-bottom: 2px; }
-        #overlayFicheProblemes .schema-repet-fleche{ height: 8px; margin-bottom: 2px; }
+        #overlayFicheProblemes .schema-total .schema-segment{ font-size: 11px; }
+        #overlayFicheProblemes .schema-repet-badge{ font-size: 10px; margin-bottom: 1px; }
+        #overlayFicheProblemes .schema-repet-fleche{ height: 6px; margin-bottom: 1px; }
       }
     `;
     document.head.appendChild(style);
