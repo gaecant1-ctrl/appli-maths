@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compte est bon</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- MathJax (pour le tableau de vérification : fractions éventuelles) -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+
+<body>
+
+<header>
+  <span id="titre_appli">Le <b>compte est bon</b> <span class="badge-simple">simple</span></span>
+  <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="appBody">
+
+  <aside id="panneauLateral"></aside>
+
+  <main>
+
+    <div id="zoneJeu">
+      <div id="colonneReponse">
+        <div id="consigne-wrap">
+          <div id="consigne-label">Trouve une expression qui donne</div>
+          <div id="consigne"></div>
+          <div id="grille"></div>
+        </div>
+
+        <div id="zoneReponseExpression">
+          <div id="operateurs">
+            <button class="op-btn" data-op="+" type="button" aria-label="Insérer un plus">+</button>
+            <button class="op-btn" data-op="-" type="button" aria-label="Insérer un moins">−</button>
+            <button class="op-btn" data-op="*" type="button" aria-label="Insérer une multiplication">×</button>
+            <button class="op-btn" data-op=":" type="button" aria-label="Insérer une division">÷</button>
+            <button class="op-btn" data-op="(" type="button" aria-label="Insérer une parenthèse ouvrante">(</button>
+            <button class="op-btn" data-op=")" type="button" aria-label="Insérer une parenthèse fermante">)</button>
+            <button class="op-btn" type="button" id="btnEffacer" aria-label="Effacer le dernier caractère">⌫</button>
+          </div>
+
+          <div id="panelExpression">
+            <input
+              id="expr"
+              placeholder="Ex : (3×9)÷7"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              inputmode="text"
+            />
+          </div>
+        </div>
+
+        <!-- ==================== RÉPONSE : ARBRE (construction visuelle) ==================== -->
+        <div id="zoneReponseArbre">
+          <div id="arbre-label">Arbre</div>
+          <div id="arbre-carte">
+            <div id="arbre-wrap">
+              <div id="arbre-inner">
+                <svg id="arbre-svg"></svg>
+                <div id="arbre-noeuds"></div>
+              </div>
+              <div id="arbre-popup"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel">
+          <div class="btn-row">
+            <button class="action" id="btnValider" type="button">Valider</button>
+            <button class="action" id="btnNext" type="button" style="display:none;">Question suivante</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="colonneVerif">
+        <div id="message"></div>
+
+        <div id="zoneVerification">
+          <div id="zoneVerification-label">Vérification</div>
+          <div id="zoneVerification-contenu"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="zoneFin" style="display:none;width:100%;justify-content:center;margin-top:20px;">
+      <div id="ecranFin"></div>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ==================== OVERLAY FICHE PAPIER ==================== -->
+<div id="overlayFiche">
+  <div id="ficheCarte">
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+
+    <div class="fiche-actions">
+      <button id="btnImprimerFiche" type="button">🖨️ Imprimer en PDF</button>
+      <button id="btnTelechargerTex" type="button">⬇️ Télécharger le LaTeX</button>
+      <button id="btnRegenererFiche" type="button">🔀 Nouvelle série</button>
+    </div>
+    <p class="note-impression">💡 Dans la fenêtre d'impression, pense à décocher <strong>« En-têtes et pieds de page »</strong> pour un rendu propre sans l'adresse du fichier.</p>
+
+    <div class="espace-fiche"></div>
+
+    <div class="ligne-identite">
+      <span>Nom et prénom : <span class="trait"></span></span>
+      <span>Note : <span class="trait court"></span> / <span class="trait court"></span></span>
+    </div>
+
+    <div class="espace-fiche"></div>
+
+    <h2>Le compte est bon</h2>
+    <p class="sous-titre" id="ficheSousTitre"></p>
+
+    <div class="espace-fiche"></div>
+
+    <div id="ficheTableWrap"></div>
+  </div>
+</div>
+
+<!-- ==================== OVERLAY GUIDE ==================== -->
+<div id="overlayGuide">
+  <div id="guideCarte">
+    <button id="btnFermerGuide" type="button" aria-label="Fermer">×</button>
+    <h2>Comment jouer</h2>
+    <div id="guideContenu">
+      <p>Tu dois retrouver une expression qui donne exactement le <strong>nombre cible</strong> affiché, en utilisant chacun des jetons proposés <strong>exactement une fois</strong>.</p>
+      <ul>
+        <li><strong>Mode</strong> (2, 3 ou 4 opérations) : choisit combien de jetons sont tirés — 3 jetons pour 2 opérations, 4 pour 3 opérations, 5 pour 4 opérations.</li>
+        <li><strong>Niveau</strong> : choisit la plage des jetons tirés — <em>1</em> (tous entre 0 et 10), <em>2</em> (un seul entre 10 et 20, les autres entre 1 et 10), <em>3</em> (un seul entre 1 et 10, les autres entre 10 et 20).</li>
+        <li><strong>Réponse</strong> : deux façons de répondre, au choix —
+          <ul>
+            <li><em>Expression</em> : clique sur les jetons et les opérateurs (ou tape directement au clavier) pour écrire une expression, avec <code>+ − × ÷</code> et des parenthèses si besoin.</li>
+            <li><em>Arbre</em> : construis visuellement l'arbre de calcul. Clique sur une case en pointillés pour la compléter avec un jeton ou une opération (<code>+ ×</code> seulement), et sur un nœud déjà rempli pour le modifier ou le supprimer.</li>
+          </ul>
+        </li>
+        <li>Dans les deux cas, <strong>chaque jeton doit être utilisé exactement une fois</strong>.</li>
+        <li><strong>Atelier</strong> : entraînement libre, sans score ni limite de questions — le bouton « Je renonce » passe directement à un nouveau nombre.</li>
+        <li><strong>Quiz</strong> : 10 questions notées. « Je renonce » révèle une solution possible et passe à la suite sans pénalité supplémentaire.</li>
+        <li><strong>Fiche papier</strong> : génère une série d'exercices imprimable (ou exportable en LaTeX) dans le mode choisi.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="Utils.js"></script>
+<script src="Nombre.js"></script>
+<script src="Jetons.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
