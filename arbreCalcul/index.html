@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calcule l'arbre</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- MathJax (pour la chaîne d'égalités de la réponse : × ÷ et fractions correctement rendus) -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+
+<body>
+
+<header>
+  <span id="titre_appli">Calcule <b>l'arbre</b></span>
+  <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="appBody">
+
+  <aside id="panneauLateral"></aside>
+
+  <main>
+
+    <div id="zoneJeu">
+      <div id="colonneGauche">
+        <div id="consigne-wrap">
+          <div id="consigne-label">Calcule l'arbre</div>
+        </div>
+
+        <div id="panelReponse">
+          <div id="reponse-label">Ta réponse</div>
+          <div id="etapesContainer"></div>
+        </div>
+
+        <div id="panel">
+          <div class="btn-row">
+            <button class="action" id="btnNext" type="button" style="display:none;">Question suivante</button>
+          </div>
+        </div>
+
+        <div id="message"></div>
+      </div>
+
+      <div id="colonneDroite">
+        <!-- ==================== ARBRE DONNÉ — lecture seule, ou calculable
+             nœud par nœud si le mode CalculArbre est activé ==================== -->
+        <div id="zoneReponseArbre">
+          <div id="arbre-carte">
+            <div id="arbre-wrap">
+              <div id="arbre-inner">
+                <svg id="arbre-svg"></svg>
+                <div id="arbre-noeuds"></div>
+              </div>
+              <div id="arbre-popup"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="zoneFin" style="display:none;width:100%;justify-content:center;margin-top:20px;">
+      <div id="ecranFin"></div>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ==================== OVERLAY FICHE PAPIER ==================== -->
+<div id="overlayFiche">
+  <div id="ficheCarte">
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+
+    <div class="fiche-actions">
+      <button id="btnImprimerFiche" type="button">🖨️ Imprimer en PDF</button>
+      <button id="btnTelechargerTex" type="button">⬇️ Télécharger le LaTeX</button>
+      <button id="btnRegenererFiche" type="button">🔀 Nouvelle série</button>
+    </div>
+    <p class="note-impression">💡 Dans la fenêtre d'impression, pense à décocher <strong>« En-têtes et pieds de page »</strong> pour un rendu propre sans l'adresse du fichier.</p>
+
+    <div class="espace-fiche"></div>
+
+    <div class="ligne-identite">
+      <span>Nom et prénom : <span class="trait"></span></span>
+      <span>Note : <span class="trait court"></span> / <span class="trait court"></span></span>
+    </div>
+
+    <div class="espace-fiche"></div>
+
+    <h2>Calcule l'arbre</h2>
+    <p class="sous-titre" id="ficheSousTitre"></p>
+
+    <div class="espace-fiche"></div>
+
+    <div id="ficheTableWrap"></div>
+  </div>
+</div>
+
+<!-- ==================== OVERLAY GUIDE ==================== -->
+<div id="overlayGuide">
+  <div id="guideCarte">
+    <button id="btnFermerGuide" type="button" aria-label="Fermer">×</button>
+    <h2>Comment jouer</h2>
+    <div id="guideContenu">
+      <p>Un <strong>arbre de calcul</strong> est affiché : les feuilles sont des nombres, chaque nœud combine ses deux branches avec une opération (<code>+ − × ÷</code>). Tu dois trouver le <strong>résultat final</strong> de tout l'arbre.</p>
+      <ul>
+        <li><strong>Mode</strong> (2, 3 ou 4 opérations) : choisit la taille de l'arbre.</li>
+        <li><strong>Niveau</strong> : choisit la plage des nombres aux feuilles.</li>
+        <li><strong>Types de nombres</strong> : deux bascules indépendantes, désactivables ensemble (auquel cas les jetons et résultats restent des entiers positifs, le cas de base) —
+          <ul>
+            <li><em>Fraction</em> : active, une division peut laisser une vraie fraction (ex. 10÷3), et la réponse finale peut alors s'écrire en décimal <strong>ou</strong> en fraction déjà simplifiée ; inactive, chaque division laisse un résultat à écriture décimale exacte, et la réponse finale doit s'écrire en décimal.</li>
+            <li><em>Relatifs</em> : active, les résultats intermédiaires ou finaux peuvent être négatifs ; inactive, chaque soustraction (et donc le résultat) reste positive, comme les nombres relatifs ne sont pas encore au programme en sixième.</li>
+          </ul>
+        </li>
+        <li><strong>Affichage</strong> : deux bascules indépendantes — <em>Arbre</em> (à droite) et <em>Expression</em> (en tête de la zone de réponse, à gauche) — activables ensemble, mais jamais toutes les deux désactivées.</li>
+        <li><strong>Règle de priorités</strong> : quand l'expression est affichée (à l'écran, sur la fiche papier, dans l'export LaTeX), <em>sans</em>, chaque opération est systématiquement parenthésée, sans supposer connues les priorités opératoires ; <em>avec</em>, parenthèses minimales, en supposant × et ÷ prioritaires sur + et −.</li>
+        <li><strong>CalculArbre</strong> : <em>avec</em>, l'arbre lui-même devient calculable — clique sur une opération dont les deux branches sont déjà des feuilles pour faire apparaître un bouton « Calculer », qui remplace cette opération par son résultat ; en répétant l'opération de proche en proche, tu réduis l'arbre jusqu'à la racine. <em>sans</em>, l'arbre reste en lecture seule (comportement par défaut).</li>
+        <li>Tu peux répondre directement avec le résultat final, ou <strong>calculer étape par étape</strong> : tape une expression intermédiaire (ex. <code>6+2×3</code> puis <code>6+6</code>) et valide avec <kbd>Entrée</kbd>. Chaque étape tapée s'affiche juste au-dessus, en LaTeX, avec <code>=</code> si elle vaut bien le résultat de l'arbre ou <code>≠</code> sinon (une croix permet de la retirer) — dans les deux cas, un nouveau champ s'ouvre aussitôt pour continuer, sans jamais bloquer.</li>
+        <li>Le résultat final peut s'écrire comme tu veux — entier, décimal (<code>1,5</code>) ou fractionnaire (<code>3/2</code>) — mais s'il est juste sans être <strong>en écriture décimale</strong>, il est validé (<code>=</code>) avec une remarque, et un nouveau champ s'ouvre pour le réécrire correctement.</li>
+        <li><strong>Atelier</strong> : entraînement libre, sans score ni limite de questions — le bouton « Je renonce » passe directement à un nouvel arbre.</li>
+        <li><strong>Quiz</strong> : 10 questions notées. « Je renonce » compte comme une réponse fausse (sans pénalité) et passe à la suite.</li>
+        <li><strong>Fiche papier</strong> : génère une série d'arbres imprimable (ou exportable en LaTeX) dans le mode choisi.</li>
+        <li><strong>Exercice personnalisé</strong> (en atelier) : tape ta propre expression (ex. <code>(6+2)×3</code>, avec <code>+ − × ÷</code> et des parenthèses) pour créer un exercice sur mesure, hors de la série tirée au hasard. Seuls des nombres entiers strictement positifs sont acceptés comme feuilles.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="Utils.js"></script>
+<script src="Nombre.js"></script>
+<script src="Arbre.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

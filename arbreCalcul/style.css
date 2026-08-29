@@ -1,0 +1,1001 @@
+/* ==========================================================================
+   CALCULE L'ARBRE — feuille de style
+   Reprise de appli-maths/compteEstBonSimple (même palette, mêmes classes de
+   panneau/boutons), dont l'arbre visuel vient lui-même de nombreMotArbre,
+   ici affiché en lecture seule (l'arbre est donné, seule la réponse finale
+   se saisit, dans #panelReponse).
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root {
+  --papier:        #ffffff;
+  --papier-panel:  #f7f2f5;
+  --papier-encart: #ffffff;
+
+  --grille:        #e3d8de;
+  --grille-forte:  #2c2226;
+
+  --encre:         #2c2226;
+  --encre-douce:   #6b5b62;
+
+  --craie:         #7d3358;
+  --craie-hover:   #5f2742;
+  --accent-clair:  #f3e6ed;
+
+  --header-fond:        #f3e6ed;
+  --header-bordure:     #d9bccb;
+  --header-texte:       #3a2430;
+  --header-texte-hover: #20121a;
+  --header-accent:      #7d3358;
+  --header-accent-vif:  #5f2742;
+
+  --erreur:        #c44336;
+  --succes:        #2e9e5b;
+  --succes-fond:   #e3f4ea;
+  --attention:     #c47a1f;
+
+  --rayon:         6px;
+  --rayon-petit:   4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0 20px;
+  height: 54px;
+  background: var(--header-fond);
+  color: var(--encre);
+  border-bottom: 1px solid var(--header-bordure);
+  box-sizing: border-box;
+}
+
+header #titre_appli {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: .2px;
+  font-weight: 400;
+  color: var(--encre);
+}
+
+header #titre_appli b { font-weight: 700; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.btn-header {
+  background: transparent;
+  border: 0.5px solid var(--header-bordure);
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: .1px;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  color: var(--header-texte);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color .12s, color .12s, background-color .12s;
+  white-space: nowrap;
+}
+
+.btn-header:hover {
+  border-color: var(--header-texte);
+  color: var(--header-texte-hover);
+}
+
+.btn-header:active { transform: scale(0.98); }
+
+.btn-header.active {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+.btn-header.active:hover {
+  border-color: var(--craie-hover);
+  color: var(--craie-hover);
+}
+
+.filet-header {
+  width: 1px;
+  height: 22px;
+  background-color: var(--header-bordure);
+  flex-shrink: 0;
+}
+
+#appBody {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+#panneauLateral {
+  flex: 0 0 240px;
+  width: 240px;
+  min-height: calc(100vh - 54px);
+  background: var(--papier-encart);
+  border-right: 1px solid var(--grille);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+main {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   PANNEAU LATÉRAL
+   ========================================================================== */
+.panel-btn {
+  width: 100%;
+  background-color: var(--papier-panel);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.panel-btn:hover {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.panel-btn.accent {
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: var(--papier);
+}
+
+.panel-btn.accent:hover {
+  background-color: var(--craie-hover);
+  color: var(--papier);
+}
+
+.panel-btn:disabled {
+  cursor: default;
+  background-color: var(--papier-panel);
+  border-color: var(--grille);
+  color: #9a9a9a;
+}
+
+.panel-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-filet {
+  height: 1px;
+  background: var(--grille);
+  margin: 4px 0;
+}
+
+.panel-groupe-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.panel-groupe-label-repliable {
+  cursor: pointer;
+  user-select: none;
+  transition: color .15s ease;
+}
+.panel-groupe-label-repliable:hover { color: var(--craie); }
+
+.param-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.param-btn {
+  background-color: var(--papier-panel);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon-petit);
+  padding: 7px 13px;
+  font-size: 13.5px;
+  color: var(--encre-douce);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.param-btn:hover {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.param-btn.active {
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: var(--papier);
+  font-weight: 600;
+}
+
+.param-btn:disabled {
+  cursor: default;
+  background-color: var(--papier-panel);
+  border-color: var(--grille);
+  color: #9a9a9a;
+}
+
+.param-btn.active:disabled {
+  opacity: 0.55;
+  background-color: var(--craie);
+  border-color: var(--craie);
+  color: #d8c9d1;
+}
+
+.choix-nombre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.input-nombre-perso {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier);
+  padding: 8px 12px;
+  border-radius: var(--rayon-petit);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  border: 1px solid var(--grille);
+  color: var(--encre);
+  outline: none;
+}
+.input-nombre-perso:focus {
+  border-color: var(--craie);
+  box-shadow: 0 0 0 3px rgba(125, 51, 88, 0.15);
+}
+/* Masque les flèches natives du <input type=number> (Chrome/Safari/Firefox) */
+.input-nombre-perso::-webkit-inner-spin-button,
+.input-nombre-perso::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.input-nombre-perso[type=number] { -moz-appearance: textfield; }
+
+.capsule-feedback-erreur {
+  font-size: 12px;
+  color: var(--erreur);
+  line-height: 1.4;
+}
+.capsule-feedback-erreur:empty { display: none; }
+
+#score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+#question-progress, #score, #skipButton {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--papier-panel);
+  padding: 8px 14px;
+  border-radius: var(--rayon-petit);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border: 1px solid var(--grille);
+  color: var(--encre-douce);
+  text-align: left;
+}
+
+#question-progress { color: var(--encre-douce); }
+
+#score {
+  color: var(--craie);
+  border-color: var(--craie);
+}
+
+#skipButton {
+  border-color: var(--header-bordure);
+  color: var(--encre-douce);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+#skipButton:hover {
+  border-color: var(--craie);
+  color: var(--craie);
+}
+
+.fin-quiz {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 50px 30px;
+  background: var(--papier-encart);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon);
+}
+
+.fin-quiz-titre {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--encre);
+  margin: 0 0 16px;
+}
+
+.fin-quiz-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--craie);
+  margin-bottom: 8px;
+}
+
+.fin-quiz-commentaire {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--encre-douce);
+}
+
+.restart-btn {
+  margin-top: 25px;
+  padding: 10px 28px;
+  background: var(--craie);
+  color: var(--papier);
+  border: none;
+  border-radius: var(--rayon-petit);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.restart-btn:hover { background: var(--craie-hover); }
+.restart-btn:active { transform: scale(0.98); }
+
+/* ==========================================================================
+   ZONE DE JEU — saisie + retour à gauche, arbre/expression donnés à droite.
+   ========================================================================== */
+#zoneJeu {
+  width: 100%;
+  max-width: 980px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+#colonneGauche {
+  flex: 1 1 360px;
+  min-width: 300px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#colonneDroite {
+  flex: 1 1 480px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ==========================================================================
+   CONSIGNE / CIBLE
+   ========================================================================== */
+#consigne-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#consigne-label {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin-bottom: 10px;
+}
+
+/* ==========================================================================
+   RÉPONSE : SAISIE DU RÉSULTAT
+   ========================================================================== */
+#panelReponse {
+  text-align: center;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+#reponse-label {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin-bottom: 10px;
+}
+
+/* ==========================================================================
+   CALCUL ÉTAPE PAR ÉTAPE — une "capsule" par étape tapée (LigneEtape) :
+   une fois validée, elle devient une ligne figée en LaTeX (=/≠), et une
+   nouvelle capsule s'ouvre systématiquement en dessous, juste ou fausse —
+   jamais de blocage, la reprise est toujours dans une capsule fraîche.
+   ========================================================================== */
+#etapesContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.capsule-etape {
+  width: 100%;
+  min-height: 56px;
+  margin-bottom: 10px;
+  padding: 10px 16px;
+  background: var(--papier-encart);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon);
+  box-shadow: 0 2px 8px rgba(44,34,38,.05);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.capsule-symbole {
+  flex-shrink: 0;
+  width: 30px;
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--encre-douce);
+}
+
+.capsule-saisie {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.capsule-saisie input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1em;
+  padding: 8px 12px;
+  width: 100%;
+  border: 2px solid var(--grille-forte);
+  border-radius: var(--rayon-petit);
+  background: var(--papier);
+  color: var(--encre);
+  outline: none;
+}
+
+.capsule-saisie input:focus {
+  border-color: var(--craie);
+  box-shadow: 0 0 0 3px rgba(125, 51, 88, 0.15);
+}
+
+.capsule-saisie input:disabled { opacity: .6; }
+
+.capsule-figee {
+  font-size: 1.15em;
+  color: var(--encre);
+  overflow-x: auto;
+}
+
+.capsule-feedback {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: .82em;
+  font-style: italic;
+  color: var(--encre-douce);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capsule-etape.etape-succes .capsule-symbole,
+.capsule-etape.etape-succes .capsule-feedback,
+.capsule-etape.etape-succes .capsule-suppr { color: var(--succes); }
+.capsule-etape.etape-erreur .capsule-symbole,
+.capsule-etape.etape-erreur .capsule-feedback,
+.capsule-etape.etape-erreur .capsule-suppr { color: var(--erreur); }
+
+.capsule-suppr {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: var(--papier);
+  color: var(--encre-douce);
+  cursor: pointer;
+  padding: 0;
+  font-size: .8em;
+  line-height: 1;
+}
+.capsule-suppr:hover { background: currentColor; color: var(--papier); }
+
+/* ==========================================================================
+   ARBRE DONNÉ (lecture seule) — repris de nombreMotArbre
+   ========================================================================== */
+#zoneReponseArbre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 700px;
+  margin-top: 8px;
+}
+
+#arbre-label {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+#arbre-carte {
+  width: 100%;
+  background: var(--papier-encart);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon);
+  padding: 16px;
+  box-shadow: 0 2px 10px rgba(44,34,38,.06);
+}
+
+#arbre-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 420px;
+  min-height: 260px;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+#arbre-inner {
+  position: relative;
+}
+
+#arbre-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.arbre-trait {
+  stroke: var(--grille-forte);
+  stroke-width: 2;
+  opacity: .35;
+}
+
+.arbre-noeud {
+  position: absolute;
+  /* px/py représentent le CENTRE horizontal du noeud (voir layoutArbre en
+     JS) : on centre donc la boîte sur ce point plutôt que de l'aligner par
+     son bord gauche, pour que les traits de l'arbre (ancrés au même point)
+     pointent toujours vers le vrai centre visuel, quelle que soit la
+     largeur du nombre affiché. */
+  transform: translateX(-50%);
+  min-width: 64px;
+  height: 48px;
+  padding: 0 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: .95em;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(44,34,38,.08);
+  transition: box-shadow .15s ease, transform .1s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.arbre-noeud:hover { box-shadow: 0 3px 10px rgba(44,34,38,.16); transform: translateX(-50%) translateY(-1px); }
+
+.arbre-noeud.jeton,
+.arbre-noeud.valeur {
+  background: var(--accent-clair);
+  border: 2px solid var(--craie);
+  color: var(--encre);
+}
+
+.arbre-noeud.op {
+  background: var(--papier);
+  border: 2px solid var(--grille-forte);
+  color: var(--encre);
+  font-size: 1.2em;
+  min-width: 48px;
+}
+
+/* Nœud d'opération calculable (mode CalculArbre) : ses deux branches sont
+   déjà des feuilles, un clic ouvre le menu "Calculer" (voir #arbre-popup). */
+.arbre-noeud.op.calculable {
+  cursor: pointer;
+  border-style: dashed;
+}
+.arbre-noeud.op.calculable:hover {
+  box-shadow: 0 3px 10px rgba(44,34,38,.2);
+}
+.arbre-noeud.op.calculable.selectionne {
+  outline: 3px solid var(--craie);
+  outline-offset: 2px;
+}
+
+/* ---- popup "Calculer" (mode CalculArbre) ---- */
+#arbre-popup {
+  position: absolute;
+  z-index: 20;
+  background: var(--papier-encart);
+  border: 1px solid var(--grille);
+  border-radius: var(--rayon);
+  box-shadow: 0 8px 24px rgba(44,34,38,.2);
+  padding: 8px;
+  display: none;
+}
+#arbre-popup.visible { display: block; }
+
+.popup-calculer-btn {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: .9em;
+  padding: 8px 14px;
+  border-radius: var(--rayon-petit);
+  border: 1.5px solid var(--craie);
+  background: var(--papier);
+  color: var(--craie);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.popup-calculer-btn:hover { background: var(--craie); color: var(--papier); }
+
+/* ==========================================================================
+   PANNEAU DE VALIDATION
+   ========================================================================== */
+#panel {
+  text-align: center;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+button.action {
+  width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 1em;
+  padding: 12px 18px;
+  border-radius: var(--rayon-petit);
+  border: none;
+  cursor: pointer;
+  background: var(--craie);
+  color: var(--papier);
+  transition: background-color .15s ease, transform .12s ease, opacity .15s ease;
+}
+
+button.action:hover { background: var(--craie-hover); }
+button.action:active { transform: translateY(1px); }
+button.action:disabled {
+  opacity: .4;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   MESSAGE DE RETOUR
+   ========================================================================== */
+#message {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  font-size: 1.02em;
+  color: var(--encre-douce);
+  min-height: 24px;
+}
+#message.ok { color: var(--succes); font-weight: 600; }
+#message.erreur { color: var(--erreur); font-weight: 600; }
+#message.attention { color: var(--attention); font-weight: 600; }
+#message .detail {
+  display: block;
+  margin-top: 6px;
+  font-size: .9em;
+  color: var(--encre-douce);
+  font-weight: 400;
+}
+
+@media (max-width: 480px) {
+  header { font-size: .95em; gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ==========================================================================
+   OVERLAYS (Fiche papier / Guide) — communs
+   ========================================================================== */
+#overlayFiche, #overlayGuide {
+  display: none;
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(44,34,38,.55);
+  z-index: 1000;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+#overlayFiche.ouvert, #overlayGuide.ouvert { display: flex; }
+
+#ficheCarte, #guideCarte {
+  background: #fff;
+  color: #1a1a1a;
+  width: 100%;
+  max-width: 760px;
+  border-radius: 14px;
+  padding: 52px 32px 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.4);
+  position: relative;
+}
+
+#btnFermerFiche, #btnFermerGuide {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  font-size: 1.4em;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+}
+#btnFermerFiche:hover, #btnFermerGuide:hover { color: #333; }
+
+#ficheCarte h2, #guideCarte h2 {
+  font-family: 'Inter', sans-serif;
+  color: var(--craie);
+  margin: 0 0 4px;
+}
+#ficheCarte .sous-titre {
+  color: #6B6155;
+  margin: 0 0 18px;
+  font-size: .95em;
+}
+
+/* ==========================================================================
+   GUIDE
+   ========================================================================== */
+#guideContenu {
+  color: #3a352c;
+  font-size: .95em;
+  line-height: 1.6;
+}
+#guideContenu ul {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+#guideContenu li { margin-bottom: 8px; }
+#guideContenu ul ul { margin: 6px 0; }
+#guideContenu code {
+  background: var(--accent-clair);
+  color: var(--craie);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ==========================================================================
+   FICHE PAPIER
+   ========================================================================== */
+.fiche-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.fiche-actions button {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: .95em;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+#btnTelechargerTex { background: #2A3B30; color: #F4EFE3; }
+#btnTelechargerTex:hover { filter: brightness(1.15); }
+#btnImprimerFiche { background: var(--craie); color: #fff; }
+#btnImprimerFiche:hover { filter: brightness(1.15); }
+#btnRegenererFiche { background: transparent; border: 1.5px solid #ccc; color: #555; }
+#btnRegenererFiche:hover { border-color: #999; }
+
+.note-impression {
+  font-size: .82em;
+  color: #8a7f6e;
+  margin: -6px 0 18px;
+}
+
+.ligne-identite {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  font-size: .95em;
+  color: #3a352c;
+}
+.ligne-identite .trait {
+  display: inline-block;
+  border-bottom: 1px solid #999;
+  min-width: 220px;
+  margin-left: 6px;
+}
+.ligne-identite .trait.court { min-width: 70px; }
+
+.espace-fiche { height: 28px; }
+
+#ficheTableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .66em;
+  table-layout: fixed;
+  border: 2px solid #1a1a1a;
+}
+#ficheTableWrap th, #ficheTableWrap td {
+  border: 1px solid #999;
+  padding: 8px 5px;
+  text-align: center;
+  overflow: hidden;
+  height: 48px;
+  box-sizing: border-box;
+}
+#ficheTableWrap th { background: #f3f1ec; }
+
+#ficheTableWrap th:first-child,
+#ficheTableWrap td:first-child {
+  background: #e9e6df;
+  color: #1a1a1a;
+  font-size: .85em;
+  border-right: 3px double #1a1a1a;
+}
+
+#ficheTableWrap thead th.col-cible-th,
+#ficheTableWrap tbody td.col-cible {
+  border-left: 3px double #1a1a1a;
+}
+
+#ficheTableWrap td.col-expression,
+#ficheTableWrap th:last-child {
+  border-left: 3px double #1a1a1a;
+}
+#ficheTableWrap td.col-expression { color: #aaa; }
+
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  font-size: .92em;
+  line-height: 1.1;
+}
+.frac .num { border-bottom: 1.3px solid #1a1a1a; padding: 0 4px 1px; }
+.frac .den { padding: 1px 4px 0; }
+.nb { vertical-align: middle; }
+
+@media print {
+  @page { margin: 1.2cm; }
+
+  * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  html, body { background: #fff !important; margin: 0; padding: 0; }
+
+  body > *:not(#overlayFiche) { display: none !important; }
+
+  #overlayFiche {
+    display: block !important;
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  #ficheCarte {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    color: #1a1a1a !important;
+  }
+
+  #btnFermerFiche, .fiche-actions, .note-impression { display: none !important; }
+
+  #ficheCarte h2 { font-size: 1.3em; margin-bottom: 2px; }
+  #ficheCarte .sous-titre { display: none; }
+}
