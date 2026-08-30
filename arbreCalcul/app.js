@@ -20,7 +20,7 @@ const MODES = {
 };
 
 const OP_SYMBOLES = { "+": "+", "-": "−", "*": "×", ":": "÷" };
-const NB_EXERCICES_FICHE = 10;
+const NB_EXERCICES_FICHE = 20; // 5 lignes de 4 colonnes
 
 // ==================== ÉTAT ====================
 let etatJeu = "atelier";        // 'atelier' | 'quiz'
@@ -1321,31 +1321,20 @@ function arbreVersTexte(noeud, jetons, prioriteParent = 0, estEnTete = true) {
 function rendreTableauFiche(exercices) {
   const wrap = document.getElementById("ficheTableWrap");
 
-  const lignes = exercices.map((ex, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td class="col-cible">${arbreVersTexte(ex.arbre, ex.jetons)}</td>
-      <td class="col-expression"></td>
-    </tr>
-  `).join("");
+  // Tous les exercices d'une fiche partagent le même mode, donc le même
+  // nombre de jetons — donc le même nombre d'opérations : pas besoin de le
+  // recalculer par exercice, une seule fois suffit.
+  const nbLignesVides = MODES[modeActuel].jetons - 1;
+  const lignesVides = `<div class="fiche-ligne-vide"></div>`.repeat(nbLignesVides);
 
-  wrap.innerHTML = `
-    <table>
-      <colgroup>
-        <col style="width:8%">
-        <col style="width:52%">
-        <col style="width:40%">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>N°</th>
-          <th class="col-cible-th">Arbre (écrit en expression)</th>
-          <th>Résultat</th>
-        </tr>
-      </thead>
-      <tbody>${lignes}</tbody>
-    </table>
-  `;
+  const cellules = exercices.map(ex => `
+      <div class="fiche-cellule">
+        <div class="fiche-expression">${arbreVersTexte(ex.arbre, ex.jetons)}</div>
+        ${lignesVides}
+      </div>
+    `).join("");
+
+  wrap.innerHTML = `<div class="fiche-grille">${cellules}</div>`;
 }
 
 // Variante de arbreVersLatex utilisable hors contexte "game" (fiche : chaque
@@ -1383,15 +1372,22 @@ function fermerFiche() {
 }
 
 // ---------- Export LaTeX (même structure que compteEstBonSimple/generer_tex.js) ----------
+// Miroir de rendreTableauFiche : grille à 4 colonnes, chaque cellule montrant
+// l'expression suivie d'autant de lignes vides que d'opérations — le même
+// nombre pour tous les exercices de la fiche (même mode ⇒ même nombre de
+// jetons ⇒ même nombre d'opérations), donc figé une seule fois dans la
+// définition de \exercice plutôt que recalculé à chaque cellule.
 function genererLatexFiche(exercices) {
-  const REF = "\\vphantom{\\dfrac{0}{0}}";
+  const nbLignesVides = MODES[modeActuel].jetons - 1;
+  const lignesVidesMacro = "\\ligneVide".repeat(nbLignesVides);
+  const celluleLatex = (ex) => `\\exercice{$${arbreVersLatexPourFiche(ex.arbre)}$}`;
 
-  const specColonnes = "|>{\\columncolor{grisFondN}\\centering\\arraybackslash}p{1.0cm}||" +
-    ">{\\centering\\arraybackslash}p{9cm}||>{\\color{ligne}}p{4cm}|";
-
-  const lignes = exercices.map((ex, i) => {
-    return `$${REF}${i + 1}$ & $${REF}${arbreVersLatexPourFiche(ex.arbre)}$ & \\\\\n\\hline`;
-  }).join("\n");
+  const lignesTableau = [];
+  for (let i = 0; i < exercices.length; i += 4) {
+    const cellules = exercices.slice(i, i + 4).map(celluleLatex);
+    while (cellules.length < 4) cellules.push("");
+    lignesTableau.push(cellules.join(" & ") + " \\\\[6pt] \\hline");
+  }
 
   return `\\documentclass[11pt,a4paper]{article}
 \\usepackage[a4paper,margin=2cm]{geometry}
@@ -1402,16 +1398,27 @@ function genererLatexFiche(exercices) {
 \\usepackage[table]{xcolor}
 \\usepackage{array}
 \\usepackage{makecell}
+
 \\definecolor{ardoise}{HTML}{2C2226}
 \\definecolor{grisbrun}{HTML}{6B5B62}
 \\definecolor{ligne}{HTML}{B9AF9C}
 \\definecolor{grisFondN}{HTML}{E9E6DF}
+
+% \\ligneVide : une ligne de calcul vide. \\exercice{expression} : une
+% cellule de la grille — expression centrée (option "c" de makecell),
+% jamais collée au bord grâce à \\arraystretch, suivie d'autant de
+% \\ligneVide que d'opérations — le même nombre pour toute la fiche (voir
+% genererLatexFiche côté JS), donc figé ici une seule fois plutôt que
+% recalculé à chaque cellule.
+\\newcommand{\\ligneVide}{\\\\[22pt]}
+\\newcommand{\\exercice}[1]{\\makecell[tc]{#1${lignesVidesMacro}}}
+
 \\pagestyle{empty}
 \\setlength{\\parindent}{0pt}
-\\setlength{\\extrarowheight}{4pt}
-\\renewcommand{\\arraystretch}{2}
-\\setlength{\\tabcolsep}{4pt}
+\\setlength{\\tabcolsep}{6pt}
 \\setlength{\\doublerulesep}{0.8pt}
+\\renewcommand{\\arraystretch}{1.6}
+
 \\begin{document}
 \\noindent
 Nom et prénom~: \\hrulefill \\hspace{1.2cm} Note~: \\hrulefill\\,/ \\hrulefill
@@ -1428,15 +1435,9 @@ Mode~: ${MODES[modeActuel].label} (${MODES[modeActuel].jetons} jetons par arbre)
 }
 \\vspace{10pt}
 \\begin{center}
-\\begin{tabular}{${specColonnes}}
+\\begin{tabular}{|*{4}{p{3.8cm}|}}
 \\hline
-\\multicolumn{1}{|c||}{\\bfseries N°} &
-\\multicolumn{1}{c||}{\\bfseries Arbre} &
-\\multicolumn{1}{c|}{\\bfseries Résultat} \\\\
-\\hline
-${lignes}
-\\hline
-
+${lignesTableau.join("\n")}
 \\end{tabular}
 \\end{center}
 \\end{document}

@@ -913,53 +913,33 @@ button.action:disabled {
 
 .espace-fiche { height: 28px; }
 
-#ficheTableWrap table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .66em;
-  table-layout: fixed;
-  border: 2px solid #1a1a1a;
+/* Grille d'exercices : 4 colonnes (5 lignes pour 20 exercices), une
+   expression par cellule suivie d'autant de lignes de calcul vides que
+   d'opérations dans son arbre — de quoi écrire son calcul pas à pas. */
+#ficheTableWrap .fiche-grille {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
 }
-#ficheTableWrap th, #ficheTableWrap td {
-  border: 1px solid #999;
-  padding: 8px 5px;
-  text-align: center;
-  overflow: hidden;
-  height: 48px;
+
+.fiche-cellule {
+  border: 1.5px solid #1a1a1a;
+  border-radius: 4px;
+  padding: 10px;
   box-sizing: border-box;
 }
-#ficheTableWrap th { background: #f3f1ec; }
 
-#ficheTableWrap th:first-child,
-#ficheTableWrap td:first-child {
-  background: #e9e6df;
-  color: #1a1a1a;
+.fiche-expression {
+  text-align: center;
+  font-weight: 600;
   font-size: .85em;
-  border-right: 3px double #1a1a1a;
+  color: #1a1a1a;
+  margin-bottom: 10px;
 }
 
-#ficheTableWrap thead th.col-cible-th,
-#ficheTableWrap tbody td.col-cible {
-  border-left: 3px double #1a1a1a;
+.fiche-ligne-vide {
+  height: 24px;
 }
-
-#ficheTableWrap td.col-expression,
-#ficheTableWrap th:last-child {
-  border-left: 3px double #1a1a1a;
-}
-#ficheTableWrap td.col-expression { color: #aaa; }
-
-.frac {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  vertical-align: middle;
-  font-size: .92em;
-  line-height: 1.1;
-}
-.frac .num { border-bottom: 1.3px solid #1a1a1a; padding: 0 4px 1px; }
-.frac .den { padding: 1px 4px 0; }
-.nb { vertical-align: middle; }
 
 @media print {
   @page { margin: 1.2cm; }
