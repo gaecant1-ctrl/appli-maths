@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Table de multiplication à compléter</title>
+<style>
+  :root{
+    --bg:#002;
+    --panel:#00133a;
+    --accent:#4a90e2;
+    --ok:#4caf50;
+    --bad:#e53935;
+    --hole:#eef3fb;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family: system-ui, Arial, sans-serif;
+    background:var(--bg); color:#fff;
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+    padding:16px;
+  }
+  h1{ font-size:1.3em; margin:6px 0 0; text-align:center; }
+
+  .toolbar{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;
+    background:var(--panel); padding:10px 14px; border-radius:12px;
+  }
+  .toolbar label{ font-size:0.9em; display:flex; align-items:center; gap:6px; }
+  select{
+    background:#fff; color:#000; border:none; border-radius:6px; padding:4px 6px;
+  }
+  button{
+    background:var(--accent); color:#fff; border:none; padding:8px 14px;
+    border-radius:8px; cursor:pointer; font-size:0.95em;
+  }
+  button:hover{ filter:brightness(1.1); }
+  button:disabled{ opacity:.5; cursor:default; }
+
+  #cible{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  #cible .consigne{ font-size:0.95em; opacity:.85; }
+  #cibleValeur{
+    background:var(--accent); color:#fff; font-weight:800; font-size:28px;
+    min-width:72px; height:60px; padding:0 10px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:14px;
+    box-shadow:0 3px 6px rgba(0,0,0,.35);
+  }
+
+  #message{ min-height:1.4em; font-weight:700; }
+  #message.ok{ color:var(--ok); }
+  #message.bad{ color:var(--bad); }
+
+  #progress{ font-size:0.9em; opacity:.85; }
+
+  #tableWrap{ overflow:auto; max-width:100%; }
+  table{ border-collapse:collapse; background:#fff; color:#000; }
+  th, td{
+    width:46px; height:40px; text-align:center; vertical-align:middle;
+    border:1px solid #cfd8e3; font-size:14px; user-select:none;
+    padding:0;
+  }
+  th{ background:#dde7f5; font-weight:700; }
+  th.corner{ background:#c7d4ea; }
+
+  td.hole{
+    background:var(--hole);
+    cursor:pointer;
+  }
+  td.filled{ background:var(--ok); color:#fff; font-weight:700; }
+  td.wrong-flash{ background:var(--bad) !important; color:#fff !important; }
+  td.given{ background:#f4f7fb; color:#556; }
+
+  #victory{
+    font-size:1.1em; font-weight:700; color:var(--ok);
+    display:none;
+  }
+</style>
+</head>
+<body>
+
+<h1>🧮 Table de multiplication à compléter</h1>
+
+<div class="toolbar">
+  <label>Taille
+    <select id="taille">
+      <option value="5">5×5</option>
+      <option value="10" selected>10×10</option>
+      <option value="12">12×12</option>
+    </select>
+  </label>
+  <label>Difficulté
+    <select id="difficulte">
+      <option value="0.15">Facile</option>
+      <option value="0.35" selected>Moyen</option>
+      <option value="0.6">Difficile</option>
+      <option value="1">Table entière</option>
+    </select>
+  </label>
+  <button id="btnNouvelle">Nouvelle partie</button>
+</div>
+
+<div id="cible">
+  <div class="consigne">Clique sur la case où va ce produit :</div>
+  <div id="cibleValeur">–</div>
+</div>
+
+<div id="progress">0 / 0 cases complétées</div>
+<div id="message"></div>
+
+<div id="tableWrap">
+  <table id="table"></table>
+</div>
+
+<div id="victory">🎉 Bravo, la table est complète ! 🎉</div>
+
+<script>
+(function(){
+  const tailleSelect = document.getElementById('taille');
+  const diffSelect = document.getElementById('difficulte');
+  const btnNouvelle = document.getElementById('btnNouvelle');
+  const tableEl = document.getElementById('table');
+  const progressEl = document.getElementById('progress');
+  const messageEl = document.getElementById('message');
+  const victoryEl = document.getElementById('victory');
+  const cibleValeurEl = document.getElementById('cibleValeur');
+
+  let N = 10;
+  let remainingHoles = [];  // {row, col, value, el}
+  let totalHoles = 0;
+  let filledCount = 0;
+  let cible = null;         // {row, col, value, el} - trou choisi au hasard
+
+  function setMessage(text, cls){
+    messageEl.textContent = text;
+    messageEl.className = cls || '';
+  }
+
+  function updateProgress(){
+    progressEl.textContent = filledCount + ' / ' + totalHoles + ' cases complétées';
+  }
+
+  function choisirNouvelleCible(){
+    if (remainingHoles.length === 0){
+      cible = null;
+      cibleValeurEl.textContent = '–';
+      victoryEl.style.display = 'block';
+      setMessage('', '');
+      return;
+    }
+    const idx = Math.floor(Math.random() * remainingHoles.length);
+    cible = remainingHoles[idx];
+    cibleValeurEl.textContent = cible.value;
+  }
+
+  function nouvellePartie(){
+    N = parseInt(tailleSelect.value, 10);
+    const ratio = parseFloat(diffSelect.value);
+
+    // Construire la liste des trous (positions choisies au hasard)
+    const allCells = [];
+    for (let r = 1; r <= N; r++){
+      for (let c = 1; c <= N; c++){
+        allCells.push({ row:r, col:c, value:r*c });
+      }
+    }
+    // mélange
+    for (let i = allCells.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [allCells[i], allCells[j]] = [allCells[j], allCells[i]];
+    }
+    const nbTrous = Math.max(1, Math.round(allCells.length * ratio));
+    const holeSet = new Set(allCells.slice(0, nbTrous).map(c => c.row + '-' + c.col));
+
+    remainingHoles = [];
+    filledCount = 0;
+    victoryEl.style.display = 'none';
+
+    // Construire le tableau HTML
+    tableEl.innerHTML = '';
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    const corner = document.createElement('th');
+    corner.className = 'corner';
+    corner.textContent = '×';
+    headRow.appendChild(corner);
+    for (let c = 1; c <= N; c++){
+      const th = document.createElement('th');
+      th.textContent = c;
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    tableEl.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    for (let r = 1; r <= N; r++){
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.textContent = r;
+      tr.appendChild(th);
+      for (let c = 1; c <= N; c++){
+        const td = document.createElement('td');
+        const value = r * c;
+        if (holeSet.has(r + '-' + c)){
+          td.classList.add('hole');
+          td.dataset.value = value;
+
+          const hole = { row:r, col:c, value, el:td };
+          remainingHoles.push(hole);
+
+          td.addEventListener('click', () => tenterPlacement(hole));
+        } else {
+          td.classList.add('given');
+          td.textContent = value;
+        }
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    tableEl.appendChild(tbody);
+
+    totalHoles = remainingHoles.length;
+    updateProgress();
+    setMessage('', '');
+    choisirNouvelleCible();
+  }
+
+  function tenterPlacement(hole){
+    if (!cible) return;
+    // la case cliquée n'est plus un trou disponible (déjà remplie)
+    if (!remainingHoles.includes(hole)) return;
+
+    if (hole.value === cible.value){
+      hole.el.classList.remove('hole');
+      hole.el.classList.add('filled');
+      hole.el.textContent = hole.value;
+
+      remainingHoles = remainingHoles.filter(h => h !== hole);
+      filledCount++;
+      updateProgress();
+      setMessage('Bravo, ' + hole.value + ' est bien placé !', 'ok');
+
+      choisirNouvelleCible();
+    } else {
+      hole.el.classList.add('wrong-flash');
+      setMessage('Ce n\'est pas ici. Cherche où placer ' + cible.value + '.', 'bad');
+      setTimeout(() => hole.el.classList.remove('wrong-flash'), 500);
+    }
+  }
+
+  btnNouvelle.addEventListener('click', nouvellePartie);
+  tailleSelect.addEventListener('change', nouvellePartie);
+  diffSelect.addEventListener('change', nouvellePartie);
+
+  nouvellePartie();
+})();
+</script>
+
+</body>
+</html>
