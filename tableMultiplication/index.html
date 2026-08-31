@@ -37,6 +37,18 @@
   button:hover{ filter:brightness(1.1); }
   button:disabled{ opacity:.5; cursor:default; }
 
+  #cible{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  #cible .consigne{ font-size:0.95em; opacity:.85; }
+  #cibleValeur{
+    background:var(--accent); color:#fff; font-weight:800; font-size:28px;
+    min-width:72px; height:60px; padding:0 10px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:14px;
+    box-shadow:0 3px 6px rgba(0,0,0,.35);
+  }
+
   #message{ min-height:1.4em; font-weight:700; }
   #message.ok{ color:var(--ok); }
   #message.bad{ color:var(--bad); }
@@ -57,26 +69,9 @@
     background:var(--hole);
     cursor:pointer;
   }
-  td.hole.dragover{ background:#cfe3ff; }
-  td.hole.selected-target{ outline:2px dashed var(--accent); outline-offset:-2px; }
   td.filled{ background:var(--ok); color:#fff; font-weight:700; }
   td.wrong-flash{ background:var(--bad) !important; color:#fff !important; }
   td.given{ background:#f4f7fb; color:#556; }
-
-  #tray{
-    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
-    max-width:640px; min-height:52px;
-    background:var(--panel); border-radius:12px; padding:10px;
-  }
-  .tile{
-    background:var(--accent); color:#fff; font-weight:700; font-size:16px;
-    width:44px; height:44px; display:flex; align-items:center; justify-content:center;
-    border-radius:10px; cursor:grab; user-select:none;
-    box-shadow:0 2px 4px rgba(0,0,0,.3);
-  }
-  .tile.selected{ outline:3px solid #ffec80; transform:scale(1.08); }
-  .tile:active{ cursor:grabbing; }
-  .tile.hidden{ display:none; }
 
   #victory{
     font-size:1.1em; font-weight:700; color:var(--ok);
@@ -107,6 +102,11 @@
   <button id="btnNouvelle">Nouvelle partie</button>
 </div>
 
+<div id="cible">
+  <div class="consigne">Clique sur la case où va ce produit :</div>
+  <div id="cibleValeur">–</div>
+</div>
+
 <div id="progress">0 / 0 cases complétées</div>
 <div id="message"></div>
 
@@ -114,7 +114,6 @@
   <table id="table"></table>
 </div>
 
-<div id="tray"></div>
 <div id="victory">🎉 Bravo, la table est complète ! 🎉</div>
 
 <script>
@@ -123,17 +122,16 @@
   const diffSelect = document.getElementById('difficulte');
   const btnNouvelle = document.getElementById('btnNouvelle');
   const tableEl = document.getElementById('table');
-  const trayEl = document.getElementById('tray');
   const progressEl = document.getElementById('progress');
   const messageEl = document.getElementById('message');
   const victoryEl = document.getElementById('victory');
+  const cibleValeurEl = document.getElementById('cibleValeur');
 
   let N = 10;
-  let holes = [];        // {row, col, value, filled}
-  let tiles = [];         // {id, value, placed}
-  let selectedTileId = null;
+  let remainingHoles = [];  // {row, col, value, el}
   let totalHoles = 0;
   let filledCount = 0;
+  let cible = null;         // {row, col, value, el} - trou choisi au hasard
 
   function setMessage(text, cls){
     messageEl.textContent = text;
@@ -144,7 +142,18 @@
     progressEl.textContent = filledCount + ' / ' + totalHoles + ' cases complétées';
   }
 
-  function cellId(r, c){ return 'cell-' + r + '-' + c; }
+  function choisirNouvelleCible(){
+    if (remainingHoles.length === 0){
+      cible = null;
+      cibleValeurEl.textContent = '–';
+      victoryEl.style.display = 'block';
+      setMessage('', '');
+      return;
+    }
+    const idx = Math.floor(Math.random() * remainingHoles.length);
+    cible = remainingHoles[idx];
+    cibleValeurEl.textContent = cible.value;
+  }
 
   function nouvellePartie(){
     N = parseInt(tailleSelect.value, 10);
@@ -165,10 +174,9 @@
     const nbTrous = Math.max(1, Math.round(allCells.length * ratio));
     const holeSet = new Set(allCells.slice(0, nbTrous).map(c => c.row + '-' + c.col));
 
-    holes = [];
-    tiles = [];
-    selectedTileId = null;
+    remainingHoles = [];
     filledCount = 0;
+    victoryEl.style.display = 'none';
 
     // Construire le tableau HTML
     tableEl.innerHTML = '';
@@ -187,7 +195,6 @@
     tableEl.appendChild(thead);
 
     const tbody = document.createElement('tbody');
-    let tileId = 0;
     for (let r = 1; r <= N; r++){
       const tr = document.createElement('tr');
       const th = document.createElement('th');
@@ -198,28 +205,12 @@
         const value = r * c;
         if (holeSet.has(r + '-' + c)){
           td.classList.add('hole');
-          td.id = cellId(r, c);
-          td.dataset.row = r;
-          td.dataset.col = c;
           td.dataset.value = value;
 
-          const t = { id: 'tile-' + (tileId++), value, placed:false };
-          tiles.push(t);
-          holes.push({ row:r, col:c, value });
+          const hole = { row:r, col:c, value, el:td };
+          remainingHoles.push(hole);
 
-          td.addEventListener('dragover', (e) => { e.preventDefault(); td.classList.add('dragover'); });
-          td.addEventListener('dragleave', () => td.classList.remove('dragover'));
-          td.addEventListener('drop', (e) => {
-            e.preventDefault();
-            td.classList.remove('dragover');
-            const droppedId = e.dataTransfer.getData('text/plain');
-            tenterPlacement(droppedId, td);
-          });
-          td.addEventListener('click', () => {
-            if (selectedTileId){
-              tenterPlacement(selectedTileId, td);
-            }
-          });
+          td.addEventListener('click', () => tenterPlacement(hole));
         } else {
           td.classList.add('given');
           td.textContent = value;
@@ -230,73 +221,32 @@
     }
     tableEl.appendChild(tbody);
 
-    totalHoles = tiles.length;
-
-    // mélange des tuiles pour l'affichage
-    const displayTiles = tiles.slice();
-    for (let i = displayTiles.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i+1));
-      [displayTiles[i], displayTiles[j]] = [displayTiles[j], displayTiles[i]];
-    }
-
-    trayEl.innerHTML = '';
-    displayTiles.forEach(t => {
-      const div = document.createElement('div');
-      div.className = 'tile';
-      div.id = t.id;
-      div.textContent = t.value;
-      div.draggable = true;
-      div.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', t.id);
-        selectedTileId = t.id;
-      });
-      div.addEventListener('click', () => {
-        if (selectedTileId === t.id){
-          selectedTileId = null;
-          div.classList.remove('selected');
-        } else {
-          const prev = document.getElementById(selectedTileId);
-          if (prev) prev.classList.remove('selected');
-          selectedTileId = t.id;
-          div.classList.add('selected');
-        }
-      });
-      trayEl.appendChild(div);
-    });
-
-    setMessage('', '');
-    victoryEl.style.display = 'none';
+    totalHoles = remainingHoles.length;
     updateProgress();
+    setMessage('', '');
+    choisirNouvelleCible();
   }
 
-  function tenterPlacement(tileIdToPlace, td){
-    const tile = tiles.find(t => t.id === tileIdToPlace && !t.placed);
-    if (!tile) return;
-    const cellValue = parseInt(td.dataset.value, 10);
+  function tenterPlacement(hole){
+    if (!cible) return;
+    // la case cliquée n'est plus un trou disponible (déjà remplie)
+    if (!remainingHoles.includes(hole)) return;
 
-    if (tile.value === cellValue){
-      tile.placed = true;
-      td.classList.remove('hole');
-      td.classList.add('filled');
-      td.textContent = tile.value;
+    if (hole.value === cible.value){
+      hole.el.classList.remove('hole');
+      hole.el.classList.add('filled');
+      hole.el.textContent = hole.value;
 
-      const tileEl = document.getElementById(tile.id);
-      if (tileEl) tileEl.classList.add('hidden');
-
-      if (selectedTileId === tile.id) selectedTileId = null;
-
+      remainingHoles = remainingHoles.filter(h => h !== hole);
       filledCount++;
       updateProgress();
-      setMessage('Bravo, ' + tile.value + ' est bien placé !', 'ok');
+      setMessage('Bravo, ' + hole.value + ' est bien placé !', 'ok');
 
-      if (filledCount === totalHoles){
-        victoryEl.style.display = 'block';
-        setMessage('', '');
-      }
+      choisirNouvelleCible();
     } else {
-      td.classList.add('wrong-flash');
-      setMessage('Ce n\'est pas ' + tile.value + ' ici. Réessaie !', 'bad');
-      setTimeout(() => td.classList.remove('wrong-flash'), 500);
+      hole.el.classList.add('wrong-flash');
+      setMessage('Ce n\'est pas ici. Cherche où placer ' + cible.value + '.', 'bad');
+      setTimeout(() => hole.el.classList.remove('wrong-flash'), 500);
     }
   }
 
