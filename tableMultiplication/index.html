@@ -71,7 +71,6 @@
   }
   td.filled{ background:var(--ok); color:#fff; font-weight:700; }
   td.wrong-flash{ background:var(--bad) !important; color:#fff !important; }
-  td.given{ background:#f4f7fb; color:#556; }
 
   #victory{
     font-size:1.1em; font-weight:700; color:var(--ok);
@@ -89,14 +88,6 @@
       <option value="5">5×5</option>
       <option value="10" selected>10×10</option>
       <option value="12">12×12</option>
-    </select>
-  </label>
-  <label>Difficulté
-    <select id="difficulte">
-      <option value="0.15">Facile</option>
-      <option value="0.35" selected>Moyen</option>
-      <option value="0.6">Difficile</option>
-      <option value="1">Table entière</option>
     </select>
   </label>
   <button id="btnNouvelle">Nouvelle partie</button>
@@ -119,7 +110,6 @@
 <script>
 (function(){
   const tailleSelect = document.getElementById('taille');
-  const diffSelect = document.getElementById('difficulte');
   const btnNouvelle = document.getElementById('btnNouvelle');
   const tableEl = document.getElementById('table');
   const progressEl = document.getElementById('progress');
@@ -157,22 +147,6 @@
 
   function nouvellePartie(){
     N = parseInt(tailleSelect.value, 10);
-    const ratio = parseFloat(diffSelect.value);
-
-    // Construire la liste des trous (positions choisies au hasard)
-    const allCells = [];
-    for (let r = 1; r <= N; r++){
-      for (let c = 1; c <= N; c++){
-        allCells.push({ row:r, col:c, value:r*c });
-      }
-    }
-    // mélange
-    for (let i = allCells.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i+1));
-      [allCells[i], allCells[j]] = [allCells[j], allCells[i]];
-    }
-    const nbTrous = Math.max(1, Math.round(allCells.length * ratio));
-    const holeSet = new Set(allCells.slice(0, nbTrous).map(c => c.row + '-' + c.col));
 
     remainingHoles = [];
     filledCount = 0;
@@ -203,18 +177,13 @@
       for (let c = 1; c <= N; c++){
         const td = document.createElement('td');
         const value = r * c;
-        if (holeSet.has(r + '-' + c)){
-          td.classList.add('hole');
-          td.dataset.value = value;
+        td.classList.add('hole');
+        td.dataset.value = value;
 
-          const hole = { row:r, col:c, value, el:td };
-          remainingHoles.push(hole);
+        const hole = { row:r, col:c, value, el:td };
+        remainingHoles.push(hole);
 
-          td.addEventListener('click', () => tenterPlacement(hole));
-        } else {
-          td.classList.add('given');
-          td.textContent = value;
-        }
+        td.addEventListener('click', () => tenterPlacement(hole));
         tr.appendChild(td);
       }
       tbody.appendChild(tr);
@@ -252,7 +221,6 @@
 
   btnNouvelle.addEventListener('click', nouvellePartie);
   tailleSelect.addEventListener('change', nouvellePartie);
-  diffSelect.addEventListener('change', nouvellePartie);
 
   nouvellePartie();
 })();
