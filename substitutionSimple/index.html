@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Substitution</title>
+<link rel="stylesheet" href="style.css?v=37">
+
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="Nombre.js?v=37"></script>
+<script src="calcul-mv.js?v=37"></script>
+</head>
+<body>
+
+<header>
+  <span id="titre_appli">Substitution</span>
+  <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="appBody">
+  <aside id="panneauLateral"></aside>
+
+  <main>
+    <p id="consigne">Complète la case surlignée : calcule la valeur de l'expression pour la valeur de \(\gamma\) de sa ligne.</p>
+
+    <div id="tableWrap">
+      <table id="grille"></table>
+    </div>
+
+    <div id="zoneValidation">
+      <input id="inputReponse" type="text" inputmode="text" autocomplete="off" placeholder="ta réponse">
+      <button class="action" id="btnValider" type="button">Vérifier</button>
+      <button class="action action-secondaire" id="btnAbandon" type="button" style="display:none;">Abandon</button>
+      <span id="message"></span>
+    </div>
+  </main>
+</div>
+
+<script src="Fiche.js?v=37"></script>
+<script src="Guide.js?v=37"></script>
+<script src="app.js?v=37"></script>
+
+</body>
+</html>
