@@ -491,6 +491,15 @@ input[type="range"]::-moz-range-thumb {
   opacity: 1;
 }
 
+.bt_menu.actif {
+  background: var(--grille-forte);
+  border-radius: 6px;
+}
+
+.bt_menu.actif img {
+  opacity: 1;
+}
+
 /* Fenêtre d'affichage des dimensions */
 #conteneur_dim {
   position: absolute;
