@@ -6,8 +6,8 @@
 // répondre, au choix (bascule "Réponse" dans le panneau latéral) :
 //   - "expression" : on tape une expression avec les jetons en CHIFFRES
 //     (comme le compte-est-bon classique), + − × ÷ et parenthèses.
-//   - "arbre" : on construit visuellement l'arbre de calcul, avec + et ×
-//     seulement (voir nombreMotArbre).
+//   - "arbre" : on construit visuellement l'arbre de calcul, avec les 4
+//     opérations classiques (voir nombreMotArbre).
 // Les deux modes partagent la même cible, les mêmes jetons, et le même
 // moteur de réduction/LaTeX — seule la façon de construire la réponse change.
 
@@ -15,15 +15,16 @@
 const NB_QUESTIONS = 10;
 
 const MODES = {
-  2: { jetons: 3, label: "2 " },
-  3: { jetons: 4, label: "3 " },
-  4: { jetons: 5, label: "4 " },
+  1: { jetons: 2, label: "1", libelle: "1 opération" },
+  2: { jetons: 3, label: "2", libelle: "2 opérations" },
+  3: { jetons: 4, label: "3", libelle: "3 opérations" },
+  4: { jetons: 5, label: "4", libelle: "4 opérations" },
 };
 
-// Mode "expression" : les 4 opérations classiques. Mode "arbre" : + et ×
-// seulement (repris de nombreMotArbre).
+// Les 4 opérations classiques, disponibles aussi bien en mode expression
+// qu'en mode arbre (repris de nombreMotArbre).
 const OPS_EXPRESSION = ["+", "-", "*", ":"];
-const OPS_ARBRE = ["+", "*"];
+const OPS_ARBRE = ["+", "-", "*", ":"];
 const OP_SYMBOLES = { "+": "+", "-": "−", "*": "×", ":": "÷" };
 const NB_EXERCICES_FICHE = 10;
 
@@ -32,6 +33,11 @@ let etatJeu = "atelier";        // 'atelier' | 'quiz'
 let modeActuel = 2;             // clé de MODES : nombre d'opérations
 let modeReponse = "expression"; // 'expression' | 'arbre'
 let niveauActuel = "simple";    // clé de NIVEAUX_JETONS : plage des jetons
+// 'parenthese' : chaque sous-expression est parenthésée, sans jamais
+// s'appuyer sur les priorités opératoires (×/÷ avant +/−) — pas au
+// programme de sixième. 'priorite' : parenthèses minimales, comme
+// d'habitude en mathématiques (celles qu'un niveau plus avancé sait lire).
+let modeParenthese = "parenthese";
 
 let questionIndex = 0;
 let score = 0;
@@ -120,7 +126,7 @@ function latexOp(op) {
   return op === "*" ? "\\times " : op === ":" ? "\\div " : op;
 }
 
-function arbreVersLatex(noeud, prioriteParent, estEnTete) {
+function arbreVersLatex(noeud, prioriteParent, estEnTete, estRacine = true) {
   if (noeud.type === "NUM") {
     const opts = noeud.opts || { nombreAff: 'fractionSimple' };
     const txt = noeud.nombre.toLatex(opts);
@@ -128,9 +134,10 @@ function arbreVersLatex(noeud, prioriteParent, estEnTete) {
     return (estNegatif && !estEnTete) ? `(${txt})` : txt;
   }
   const prio = (noeud.op === "*" || noeud.op === ":") ? 2 : 1;
-  const txtGauche = arbreVersLatex(noeud.gauche, prio, estEnTete);
-  const txtDroite = arbreVersLatex(noeud.droite, prio + 1, false);
+  const txtGauche = arbreVersLatex(noeud.gauche, prio, estEnTete, false);
+  const txtDroite = arbreVersLatex(noeud.droite, prio + 1, false, false);
   const txt = `${txtGauche}${latexOp(noeud.op)}${txtDroite}`;
+  if (modeParenthese === "parenthese") return estRacine ? txt : `(${txt})`;
   return prioriteParent > prio ? `(${txt})` : txt;
 }
 
@@ -966,7 +973,7 @@ function construireMenuOp(noeud) {
   ligneAjout.className = "popup-ligne";
   const ajoutBtn = document.createElement("button");
   ajoutBtn.className = "popup-ajout-btn";
-  ajoutBtn.textContent = noeud.op === "+" ? "+ Ajouter un terme" : "+ Ajouter un facteur";
+  ajoutBtn.textContent = (noeud.op === "+" || noeud.op === "-") ? "+ Ajouter un terme" : "+ Ajouter un facteur";
   ajoutBtn.addEventListener("click", () => {
     noeud.enfants.push(nouveauPlaceholder(noeud));
     fermerPopup();
@@ -1380,6 +1387,31 @@ function construireBoutonsNiveau() {
 }
 
 // Bascule EXCLUSIVE (un seul mode de réponse actif à la fois).
+// Bascule EXCLUSIVE : comment afficher l'expression calculée dans la
+// vérification (voir arbreVersLatex). N'affecte que les prochaines
+// validations, pas celle déjà affichée à l'écran.
+function construireBoutonsParenthese() {
+  const conteneur = document.createElement("div");
+  conteneur.className = "param-buttons";
+  const options = [
+    { valeur: "parenthese", label: "Parenthésée" },
+    { valeur: "priorite", label: "Avec priorités" },
+  ];
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "param-btn" + (modeParenthese === opt.valeur ? " active" : "");
+    btn.textContent = opt.label;
+    btn.onclick = () => {
+      if (modeParenthese === opt.valeur) return;
+      modeParenthese = opt.valeur;
+      renderPanneauLateral();
+    };
+    conteneur.appendChild(btn);
+  });
+  return conteneur;
+}
+
 function construireBoutonsReponse() {
   const conteneur = document.createElement("div");
   conteneur.className = "param-buttons";
@@ -1429,6 +1461,8 @@ function renderPanneauLateral() {
   ajouterGroupe("Niveau", construireBoutonsNiveau());
   ajouterFilet();
   ajouterGroupe("Réponse", construireBoutonsReponse());
+  ajouterFilet();
+  ajouterGroupe("Expression calculée", construireBoutonsParenthese());
   ajouterFilet();
 
   const creerBoutonReessayer = () => {
@@ -1629,7 +1663,7 @@ function rendreTableauFiche(exercices) {
 function ouvrirFiche() {
   serieFicheActuelle = genererSerieFiche(NB_EXERCICES_FICHE);
   const sousTitre = document.getElementById("ficheSousTitre");
-  if (sousTitre) sousTitre.textContent = `Mode : ${MODES[modeActuel].label} (${MODES[modeActuel].jetons} jetons par nombre) — Niveau : ${NIVEAUX_JETONS[niveauActuel].label}`;
+  if (sousTitre) sousTitre.textContent = `Mode : ${MODES[modeActuel].libelle} (${MODES[modeActuel].jetons} jetons par nombre) — Niveau : ${NIVEAUX_JETONS[niveauActuel].label}`;
   document.getElementById("overlayFiche").classList.add("ouvert");
   rendreTableauFiche(serieFicheActuelle);
 }
@@ -1639,8 +1673,12 @@ function fermerFiche() {
 }
 
 // ---------- Export LaTeX (même structure que compteEstBon/generer_tex.js) ----------
+// Contrairement à compteEstBon (qui peut cibler des fractions), les cibles
+// ici sont toujours entières (voir Jetons.js) : pas besoin du vphantom sur
+// \dfrac{0}{0} que ce dernier utilise pour uniformiser la hauteur des
+// lignes avec d'éventuelles fractions — \arraystretch/\extrarowheight
+// suffisent seuls à donner des lignes assez hautes pour écrire à la main.
 function genererLatexFiche(exercices) {
-  const REF = "\\vphantom{\\dfrac{0}{0}}";
   const nbJetons = MODES[modeActuel].jetons;
 
   // Largeurs choisies pour ne jamais déborder de la page en A4 (marges
@@ -1651,11 +1689,8 @@ function genererLatexFiche(exercices) {
     "|>{\\centering\\arraybackslash}p{1.8cm}||>{\\color{ligne}}p{4cm}|";
 
   const lignes = exercices.map((ex, i) => {
-    // \dfrac exige le mode mathématique : REF (\vphantom{\dfrac{0}{0}}) doit
-    // donc être À L'INTÉRIEUR d'un $...$, jamais posé nu dans une cellule —
-    // sinon "Missing $ inserted" en cascade sur toute la suite du tableau.
-    const cellulesJetons = ex.jetons.map(j => `$${REF}${j}$`).join(" & ");
-    return `$${REF}${i + 1}$ & ${cellulesJetons} & $${REF}${formaterMilliers(ex.n, "\\,")}$ & \\\\\n\\hline`;
+    const cellulesJetons = ex.jetons.map(j => `$${j}$`).join(" & ");
+    return `$${i + 1}$ & ${cellulesJetons} & $${formaterMilliers(ex.n, "\\,")}$ & \\\\\n\\hline`;
   }).join("\n");
 
   return `\\documentclass[11pt,a4paper]{article}
@@ -1690,7 +1725,7 @@ Nom et prénom~: \\hrulefill \\hspace{1.2cm} Note~: \\hrulefill\\,/ \\hrulefill
 {\\small\\color{grisbrun}
 Opérations autorisées~: $+$, $-$, $\\times$, $\\div$, avec parenthèses si besoin.
 Chaque~jeton~doit~être~utilisé~exactement~une~fois.
-Mode~: ${MODES[modeActuel].label} (${nbJetons} jetons par nombre). Niveau~: ${NIVEAUX_JETONS[niveauActuel].label}.
+Mode~: ${MODES[modeActuel].libelle} (${nbJetons} jetons par nombre). Niveau~: ${NIVEAUX_JETONS[niveauActuel].label}.
 }
 \\vspace{10pt}
 \\begin{center}
