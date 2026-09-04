@@ -198,6 +198,11 @@ class ConstructionSchema {
     this.elBadge = badge;
     this.elFleche = fleche;
     this.elFeedback = feedback;
+    // Gardée pour figerCarte() : une fois validé, app.js affiche CETTE
+    // carte (l'agencement réellement construit par l'élève — ordre des
+    // parts inclus) plutôt que de regénérer le schéma canonique, qui
+    // peut différer (voir figerCarte).
+    this.schemaCarte = schemaCarte;
 
     this._brancherDropZone(zoneParts, 'parts');
     this._brancherDropZone(zoneTotal, 'total');
@@ -589,6 +594,17 @@ class ConstructionSchema {
     });
     input.addEventListener('click', (e) => e.stopPropagation());
     input.addEventListener('mousedown', (e) => e.stopPropagation());
+  }
+
+  /** Snapshot figé (non interactif) de la carte-schéma telle que l'élève
+   *  l'a construite et validée — ordre des parts, couleurs et groupe
+   *  répété compris. cloneNode(true) supprime au passage les listeners de
+   *  glisser-déposer, sans quoi la carte "validée" resterait modifiable.
+   *  Appelée par app.js (rendreProbleme) à la place de rendreSchema() une
+   *  fois schemaConstruitValide : le schéma canonique peut présenter les
+   *  parts dans un ordre différent de celui choisi par l'élève. */
+  figerCarte() {
+    return this.schemaCarte.cloneNode(true);
   }
 
   _reinitialiser() {

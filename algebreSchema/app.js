@@ -213,12 +213,26 @@ function rendreProbleme() {
     if (window.constructionSchema) {
       grille.appendChild(window.constructionSchema.construireVue(problemeActuel, () => {
         // Validé : le vrai diagramme prend la place de l'atelier, et la
-        // zone de réponse (x = ...) peut enfin se révéler.
+        // zone de réponse (x = ...) peut enfin se révéler. afficherDiagramme
+        // avait été mis à false en entrant en Construction (voir
+        // construireBoutonsAffichage) : sans le repasser à true ici, la
+        // branche else ci-dessous masquerait la grille et n'afficherait rien.
         schemaConstruitValide = true;
+        afficherDiagramme = true;
+        renderPanneauLateral();
         rendreProbleme();
         synchroniserZoneReponse();
       }));
       typesetMathJax([grille]);
+    }
+  } else if (modeConstructionActif && schemaConstruitValide) {
+    // Schéma tel que l'élève l'a CONSTRUIT et validé (voir figerCarte,
+    // ConstructionSchema.js) — pas rendreSchema(problemeActuel), qui
+    // régénérerait l'ordre canonique des parts et pourrait donc afficher
+    // un agencement différent de celui que l'élève a réellement posé.
+    grille.style.display = afficherDiagramme ? '' : 'none';
+    if (afficherDiagramme && window.constructionSchema) {
+      grille.appendChild(window.constructionSchema.figerCarte());
     }
   } else {
     grille.style.display = afficherDiagramme ? '' : 'none';
