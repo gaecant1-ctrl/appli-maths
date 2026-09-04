@@ -67,7 +67,6 @@
                 <svg id="arbre-svg"></svg>
                 <div id="arbre-noeuds"></div>
               </div>
-              <div id="arbre-popup"></div>
             </div>
           </div>
         </div>
@@ -97,6 +96,12 @@
   </main>
 
 </div>
+
+<!-- Rattaché au body (et non à #arbre-wrap) pour ne pas être rogné par le
+     overflow:auto du cadre de l'arbre : positionné en `fixed`, ses
+     coordonnées viennent directement de getBoundingClientRect() (repère
+     viewport), donc indépendantes du défilement de #arbre-wrap. -->
+<div id="arbre-popup"></div>
 
 <!-- ==================== OVERLAY FICHE PAPIER ==================== -->
 <div id="overlayFiche">

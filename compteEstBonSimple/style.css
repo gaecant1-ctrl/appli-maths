@@ -604,7 +604,7 @@ main {
   position: relative;
   width: 100%;
   min-width: 420px;
-  min-height: 260px;
+  min-height: 340px;
   overflow: auto;
   display: flex;
   justify-content: center;
@@ -682,10 +682,16 @@ main {
   outline-offset: 2px;
 }
 
-/* ---- popup de sélection (jeton / opération / suppression) ---- */
+/* ---- popup de sélection (jeton / opération / suppression) ----
+   Rattaché au <body> (voir index.html) et positionné en `fixed`, pas
+   `absolute` dans #arbre-wrap : ce dernier a overflow:auto pour permettre le
+   défilement d'un grand arbre, ce qui rognait le popup dès qu'il dépassait
+   du cadre visible. En `fixed`, ses coordonnées (calculées en JS via
+   getBoundingClientRect(), repère viewport) restent valables quel que soit
+   le défilement, et rien ne peut plus le clipper. */
 #arbre-popup {
-  position: absolute;
-  z-index: 20;
+  position: fixed;
+  z-index: 1200;
   background: var(--papier-encart);
   border: 1px solid var(--grille);
   border-radius: var(--rayon);

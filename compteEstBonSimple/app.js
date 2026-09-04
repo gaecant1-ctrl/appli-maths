@@ -844,14 +844,6 @@ function ouvrirPopupNoeud(noeud) {
   arbrePopup.innerHTML = "";
   arbrePopup.classList.add("visible");
 
-  // On requête le noeud fraîchement redessiné : rendreArbre() vient de
-  // remplacer tous les éléments, une référence prise avant serait périmée.
-  const divFrais = arbreNoeuds.querySelector('.arbre-noeud[data-id="' + noeud.id + '"]');
-  const rect = divFrais.getBoundingClientRect();
-  const rectZone = arbreWrap.getBoundingClientRect();
-  arbrePopup.style.left = (rect.left - rectZone.left + arbreWrap.scrollLeft) + "px";
-  arbrePopup.style.top = (rect.bottom - rectZone.top + arbreWrap.scrollTop + 8) + "px";
-
   if (noeud.type === "placeholder") {
     construireMenuPlaceholder(noeud);
   } else if (noeud.type === "jeton") {
@@ -859,6 +851,25 @@ function ouvrirPopupNoeud(noeud) {
   } else {
     construireMenuOp(noeud);
   }
+
+  // Le popup est rattaché au <body> et positionné en `fixed` (voir CSS) :
+  // ses coordonnées se calculent directement dans le repère viewport, donc
+  // sans dépendre du défilement de #arbre-wrap ni être rognées par son
+  // overflow:auto. On requête le noeud fraîchement redessiné : rendreArbre()
+  // vient de remplacer tous les éléments, une référence prise avant serait
+  // périmée. Le contenu est déjà en place ci-dessus, donc offsetWidth/Height
+  // reflètent sa taille réelle pour le clampage aux bords de l'écran.
+  const divFrais = arbreNoeuds.querySelector('.arbre-noeud[data-id="' + noeud.id + '"]');
+  const rect = divFrais.getBoundingClientRect();
+  const marge = 8;
+  let left = rect.left;
+  let top = rect.bottom + marge;
+  left = Math.min(left, window.innerWidth - arbrePopup.offsetWidth - marge);
+  left = Math.max(left, marge);
+  top = Math.min(top, window.innerHeight - arbrePopup.offsetHeight - marge);
+  top = Math.max(top, marge);
+  arbrePopup.style.left = left + "px";
+  arbrePopup.style.top = top + "px";
 }
 
 function construireMenuPlaceholder(noeud) {
@@ -997,8 +1008,15 @@ function construireMenuOp(noeud) {
   ajouterBoutonSupprimerTerme(noeud);
 }
 
-arbreWrap.addEventListener("click", () => {
-  if (arbrePopup.classList.contains("visible")) fermerPopup();
+// Le popup vit désormais hors de #arbre-wrap (voir index.html/CSS), donc on
+// écoute au niveau du document plutôt que sur arbreWrap : un clic sur une
+// case d'arbre appelle déjà e.stopPropagation() (voir dessiner() plus haut)
+// et n'atteint donc jamais ce listener ; tout le reste (y compris un clic
+// hors du cadre, le popup pouvant désormais en dépasser) ferme le popup.
+document.addEventListener("click", (e) => {
+  if (!arbrePopup.classList.contains("visible")) return;
+  if (e.target.closest("#arbre-popup")) return;
+  fermerPopup();
 });
 
 // ==================== DÉROULÉ DU JEU ====================
