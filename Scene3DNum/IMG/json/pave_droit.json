@@ -1,0 +1,54 @@
+{
+  "consignes": {
+    "titre": "Le pavé droit",
+    "texte": "Calcule le nombre total de cubes de cette construction."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "p*q*r"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "p",
+      "sizeZ": "q",
+      "sizeY": "r"
+    },
+    "position_camera": {
+      "cameraX": "(p-1)/2",
+      "cameraY": 10,
+      "cameraZ": 18,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "parametres": {
+    "p": { "n_min": 3, "n_max": 8, "label": "Longueur" },
+    "q": { "n_min": 2, "n_max": 6, "label": "Largeur" },
+    "r": { "n_min": 2, "n_max": 6, "label": "Hauteur" }
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "0",
+        "y": "0",
+        "z": "0"
+      },
+      "point2": {
+        "x": "p-1",
+        "y": "0",
+        "z": "q-1"
+      },
+      "point3": {
+        "x": "p-1",
+        "y": "r-1",
+        "z": "q-1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "consignes": {
+    "titre": "Le carré aux coins rentrés",
+    "texte": "Calcule le nombre total de cubes de cette construction."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "(4*n-4)*h"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "n",
+      "sizeZ": "n",
+      "sizeY": "h"
+    },
+    "position_camera": {
+      "cameraX": "(n-1)/2",
+      "cameraY": 12,
+      "cameraZ": 22,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "parametres": {
+    "n": { "n_min": 5, "n_max": 9, "label": "Côté du carré" },
+    "h": { "n_min": 2, "n_max": 6, "label": "Hauteur du prisme" }
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "1", "y": "0", "z": "0" },
+      "point2": { "x": "n-2", "y": "0", "z": "0" },
+      "point3": { "x": "n-2", "y": "h-1", "z": "0" }
+    },
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "1", "y": "0", "z": "n-1" },
+      "point2": { "x": "n-2", "y": "0", "z": "n-1" },
+      "point3": { "x": "n-2", "y": "h-1", "z": "n-1" }
+    },
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "0", "y": "0", "z": "1" },
+      "point2": { "x": "0", "y": "0", "z": "n-2" },
+      "point3": { "x": "0", "y": "h-1", "z": "n-2" }
+    },
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n-1", "y": "0", "z": "1" },
+      "point2": { "x": "n-1", "y": "0", "z": "n-2" },
+      "point3": { "x": "n-1", "y": "h-1", "z": "n-2" }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "1", "y": "0", "z": "1" },
+      "point2": { "x": "1", "y": "0", "z": "1" },
+      "point3": { "x": "1", "y": "h-1", "z": "1" }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n-2", "y": "0", "z": "1" },
+      "point2": { "x": "n-2", "y": "0", "z": "1" },
+      "point3": { "x": "n-2", "y": "h-1", "z": "1" }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "1", "y": "0", "z": "n-2" },
+      "point2": { "x": "1", "y": "0", "z": "n-2" },
+      "point3": { "x": "1", "y": "h-1", "z": "n-2" }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n-2", "y": "0", "z": "n-2" },
+      "point2": { "x": "n-2", "y": "0", "z": "n-2" },
+      "point3": { "x": "n-2", "y": "h-1", "z": "n-2" }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "consignes": {
+    "titre": "La corde à nœuds",
+    "texte": "Calcule le nombre total de cubes de cette construction."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "n*a^3 + (n-1)*b"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "n*a+(n-1)*b",
+      "sizeZ": "a",
+      "sizeY": "a"
+    },
+    "position_camera": {
+      "cameraX": "(n*a+(n-1)*b-1)/2",
+      "cameraY": 12,
+      "cameraZ": 30,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "parametres": {
+    "a": { "n_min": 3, "n_max": 7, "step": 2, "label": "Arête d'un nœud (cube)" },
+    "b": { "n_min": 2, "n_max": 6, "label": "Longueur d'un segment de jonction" },
+    "n": { "n_min": 2, "n_max": 5, "label": "Nombre de nœuds" }
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": true,
+      "nombre_repetitions": "n",
+      "operation": "add",
+      "point1": {
+        "x": "i*(a+b)+a-1",
+        "y": "a-1",
+        "z": "a-1"
+      },
+      "point2": {
+        "x": "i*(a+b)",
+        "y": "a-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "i*(a+b)",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": true,
+      "nombre_repetitions": "n-1",
+      "operation": "add",
+      "point1": {
+        "x": "i*(a+b)+a",
+        "y": "(a-1)/2",
+        "z": "(a-1)/2"
+      },
+      "point2": {
+        "x": "i*(a+b)+a+b-1",
+        "y": "(a-1)/2",
+        "z": "(a-1)/2"
+      },
+      "point3": {
+        "x": "i*(a+b)+a+b-1",
+        "y": "(a-1)/2",
+        "z": "(a-1)/2"
+      }
+    }
+  ]
+}

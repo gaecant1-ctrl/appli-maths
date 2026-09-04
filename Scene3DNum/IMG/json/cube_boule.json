@@ -1,0 +1,456 @@
+{
+  "consignes": {
+    "titre": "Le cube aux huit coins",
+    "texte": "Calcule le nombre total de cubes de cette construction."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "8*n^3 + 12*n"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "3*n",
+      "sizeZ": "3*n",
+      "sizeY": "3*n"
+    },
+    "position_camera": {
+      "cameraX": 22,
+      "cameraY": 18,
+      "cameraZ": 26,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "parametres": {
+    "n": {
+      "n_min": 2,
+      "n_max": 6,
+      "step": 1,
+      "label": "Arête du cube"
+    }
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "n-1",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "0",
+        "y": "n-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "0",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "n-1",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "0",
+        "y": "n-1",
+        "z": "3*n-1"
+      },
+      "point3": {
+        "x": "0",
+        "y": "0",
+        "z": "3*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "2*n",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "0",
+        "y": "2*n",
+        "z": "0"
+      },
+      "point3": {
+        "x": "0",
+        "y": "3*n-1",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "2*n",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "0",
+        "y": "2*n",
+        "z": "3*n-1"
+      },
+      "point3": {
+        "x": "0",
+        "y": "3*n-1",
+        "z": "3*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "n-1",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "3*n-1",
+        "y": "n-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "3*n-1",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "n-1",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "3*n-1",
+        "y": "n-1",
+        "z": "3*n-1"
+      },
+      "point3": {
+        "x": "3*n-1",
+        "y": "0",
+        "z": "3*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "2*n",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "3*n-1",
+        "y": "2*n",
+        "z": "0"
+      },
+      "point3": {
+        "x": "3*n-1",
+        "y": "3*n-1",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "2*n",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "3*n-1",
+        "y": "2*n",
+        "z": "3*n-1"
+      },
+      "point3": {
+        "x": "3*n-1",
+        "y": "3*n-1",
+        "z": "3*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n",
+        "y": "n-1",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "2*n-1",
+        "y": "n-1",
+        "z": "n-1"
+      },
+      "point3": {
+        "x": "2*n-1",
+        "y": "n-1",
+        "z": "n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n",
+        "y": "n-1",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "2*n-1",
+        "y": "n-1",
+        "z": "2*n"
+      },
+      "point3": {
+        "x": "2*n-1",
+        "y": "n-1",
+        "z": "2*n"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n",
+        "y": "2*n",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "2*n-1",
+        "y": "2*n",
+        "z": "n-1"
+      },
+      "point3": {
+        "x": "2*n-1",
+        "y": "2*n",
+        "z": "n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n",
+        "y": "2*n",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "2*n-1",
+        "y": "2*n",
+        "z": "2*n"
+      },
+      "point3": {
+        "x": "2*n-1",
+        "y": "2*n",
+        "z": "2*n"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "n",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "n-1",
+        "y": "2*n-1",
+        "z": "n-1"
+      },
+      "point3": {
+        "x": "n-1",
+        "y": "2*n-1",
+        "z": "n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "n",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "n-1",
+        "y": "2*n-1",
+        "z": "2*n"
+      },
+      "point3": {
+        "x": "n-1",
+        "y": "2*n-1",
+        "z": "2*n"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "n",
+        "z": "n-1"
+      },
+      "point2": {
+        "x": "2*n",
+        "y": "2*n-1",
+        "z": "n-1"
+      },
+      "point3": {
+        "x": "2*n",
+        "y": "2*n-1",
+        "z": "n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "n",
+        "z": "2*n"
+      },
+      "point2": {
+        "x": "2*n",
+        "y": "2*n-1",
+        "z": "2*n"
+      },
+      "point3": {
+        "x": "2*n",
+        "y": "2*n-1",
+        "z": "2*n"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "n-1",
+        "z": "n"
+      },
+      "point2": {
+        "x": "n-1",
+        "y": "n-1",
+        "z": "2*n-1"
+      },
+      "point3": {
+        "x": "n-1",
+        "y": "n-1",
+        "z": "2*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "n-1",
+        "y": "2*n",
+        "z": "n"
+      },
+      "point2": {
+        "x": "n-1",
+        "y": "2*n",
+        "z": "2*n-1"
+      },
+      "point3": {
+        "x": "n-1",
+        "y": "2*n",
+        "z": "2*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "n-1",
+        "z": "n"
+      },
+      "point2": {
+        "x": "2*n",
+        "y": "n-1",
+        "z": "2*n-1"
+      },
+      "point3": {
+        "x": "2*n",
+        "y": "n-1",
+        "z": "2*n-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "2*n",
+        "y": "2*n",
+        "z": "n"
+      },
+      "point2": {
+        "x": "2*n",
+        "y": "2*n",
+        "z": "2*n-1"
+      },
+      "point3": {
+        "x": "2*n",
+        "y": "2*n",
+        "z": "2*n-1"
+      }
+    }
+  ]
+}

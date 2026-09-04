@@ -1,0 +1,78 @@
+{
+  "affichage_variable": "n",
+  "consignes": {
+    "titre": "Le peigne à n dents",
+"texte": "Exprime le nombre total de cubes en fonction de $n$."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "x^2 + 2*x - 1"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "2*x-1",
+      "sizeZ": "x+1",
+      "sizeY": "1"
+    },
+    "position_camera": {
+      "cameraX": 20,
+      "cameraY": 14,
+      "cameraZ": 10,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "slider": {
+    "n_min": 3,
+    "n_max": 10,
+    "n_depart": 5,
+    "step": 1
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#ffb703",
+      "sequence": false,
+      "operation": "add",
+      "point1": {
+        "x": "0",
+        "y": "0",
+        "z": "0"
+      },
+      "point2": {
+        "x": "2*x-2",
+        "y": "0",
+        "z": "0"
+      },
+      "point3": {
+        "x": "2*x-2",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": true,
+      "nombre_repetitions": "x",
+      "operation": "add",
+      "point1": {
+        "x": "2*i",
+        "y": "0",
+        "z": "1"
+      },
+      "point2": {
+        "x": "2*i",
+        "y": "0",
+        "z": "x"
+      },
+      "point3": {
+        "x": "2*i",
+        "y": "0",
+        "z": "x"
+      }
+    }
+  ]
+}

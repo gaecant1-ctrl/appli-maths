@@ -1,0 +1,143 @@
+{
+  "consignes": {
+    "titre": "Les cloisons",
+    "texte": "Calcule le nombre total de cubes de cette construction."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "n*a^2 + 4*(n-1)*b"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "(n-1)*(b+1)+1",
+      "sizeZ": "a",
+      "sizeY": "a"
+    },
+    "position_camera": {
+      "cameraX": "((n-1)*(b+1))/2",
+      "cameraY": 14,
+      "cameraZ": 30,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#1f2724"
+  },
+  "parametres": {
+    "a": { "n_min": 3, "n_max": 6, "label": "Côté d'une plaque" },
+    "n": { "n_min": 2, "n_max": 5, "label": "Nombre de cloisons" },
+    "b": { "n_min": 2, "n_max": 6, "label": "Longueur des tiges violettes" }
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": true,
+      "nombre_repetitions": "n",
+      "operation": "add",
+      "point1": {
+        "x": "i*(b+1)",
+        "y": "0",
+        "z": "0"
+      },
+      "point2": {
+        "x": "i*(b+1)",
+        "y": "a-1",
+        "z": "a-1"
+      },
+      "point3": {
+        "x": "i*(b+1)",
+        "y": "a-1",
+        "z": "a-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": true,
+      "nombre_repetitions": "n-1",
+      "operation": "add",
+      "point1": {
+        "x": "i*(b+1)+1",
+        "y": "0",
+        "z": "0"
+      },
+      "point2": {
+        "x": "i*(b+1)+b",
+        "y": "0",
+        "z": "0"
+      },
+      "point3": {
+        "x": "i*(b+1)+b",
+        "y": "0",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": true,
+      "nombre_repetitions": "n-1",
+      "operation": "add",
+      "point1": {
+        "x": "i*(b+1)+1",
+        "y": "0",
+        "z": "a-1"
+      },
+      "point2": {
+        "x": "i*(b+1)+b",
+        "y": "0",
+        "z": "a-1"
+      },
+      "point3": {
+        "x": "i*(b+1)+b",
+        "y": "0",
+        "z": "a-1"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": true,
+      "nombre_repetitions": "n-1",
+      "operation": "add",
+      "point1": {
+        "x": "i*(b+1)+1",
+        "y": "a-1",
+        "z": "0"
+      },
+      "point2": {
+        "x": "i*(b+1)+b",
+        "y": "a-1",
+        "z": "0"
+      },
+      "point3": {
+        "x": "i*(b+1)+b",
+        "y": "a-1",
+        "z": "0"
+      }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": true,
+      "nombre_repetitions": "n-1",
+      "operation": "add",
+      "point1": {
+        "x": "i*(b+1)+1",
+        "y": "a-1",
+        "z": "a-1"
+      },
+      "point2": {
+        "x": "i*(b+1)+b",
+        "y": "a-1",
+        "z": "a-1"
+      },
+      "point3": {
+        "x": "i*(b+1)+b",
+        "y": "a-1",
+        "z": "a-1"
+      }
+    }
+  ]
+}

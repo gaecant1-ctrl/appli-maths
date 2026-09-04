@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scène3D/Cubes et Nombres</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "orbit": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+      }
+    }
+  </script>
+  <script src="./Scene3D_files/math.js"></script>
+  <script src="./Scene3D_files/html2canvas.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<header>
+  <div id="titre_appli"><b>Scène3D</b>/<i>Cubes et Nombres</i></div>
+  <div class="filet-header"></div>
+  
+  <div class="header-actions">
+    <div class="groupe-affichage">
+      <button id="btn_monochrome" class="btn-header actif">
+        <img src="./Scene3D_files/icone_monochrome.svg" alt=""><span id="txt_btn_monochrome">couleurs</span>
+      </button>
+      <div class="filet-header"></div>
+      <button id="btn_direction" class="btn-header btn-dir" title="Cliquer pour changer de direction"><span id="txt_btn_direction">XYZ</span></button>
+      <button id="btn_explosion" class="btn-header">
+        <img src="./Scene3D_files/icone_explosion.svg" alt=""><span id="txt_btn_explosion">Exploser</span>
+      </button>
+    </div>
+
+    <div class="groupe-actions">
+      <button id="btn_abandonner" class="btn-header">
+        <img src="./Scene3D_files/icone_abandon.svg" alt="">Abandon
+      </button>
+      <button id="btn_suivant" class="btn-header accent" disabled>
+        Suivant<img src="./Scene3D_files/icone_suivant.svg" alt="">
+      </button>
+    </div>
+
+    <div class="filet-header"></div>
+    <div id="header_score" class="header-score">
+      <span>Épreuve :</span> <span id="score_actuel">0</span> <span>/</span> <span id="score_total">0</span>
+    </div>
+  </div>
+</header>
+
+  <div class="app" id="application">
+    <input type="hidden" id="ref_lien" value="squelettes//inclure_scene2D_3D/commun/images/">
+
+    <aside class="left" id="sidebar">
+      <div class="panneau_corps">
+        <div class="form-group">
+          <label for="input_formule" class="form-label">
+            Calcule le nombre total de cubes de cette construction <br> et saisis ton expression numérique :
+          </label>
+        </div>
+
+        <div class="input-row">
+          <input type="text" id="input_formule" placeholder="expression numérique">
+          <button id="btn_valider_formule">Valider</button>
+        </div>
+
+        <div id="resultat_formule"></div>
+
+        <div class="tableau_zone_unique" style="border-color: #3f6fb0;">
+          <table id="tableau_validation">
+            <caption>Calcul en cours</caption>
+            <thead>
+              <tr>
+                <th>Expression numérique</th>
+                <th id="type_colonne" style="width:90px">Volume</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="bloc_fixe_haut">
+              <tr class="expression" id="ligne_calcul_cours">
+                <td class="cont_val_isole" style="background-color: #f4f6f5;"></td>
+                <td class="cont_res_isole" style="background-color: #f4f6f5; font-weight: bold;"></td>
+                <td class="cont_suppr"><button type="button" class="btn_supprimer_ligne" data-ligne="ligne_calcul_cours" title="Vider cette ligne">✕</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+    
+    <main id="zone_scene_globale">
+      <div id="conteneur_slider">
+        <div class="zone_texte_consigne">
+          <h3 id="volant_titre">Chargement...</h3>
+          <div id="volant_descriptif">Chargement de la consigne...</div>
+        </div>
+      </div>
+
+      <div id="conteneur_graphique">
+        <canvas id="canvas" aria-label="Scène 3D" data-engine="three.js r180"></canvas>
+        <div id="fantome"></div>
+      </div>
+
+      <div id="menu_canvas_bas">
+        <div id="bt_reset_camera" class="bt_menu">
+          <img id="icone_bouton_reset_camera" src="./Scene3D_files/icone_accueil_scene3d_2.svg" title="Affichage Standard">
+        </div>
+        <div id="bt_grille" class="bt_menu">
+          <img id="icone_bouton_grille" src="./Scene3D_files/icone_grille_2.svg" title="Afficher la grille">
+        </div>
+        <div id="bt_zoom_plus" class="bt_menu">
+          <img id="icone_bouton_zoom_plus" src="./Scene3D_files/icone_zoom_plus_2.svg" title="Zoom +">
+        </div>
+        <div id="bt_zoom_moins" class="bt_menu">
+          <img id="icone_bouton_zoom_moins" src="./Scene3D_files/icone_zoom_moins_2.svg" title="Zoom -">
+        </div>
+        <div id="bt_grille_haut_bis" class="bt_menu">
+          <img id="icone_bouton_grille_haut" src="./Scene3D_files/icone_grille_haut_2.svg" title="Monter la grille">
+        </div>
+        <div id="bt_grille_bas_bis" class="bt_menu">
+          <img id="icone_bouton_grille_bas" src="./Scene3D_files/icone_grille_bas_2.svg" title="Baisser la grille">
+        </div>    
+        <div id="bt_perspective" class="bt_menu">
+          <img id="icone_bouton_perspective" src="./Scene3D_files/icone_perspective.svg" title="Perspective conique / parallèle">
+        </div>
+        <div id="bt_rotation_auto" class="bt_menu">
+          <img id="icone_bouton_rotation_auto" src="./Scene3D_files/icone_rotation.svg" title="Arrêter la rotation automatique">
+        </div>
+        <div id="bt_parametres_figure" class="bt_menu" hidden>
+          <img id="icone_bouton_parametres_figure" src="./Scene3D_files/icone_parametres.svg" title="Configurer les paramètres de la figure">
+        </div>
+      </div>
+
+      <div id="panneau_parametres_figure" hidden>
+        <div id="panneau_parametres_titre">Paramètres de la figure</div>
+        <div id="panneau_parametres_champs"></div>
+        <div id="panneau_parametres_actions">
+          <button type="button" id="bt_parametres_aleatoire">Tirer au sort</button>
+        </div>
+      </div>
+
+      <div id="conteneur_dim" style="display: none;">
+        <div id="dim_fenetre">382x526 px</div>
+      </div>
+    </main>
+  </div>  
+  
+  <footer>
+    Outil basé sur Scène3D (IREM Paris-Nord) – Propulsé par <i>Three.js</i> 
+  </footer>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'orbit';
+
+    let state_data;
+    let timer;
+    let f;
+    let type;
+    let nbCourant = 5;
+    let valeursCourantes = { x: 5 };
+
+    // ---------- État Scene3D ----------
+    const key = (x,y,z)=>`${x},${y},${z}`;
+    const ref_lien = document.getElementById('ref_lien').value || null;
+    const state = { sizeX:10, sizeZ:10, sizeY:10, ty:5, cameraX:20, cameraY:10, cameraZ:25, rectangles:new Map(), edges:new Map(), tool:'add', gridVisible:false, edgesVisible:true, qualite:1, currentColor:'#3b82f6', edgeColor:'#0b1220', voxels:new Map()};
+
+    const canvas = document.getElementById('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false, preserveDrawingBuffer:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    const scene = new THREE.Scene(); 
+    scene.background = new THREE.Color('#ffffff');
+
+    let init_scene = true;
+    const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 2000);
+    const controls = new OrbitControls(camera, renderer.domElement); 
+    controls.enableDamping = true; 
+    controls.dampingFactor = .08;
+
+    let currentCamera = camera;
+    let myReq; 
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xdfe7ef, 1.5); scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 5); dir.position.set(-1,1,1);
+    var lightHolder = new THREE.Group();
+    lightHolder.add(dir);
+    scene.add(lightHolder);
+
+    let grid, floor;
+
+    // ---------- Matériaux ----------
+    const unit = 1;
+    let matCube = [
+      new THREE.MeshStandardMaterial({ color:0x3b82f6, metalness:.1, roughness:.6, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1 }),
+      new THREE.MeshStandardMaterial({ color:0x3b82f6, metalness:.1, roughness:.6, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1 }),
+      new THREE.MeshStandardMaterial({ color:0x3b82f6, metalness:.1, roughness:.6, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1 }),
+      new THREE.MeshStandardMaterial({ color:0x3b82f6, metalness:.1, roughness:.6, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1 }),
+      new THREE.MeshStandardMaterial({ color:0x3b82f6, metalness:.1, roughness:.6, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1 }),
+      new THREE.MeshStandardMaterial({ color:0x3b82f6, metalness:.1, roughness:.6, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1 }),
+    ];
+
+    let matRectangle = new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide });
+    let matEdge = new THREE.LineBasicMaterial({color:0x0b1220, transparent:true, depthTest:true, depthWrite:true });
+    const EBOX = new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1));
+
+    const toolButtonsCanvas = {
+      reset:{ ref_bt:document.getElementById('bt_reset_camera'), ref_icone:document.getElementById('icone_bouton_reset_camera'), lien_image1:ref_lien+"icone_accueil_scene3d_1.svg", lien_image2:ref_lien+"icone_accueil_scene3d_2.svg" },
+      zoom_plus:{ ref_bt:document.getElementById('bt_zoom_plus'), ref_icone:document.getElementById('icone_bouton_zoom_plus'), lien_image1:ref_lien+"icone_zoom_plus_1.svg", lien_image2:ref_lien+"icone_zoom_plus_2.svg" },
+      zoom_moins:{ ref_bt:document.getElementById('bt_zoom_moins'), ref_icone:document.getElementById('icone_bouton_zoom_moins'), lien_image1:ref_lien+"icone_zoom_moins_1.svg", lien_image2:ref_lien+"icone_zoom_moins_2.svg" },
+      grille:{ ref_bt:document.getElementById('bt_grille'), ref_icone:document.getElementById('icone_bouton_grille'), lien_image1:ref_lien+"icone_grille_1.svg", lien_image2:ref_lien+"icone_grille_2.svg" },
+      grille_haut:{ ref_bt:document.getElementById('bt_grille_haut_bis'), ref_icone:document.getElementById('icone_bouton_grille_haut'), lien_image1:ref_lien+"icone_grille_haut_2.svg", lien_image2:ref_lien+"icone_grille_haut_2.svg" },
+      grille_bas:{ ref_bt:document.getElementById('bt_grille_bas_bis'), ref_icone:document.getElementById('icone_bouton_grille_bas'), lien_image1:ref_lien+"icone_grille_bas_1.svg", lien_image2:ref_lien+"icone_grille_bas_2.svg" }
+    };
+
+    // ---------- Événements ----------
+    document.getElementById("conteneur_dim").style.display = "none";
+    window.addEventListener('resize', () => {renderOnce();dim_fenetre()});
+    window.addEventListener("contextmenu", (e) => {e.preventDefault();});
+
+    toolButtonsCanvas["reset"]["ref_bt"].onclick = () => reset_affichage();
+    toolButtonsCanvas["zoom_plus"]["ref_bt"].onclick = () => zoom_plus();
+    toolButtonsCanvas["zoom_moins"]["ref_bt"].onclick = () => zoom_moins();
+    toolButtonsCanvas["grille"]["ref_bt"].onclick = () => toggleGrid();
+    toolButtonsCanvas["grille_haut"]["ref_bt"].onclick = () => grille_haut();
+    toolButtonsCanvas["grille_bas"]["ref_bt"].onclick = () => grille_bas();
+
+    const btPerspective = document.getElementById('bt_perspective');
+    if (btPerspective) {
+      btPerspective.onclick = () => togglePerspective();
+    }
+
+    const btRotationAuto = document.getElementById('bt_rotation_auto');
+    if (btRotationAuto) {
+      btRotationAuto.onclick = () => toggleRotationAuto();
+    }
+
+    function resizeRendererToDisplaySizeCamera(){
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight; 
+      if (canvas.width !== w || canvas.height !== h) {
+        camera.aspect = w / h; 
+        renderer.setSize(w, h, false);
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    function render(){ 
+      resizeRendererToDisplaySizeCamera();
+      lightHolder.quaternion.copy(camera.quaternion);
+      myReq=requestAnimationFrame(render);
+      controls.update();
+      updateExplosion();
+      if (perspectiveParallele) { ajusterPlansClipping(); camera.updateProjectionMatrix(); }
+      renderer.render(scene,camera); 
+    }
+
+    function renderOnce(){
+      resizeRendererToDisplaySizeCamera();
+      lightHolder.quaternion.copy(camera.quaternion);
+      controls.update();
+      renderer.render(scene,camera); 
+    }
+
+    function dim_fenetre(){
+      const w=canvas.clientWidth, h=canvas.clientHeight;
+      document.getElementById("conteneur_dim").style.display="block";
+      document.getElementById("dim_fenetre").textContent=w+"x"+h+" px";
+      clearTimeout(timer);
+      timer = setTimeout(() => { document.getElementById("conteneur_dim").style.display="none"; }, 500);
+    }
+
+    // ---------- Moteur Cubes Engine ----------
+    function inBounds(x,y,z){ return x>=0 && x<state.sizeX && z>=0 && z<state.sizeZ && y>=0 && y<state.sizeY; }
+    
+    function attachEdges(key,mesh){ 
+      const e = new THREE.LineSegments(EBOX, matEdge.clone()); 
+      e.position.copy(mesh.position); 
+      e.visible = state.edgesVisible; 
+      e.material.color.set(state.edgeColor); 
+      scene.add(e); 
+      mesh.userData.edge = e;
+      state.edges.set(key,e.material);
+    }
+
+    // ---------- Moteur Cubes Engine Adjacents ----------
+    // Couleur des faces intérieures révélées par le retrait d'un cube voisin.
+    // Ces faces doivent rester de cette couleur même quand le reste du cube
+    // change de teinte (mode monochrome, etc.) : leurs index sont mémorisés
+    // dans userData.facesTrou pour que recolorAllMaterial puisse les épargner.
+    const couleurFondTrou = 0x1e3a8a;
+
+    function recolorAllMaterial(mat,color,facesTrou){
+      for( var i=0; i<6; i++ ) {
+        mat[i].color.set(facesTrou && facesTrou.has(i) ? couleurFondTrou : color);
+      }
+    }
+    function SetVisibleOneMaterial(cube,index,etat){ if (index>=0 && index<=5){ cube.material[index].visible=etat; } }
+
+    function addVoxel(x,y,z,couleur){
+      if(!inBounds(x,y,z)) {return false;}
+      const k = key(x,y,z);
+      if(state.voxels.has(k)) {return false;}
+      let cubeMat = [];
+      for(let i=0; i<6; i++) cubeMat.push(matCube[i].clone());
+      recolorAllMaterial(cubeMat, monochromeActif ? COULEUR_MONOCHROME : couleur);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(unit,unit,unit), cubeMat);
+      m.position.set(x,y,z);
+      m.userData = { x,y,z, color: couleur, facesTrou: new Set() };
+      scene.add(m);
+      attachEdges(k,m);
+      state.voxels.set(k,m);
+      updateMaterialCubesAdjacents(x,y,z,"add");
+      return true; 
+    }
+
+    function removeVoxel(x,y,z){ 
+      const k=key(x,y,z); 
+      const m=state.voxels.get(k); 
+      if(!m) {return false;} 
+      if(m.userData.edge) {scene.remove(m.userData.edge);}
+      scene.remove(m); m.geometry.dispose(); 
+      state.voxels.delete(k);
+      updateMaterialCubesAdjacents(x,y,z,"remove");
+      return true; 
+    }
+
+    function clearVoxels(){ 
+      for(const [k,m] of Array.from(state.voxels)){ 
+        if(m.userData.edge) {scene.remove(m.userData.edge);}
+        scene.remove(m); m.geometry.dispose(); 
+        state.voxels.delete(k);
+      } 
+    }
+
+    // ---------- Mode monochrome ----------
+    let monochromeActif = true;
+    const COULEUR_MONOCHROME = '#ffb703';
+
+    function toggleMonochrome(){
+      monochromeActif = !monochromeActif;
+      for(const m of state.voxels.values()){
+        const couleurCible = monochromeActif ? COULEUR_MONOCHROME : m.userData.color;
+        // En mode monochrome, les faces "trou" se fondent comme le reste ;
+        // au retour aux couleurs, on leur redonne leur teinte de fond de trou.
+        recolorAllMaterial(m.material, couleurCible, monochromeActif ? null : m.userData.facesTrou);
+      }
+      const texteBouton = document.getElementById('txt_btn_monochrome');
+      if (texteBouton) {
+        texteBouton.textContent = monochromeActif ? 'couleurs' : 'monochrome';
+      }
+      const bouton = document.getElementById('btn_monochrome');
+      if (bouton) {
+        bouton.classList.toggle('actif', monochromeActif);
+      }
+    }
+
+    // ---------- Perspective conique / parallèle ----------
+    // On garde une seule PerspectiveCamera (pour ne jamais perturber
+    // OrbitControls) et on simule la perspective parallèle en réduisant
+    // fortement le FOV tout en reculant la caméra le long de sa direction
+    // de vue actuelle, ce qui conserve la taille apparente du solide.
+    let perspectiveParallele = false;
+    const FOV_CONIQUE = 50;
+    const FACTEUR_REDUCTION_FOV = 20;
+    const FOV_PARALLELE = FOV_CONIQUE / FACTEUR_REDUCTION_FOV;
+    const NEAR_CONIQUE = 0.1;
+    const FAR_CONIQUE = 2000;
+    // Marge de part et d'autre du target, largement suffisante pour englober
+    // n'importe quel solide raisonnable (les JSON de cet outil restent petits).
+    const MARGE_CLIPPING_PARALLELE = 60;
+
+    // En mode parallèle la caméra est très loin (souvent 300-800 unités) ;
+    // garder near/far par défaut (0.1 / 2000) donnerait un ratio far/near de
+    // l'ordre de 20000, ce qui dégrade fortement la précision du z-buffer à
+    // cette distance et provoque les artefacts de bord ("fuyantes" sur les
+    // sommets). On resserre donc near/far autour de la distance réelle de la
+    // caméra à son target dès qu'on est en mode parallèle.
+    function ajusterPlansClipping(){
+      if (perspectiveParallele) {
+        const distance = camera.position.distanceTo(controls.target);
+        camera.near = Math.max(0.1, distance - MARGE_CLIPPING_PARALLELE);
+        camera.far = distance + MARGE_CLIPPING_PARALLELE;
+      } else {
+        camera.near = NEAR_CONIQUE;
+        camera.far = FAR_CONIQUE;
+      }
+    }
+
+    function togglePerspective(){
+      perspectiveParallele = !perspectiveParallele;
+
+      // Direction actuelle de la caméra vers son point regardé (target),
+      // et distance actuelle entre les deux.
+      const directionVue = new THREE.Vector3().subVectors(camera.position, controls.target);
+      const distanceActuelle = directionVue.length();
+      directionVue.normalize();
+
+      if (perspectiveParallele) {
+        // tan(FOV_ancien/2) * distance_ancienne = tan(FOV_nouveau/2) * distance_nouvelle
+        const ratio = Math.tan(THREE.MathUtils.degToRad(FOV_CONIQUE / 2)) / Math.tan(THREE.MathUtils.degToRad(FOV_PARALLELE / 2));
+        const nouvelleDistance = distanceActuelle * ratio;
+        camera.position.copy(controls.target).addScaledVector(directionVue, nouvelleDistance);
+        camera.fov = FOV_PARALLELE;
+      } else {
+        const ratio = Math.tan(THREE.MathUtils.degToRad(FOV_PARALLELE / 2)) / Math.tan(THREE.MathUtils.degToRad(FOV_CONIQUE / 2));
+        const nouvelleDistance = distanceActuelle * ratio;
+        camera.position.copy(controls.target).addScaledVector(directionVue, nouvelleDistance);
+        camera.fov = FOV_CONIQUE;
+      }
+      ajusterPlansClipping();
+      camera.updateProjectionMatrix();
+      controls.update();
+      renderOnce();
+
+      const icone = document.getElementById('icone_bouton_perspective');
+      if (icone) {
+        icone.title = perspectiveParallele ? "Revenir à la perspective conique" : "Perspective conique / parallèle";
+        icone.src = perspectiveParallele
+          ? "./Scene3D_files/icone_perspective_parallele.svg"
+          : "./Scene3D_files/icone_perspective.svg";
+      }
+      const bouton = document.getElementById('bt_perspective');
+      if (bouton) {
+        bouton.classList.toggle('actif', perspectiveParallele);
+      }
+    }
+
+    // ---------- Mode explosion ----------
+    let explosionActive = false;
+    let coeffExplosion = 1;      // valeur courante, animée
+    let coeffExplosionCible = 1; // valeur visée (1 = normal, FACTEUR_EXPLOSION = explosé)
+    let directionExplosion = 'xyz'; // 'x', 'y', 'z' ou 'xyz' — direction utilisée au prochain déclenchement
+    const FACTEUR_EXPLOSION = 2.5;
+    const VITESSE_EXPLOSION = 0.06; // fraction de l'écart restant parcourue par frame (ease-out / suspension)
+
+    // ---------- Rotation automatique autour de l'axe vertical ----------
+    controls.autoRotateSpeed = 2.5;
+    controls.autoRotate = true;
+
+    function toggleRotationAuto(){
+      controls.autoRotate = !controls.autoRotate;
+      const bouton = document.getElementById('bt_rotation_auto');
+      if (bouton) {
+        bouton.classList.toggle('actif', controls.autoRotate);
+      }
+      const icone = document.getElementById('icone_bouton_rotation_auto');
+      if (icone) {
+        icone.title = controls.autoRotate ? "Arrêter la rotation automatique" : "Rotation automatique autour de l'axe vertical";
+      }
+    }
+
+    function cyclerDirectionExplosion(){
+      const ordre = ['x', 'y', 'z', 'xyz'];
+      const indexCourant = ordre.indexOf(directionExplosion);
+      directionExplosion = ordre[(indexCourant + 1) % ordre.length];
+      const texte = document.getElementById('txt_btn_direction');
+      if (texte) {
+        texte.textContent = directionExplosion.toUpperCase();
+      }
+    }
+
+    function toggleExplosion(){
+      explosionActive = !explosionActive;
+      coeffExplosionCible = explosionActive ? FACTEUR_EXPLOSION : 1;
+
+      if (explosionActive) {
+        // On révèle toutes les faces : à l'écartement, les faces qui étaient
+        // masquées contre un voisin redeviennent visibles dans l'espace.
+        for (const m of state.voxels.values()) {
+          for (let i = 0; i < 6; i++) m.material[i].visible = true;
+        }
+      }
+      // Le remasquage au retour se fait dans updateExplosion(), une fois l'animation terminée
+      // et les positions revenues à leurs coordonnées logiques.
+
+      const texteBouton = document.getElementById('txt_btn_explosion');
+      if (texteBouton) {
+        texteBouton.textContent = explosionActive ? 'Recomposer' : 'Exploser';
+      }
+      const bouton = document.getElementById('btn_explosion');
+      if (bouton) {
+        bouton.classList.toggle('actif', explosionActive);
+      }
+    }
+
+    function updateExplosion(){
+      if (Math.abs(coeffExplosion - coeffExplosionCible) < 0.001) {
+        if (coeffExplosion !== coeffExplosionCible) {
+          coeffExplosion = coeffExplosionCible;
+          applyExplosionToVoxels();
+          if (!explosionActive) {
+            // L'animation de retour vient de se terminer : les positions sont de
+            // nouveau à leurs coordonnées logiques, on peut remasquer les faces.
+            updateAllMaterial();
+          }
+        }
+        return;
+      }
+      if (explosionActive) {
+        // Suspension à l'explosion : on ralentit en approchant de la cible (ease-out).
+        // On ne parcourt qu'une fraction de l'écart restant à chaque frame.
+        coeffExplosion += (coeffExplosionCible - coeffExplosion) * VITESSE_EXPLOSION;
+      } else {
+        // Retour : on accélère en se rapprochant de la cible (ease-in).
+        // On avance d'un pas qui grandit avec l'écart déjà parcouru depuis le départ.
+        const ecartTotal = FACTEUR_EXPLOSION - 1;
+        const progres = (FACTEUR_EXPLOSION - coeffExplosion) / ecartTotal; // 0 au départ, 1 à l'arrivée
+        const vitesse = VITESSE_EXPLOSION * (0.3 + 1.4 * progres); // démarre lentement, finit vite
+        coeffExplosion += (coeffExplosionCible - coeffExplosion) * vitesse;
+      }
+      applyExplosionToVoxels();
+    }
+
+    function applyExplosionToVoxels(){
+      const centre = {
+        x: (state.sizeX - 1) / 2,
+        y: (state.sizeY - 1) / 2,
+        z: (state.sizeZ - 1) / 2
+      };
+      const surX = directionExplosion === 'x' || directionExplosion === 'xyz';
+      const surY = directionExplosion === 'y' || directionExplosion === 'xyz';
+      const surZ = directionExplosion === 'z' || directionExplosion === 'xyz';
+      for (const m of state.voxels.values()) {
+        const ox = m.userData.x, oy = m.userData.y, oz = m.userData.z;
+        const nx = surX ? centre.x + (ox - centre.x) * coeffExplosion : ox;
+        const ny = surY ? centre.y + (oy - centre.y) * coeffExplosion : oy;
+        const nz = surZ ? centre.z + (oz - centre.z) * coeffExplosion : oz;
+        m.position.set(nx, ny, nz);
+        if (m.userData.edge) m.userData.edge.position.set(nx, ny, nz);
+      }
+    }
+
+    function updateMaterialCubesAdjacents(x,y,z,action){
+      if (action==='add'){
+        const index=[];
+        if(state.voxels.get(key(x+1,y,z))){SetVisibleOneMaterial(state.voxels.get(key(x+1,y,z)),1,false);index.push(0);}
+        if(state.voxels.get(key(x-1,y,z))){SetVisibleOneMaterial(state.voxels.get(key(x-1,y,z)),0,false);index.push(1);}
+        if(state.voxels.get(key(x,y+1,z))){SetVisibleOneMaterial(state.voxels.get(key(x,y+1,z)),3,false);index.push(2);}
+        if(state.voxels.get(key(x,y-1,z))){SetVisibleOneMaterial(state.voxels.get(key(x,y-1,z)),2,false);index.push(3);}
+        if(state.voxels.get(key(x,y,z+1))){SetVisibleOneMaterial(state.voxels.get(key(x,y,z+1)),5,false);index.push(4);}
+        if(state.voxels.get(key(x,y,z-1))){SetVisibleOneMaterial(state.voxels.get(key(x,y,z-1)),4,false);index.push(5);}
+        const m=state.voxels.get(key(x,y,z));
+        if(m){ for(let t=0;t<index.length;t++){ SetVisibleOneMaterial(m,index[t],false); } }
+      }
+      else if (action==='remove'){
+        let voisin;
+
+        voisin = state.voxels.get(key(x+1,y,z));
+        if(voisin){ SetVisibleOneMaterial(voisin,1,true); voisin.material[1].color.set(couleurFondTrou); voisin.userData.facesTrou.add(1); }
+
+        voisin = state.voxels.get(key(x-1,y,z));
+        if(voisin){ SetVisibleOneMaterial(voisin,0,true); voisin.material[0].color.set(couleurFondTrou); voisin.userData.facesTrou.add(0); }
+
+        voisin = state.voxels.get(key(x,y+1,z));
+        if(voisin){ SetVisibleOneMaterial(voisin,3,true); voisin.material[3].color.set(couleurFondTrou); voisin.userData.facesTrou.add(3); }
+
+        voisin = state.voxels.get(key(x,y-1,z));
+        if(voisin){ SetVisibleOneMaterial(voisin,2,true); voisin.material[2].color.set(couleurFondTrou); voisin.userData.facesTrou.add(2); }
+
+        voisin = state.voxels.get(key(x,y,z+1));
+        if(voisin){ SetVisibleOneMaterial(voisin,5,true); voisin.material[5].color.set(couleurFondTrou); voisin.userData.facesTrou.add(5); }
+
+        voisin = state.voxels.get(key(x,y,z-1));
+        if(voisin){ SetVisibleOneMaterial(voisin,4,true); voisin.material[4].color.set(couleurFondTrou); voisin.userData.facesTrou.add(4); }
+      }
+    }
+
+    function updateAllMaterial(){ 
+      for(const [k,m] of Array.from(state.voxels)){ updateMaterialCubesAdjacents(m.position.x,m.position.y,m.position.z,'add'); } 
+    }
+
+    function addPlane(a,b,orientation,color){ 
+      const minX=Math.min(a.x,b.x), maxX=Math.max(a.x,b.x), minY=Math.min(a.y,b.y), maxY=Math.max(a.y,b.y), minZ=Math.min(a.z,b.z), maxZ=Math.max(a.z,b.z);
+      let min1,min2,max1,max2,constante;
+      if(orientation==='Y'){min1=minX;min2=minZ;max1=maxX;max2=maxZ;constante=a.y}
+      if(orientation==='X'){min1=minY;min2=minZ;max1=maxY;max2=maxZ;constante=a.x}
+      if(orientation==='Z'){min1=minX;min2=minY;max1=maxX;max2=maxY;constante=a.z}
+      for(let t=min1;t<=max1;t++){ 
+        for(let s=min2;s<=max2;s++){ 
+          let x=orientation==='X'?constante:t, y=orientation==='Y'?constante: (orientation==='X'?t:s), z=orientation==='Z'?constante:s;
+          addVoxel(x,y,z,color);
+        }
+      } 
+    }
+
+    function removePlane(a,b,orientation){
+      const minX=Math.min(a.x,b.x), maxX=Math.max(a.x,b.x), minY=Math.min(a.y,b.y), maxY=Math.max(a.y,b.y), minZ=Math.min(a.z,b.z), maxZ=Math.max(a.z,b.z);
+      let min1,min2,max1,max2,constante;
+      if(orientation==='Y'){min1=minX;min2=minZ;max1=maxX;max2=maxZ;constante=a.y}
+      if(orientation==='X'){min1=minY;min2=minZ;max1=maxY;max2=maxZ;constante=a.x}
+      if(orientation==='Z'){min1=minX;min2=minY;max1=maxX;max2=maxY;constante=a.z}
+      for(let t=min1;t<=max1;t++){ 
+        for(let s=min2;s<=max2;s++){ 
+          let x=orientation==='X'?constante:t, y=orientation==='Y'?constante: (orientation==='X'?t:s), z=orientation==='Z'?constante:s;
+          removeVoxel(x,y,z);
+        }
+      } 
+    }
+
+    function addPave(a,b,c,color){
+      const minX=Math.min(a.x,b.x), maxX=Math.max(a.x,b.x), minZ=Math.min(a.z,b.z), maxZ=Math.max(a.z,b.z), minY=Math.min(a.y,c.y), maxY=Math.max(a.y,c.y);
+      for(let t=minX;t<=maxX;t++){ 
+        for(let s=minZ;s<=maxZ;s++){
+          for(let r=minY;r<=maxY;r++){ addVoxel(t,r,s,color); }
+        }
+      }
+    }
+
+    function removePave(a,b,c){
+      const minX=Math.min(a.x,b.x), maxX=Math.max(a.x,b.x), minZ=Math.min(a.z,b.z), maxZ=Math.max(a.z,b.z), minY=Math.min(a.y,c.y), maxY=Math.max(a.y,c.y);
+      for(let t=minX;t<=maxX;t++){ 
+        for(let s=minZ;s<=maxZ;s++){
+          for(let r=minY;r<=maxY;r++){ removeVoxel(t,r,s); }
+        }
+      }
+    }
+
+    function AddGrille(grille, Lo, La) {
+      let mat = new THREE.LineBasicMaterial({ color: 0x94a3b8 });
+      for(let s = 0; s <= Lo; s++){
+        let g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(s - 0.5, -0.5, -0.5), new THREE.Vector3(s - 0.5, -0.5, La - 0.5)]);
+        grille.add(new THREE.Line(g, mat));
+      }
+      for(let t = 0; t <= La; t++){
+        let g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.5, -0.5, t - 0.5), new THREE.Vector3(Lo - 0.5, -0.5, t - 0.5)]);
+        grille.add(new THREE.Line(g, mat));
+      }
+      scene.add(grille);
+    }
+
+    function AddFloor(planche, Lo, La){
+      for(let s = 0; s < Lo; s++){
+        for(let t = 0; t < La; t++){
+          const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), matRectangle.clone());
+          m.rotation.x = -Math.PI / 2; m.position.set(s, 0, t); planche.position.set(0, -0.5, 0); planche.add(m);
+        }
+      }
+      scene.add(planche);
+    }
+
+    function buildGrid(){
+      if(grid) scene.remove(grid);
+      if(floor) scene.remove(floor);
+      const g = new THREE.Group(), f = new THREE.Group();
+      AddGrille(g, state.sizeX, state.sizeZ); AddFloor(f, state.sizeX, state.sizeZ);
+      grid = g; grid.visible = state.gridVisible; floor = f; floor.visible = state.gridVisible;
+    }
+
+    function cacherGrille(){ scene.remove(grid); scene.remove(floor); state.gridVisible=false; }
+    function montrerGrille(){ buildGrid(); state.gridVisible=true; }
+    function toggleGrid(){ if(state.gridVisible) cacherGrille(); else montrerGrille(); renderOnce(); }
+    function grille_haut(){ controls.target.y -= 0.5; controls.update(); }
+    function grille_bas(){ controls.target.y += 0.5; controls.update(); }
+
+    function setPresetView(){
+      let czm = state_data?.scene?.position_camera?.zoom ?? 1;
+
+      if(init_scene){
+        currentCamera = camera;
+        positionnerCameraAutourDeLaFigure();
+        camera.zoom = czm;
+        camera.updateProjectionMatrix();
+
+        controls.update();
+        //controls.saveState();
+        render();
+        init_scene = false;
+      } else {
+        // NE PAS annuler la boucle de rendu ici : render() (lancée une seule
+        // fois au tout premier chargement) doit continuer de tourner pendant
+        // toute la vie de l'appli, sinon OrbitControls n'a plus aucune boucle
+        // pour appeler controls.update() et redessiner pendant le drag/damping.
+        currentCamera = camera;
+        positionnerCameraAutourDeLaFigure();
+        camera.zoom = czm;
+        camera.updateProjectionMatrix();
+
+        controls.update();
+        renderOnce();
+      }
+    }
+
+    function reset_affichage(){ controls.reset(); renderOnce(); }
+    function zoom_plus(){ camera.zoom += 0.05; camera.updateProjectionMatrix(); renderOnce(); }
+    function zoom_moins(){ camera.zoom -= 0.05; camera.updateProjectionMatrix(); renderOnce(); }
+
+    // Choisit un entier n aléatoire (uniforme) dans [min, max] inclus.
+    function tirerEntierAleatoire(min, max){
+      return min + Math.floor(Math.random() * (max - min + 1));
+    }
+
+    // Un paramètre peut restreindre ses valeurs possibles à un pas donné
+    // (ex: step:2 à partir de n_min=3 pour n'obtenir que des valeurs impaires
+    // 3, 5, 7, ...). Le tirage se fait alors sur l'indice du pas, pas sur la
+    // valeur directement, pour rester uniforme sur les valeurs autorisées.
+    function tirerValeurParametre(definition){
+      const pas = definition.step || 1;
+      const nbPas = Math.floor((definition.n_max - definition.n_min) / pas);
+      return definition.n_min + tirerEntierAleatoire(0, nbPas) * pas;
+    }
+
+    // Ramène une valeur saisie à la plus proche valeur autorisée par le
+    // paramètre (bornes [n_min, n_max] et pas éventuel).
+    function contraindreValeurParametre(definition, valeur){
+      const pas = definition.step || 1;
+      let v = Math.round((valeur - definition.n_min) / pas) * pas + definition.n_min;
+      return Math.min(definition.n_max, Math.max(definition.n_min, v));
+    }
+
+    // Un JSON de figure décrit ses paramètres de génération de deux façons
+    // possibles :
+    //  - "parametres": { "a": {n_min,n_max,label,step}, "b": {...}, ... } —
+    //    un ou plusieurs paramètres nommés, format multi-variables ;
+    //  - "slider": {n_min,n_max} (ancien format, une seule variable "x") —
+    //    conservé tel quel pour les figures pas encore converties.
+    // Dans les deux cas on obtient un objet { nomParametre: valeur } utilisé
+    // comme scope pour math.js partout où une expression du JSON doit être
+    // évaluée (dimensions, caméra, formule, positions des objets).
+    function definitionParametres(data){
+      if (data.parametres) return data.parametres;
+      return { x: { n_min: data.slider.n_min, n_max: data.slider.n_max } };
+    }
+
+    function tirerValeursParametres(data){
+      const definitions = definitionParametres(data);
+      const valeurs = {};
+      for (const nom of Object.keys(definitions)) {
+        valeurs[nom] = tirerValeurParametre(definitions[nom]);
+      }
+      return valeurs;
+    }
+
+    // La position_camera du JSON définit l'angle de vue (sa direction depuis
+    // le centre de la figure), mais pas la distance : celle-ci est
+    // recalculée à partir du rayon englobant de la construction courante
+    // (state.sizeX/Y/Z), pour que la figure reste bien cadrée quels que
+    // soient les paramètres tirés — au lieu d'une distance fixe pensée pour
+    // une seule taille. Met aussi à jour controls.target sur le centre.
+    function positionnerCameraAutourDeLaFigure(){
+      const cible = new THREE.Vector3((state.sizeX-1)/2, (state.sizeY-1)/2, (state.sizeZ-1)/2);
+      const direction = new THREE.Vector3(state.cameraX, state.cameraY, state.cameraZ).sub(cible);
+      if (direction.lengthSq() < 1e-6) direction.set(1, 0.7, 1);
+      direction.normalize();
+      const rayonEnglobant = 0.5 * Math.sqrt(state.sizeX**2 + state.sizeY**2 + state.sizeZ**2);
+      const margeCadrage = 1.35;
+      const distanceCamera = (rayonEnglobant * margeCadrage) / Math.sin(THREE.MathUtils.degToRad(FOV_CONIQUE / 2));
+      camera.position.copy(cible).addScaledVector(direction, distanceCamera);
+      controls.target.copy(cible);
+    }
+
+    // Reconstruit entièrement la scène (dimensions, caméra, grille, objets)
+    // pour un jeu de valeurs de paramètres donné. Utilisée aussi bien pour le
+    // tirage aléatoire initial d'une question que pour une reconstruction
+    // manuelle depuis le menu de configuration des paramètres.
+    function construireScene(data, valeurs){
+      state_data = data;
+      valeursCourantes = valeurs;
+      nbCourant = valeurs.x;
+
+      state.sizeX = math.rationalize(state_data.scene.dimension_grille.sizeX, valeurs).value;
+      state.sizeZ = math.rationalize(state_data.scene.dimension_grille.sizeZ, valeurs).value;
+      state.sizeY = math.rationalize(state_data.scene.dimension_grille.sizeY, valeurs).value;
+
+      state.cameraX = math.rationalize(String(state_data.scene.position_camera.cameraX), valeurs).value;
+      state.cameraY = math.rationalize(String(state_data.scene.position_camera.cameraY), valeurs).value;
+      state.cameraZ = math.rationalize(String(state_data.scene.position_camera.cameraZ), valeurs).value;
+      state.gridVisible = state_data.scene.gridVisible;
+      state.edgeColor = state_data.scene.edgeColor;
+
+      if(state.edgeColor) matEdge.color.set(state.edgeColor);
+
+      clearVoxels();
+
+      positionnerCameraAutourDeLaFigure();
+      controls.update();
+
+      camera.zoom = state_data.scene.position_camera.zoom;
+      camera.updateProjectionMatrix();
+
+      controls.saveState();
+
+      if(!state.gridVisible) cacherGrille(); else montrerGrille();
+      buildGrid();
+
+      construc_tous_objets(state_data.objet, valeurs);
+      coeffExplosion = coeffExplosionCible;
+      applyExplosionToVoxels();
+      renderOnce();
+
+      tableauClear();
+      document.getElementById("type_colonne").textContent = state_data.tableau.type;
+    }
+
+    function init_scene3D_numeric(data){
+      construireScene(data, tirerValeursParametres(data));
+    }
+
+function preparerExpressionNumerique(saisie) {
+  let expr = saisie.toLowerCase().trim();
+
+  // Ajoute '*' entre un nombre et une parenthèse ouvrante (ex: 2( -> 2*()
+  expr = expr.replace(/(\d+)(?=\()/g, '$1*');
+
+  // Ajoute '*' entre une parenthèse fermante et une parenthèse ouvrante (ex: )( -> )*( )
+  expr = expr.replace(/\)(?=\()/g, ')*');
+
+  // Ajoute '*' entre une parenthèse fermante et un nombre (ex: )2 -> )*2)
+  expr = expr.replace(/\)(?=[0-9])/g, ')*');
+
+  return expr;
+}
+
+function validerCalculNumerique(saisie, formulaJSON, valeurs) {
+  let zoneResultat = document.getElementById('resultat_formule');
+
+  // Évaluation stricte de la saisie numérique de l'élève
+  let calculEleve = math.evaluate(saisie);
+  if (calculEleve && typeof calculEleve === 'object' && 'value' in calculEleve) {
+    calculEleve = calculEleve.value;
+  }
+  calculEleve = Number(calculEleve);
+
+  // Évaluation de la formule attendue (f) pour les valeurs de paramètres en cours
+  let calculAttendu = math.evaluate(formulaJSON, valeurs);
+  if (calculAttendu && typeof calculAttendu === 'object' && 'value' in calculAttendu) {
+    calculAttendu = calculAttendu.value;
+  }
+  calculAttendu = Number(calculAttendu);
+
+  let estCorrect = (calculEleve === calculAttendu);
+
+  // Mise à jour de la ligne "Calcul en cours"
+  let ligneCalculEnCours = document.getElementById("ligne_calcul_cours");
+  if (ligneCalculEnCours) {
+    let cvCours = ligneCalculEnCours.querySelector(".cont_val_isole");
+    let crCours = ligneCalculEnCours.querySelector(".cont_res_isole");
+    let couleur = estCorrect ? "#a7c957" : "#ff5a5f";
+
+    if (cvCours) {
+      renderMath(cvCours, saisie, true);
+      cvCours.style.backgroundColor = couleur;
+    }
+    if (crCours) {
+      crCours.innerHTML = "";
+      let spanRes = document.createElement("span");
+      crCours.appendChild(spanRes);
+      katex.render(calculEleve.toString(), spanRes, { throwOnError: false });
+      crCours.style.backgroundColor = couleur;
+      crCours.style.fontWeight = "bold";
+    }
+  }
+
+  if (estCorrect) {
+    zoneResultat.textContent = "Bravo ! Calcul juste ! 🎉";
+    zoneResultat.style.color = "#475569";
+    document.getElementById('btn_suivant').disabled = false;
+    document.getElementById('btn_abandonner').disabled = true;
+  } else {
+    zoneResultat.textContent = "Calcul faux, réessaie ! ❌";
+    zoneResultat.style.color = "#ff5a5f";
+  }
+}
+
+    function construc_tous_objets(data,valeurs){ for(let i=0;i<data.length;i++){ construc_objet(data[i],valeurs); } }
+
+    function construc_objet(objet,valeurs){
+      let sequence=objet.sequence; let type=objet.type;
+
+      if (sequence) {
+        // Mode répétition : on crée plusieurs copies de l'objet, chacune avec
+        // son propre indice "i" (de 0 à nombre_repetitions-1) substitué dans
+        // les expressions de point1/point2/point3 avant construction.
+        const nbRepetitions = Math.round(math.rationalize(objet.nombre_repetitions, valeurs).value);
+        for (let i = 0; i < nbRepetitions; i++) {
+          const objetInstance = substituerIndiceDansObjet(objet, i);
+          construirePieceUnique(objetInstance, valeurs);
+        }
+      } else {
+        construirePieceUnique(objet, valeurs);
+      }
+    }
+
+    // Remplace toute occurrence de la variable "i" par sa valeur numérique
+    // dans les expressions point1/point2/point3 d'un objet, avant que
+    // math.rationalize ne soit appelé (sinon math.js interpréterait "i"
+    // comme le nombre imaginaire). On opère sur une copie pour ne jamais
+    // modifier le JSON source.
+    function substituerIndiceDansObjet(objet, indice) {
+      const copie = JSON.parse(JSON.stringify(objet));
+      for (const pointKey of ["point1", "point2", "point3"]) {
+        if (!copie[pointKey]) continue;
+        for (const coord of ["x", "y", "z"]) {
+          const expr = copie[pointKey][coord];
+          if (typeof expr === "string") {
+            // "i" est remplacé par sa valeur entre parenthèses pour rester
+            // valide même collé à d'autres caractères (ex: "2*i" -> "2*(3)").
+            copie[pointKey][coord] = expr.replace(/\bi\b/g, `(${indice})`);
+          }
+        }
+      }
+      return copie;
+    }
+
+    function construirePieceUnique(objet, valeurs) {
+      const type = objet.type;
+      if(type==="cube") construc_cube(objet,valeurs);
+      else if(type==="plan") construc_plan(objet,valeurs);
+      else construc_pavé(objet,valeurs);
+    }
+
+    function construc_cube(objet,valeurs){
+      const x=math.rationalize(objet.point1.x,valeurs).value, y=math.rationalize(objet.point1.y,valeurs).value, z=math.rationalize(objet.point1.z,valeurs).value;
+      if(objet.operation=="add") addVoxel(x,y,z,objet.color); else removeVoxel(x,y,z);
+    }
+
+    // Vide le contenu de la ligne de calcul en cours, sans jamais retirer
+    // la ligne elle-même.
+    function viderLigneValidation(idLigne) {
+      const ligne = document.getElementById(idLigne);
+      if (!ligne) return;
+      const cv = ligne.querySelector(".cont_val_isole");
+      const cr = ligne.querySelector(".cont_res_isole");
+      if (cv) { cv.innerHTML = ""; cv.style.backgroundColor = ""; }
+      if (cr) { cr.innerHTML = ""; cr.style.backgroundColor = ""; }
+      const asidePanel = document.getElementById('sidebar');
+      if (asidePanel) asidePanel.style.removeProperty('border-right');
+    }
+
+    function tableauClear() {
+      let ligneCalculEnCours = document.getElementById("ligne_calcul_cours");
+      if (ligneCalculEnCours) {
+        let cvCours = ligneCalculEnCours.querySelector(".cont_val_isole");
+        let crCours = ligneCalculEnCours.querySelector(".cont_res_isole");
+        if (cvCours) { cvCours.innerHTML = ""; cvCours.style.backgroundColor = ""; }
+        if (crCours) { crCours.innerHTML = ""; crCours.style.backgroundColor = ""; }
+      }
+    }
+
+    function interfaceReset() {
+      const champSaisie = document.getElementById('input_formule');
+      if (champSaisie) champSaisie.value = "";
+
+      const zoneResultat = document.getElementById('resultat_formule');
+      if (zoneResultat) { zoneResultat.textContent = ""; zoneResultat.style.color = ""; }
+
+      const asidePanel = document.getElementById('sidebar');
+      if (asidePanel) asidePanel.style.removeProperty('border-right');
+
+      tableauClear();
+    }
+
+    function construc_plan(objet,valeurs){
+      const x1=math.rationalize(objet.point1.x,valeurs).value, y1=math.rationalize(objet.point1.y,valeurs).value, z1=math.rationalize(objet.point1.z,valeurs).value;
+      const x2=math.rationalize(objet.point2.x,valeurs).value, y2=math.rationalize(objet.point2.y,valeurs).value, z2=math.rationalize(objet.point2.z,valeurs).value;
+      if(objet.operation=="add") addPlane({"x":x1,"y":y1,"z":z1},{"x":x2,"y":y2,"z":z2},objet.orientation,objet.color); else removePlane({"x":x1,"y":y1,"z":z1},{"x":x2,"y":y2,"z":z2},objet.orientation);
+    }
+
+    function construc_pavé(objet,valeurs){
+      const x1=math.rationalize(objet.point1.x,valeurs).value, y1=math.rationalize(objet.point1.y,valeurs).value, z1=math.rationalize(objet.point1.z,valeurs).value;
+      const x2=math.rationalize(objet.point2.x,valeurs).value, y2=math.rationalize(objet.point2.y,valeurs).value, z2=math.rationalize(objet.point2.z,valeurs).value;
+      const x3=math.rationalize(objet.point3.x,valeurs).value, y3=math.rationalize(objet.point3.y,valeurs).value, z3=math.rationalize(objet.point3.z,valeurs).value;
+      if(objet.operation=="add") addPave({"x":x1,"y":y1,"z":z1},{"x":x2,"y":y2,"z":z2},{"x":x3,"y":y3,"z":z3},objet.color); else removePave({"x":x1,"y":y1,"z":z1},{"x":x2,"y":y2,"z":z2},{"x":x3,"y":y3,"z":z3});
+    }
+
+    // Le JSON décrit la consigne pour la formule générale ("Exprime ... en
+    // fonction de $n$."). En version numérique, la valeur de n reste interne
+    // (elle ne doit jamais être affichée) : on retire cette clause et on
+    // reformule en consigne de calcul direct.
+    function texteConsigneNumerique(texte) {
+      let resultat = texte.replace(/\s*en fonction de\s*\$n\$\.?/i, '.');
+      resultat = resultat.replace(/^Exprime\b/i, 'Calcule');
+      return resultat;
+    }
+
+    // ---------- Panneau de configuration des paramètres de la figure ----------
+    // Uniquement disponible pour les figures au format "parametres" (voir
+    // definitionParametres) : les anciennes figures au format "slider" à
+    // variable unique n'exposent pas ce bouton pour l'instant, le temps
+    // qu'elles soient reprises une à une.
+    const btParametresFigure = document.getElementById('bt_parametres_figure');
+    const panneauParametres = document.getElementById('panneau_parametres_figure');
+    const champsParametres = document.getElementById('panneau_parametres_champs');
+
+    function initialiserPanneauParametres(data){
+      panneauParametres.hidden = true;
+
+      if (!data.parametres) {
+        btParametresFigure.hidden = true;
+        return;
+      }
+
+      btParametresFigure.hidden = false;
+      champsParametres.innerHTML = "";
+
+      for (const [nom, definition] of Object.entries(data.parametres)) {
+        const ligne = document.createElement("div");
+        ligne.className = "champ_parametre";
+
+        const label = document.createElement("label");
+        label.textContent = definition.label || nom;
+        label.htmlFor = "param_" + nom;
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.id = "param_" + nom;
+        input.dataset.param = nom;
+        input.min = definition.n_min;
+        input.max = definition.n_max;
+        input.step = definition.step || 1;
+        input.value = valeursCourantes[nom];
+        // "change" (et non "input") : la scène se reconstruit dès que la
+        // valeur est validée (Entrée, perte de focus, flèches du champ),
+        // pas à chaque frappe pendant la saisie.
+        input.addEventListener('change', appliquerValeursPanneau);
+
+        ligne.appendChild(label);
+        ligne.appendChild(input);
+        champsParametres.appendChild(ligne);
+      }
+    }
+
+    // Lit les valeurs saisies dans le panneau, en les recadrant sur les
+    // valeurs autorisées (bornes [n_min, n_max] et pas éventuel) déclarées
+    // par la figure.
+    function lireValeursPanneauParametres(){
+      const definitions = state_data.parametres;
+      const valeurs = {};
+      champsParametres.querySelectorAll("input[data-param]").forEach(input => {
+        const nom = input.dataset.param;
+        const definition = definitions[nom];
+        let valeur = Number(input.value);
+        if (Number.isNaN(valeur)) valeur = definition.n_min;
+        valeur = contraindreValeurParametre(definition, valeur);
+        input.value = valeur;
+        valeurs[nom] = valeur;
+      });
+      return valeurs;
+    }
+
+    function rafraichirChampsPanneauParametres(valeurs){
+      champsParametres.querySelectorAll("input[data-param]").forEach(input => {
+        input.value = valeurs[input.dataset.param];
+      });
+    }
+
+    if (btParametresFigure) {
+      btParametresFigure.onclick = () => { panneauParametres.hidden = !panneauParametres.hidden; };
+    }
+
+    // Reconstruire la figure (tirage ou saisie manuelle) invalide la réponse
+    // en cours : l'élève doit recalculer pour cette nouvelle construction.
+    function reactiverSaisieReponse(){
+      document.getElementById('btn_suivant').disabled = true;
+      document.getElementById('btn_abandonner').disabled = false;
+    }
+
+    // Reconstruit la scène avec les valeurs actuellement saisies dans le
+    // panneau. Déclenché automatiquement au "change" de chaque champ (voir
+    // initialiserPanneauParametres) : pas besoin d'un bouton "Appliquer".
+    function appliquerValeursPanneau(){
+      const valeurs = lireValeursPanneauParametres();
+      construireScene(state_data, valeurs);
+      interfaceReset();
+      reactiverSaisieReponse();
+    }
+
+    const btParametresAleatoire = document.getElementById('bt_parametres_aleatoire');
+    if (btParametresAleatoire) {
+      btParametresAleatoire.onclick = () => {
+        const valeurs = tirerValeursParametres(state_data);
+        rafraichirChampsPanneauParametres(valeurs);
+        construireScene(state_data, valeurs);
+        interfaceReset();
+        reactiverSaisieReponse();
+      };
+    }
+
+    function init(data){
+      // 1. MISE À JOUR DES VARIABLES DE DIMENSION EN PREMIER (tirage de n)
+      init_scene3D_numeric(data);
+
+      // 2. PLACEMENT DE LA CAMÉRA ET DE LA GRILLE SUR LES BONNES MESURES
+      setPresetView();
+      buildGrid();
+
+      // 3. AFFICHAGE DES TEXTES ET CONSIGNES
+      if(data && data.consignes) {
+        document.getElementById('volant_titre').textContent = data.consignes.titre;
+        document.getElementById('volant_descriptif').innerHTML = texteConsigneNumerique(data.consignes.texte);
+      }
+
+      // 4. PANNEAU DE CONFIGURATION DES PARAMÈTRES (uniquement pour les
+      // figures converties au nouveau format multi-paramètres)
+      initialiserPanneauParametres(data);
+
+      const bouton = document.getElementById('btn_valider_formule');
+      if (bouton) {
+        bouton.onclick = function() {
+  let brute = document.getElementById('input_formule').value;
+  let zoneResultat = document.getElementById('resultat_formule');
+
+  if (brute.trim() === "") {
+    zoneResultat.textContent = "Le champ est vide !";
+    return;
+  }
+
+  try {
+    let formulaJSON = state_data.tableau.f;
+    let saisiePrete = preparerExpressionNumerique(brute);
+    validerCalculNumerique(saisiePrete, formulaJSON, valeursCourantes);
+  } catch (err) {
+    zoneResultat.textContent = "Erreur de syntaxe.";
+    zoneResultat.style.color = "#ff5a5f";
+  }
+};
+      }
+
+      const champSaisie = document.getElementById('input_formule');
+      if (champSaisie) {
+        champSaisie.onclick = function() {
+          this.select();
+        };
+
+        champSaisie.ondblclick = function() {
+          this.value = "";
+        };
+        
+        champSaisie.onkeydown = function(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            bouton.click();
+          }
+        };
+      }
+
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
+    }
+function renderMath(element, expression, isNumeric = false) {
+  if (!element) return;
+  element.innerHTML = "";
+  
+  let span = document.createElement("span");
+  element.appendChild(span);
+  
+  try {
+    let cleanExpr = expression.toString().toLowerCase().trim();
+    
+    if (isNumeric) {
+      cleanExpr = cleanExpr.replace(/(\d+)(?=\()/g, "$1*");
+    }
+    
+    let noeud = math.parse(cleanExpr);
+    let tex = noeud.toTex();
+    
+    // On remplace TOUS les \cdot par \times pour afficher explicitement les "fois"
+    tex = tex.replaceAll("\\cdot", "\\times");
+    
+    katex.render(tex, span, { throwOnError: false });
+  } catch (err) {
+    // Repli en texte pur si la formule est mal formée
+    span.textContent = expression.toString().replaceAll("*", " × ");
+  }
+}
+    // ---------- LOGIQUE DU QUIZ ----------
+     const listeQuizInitiale = [
+      "IMG/json/socle.json",
+      "IMG/json/prisme_croix.json",
+      "IMG/json/carre_coins_rentres.json",
+      "IMG/json/3_cloisons.json",
+      "IMG/json/pave_droit.json",
+      "IMG/json/corde_n_noeuds.json",
+      "IMG/json/cube_plaques.json",
+      "IMG/json/cube_perce_ecorne.json",
+      "IMG/json/cube_transperce.json",
+      "IMG/json/cube_creuse.json",
+      "IMG/json/cube_boule_fixe_filaire.json",
+      "IMG/json/cube_boule_fixe.json",
+      "IMG/json/cube_boule_filaire.json",
+      "IMG/json/cube_boule.json",
+      "IMG/json/cube_cage.json",
+      "IMG/json/cube_cadeau.json",
+      "IMG/json/prisme_augmente.json",
+      "IMG/json/plaque_etoile.json"
+    ];
+
+    let indexQuestion = 0; 
+    let pointsObtenus = 0;
+    const totalEpreuvesExigées = listeQuizInitiale.length;
+
+    function chargerQuestionCourante() {
+      let elTotal = document.getElementById('score_total');
+      let elActuel = document.getElementById('score_actuel');
+      if (elTotal) elTotal.textContent = totalEpreuvesExigées;
+      if (elActuel) elActuel.textContent = pointsObtenus;
+
+      if (pointsObtenus === totalEpreuvesExigées) {
+        document.getElementById('volant_titre').textContent = "Quiz Terminé ! 🎉";
+        document.getElementById('volant_descriptif').innerHTML = `Bravo, vous avez terminé toutes les épreuves ! <br><b>Score final : ${pointsObtenus} / ${totalEpreuvesExigées}</b>`;
+        document.getElementById('btn_suivant').disabled = true;
+        document.getElementById('btn_abandonner').disabled = true;
+        clearVoxels();
+        renderOnce();
+        return;
+      }
+
+      document.getElementById('btn_suivant').disabled = true;
+      document.getElementById('btn_abandonner').disabled = false;
+
+      let urlJsonCourant = listeQuizInitiale[indexQuestion];
+      
+      interfaceReset();
+      fetch(urlJsonCourant)
+        .then(response => {
+          if (!response.ok) throw new Error(`Impossible de charger le fichier : ${urlJsonCourant}`);
+          return response.json();
+        })
+        .then(data => {
+          init(data);
+        })
+        .catch(error => {
+          console.error("Erreur Quiz:", error);
+        });
+    }
+
+    function passerALaQuestionSuivante() {
+      pointsObtenus++; 
+      let elActuel = document.getElementById('score_actuel');
+      if (elActuel) elActuel.textContent = pointsObtenus; 
+      
+      indexQuestion = (indexQuestion + 1) % totalEpreuvesExigées;
+      chargerQuestionCourante();
+    }
+
+    function abandonnerEpreuve() {
+      indexQuestion = (indexQuestion + 1) % totalEpreuvesExigées;
+      chargerQuestionCourante();
+    }
+
+    // Premier démarrage strict
+    chargerQuestionCourante();
+
+    // Une fois les polices web (Inter, JetBrains Mono) effectivement chargées,
+    // certaines mesures de mise en page prises trop tôt (largeur du canvas,
+    // hauteur des zones de texte) peuvent être légèrement fausses — on force
+    // un nouveau passage de rendu pour stabiliser l'affichage et éviter tout
+    // sursaut visuel près des bords du panneau gauche au tout premier chargement.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => { renderOnce(); });
+    }
+
+    const btnSuivant = document.getElementById('btn_suivant');
+    if (btnSuivant) {
+      btnSuivant.addEventListener('click', passerALaQuestionSuivante);
+    }
+
+    const btnMonochrome = document.getElementById('btn_monochrome');
+    if (btnMonochrome) {
+      btnMonochrome.addEventListener('click', toggleMonochrome);
+    }
+
+    const btnExplosion = document.getElementById('btn_explosion');
+    if (btnExplosion) {
+      btnExplosion.addEventListener('click', toggleExplosion);
+    }
+
+    document.querySelectorAll('.btn-dir').forEach(b => {
+      b.addEventListener('click', cyclerDirectionExplosion);
+    });
+
+    const btnAbandonner = document.getElementById('btn_abandonner');
+    if (btnAbandonner) {
+      btnAbandonner.addEventListener('click', abandonnerEpreuve);
+    }
+
+    // Boutons de suppression des 2 lignes fixes du tableau "Validation" :
+    // présents dès le chargement de la page (pas créés dynamiquement comme
+    // ceux de l'historique), on les branche une seule fois ici.
+    document.querySelectorAll('#tableau_validation .btn_supprimer_ligne').forEach(btn => {
+      btn.addEventListener('click', () => viderLigneValidation(btn.dataset.ligne));
+    });
+  </script>
+</body>
+</html>

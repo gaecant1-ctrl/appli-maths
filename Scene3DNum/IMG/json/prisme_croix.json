@@ -1,0 +1,77 @@
+{
+  "consignes": {
+    "titre": "Prisme vertical en croix",
+    "texte": "Calcule le nombre total de cubes de cette construction."
+  },
+  "tableau": {
+    "type": "Volume",
+    "f": "(4*n+1)*h"
+  },
+  "scene": {
+    "dimension_grille": {
+      "sizeX": "2*n+1",
+      "sizeZ": "2*n+1",
+      "sizeY": "h"
+    },
+    "position_camera": {
+      "cameraX": "n",
+      "cameraY": 16,
+      "cameraZ": 26,
+      "zoom": 1
+    },
+    "qualite": 1,
+    "gridVisible": false,
+    "edgeColor": "#0f172a"
+  },
+  "parametres": {
+    "n": { "n_min": 2, "n_max": 5, "label": "Longueur d'une branche" },
+    "h": { "n_min": 3, "n_max": 10, "label": "Hauteur du prisme" }
+  },
+  "objet": [
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "0", "y": "0", "z": "n" },
+      "point2": { "x": "n-1", "y": "h-1", "z": "n" },
+      "point3": { "x": "n-1", "y": "h-1", "z": "n" }
+    },
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n+1", "y": "0", "z": "n" },
+      "point2": { "x": "2*n", "y": "h-1", "z": "n" },
+      "point3": { "x": "2*n", "y": "h-1", "z": "n" }
+    },
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n", "y": "0", "z": "0" },
+      "point2": { "x": "n", "y": "h-1", "z": "n-1" },
+      "point3": { "x": "n", "y": "h-1", "z": "n-1" }
+    },
+    {
+      "type": "pave",
+      "color": "#E0A83F",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n", "y": "0", "z": "n+1" },
+      "point2": { "x": "n", "y": "h-1", "z": "2*n" },
+      "point3": { "x": "n", "y": "h-1", "z": "2*n" }
+    },
+    {
+      "type": "pave",
+      "color": "#9d4edd",
+      "sequence": false,
+      "operation": "add",
+      "point1": { "x": "n", "y": "0", "z": "n" },
+      "point2": { "x": "n", "y": "h-1", "z": "n" },
+      "point3": { "x": "n", "y": "h-1", "z": "n" }
+    }
+  ]
+}
