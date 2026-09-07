@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pythagore - Visuel interactif</title>
+<style>
+    /* Charte graphique reprise de appli-maths/evaluation (header + panneau
+       latéral, accent unique orange) — voir PATTERNS.md de ce dossier. */
+    :root {
+        --papier:        #ffffff;
+        --papier-panel:  #fdf3e9;
+        --papier-encart: #ffffff;
+        --grille:        #f5dcc0;
+        --encre:         #4a2d0d;
+        --encre-douce:   #8a6a4a;
+        --accent:        #E67E22;
+        --accent-hover:  #C8690F;
+        --header-fond:        #fdf0e2;
+        --header-bordure:     #f0c99a;
+        --header-texte:       #7a4a15;
+        --header-accent:      #E67E22;
+        --succes:        #28a745;
+        --rayon:         12px;
+        --rayon-petit:   8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; min-height: 100vh; }
+
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: var(--papier-panel);
+        color: var(--encre);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        padding: 0 20px;
+        min-height: 54px;
+        background: var(--header-fond);
+        color: var(--encre);
+        border-bottom: 1px solid var(--header-bordure);
+        flex-wrap: wrap;
+    }
+    header #titre_appli {
+        font-size: 1.2rem;
+        font-weight: 400;
+        color: var(--encre);
+        padding: 10px 0;
+    }
+    header #titre_appli b {
+        font-weight: 700;
+        color: var(--header-accent);
+    }
+
+    #appBody {
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+    }
+
+    #panneauLateral {
+        flex: 0 0 280px;
+        width: 280px;
+        min-height: calc(100vh - 54px);
+        background: var(--papier-encart);
+        border-right: 1px solid var(--grille);
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    main {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: calc(100vh - 54px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 20px 60px;
+        min-width: 0;
+    }
+
+    .panel-groupe { display: flex; flex-direction: column; gap: 8px; }
+    .panel-groupe-label {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--encre-douce);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .panel-filet { height: 1px; background: var(--grille); margin: 4px 0; }
+    .panel-btn {
+        width: 100%;
+        background-color: var(--papier-panel);
+        border: 2px solid var(--grille);
+        border-radius: var(--rayon-petit);
+        padding: 10px 14px;
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--encre);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+    }
+    .panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .panel-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: var(--papier);
+    }
+    .panel-btn.active:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); }
+    .panel-btn:disabled {
+        cursor: default;
+        background-color: var(--papier-panel);
+        border-color: var(--grille);
+        color: #9a9a9a;
+    }
+
+    #instructions {
+        max-width: 600px;
+        text-align: center;
+        color: var(--encre-douce);
+        margin-bottom: 14px;
+        font-size: 0.95em;
+    }
+
+    /* Grille + panneaux de vérification côte à côte (pas empilés) : la correction
+       apparaît à droite du dessin plutôt qu'en dessous. */
+    #zoneTravail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        width: 100%;
+        align-items: flex-start;
+        justify-content: center;
+    }
+    #zoneGrille {
+        flex: 1 1 480px;
+        max-width: 680px;
+        display: flex;
+        justify-content: center;
+    }
+    #zoneVerification {
+        flex: 1 1 320px;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    #scene {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        touch-action: none;
+        display: block;
+        /* Carré : sa taille doit tenir à la fois dans la largeur ET dans la hauteur
+           disponibles (sinon, sur une fenêtre basse/large, il déborde verticalement
+           même s'il rentrait bien horizontalement). 70vh borne par la hauteur de
+           fenêtre ; 100% borne par la largeur de #zoneGrille. */
+        width: min(100%, 70vh);
+        height: auto;
+    }
+
+    .point-cercle { cursor: grab; }
+    .point-cercle:active { cursor: grabbing; }
+    .point-label {
+        font-size: 1.1em;
+        font-weight: bold;
+        fill: var(--encre);
+        pointer-events: none;
+        user-select: none;
+    }
+    .carre { cursor: pointer; }
+    .aire-label {
+        font-size: 0.95em;
+        font-weight: bold;
+        fill: var(--encre);
+        text-anchor: middle;
+        dominant-baseline: middle;
+        pointer-events: none;
+        user-select: none;
+    }
+    .angle-label {
+        font-size: 0.8em;
+        font-weight: bold;
+        text-anchor: middle;
+        dominant-baseline: middle;
+        pointer-events: none;
+        user-select: none;
+    }
+    /* Zone invisible, plus large que le texte, qui capte réellement le glisser
+       (un simple <text> a une zone cliquable trop fine — seulement les traits
+       des lettres — pour être saisi confortablement à la souris). */
+    .zone-glisser-etiquette {
+        fill: transparent;
+        cursor: grab;
+    }
+    .zone-glisser-etiquette:active { cursor: grabbing; }
+
+    #panneauAngles {
+        width: 100%;
+        background: var(--papier-encart);
+        border: 1px solid var(--grille);
+        border-radius: var(--rayon);
+        padding: 12px 18px;
+        box-sizing: border-box;
+        display: none;
+        font-size: 0.95em;
+        line-height: 1.6;
+    }
+    #panneauAngles.visible { display: block; }
+    .angle-ligne.droit { color: var(--succes); font-weight: bold; }
+
+    #panneauLongueurs {
+        width: 100%;
+        background: var(--papier-encart);
+        border: 1px solid var(--grille);
+        border-radius: var(--rayon);
+        padding: 12px 18px;
+        box-sizing: border-box;
+        display: none;
+        font-size: 0.95em;
+        line-height: 1.6;
+    }
+    #panneauLongueurs.visible { display: block; }
+    .longueur-resultat { color: var(--accent); font-weight: 700; }
+
+    .verif-donnees {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--grille);
+    }
+    .verif-donnees b { color: var(--encre); }
+
+    /* Reproduit la mise en accolade du cours : les deux lignes calculées à gauche,
+       une grande accolade "}" qui les regroupe, puis la comparaison à droite —
+       comme \left.\begin{array}{l}...\end{array}\right\} en LaTeX. */
+    .verif-accolade {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 0;
+    }
+    .verif-lignes {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .verif-brace {
+        font-size: 2.6em;
+        font-weight: 300;
+        line-height: 1;
+        color: var(--encre-douce);
+        transform: scaleY(1.35);
+        user-select: none;
+    }
+    .verif-comparaison { font-weight: 700; }
+    .verif-comparaison.droit { color: var(--succes); }
+    #verdictPythagore {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--grille);
+        font-style: italic;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <span id="titre_appli">Pythagore : triangle et <b>carrés</b></span>
+</header>
+
+<div id="appBody">
+    <aside id="panneauLateral">
+        <div class="panel-groupe">
+            <div class="panel-groupe-label">Générer</div>
+            <button id="btnTriangleRectangle" class="panel-btn">Triangle rectangle</button>
+            <button id="btnDefiAngle" class="panel-btn">Défi : droit ou presque ?</button>
+        </div>
+        <div class="panel-filet"></div>
+        <div class="panel-groupe">
+            <div class="panel-groupe-label">Vérification</div>
+            <button id="btnVerifierAngles" class="panel-btn">Vérifier les angles</button>
+            <button id="btnVerifierLongueurs" class="panel-btn">Vérifier les longueurs</button>
+        </div>
+        <div class="panel-filet"></div>
+        <div class="panel-groupe">
+            <div class="panel-groupe-label">Affichage</div>
+            <button id="btnGrille" class="panel-btn">Masquer la grille</button>
+        </div>
+        <div class="panel-filet"></div>
+        <div class="panel-groupe">
+            <div class="panel-groupe-label">Actions</div>
+            <button id="reinitialiserButton" class="panel-btn">Réinitialiser le triangle</button>
+        </div>
+    </aside>
+
+    <main>
+        <div id="instructions">
+            Déplace les points <b>A</b>, <b>B</b> et <b>C</b> sur la grille. Clique sur un carré pour afficher (ou masquer) son aire.
+            Utilise le bouton "Vérifier les angles" pour vérifier si le triangle a un angle droit.
+        </div>
+
+        <div id="zoneTravail">
+            <div id="zoneGrille">
+                <svg id="scene"></svg>
+            </div>
+            <div id="zoneVerification">
+                <div id="panneauAngles"></div>
+                <div id="panneauLongueurs"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+/* ---------- Paramètres de la grille ---------- */
+const GRID_MIN = -5, GRID_MAX = 15;   // étendue de la grille en unités
+const UNIT = 34;                       // pixels par unité
+const TAILLE = (GRID_MAX - GRID_MIN) * UNIT;
+const BORNE_MIN = 0, BORNE_MAX = 10;   // zone où les points A,B,C peuvent être déplacés
+
+const svg = document.getElementById('scene');
+svg.setAttribute('viewBox', `0 0 ${TAILLE} ${TAILLE}`);
+// Les attributs width/height (en plus du viewBox) donnent au SVG son rapport
+// largeur/hauteur intrinsèque : certains navigateurs (Safari notamment) calculent
+// mal "height:auto" sans eux. La taille réellement affichée, elle, s'adapte à la
+// fenêtre via le CSS (#scene est en width:100%), plafonnée à sa taille "native".
+svg.setAttribute('width', TAILLE);
+svg.setAttribute('height', TAILLE);
+svg.style.maxWidth = TAILLE + 'px';
+
+function toPx(p) {
+    return { x: (p.x - GRID_MIN) * UNIT, y: (GRID_MAX - p.y) * UNIT };
+}
+function toGrid(px, py) {
+    return { x: px / UNIT + GRID_MIN, y: GRID_MAX - py / UNIT };
+}
+
+function creerSVG(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs || {}).forEach(([k, v]) => el.setAttribute(k, v));
+    return el;
+}
+
+/* ---------- Grille de fond ---------- */
+const groupeGrille = creerSVG('g');
+svg.appendChild(groupeGrille);
+for (let x = GRID_MIN; x <= GRID_MAX; x++) {
+    const p1 = toPx({ x, y: GRID_MIN }), p2 = toPx({ x, y: GRID_MAX });
+    groupeGrille.appendChild(creerSVG('line', {
+        x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y,
+        stroke: '#e6e9f0', 'stroke-width': 1
+    }));
+}
+for (let y = GRID_MIN; y <= GRID_MAX; y++) {
+    const p1 = toPx({ x: GRID_MIN, y }), p2 = toPx({ x: GRID_MAX, y });
+    groupeGrille.appendChild(creerSVG('line', {
+        x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y,
+        stroke: '#e6e9f0', 'stroke-width': 1
+    }));
+}
+
+/* ---------- État du triangle ---------- */
+const COULEUR = {
+    A: { cote: '#4a7fe0', fond: 'rgba(74,127,224,0.35)' },   // côté FG (opposé à A)
+    B: { cote: '#e07a3e', fond: 'rgba(224,122,62,0.35)' },   // côté GE (opposé à B)
+    C: { cote: '#8e44ad', fond: 'rgba(142,68,173,0.35)' }    // côté EF (opposé à C)
+};
+
+const POSITIONS_INITIALES = { A: { x: 2, y: 2 }, B: { x: 8, y: 3 }, C: { x: 3, y: 8 } };
+let points = JSON.parse(JSON.stringify(POSITIONS_INITIALES));
+
+const airesVisibles = { A: false, B: false, C: false }; // clé = sommet opposé au côté
+let anglesVisibles = false;
+// Après une génération de triangle rectangle, on ne veut révéler QUE l'angle droit
+// (marqueur vert), pas les deux étiquettes en degrés des angles aigus — celles-ci ne
+// réapparaissent qu'en repassant par le bouton "Vérifier les angles" à la main.
+let afficherAnglesAigus = true;
+// Décalage (en unités de grille) appliqué à l'étiquette de degrés de chaque sommet,
+// pour pouvoir l'écarter à la souris quand elle chevauche le triangle ou un carré.
+let decalagesEtiquettesAngles = { A: { x: 0, y: 0 }, B: { x: 0, y: 0 }, C: { x: 0, y: 0 } };
+// Idem pour l'étiquette (lettre) de chaque point A/B/C, avec un décalage par défaut
+// qui reproduit la position d'origine (légèrement en haut à droite du point).
+const DECALAGE_LABEL_POINT_DEFAUT = { x: 0.4, y: -0.35 };
+let decalagesEtiquettesPoints = {
+    A: { ...DECALAGE_LABEL_POINT_DEFAUT }, B: { ...DECALAGE_LABEL_POINT_DEFAUT }, C: { ...DECALAGE_LABEL_POINT_DEFAUT }
+};
+
+/* ---------- Groupes de rendu (ordre : carrés < triangle < points) ---------- */
+const groupeCarres = creerSVG('g');
+const groupeTriangle = creerSVG('g');
+const groupeAngles = creerSVG('g');
+const groupePoints = creerSVG('g');
+svg.append(groupeCarres, groupeTriangle, groupeAngles, groupePoints);
+
+/* ---------- Géométrie ---------- */
+// Construit le carré extérieur sur le côté [P1,P2], à l'opposé du sommet P3.
+function carreExterieur(P1, P2, P3) {
+    const d = { x: P2.x - P1.x, y: P2.y - P1.y };
+    const perp = { x: -d.y, y: d.x };
+    const milieu = { x: (P1.x + P2.x) / 2, y: (P1.y + P2.y) / 2 };
+    const versP3 = { x: P3.x - milieu.x, y: P3.y - milieu.y };
+    const dot = perp.x * versP3.x + perp.y * versP3.y;
+    const dehors = dot > 0 ? { x: -perp.x, y: -perp.y } : perp;
+    const P4 = { x: P1.x + dehors.x, y: P1.y + dehors.y };
+    const P5 = { x: P2.x + dehors.x, y: P2.y + dehors.y };
+    return [P1, P2, P5, P4];
+}
+
+function aireCarre(P1, P2) {
+    const dx = P2.x - P1.x, dy = P2.y - P1.y;
+    return dx * dx + dy * dy;
+}
+
+// Côté opposé à chaque sommet, nommé par ordre alphabétique des deux autres
+// lettres (ex : le côté opposé à B est "AC", pas "CA"). Partagé par les deux
+// panneaux de vérification (angles et longueurs).
+const AUTRES_SOMMETS = { A: ['B', 'C'], B: ['A', 'C'], C: ['A', 'B'] };
+
+// Renvoie le nom du sommet où l'angle est exactement droit, ou null s'il n'y en a
+// pas (triangle non rectangle, ou "presque" rectangle sans l'être exactement).
+function trouverSommetDroit() {
+    const { A, B, C } = points;
+    const sommets = { A: [A, B, C], B: [B, C, A], C: [C, A, B] };
+    return ['A', 'B', 'C'].find(nom => {
+        const [s, v1, v2] = sommets[nom];
+        return infosAngle(s, v1, v2).droit;
+    }) || null;
+}
+
+function nbAiresVisibles() {
+    return ['A', 'B', 'C'].filter(nom => airesVisibles[nom]).length;
+}
+
+// Angle exact : produit scalaire nul <=> angle droit (coordonnées entières sur la grille).
+function infosAngle(sommet, autre1, autre2) {
+    const v1 = { x: autre1.x - sommet.x, y: autre1.y - sommet.y };
+    const v2 = { x: autre2.x - sommet.x, y: autre2.y - sommet.y };
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const norme1 = Math.hypot(v1.x, v1.y), norme2 = Math.hypot(v2.x, v2.y);
+    const cos = dot / (norme1 * norme2);
+    const degres = Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI;
+    return { droit: dot === 0, degres };
+}
+
+// Position par défaut (avant décalage manuel) de l'étiquette de degrés d'un sommet :
+// sur la bissectrice de l'angle, à une distance fixe du sommet.
+function posBaseEtiquetteAngle(sommet, v1, v2) {
+    const dirVers = (autre) => {
+        const d = Math.hypot(autre.x - sommet.x, autre.y - sommet.y);
+        return { x: (autre.x - sommet.x) / d, y: (autre.y - sommet.y) / d };
+    };
+    const u1 = dirVers(v1), u2 = dirVers(v2);
+    const bissectrice = { x: u1.x + u2.x, y: u1.y + u2.y };
+    const normeBis = Math.hypot(bissectrice.x, bissectrice.y) || 1;
+    return {
+        x: sommet.x + (bissectrice.x / normeBis) * 0.55,
+        y: sommet.y + (bissectrice.y / normeBis) * 0.55
+    };
+}
+
+function sommetsAnglesActuels() {
+    const { A, B, C } = points;
+    return { A: [A, B, C], B: [B, C, A], C: [C, A, B] };
+}
+
+/* ---------- Rendu ---------- */
+function vider(groupe) { while (groupe.firstChild) groupe.removeChild(groupe.firstChild); }
+
+function dessiner() {
+    // Les panneaux de vérification ne sont gouvernés que par ce qui est
+    // effectivement affiché à l'écran, jamais par un état mémorisé : si les
+    // conditions cessent d'être réunies (une aire recachée, un point déplacé...),
+    // on referme le panneau concerné avant même de redessiner, pour ne jamais
+    // montrer une conclusion qui ne correspond plus à ce qui est visible.
+    if (anglesVisibles && !toutesAiresVisibles()) anglesVisibles = false;
+    if (longueursVisibles && !longueursActivables()) longueursVisibles = false;
+
+    vider(groupeCarres);
+    vider(groupeTriangle);
+    vider(groupeAngles);
+    vider(groupePoints);
+
+    const { A, B, C } = points;
+
+    // Carrés : clé = sommet opposé au côté construit
+    const cotes = { A: [B, C], B: [C, A], C: [A, B] };
+    const troisiemeSommet = { A, B, C };
+
+    Object.entries(cotes).forEach(([cle, [P1, P2]]) => {
+        const sommets = carreExterieur(P1, P2, troisiemeSommet[cle]);
+        const pointsPx = sommets.map(toPx).map(p => `${p.x},${p.y}`).join(' ');
+        const poly = creerSVG('polygon', {
+            points: pointsPx,
+            fill: COULEUR[cle].fond,
+            stroke: COULEUR[cle].cote,
+            'stroke-width': 2,
+            class: 'carre'
+        });
+        poly.addEventListener('click', () => {
+            airesVisibles[cle] = !airesVisibles[cle];
+            dessiner();
+        });
+        groupeCarres.appendChild(poly);
+
+        if (airesVisibles[cle]) {
+            const centre = {
+                x: sommets.reduce((s, p) => s + p.x, 0) / 4,
+                y: sommets.reduce((s, p) => s + p.y, 0) / 4
+            };
+            const centrePx = toPx(centre);
+            const aire = Math.round(aireCarre(P1, P2) * 100) / 100;
+            const texte = creerSVG('text', {
+                x: centrePx.x, y: centrePx.y, class: 'aire-label'
+            });
+            texte.textContent = `${aire} u²`;
+            groupeCarres.appendChild(texte);
+        }
+    });
+
+    // Triangle
+    const trianglePx = [A, B, C].map(toPx).map(p => `${p.x},${p.y}`).join(' ');
+    groupeTriangle.appendChild(creerSVG('polygon', {
+        points: trianglePx, fill: 'rgba(44,51,69,0.05)', stroke: '#2c3345', 'stroke-width': 2.5
+    }));
+
+    // Marqueurs d'angle (si activés)
+    if (anglesVisibles) {
+        const sommetsAngles = sommetsAnglesActuels();
+        Object.entries(sommetsAngles).forEach(([nom, [sommet, v1, v2]]) => {
+            const info = infosAngle(sommet, v1, v2);
+            const dirVers = (autre) => {
+                const d = Math.hypot(autre.x - sommet.x, autre.y - sommet.y);
+                return { x: (autre.x - sommet.x) / d, y: (autre.y - sommet.y) / d };
+            };
+            if (info.droit) {
+                const taille = 0.35;
+                const u1 = dirVers(v1), u2 = dirVers(v2);
+                const p1 = { x: sommet.x + u1.x * taille, y: sommet.y + u1.y * taille };
+                const p2 = { x: sommet.x + u1.x * taille + u2.x * taille, y: sommet.y + u1.y * taille + u2.y * taille };
+                const p3 = { x: sommet.x + u2.x * taille, y: sommet.y + u2.y * taille };
+                const carrePx = [sommet, p1, p2, p3].map(toPx).map(p => `${p.x},${p.y}`).join(' ');
+                groupeAngles.appendChild(creerSVG('polygon', {
+                    points: carrePx, fill: 'rgba(35,163,91,0.5)', stroke: '#23a35b', 'stroke-width': 1.5
+                }));
+            } else if (afficherAnglesAigus) {
+                // Valeur en degrés pour les angles non droits, déplaçable à la souris.
+                const base = posBaseEtiquetteAngle(sommet, v1, v2);
+                const decalage = decalagesEtiquettesAngles[nom];
+                const posLabel = { x: base.x + decalage.x, y: base.y + decalage.y };
+                const posPx = toPx(posLabel);
+                const texte = creerSVG('text', {
+                    x: posPx.x, y: posPx.y, class: 'angle-label', fill: '#c0392b'
+                });
+                texte.textContent = `${Math.round(info.degres)}°`;
+                groupeAngles.appendChild(creerZoneGlisser(posPx, 14, 'etiquetteAngle', nom));
+                groupeAngles.appendChild(texte);
+            }
+        });
+    }
+
+    // Points déplaçables
+    Object.entries(points).forEach(([nom, p]) => {
+        const px = toPx(p);
+        const cercle = creerSVG('circle', {
+            cx: px.x, cy: px.y, r: 9, fill: '#2c3345', class: 'point-cercle'
+        });
+        cercle.dataset.nom = nom;
+        rendreDeplacable(cercle, nom);
+        groupePoints.appendChild(cercle);
+
+        const decalage = decalagesEtiquettesPoints[nom];
+        const posLabel = { x: p.x + decalage.x, y: p.y + decalage.y };
+        const posLabelPx = toPx(posLabel);
+        const label = creerSVG('text', {
+            x: posLabelPx.x, y: posLabelPx.y, class: 'point-label'
+        });
+        label.textContent = nom;
+        groupePoints.appendChild(creerZoneGlisser(posLabelPx, 12, 'etiquettePoint', nom));
+        groupePoints.appendChild(label);
+    });
+
+    mettreAJourPanneauAngles();
+    mettreAJourBoutonAngles();
+    mettreAJourBoutonLongueurs();
+    mettreAJourPanneauLongueurs();
+}
+
+/* ---------- Glisser-déposer sur la grille ----------
+   Le cercle SVG déplacé est détruit et recréé à chaque dessiner() (appelé en
+   continu pendant le glisser) : capturer le pointeur sur ce cercle casserait donc
+   le suivi dès la première frame. On capture plutôt le pointeur sur le <svg>
+   lui-même, qui persiste, et on garde le nom du point en cours de glisser dans
+   une variable partagée. */
+let elementEnGlisser = null; // { type: 'point' | 'etiquetteAngle', nom }
+
+function positionSVG(evt) {
+    const rect = svg.getBoundingClientRect();
+    const echelleX = TAILLE / rect.width, echelleY = TAILLE / rect.height;
+    return { px: (evt.clientX - rect.left) * echelleX, py: (evt.clientY - rect.top) * echelleY };
+}
+
+function finDeGlisser(evt) {
+    if (!elementEnGlisser) return;
+    const { type, nom } = elementEnGlisser;
+    elementEnGlisser = null;
+    if (type === 'point') {
+        // L'accroche à la grille n'a lieu qu'au relâchement, sinon le point saute
+        // par à-coups d'une unité entière au lieu de suivre la souris.
+        points[nom] = { x: Math.round(points[nom].x), y: Math.round(points[nom].y) };
+        dessiner();
+    }
+    // Les étiquettes d'angle ne s'accrochent pas à la grille : rien à faire de plus.
+}
+
+svg.addEventListener('pointermove', (evt) => {
+    if (!elementEnGlisser) return;
+    const { px, py } = positionSVG(evt);
+    const g = toGrid(px, py);
+    const { type, nom } = elementEnGlisser;
+    if (type === 'point') {
+        // Suit le curseur en continu pendant le glisser (fluide) ; voir finDeGlisser
+        // pour l'accroche à la grille, appliquée seulement au relâchement.
+        points[nom] = {
+            x: Math.max(BORNE_MIN, Math.min(BORNE_MAX, g.x)),
+            y: Math.max(BORNE_MIN, Math.min(BORNE_MAX, g.y))
+        };
+    } else if (type === 'etiquetteAngle') {
+        const [sommet, v1, v2] = sommetsAnglesActuels()[nom];
+        const base = posBaseEtiquetteAngle(sommet, v1, v2);
+        decalagesEtiquettesAngles[nom] = { x: g.x - base.x, y: g.y - base.y };
+    } else if (type === 'etiquettePoint') {
+        const base = points[nom];
+        decalagesEtiquettesPoints[nom] = { x: g.x - base.x, y: g.y - base.y };
+    }
+    dessiner();
+});
+svg.addEventListener('pointerup', finDeGlisser);
+svg.addEventListener('pointercancel', finDeGlisser);
+
+function rendreDeplacable(cercle, nom) {
+    cercle.addEventListener('pointerdown', (evt) => {
+        elementEnGlisser = { type: 'point', nom };
+        svg.setPointerCapture(evt.pointerId);
+        evt.preventDefault();
+    });
+}
+
+// Crée une zone circulaire invisible (plus large que le texte qu'elle accompagne)
+// pour saisir une étiquette au glisser sans avoir à viser précisément ses traits.
+function creerZoneGlisser(posPx, rayon, type, nom) {
+    const zone = creerSVG('circle', {
+        cx: posPx.x, cy: posPx.y, r: rayon, class: 'zone-glisser-etiquette'
+    });
+    zone.addEventListener('pointerdown', (evt) => {
+        elementEnGlisser = { type, nom };
+        svg.setPointerCapture(evt.pointerId);
+        evt.preventDefault();
+        evt.stopPropagation();
+    });
+    return zone;
+}
+
+/* ---------- Panneau de vérification des angles ---------- */
+// Rédige la vérification comme en cours : on repère le plus grand côté, on compare
+// son carré à la somme des carrés des deux autres, puis on conclut par la
+// réciproque (triangle rectangle) ou sa contraposée (triangle non rectangle) —
+// jamais par une mesure d'angle, qui n'est pas la méthode enseignée.
+function mettreAJourPanneauAngles() {
+    const panneau = document.getElementById('panneauAngles');
+    if (!anglesVisibles) { panneau.classList.remove('visible'); return; }
+    panneau.classList.add('visible');
+
+    const cotes = ['A', 'B', 'C'].map(sommet => {
+        const [n1, n2] = AUTRES_SOMMETS[sommet];
+        return { sommet, nom: n1 + n2, carre: aireCarre(points[n1], points[n2]) };
+    });
+
+    const [plusGrand, ...autres] = [...cotes].sort((p, q) => q.carre - p.carre);
+    const sommeAutres = autres[0].carre + autres[1].carre;
+    const estRectangle = plusGrand.carre === sommeAutres;
+
+    const verdict = estRectangle
+        ? `Donc, d'après la réciproque du théorème de Pythagore, le triangle ABC est rectangle en ${plusGrand.sommet}.`
+        : "Donc, d'après la contraposée du théorème de Pythagore, le triangle ABC n'est pas rectangle.";
+
+    const donnees = cotes.map(c => `${c.nom}² = ${c.carre} u²`).join('&nbsp;&nbsp;•&nbsp;&nbsp;');
+
+    panneau.innerHTML = `
+        <div class="verif-donnees"><b>Données :</b> ${donnees}</div>
+        <div>Dans le triangle ABC, le plus grand côté est [${plusGrand.nom}].</div>
+        <div class="verif-accolade">
+            <div class="verif-lignes">
+                <div>• ${plusGrand.nom}² = ${plusGrand.carre}</div>
+                <div>• ${autres[0].nom}² + ${autres[1].nom}² = ${autres[0].carre} + ${autres[1].carre} = ${sommeAutres}</div>
+            </div>
+            <div class="verif-brace">}</div>
+            <div class="verif-comparaison ${estRectangle ? 'droit' : ''}">${plusGrand.nom}² ${estRectangle ? '=' : '≠'} ${autres[0].nom}² + ${autres[1].nom}²</div>
+        </div>
+        <div id="verdictPythagore">${verdict}</div>
+    `;
+}
+
+// Vérifier les angles n'a de sens que si l'élève a déjà regardé les trois aires :
+// le bouton (et le panneau, voir dessiner()) restent gouvernés uniquement par
+// cette condition d'affichage — jamais par le fait que le panneau soit déjà ouvert.
+function toutesAiresVisibles() {
+    return airesVisibles.A && airesVisibles.B && airesVisibles.C;
+}
+
+/* ---------- Panneau de vérification des longueurs (théorème direct) ---------- */
+// Contrairement au panneau des angles (qui utilise la réciproque pour DÉCIDER si
+// le triangle est rectangle), celui-ci applique directement le théorème pour
+// CALCULER une longueur, comme les exemples "Calculer l'hypoténuse" /
+// "Calculer un côté de l'angle droit" du cours — ça ne veut donc dire quelque
+// chose que si un angle droit existe déjà et a été vérifié.
+let longueursVisibles = false;
+
+function longueursActivables() {
+    return !!trouverSommetDroit() && anglesVisibles && nbAiresVisibles() >= 2;
+}
+
+function mettreAJourBoutonLongueurs() {
+    const bouton = document.getElementById('btnVerifierLongueurs');
+    bouton.classList.toggle('active', longueursVisibles);
+    bouton.textContent = longueursVisibles ? 'Masquer les longueurs' : 'Vérifier les longueurs';
+    bouton.disabled = !longueursActivables();
+    bouton.title = bouton.disabled
+        ? "Nécessite un angle droit affiché (Vérifier les angles) et deux aires visibles"
+        : '';
+}
+
+function mettreAJourPanneauLongueurs() {
+    const panneau = document.getElementById('panneauLongueurs');
+    const sommetDroit = trouverSommetDroit();
+
+    // Le triangle a pu perdre son angle droit (point déplacé) depuis l'ouverture
+    // du panneau : dans ce cas, plus rien à vérifier, on referme proprement.
+    if (!longueursVisibles || !sommetDroit) {
+        longueursVisibles = false;
+        panneau.classList.remove('visible');
+        return;
+    }
+    panneau.classList.add('visible');
+
+    const infos = ['A', 'B', 'C'].map(sommet => {
+        const [n1, n2] = AUTRES_SOMMETS[sommet];
+        return { sommet, estHypotenuse: sommet === sommetDroit, nom: n1 + n2, carre: aireCarre(points[n1], points[n2]) };
+    });
+    const hyp = infos.find(i => i.estHypotenuse);
+    const jambes = infos.filter(i => !i.estHypotenuse);
+    const jambeCachee = jambes.find(j => !airesVisibles[j.sommet]);
+
+    let lignes, resultatNom, resultatCarre;
+    if (!airesVisibles[hyp.sommet]) {
+        // Les deux jambes sont visibles (sinon "longueursActivables" serait faux) :
+        // on calcule l'hypoténuse, comme "Calculer l'hypoténuse" dans le cours.
+        resultatNom = hyp.nom;
+        resultatCarre = jambes[0].carre + jambes[1].carre;
+        lignes = [
+            `${hyp.nom}² = ${jambes[0].nom}² + ${jambes[1].nom}²`,
+            `${hyp.nom}² = ${jambes[0].carre} + ${jambes[1].carre}`,
+            `${hyp.nom}² = ${resultatCarre}`
+        ];
+    } else if (jambeCachee) {
+        // L'hypoténuse et une jambe sont visibles : on calcule la jambe manquante,
+        // comme "Calculer un côté de l'angle droit" dans le cours.
+        const jambeConnue = jambes.find(j => j !== jambeCachee);
+        resultatNom = jambeCachee.nom;
+        resultatCarre = hyp.carre - jambeConnue.carre;
+        lignes = [
+            `${hyp.nom}² = ${jambeConnue.nom}² + ${jambeCachee.nom}²`,
+            `${hyp.carre} = ${jambeConnue.carre} + ${jambeCachee.nom}²`,
+            `${jambeCachee.nom}² = ${hyp.carre} - ${jambeConnue.carre}`,
+            `${jambeCachee.nom}² = ${resultatCarre}`
+        ];
+    } else {
+        // Les trois aires sont affichées : rien ne manque, on calcule quand même
+        // l'hypoténuse à partir des deux jambes, à titre de confirmation.
+        resultatNom = hyp.nom;
+        resultatCarre = jambes[0].carre + jambes[1].carre;
+        lignes = [
+            `${hyp.nom}² = ${jambes[0].nom}² + ${jambes[1].nom}²`,
+            `${hyp.nom}² = ${jambes[0].carre} + ${jambes[1].carre}`,
+            `${hyp.nom}² = ${resultatCarre}`
+        ];
+    }
+    const resultatValeur = Math.sqrt(resultatCarre);
+    const donnees = infos.filter(i => airesVisibles[i.sommet]).map(i => `${i.nom}² = ${i.carre} u²`).join('&nbsp;&nbsp;•&nbsp;&nbsp;');
+
+    panneau.innerHTML = `
+        <div class="verif-donnees"><b>Données :</b> ${donnees}</div>
+        <div>Le triangle ABC est rectangle en ${sommetDroit}, l'hypoténuse est [${hyp.nom}].</div>
+        <div>D'après le théorème de Pythagore, on a :</div>
+        <div class="verif-lignes">
+            ${lignes.map(l => `<div>${l}</div>`).join('')}
+            <div>Donc : ${resultatNom} = √${resultatCarre}</div>
+            <div>${resultatNom} <span class="longueur-resultat">≈ ${resultatValeur.toFixed(2)} u</span></div>
+        </div>
+    `;
+}
+
+document.getElementById('btnVerifierLongueurs').onclick = function () {
+    if (this.disabled) return;
+    longueursVisibles = !longueursVisibles;
+    mettreAJourBoutonLongueurs();
+    mettreAJourPanneauLongueurs();
+};
+
+function mettreAJourBoutonAngles() {
+    const bouton = document.getElementById('btnVerifierAngles');
+    bouton.classList.toggle('active', anglesVisibles);
+    bouton.textContent = anglesVisibles ? 'Masquer les angles' : 'Vérifier les angles';
+    bouton.disabled = !toutesAiresVisibles();
+    bouton.title = bouton.disabled ? 'Affiche d\'abord les trois aires (clique sur chaque carré)' : '';
+}
+
+document.getElementById('btnVerifierAngles').onclick = function () {
+    if (this.disabled) return;
+    anglesVisibles = !anglesVisibles;
+    afficherAnglesAigus = anglesVisibles; // vérification manuelle : affichage complet
+    mettreAJourBoutonAngles();
+    dessiner();
+};
+
+document.getElementById('btnGrille').onclick = function () {
+    const grilleMasquee = groupeGrille.style.display !== 'none';
+    groupeGrille.style.display = grilleMasquee ? 'none' : '';
+    this.classList.toggle('active', grilleMasquee);
+    this.textContent = grilleMasquee ? 'Afficher la grille' : 'Masquer la grille';
+};
+
+function reinitialiserEtiquettes() {
+    decalagesEtiquettesAngles = { A: { x: 0, y: 0 }, B: { x: 0, y: 0 }, C: { x: 0, y: 0 } };
+    decalagesEtiquettesPoints = {
+        A: { ...DECALAGE_LABEL_POINT_DEFAUT }, B: { ...DECALAGE_LABEL_POINT_DEFAUT }, C: { ...DECALAGE_LABEL_POINT_DEFAUT }
+    };
+}
+
+document.getElementById('reinitialiserButton').onclick = function () {
+    points = JSON.parse(JSON.stringify(POSITIONS_INITIALES));
+    airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    afficherAnglesAigus = true;
+    reinitialiserEtiquettes();
+    dessiner();
+};
+
+/* ---------- Génération d'un triangle rectangle aléatoire ---------- */
+// Quelques vecteurs de base (a,b) simples : le vecteur (b,-a) lui est toujours
+// perpendiculaire (produit scalaire a*b + b*(-a) = 0 par construction), donc
+// l'angle droit au sommet est garanti, pas seulement approché. Pas de coordonnée
+// nulle (donc pas de (1,0)) : un côté parfaitement horizontal ou vertical rendrait
+// l'angle droit visible d'un coup d'œil (aligné sur la grille), au lieu de devoir
+// vraiment le vérifier.
+const DIRECTIONS_TRIANGLE_RECTANGLE = [[1, 1], [2, 1], [1, 2]];
+
+function calculerSommetsCarres(pts) {
+    const { A, B, C } = pts;
+    const cotes = { A: [B, C], B: [C, A], C: [A, B] };
+    const troisiemeSommet = { A, B, C };
+    return Object.values(cotes).flatMap(([P1, P2], i) => {
+        const cle = ['A', 'B', 'C'][i];
+        return carreExterieur(P1, P2, troisiemeSommet[cle]);
+    });
+}
+
+function tientDansLaGrille(sommetsCarres) {
+    const marge = 1;
+    return sommetsCarres.every(p =>
+        p.x >= GRID_MIN + marge && p.x <= GRID_MAX - marge &&
+        p.y >= GRID_MIN + marge && p.y <= GRID_MAX - marge
+    );
+}
+
+function melanger(tableau) {
+    const copie = [...tableau];
+    for (let i = copie.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copie[i], copie[j]] = [copie[j], copie[i]];
+    }
+    return copie;
+}
+
+// Construit un candidat {A,B,C} avec un vrai angle droit (à un sommet tiré au
+// hasard), en respectant les bornes de déplacement et la visibilité des carrés.
+// Retourne null si aucun tirage valide n'a été trouvé (cas très improbable).
+function genererSommetsTriangleRectangle() {
+    const TENTATIVES_MAX = 300;
+    for (let tentative = 0; tentative < TENTATIVES_MAX; tentative++) {
+        const [a, b] = DIRECTIONS_TRIANGLE_RECTANGLE[Math.floor(Math.random() * DIRECTIONS_TRIANGLE_RECTANGLE.length)];
+        const perp = [b, -a];
+        // (a,b) et (b,-a) ont toujours la même norme : des longueurs k1=k2 donneraient
+        // systématiquement un triangle rectangle isocèle. On tire donc deux multiples
+        // toujours différents pour que les deux côtés de l'angle droit soient inégaux.
+        const LONGUEURS_POSSIBLES = [2, 3, 4, 5];
+        const k1 = LONGUEURS_POSSIBLES[Math.floor(Math.random() * LONGUEURS_POSSIBLES.length)];
+        const k2 = melanger(LONGUEURS_POSSIBLES.filter(v => v !== k1))[0];
+        const s1 = Math.random() < 0.5 ? 1 : -1;
+        const s2 = Math.random() < 0.5 ? 1 : -1;
+        const sommetDroit = {
+            x: 3 + Math.floor(Math.random() * 5), // 3..7 : marge pour que les carrés restent visibles
+            y: 3 + Math.floor(Math.random() * 5)
+        };
+        const P1 = { x: sommetDroit.x + s1 * k1 * a, y: sommetDroit.y + s1 * k1 * b };
+        const P2 = { x: sommetDroit.x + s2 * k2 * perp[0], y: sommetDroit.y + s2 * k2 * perp[1] };
+
+        const [pA, pB, pC] = melanger([sommetDroit, P1, P2]);
+        const candidat = { A: pA, B: pB, C: pC };
+
+        // Toujours dans les bornes de déplacement (0..10) : on garde la possibilité
+        // de continuer à glisser les points ensuite sans qu'ils soient déjà au bord.
+        const dansBornes = Object.values(candidat).every(p =>
+            p.x >= BORNE_MIN && p.x <= BORNE_MAX && p.y >= BORNE_MIN && p.y <= BORNE_MAX
+        );
+        if (!dansBornes) continue;
+
+        // Vérifie que les trois carrés construits restent entièrement visibles
+        // dans la grille (pas de coin qui sorte du cadre affiché).
+        if (!tientDansLaGrille(calculerSommetsCarres(candidat))) continue;
+
+        return candidat;
+    }
+    return null;
+}
+
+function genererTriangleRectangle() {
+    const candidat = genererSommetsTriangleRectangle();
+    if (!candidat) return;
+    points = candidat;
+    // Comme pour n'importe quel triangle : la vérification des angles reste
+    // gouvernée uniquement par l'affichage des trois aires (voir dessiner()),
+    // même quand on sait déjà que ce triangle est rectangle — pas de raccourci.
+    anglesVisibles = false;
+    afficherAnglesAigus = true;
+    airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    reinitialiserEtiquettes();
+    dessiner();
+}
+
+document.getElementById('btnTriangleRectangle').onclick = genererTriangleRectangle;
+
+// Écarte légèrement UN sommet d'un triangle rectangle (d'une unité de grille, en x
+// ou en y) pour casser l'angle droit exact tout en gardant un triangle qui y
+// ressemble encore fortement à l'œil — de quoi obliger à vraiment vérifier plutôt
+// que deviner. Parmi tous les écarts valides, on garde celui dont l'angle le plus
+// proche de 90° l'est le plus (sans l'être exactement) : un simple ±1 sur la grille
+// peut sinon donner un écart énorme (>20°) si le côté concerné est court, ce qui se
+// verrait à l'œil nu et manquerait le but. Retourne null si aucun écart ne convient.
+function presqueDroit(candidat) {
+    const decalages = [{ axe: 'x', pas: 1 }, { axe: 'x', pas: -1 }, { axe: 'y', pas: 1 }, { axe: 'y', pas: -1 }];
+    const essaisValides = [];
+
+    for (const nom of ['A', 'B', 'C']) {
+        for (const { axe, pas } of decalages) {
+            const essai = {
+                A: { ...candidat.A }, B: { ...candidat.B }, C: { ...candidat.C }
+            };
+            essai[nom] = { ...essai[nom], [axe]: essai[nom][axe] + pas };
+
+            const dansBornes = Object.values(essai).every(p =>
+                p.x >= BORNE_MIN && p.x <= BORNE_MAX && p.y >= BORNE_MIN && p.y <= BORNE_MAX
+            );
+            if (!dansBornes) continue;
+            if (!tientDansLaGrille(calculerSommetsCarres(essai))) continue;
+
+            const { A, B, C } = essai;
+            const ecarts = [infosAngle(A, B, C), infosAngle(B, C, A), infosAngle(C, A, B)]
+                .map(info => Math.abs(90 - info.degres));
+            const ecartMin = Math.min(...ecarts);
+            if (ecartMin === 0) continue; // encore exactement droit : ne compte pas comme "presque"
+
+            essaisValides.push({ essai, ecartMin });
+        }
+    }
+    if (essaisValides.length === 0) return null;
+    essaisValides.sort((p, q) => p.ecartMin - q.ecartMin);
+    return essaisValides[0].essai;
+}
+
+// Bouton "défi" : un coup sur deux (environ), le triangle produit est un vrai
+// triangle rectangle ; sinon il n'en a que l'air (angle proche de 90°, mais pas
+// exact). Contrairement à "Générer un triangle rectangle", rien n'est révélé :
+// c'est le bouton "Vérifier les angles" qui doit trancher.
+function genererDefiAngle() {
+    const candidat = genererSommetsTriangleRectangle();
+    if (!candidat) return;
+
+    const vraiDroit = Math.random() < 0.5;
+    const resultat = vraiDroit ? candidat : (presqueDroit(candidat) || candidat);
+
+    points = resultat;
+    anglesVisibles = false;
+    afficherAnglesAigus = true; // si l'élève vérifie ensuite, il voit tout
+    airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    reinitialiserEtiquettes();
+    dessiner();
+}
+
+document.getElementById('btnDefiAngle').onclick = genererDefiAngle;
+
+dessiner();
+</script>
+</body>
+</html>
