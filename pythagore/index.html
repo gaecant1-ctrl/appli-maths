@@ -445,6 +445,13 @@ function nbAiresVisibles() {
     return ['A', 'B', 'C'].filter(nom => airesVisibles[nom]).length;
 }
 
+// Nombre total de données actuellement affichées (l'angle droit compte pour une,
+// chaque aire visible pour une). Au-delà de 3, il n'y a plus rien à "vérifier" —
+// tout est déjà donné — donc les deux boutons de vérification se désactivent.
+function nbDonneesAffichees() {
+    return (anglesVisibles ? 1 : 0) + nbAiresVisibles();
+}
+
 // Angle exact : produit scalaire nul <=> angle droit (coordonnées entières sur la grille).
 function infosAngle(sommet, autre1, autre2) {
     const v1 = { x: autre1.x - sommet.x, y: autre1.y - sommet.y };
@@ -481,13 +488,13 @@ function sommetsAnglesActuels() {
 function vider(groupe) { while (groupe.firstChild) groupe.removeChild(groupe.firstChild); }
 
 function dessiner() {
-    // Les panneaux de vérification ne sont gouvernés que par ce qui est
-    // effectivement affiché à l'écran, jamais par un état mémorisé : si les
-    // conditions cessent d'être réunies (une aire recachée, un point déplacé...),
-    // on referme le panneau concerné avant même de redessiner, pour ne jamais
-    // montrer une conclusion qui ne correspond plus à ce qui est visible.
-    if (anglesVisibles && !toutesAiresVisibles()) anglesVisibles = false;
-    if (longueursVisibles && !longueursActivables()) longueursVisibles = false;
+    // "Vérifier les longueurs" suppose l'angle droit déjà affiché : si ce dernier
+    // se referme (bouton "Vérifier les angles", ou triangle qui perd son angle
+    // droit après un glisser), le panneau des longueurs n'a plus de sens non plus.
+    // On utilise ici la version SANS la limite des 3 données : révéler une aire
+    // de plus pendant que le panneau est ouvert ne doit rien fermer — seuls les
+    // boutons "Vérifier" déclenchent ou arrêtent une démonstration.
+    if (longueursVisibles && !longueursPremissesValides()) longueursVisibles = false;
 
     vider(groupeCarres);
     vider(groupeTriangle);
@@ -511,6 +518,12 @@ function dessiner() {
             class: 'carre'
         });
         poly.addEventListener('click', () => {
+            // On peut toujours cacher une aire déjà visible (ça retire une donnée),
+            // mais pas en révéler une nouvelle au-delà de 3 données affichées au
+            // total : la dernière pièce manquante ne doit s'obtenir que par la
+            // vérification (bouton), jamais par un simple clic sur le carré.
+            const reveleUneDonneeDePlus = !airesVisibles[cle];
+            if (reveleUneDonneeDePlus && nbDonneesAffichees() >= 3) return;
             airesVisibles[cle] = !airesVisibles[cle];
             dessiner();
         });
@@ -679,11 +692,11 @@ function creerZoneGlisser(posPx, rayon, type, nom) {
 // son carré à la somme des carrés des deux autres, puis on conclut par la
 // réciproque (triangle rectangle) ou sa contraposée (triangle non rectangle) —
 // jamais par une mesure d'angle, qui n'est pas la méthode enseignée.
-function mettreAJourPanneauAngles() {
-    const panneau = document.getElementById('panneauAngles');
-    if (!anglesVisibles) { panneau.classList.remove('visible'); return; }
-    panneau.classList.add('visible');
-
+// Calcule le contenu du panneau des angles à PARTIR DE L'ÉTAT ACTUEL. Pure : ne
+// touche pas au DOM. N'est appelée qu'au moment de "lancer" un affichage (clic sur
+// le bouton, ou génération) — jamais en continu — pour que le texte affiché reste
+// figé tel quel tant qu'on ne relance pas explicitement une vérification.
+function calculerHtmlPanneauAngles() {
     const cotes = ['A', 'B', 'C'].map(sommet => {
         const [n1, n2] = AUTRES_SOMMETS[sommet];
         return { sommet, nom: n1 + n2, carre: aireCarre(points[n1], points[n2]) };
@@ -693,14 +706,24 @@ function mettreAJourPanneauAngles() {
     const sommeAutres = autres[0].carre + autres[1].carre;
     const estRectangle = plusGrand.carre === sommeAutres;
 
+    // La démonstration chiffrée ne doit apparaître qu'après un clic sur "Vérifier
+    // les angles" — jamais se déclencher toute seule parce que l'élève a fini par
+    // révéler la 3e aire. "afficherAnglesAigus" distingue justement les deux cas :
+    // true = révélé via le bouton (vraie vérification, énoncée avec les données) ;
+    // false = révélé par "Générer un triangle rectangle" (fait donné, sans preuve
+    // tant qu'aucune vérification n'a été demandée).
+    if (!afficherAnglesAigus) {
+        return `<div>${estRectangle ? `Ce triangle est rectangle en ${plusGrand.sommet}.` : "Ce triangle n'est pas rectangle."}</div>`;
+    }
+
     const verdict = estRectangle
         ? `Donc, d'après la réciproque du théorème de Pythagore, le triangle ABC est rectangle en ${plusGrand.sommet}.`
         : "Donc, d'après la contraposée du théorème de Pythagore, le triangle ABC n'est pas rectangle.";
 
     const donnees = cotes.map(c => `${c.nom}² = ${c.carre} u²`).join('&nbsp;&nbsp;•&nbsp;&nbsp;');
 
-    panneau.innerHTML = `
-        <div class="verif-donnees"><b>Données :</b> ${donnees}</div>
+    return `
+        <div class="verif-donnees"><b>Données :</b><br>${donnees}</div>
         <div>Dans le triangle ABC, le plus grand côté est [${plusGrand.nom}].</div>
         <div class="verif-accolade">
             <div class="verif-lignes">
@@ -714,11 +737,36 @@ function mettreAJourPanneauAngles() {
     `;
 }
 
-// Vérifier les angles n'a de sens que si l'élève a déjà regardé les trois aires :
-// le bouton (et le panneau, voir dessiner()) restent gouvernés uniquement par
-// cette condition d'affichage — jamais par le fait que le panneau soit déjà ouvert.
+// Contenu figé du panneau des angles : calculé UNE FOIS au moment du "lancer"
+// (lancerVerificationAngles), jamais recalculé au fil des redessins suivants —
+// glisser un point ou (dé)masquer une aire ne doit jamais modifier une
+// démonstration déjà affichée, seul un nouveau clic sur "Vérifier" le peut.
+let htmlFigeAngles = '';
+
+function lancerVerificationAngles() {
+    htmlFigeAngles = calculerHtmlPanneauAngles();
+}
+
+function mettreAJourPanneauAngles() {
+    const panneau = document.getElementById('panneauAngles');
+    if (!anglesVisibles) { panneau.classList.remove('visible'); return; }
+    panneau.classList.add('visible');
+    panneau.innerHTML = htmlFigeAngles;
+}
+
+// Le bouton "Vérifier les angles" n'a de sens (et n'est cliquable) que si les
+// trois aires sont affichées — rien d'autre ne le rend actif ou inactif, même
+// si le panneau est déjà ouvert : le retirer d'une aire referme la possibilité
+// de le manipuler, jusqu'à ce que les trois soient de nouveau visibles.
+// "Générer un triangle rectangle" contourne volontairement cette règle en
+// révélant l'angle directement (voir genererTriangleRectangle) : dans ce cas,
+// le bouton lui-même reste désactivé (rien à "vérifier", c'est déjà donné).
 function toutesAiresVisibles() {
     return airesVisibles.A && airesVisibles.B && airesVisibles.C;
+}
+
+function anglesActivables() {
+    return toutesAiresVisibles() && nbDonneesAffichees() <= 3;
 }
 
 /* ---------- Panneau de vérification des longueurs (théorème direct) ---------- */
@@ -729,8 +777,17 @@ function toutesAiresVisibles() {
 // chose que si un angle droit existe déjà et a été vérifié.
 let longueursVisibles = false;
 
-function longueursActivables() {
+// Prémisses mathématiques du panneau (sans la limite des 3 données) : si l'une
+// d'elles cesse d'être vraie (angle masqué, plus de vrai angle droit, moins de
+// deux aires), le panneau déjà ouvert n'a plus aucun sens et se referme. En
+// revanche, dépasser la limite de 3 données ne rend rien invalide : ça ne fait
+// qu'empêcher de RELANCER une vérification, jamais de fermer celle en cours.
+function longueursPremissesValides() {
     return !!trouverSommetDroit() && anglesVisibles && nbAiresVisibles() >= 2;
+}
+
+function longueursActivables() {
+    return longueursPremissesValides() && nbDonneesAffichees() <= 3;
 }
 
 function mettreAJourBoutonLongueurs() {
@@ -743,19 +800,11 @@ function mettreAJourBoutonLongueurs() {
         : '';
 }
 
-function mettreAJourPanneauLongueurs() {
-    const panneau = document.getElementById('panneauLongueurs');
-    const sommetDroit = trouverSommetDroit();
-
-    // Le triangle a pu perdre son angle droit (point déplacé) depuis l'ouverture
-    // du panneau : dans ce cas, plus rien à vérifier, on referme proprement.
-    if (!longueursVisibles || !sommetDroit) {
-        longueursVisibles = false;
-        panneau.classList.remove('visible');
-        return;
-    }
-    panneau.classList.add('visible');
-
+// Calcule le contenu du panneau des longueurs à PARTIR DE L'ÉTAT ACTUEL. Pure :
+// ne touche pas au DOM. N'est appelée qu'au moment de "lancer" (clic sur le
+// bouton) — jamais en continu (voir calculerHtmlPanneauAngles pour la même
+// logique côté angles). Suppose qu'un sommet droit existe (vérifié par l'appelant).
+function calculerHtmlPanneauLongueurs(sommetDroit) {
     const infos = ['A', 'B', 'C'].map(sommet => {
         const [n1, n2] = AUTRES_SOMMETS[sommet];
         return { sommet, estHypotenuse: sommet === sommetDroit, nom: n1 + n2, carre: aireCarre(points[n1], points[n2]) };
@@ -799,10 +848,16 @@ function mettreAJourPanneauLongueurs() {
         ];
     }
     const resultatValeur = Math.sqrt(resultatCarre);
-    const donnees = infos.filter(i => airesVisibles[i.sommet]).map(i => `${i.nom}² = ${i.carre} u²`).join('&nbsp;&nbsp;•&nbsp;&nbsp;');
+    // "Données" recense tout ce qui est effectivement affiché et sert de point de
+    // départ à la démonstration : l'angle droit (visible via son marqueur) autant
+    // que les aires révélées — pas seulement ces dernières.
+    const donnees = [
+        `Angle droit en ${sommetDroit}`,
+        ...infos.filter(i => airesVisibles[i.sommet]).map(i => `${i.nom}² = ${i.carre} u²`)
+    ].join('&nbsp;&nbsp;•&nbsp;&nbsp;');
 
-    panneau.innerHTML = `
-        <div class="verif-donnees"><b>Données :</b> ${donnees}</div>
+    return `
+        <div class="verif-donnees"><b>Données :</b><br>${donnees}</div>
         <div>Le triangle ABC est rectangle en ${sommetDroit}, l'hypoténuse est [${hyp.nom}].</div>
         <div>D'après le théorème de Pythagore, on a :</div>
         <div class="verif-lignes">
@@ -813,9 +868,34 @@ function mettreAJourPanneauLongueurs() {
     `;
 }
 
+// Contenu figé (voir htmlFigeAngles pour la même logique côté angles) : calculé
+// une seule fois au clic sur "Vérifier les longueurs", jamais recalculé ensuite.
+let htmlFigeLongueurs = '';
+
+function lancerVerificationLongueurs() {
+    const sommetDroit = trouverSommetDroit();
+    if (!sommetDroit) return;
+    htmlFigeLongueurs = calculerHtmlPanneauLongueurs(sommetDroit);
+}
+
+function mettreAJourPanneauLongueurs() {
+    const panneau = document.getElementById('panneauLongueurs');
+
+    // Le triangle a pu perdre son angle droit (point déplacé) depuis l'ouverture
+    // du panneau : dans ce cas, plus rien à vérifier, on referme proprement.
+    if (!longueursVisibles || !trouverSommetDroit()) {
+        longueursVisibles = false;
+        panneau.classList.remove('visible');
+        return;
+    }
+    panneau.classList.add('visible');
+    panneau.innerHTML = htmlFigeLongueurs;
+}
+
 document.getElementById('btnVerifierLongueurs').onclick = function () {
     if (this.disabled) return;
     longueursVisibles = !longueursVisibles;
+    if (longueursVisibles) lancerVerificationLongueurs();
     mettreAJourBoutonLongueurs();
     mettreAJourPanneauLongueurs();
 };
@@ -824,7 +904,7 @@ function mettreAJourBoutonAngles() {
     const bouton = document.getElementById('btnVerifierAngles');
     bouton.classList.toggle('active', anglesVisibles);
     bouton.textContent = anglesVisibles ? 'Masquer les angles' : 'Vérifier les angles';
-    bouton.disabled = !toutesAiresVisibles();
+    bouton.disabled = !anglesActivables();
     bouton.title = bouton.disabled ? 'Affiche d\'abord les trois aires (clique sur chaque carré)' : '';
 }
 
@@ -832,6 +912,7 @@ document.getElementById('btnVerifierAngles').onclick = function () {
     if (this.disabled) return;
     anglesVisibles = !anglesVisibles;
     afficherAnglesAigus = anglesVisibles; // vérification manuelle : affichage complet
+    if (anglesVisibles) lancerVerificationAngles();
     mettreAJourBoutonAngles();
     dessiner();
 };
@@ -854,6 +935,11 @@ document.getElementById('reinitialiserButton').onclick = function () {
     points = JSON.parse(JSON.stringify(POSITIONS_INITIALES));
     airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
     afficherAnglesAigus = true;
+    // Réinitialiser est une action explicite distincte d'un simple redessin : elle
+    // referme les démonstrations en cours plutôt que de les laisser figées sur un
+    // triangle qui n'existe plus.
+    anglesVisibles = false;
+    longueursVisibles = false;
     reinitialiserEtiquettes();
     dessiner();
 };
@@ -861,11 +947,10 @@ document.getElementById('reinitialiserButton').onclick = function () {
 /* ---------- Génération d'un triangle rectangle aléatoire ---------- */
 // Quelques vecteurs de base (a,b) simples : le vecteur (b,-a) lui est toujours
 // perpendiculaire (produit scalaire a*b + b*(-a) = 0 par construction), donc
-// l'angle droit au sommet est garanti, pas seulement approché. Pas de coordonnée
-// nulle (donc pas de (1,0)) : un côté parfaitement horizontal ou vertical rendrait
-// l'angle droit visible d'un coup d'œil (aligné sur la grille), au lieu de devoir
-// vraiment le vérifier.
-const DIRECTIONS_TRIANGLE_RECTANGLE = [[1, 1], [2, 1], [1, 2]];
+// l'angle droit au sommet est garanti, pas seulement approché. (1,0)/(0,1) et
+// leurs colinéaires redonnent des côtés horizontaux/verticaux ; les autres
+// vecteurs gardent des triangles inclinés pour varier l'apparence.
+const DIRECTIONS_TRIANGLE_RECTANGLE = [[1, 0], [1, 1], [2, 1], [1, 2]];
 
 function calculerSommetsCarres(pts) {
     const { A, B, C } = pts;
@@ -910,9 +995,14 @@ function genererSommetsTriangleRectangle() {
         const k2 = melanger(LONGUEURS_POSSIBLES.filter(v => v !== k1))[0];
         const s1 = Math.random() < 0.5 ? 1 : -1;
         const s2 = Math.random() < 0.5 ? 1 : -1;
+        // Toute la zone de déplacement (0..10), pas juste le centre : les
+        // directions "pentues" comme (2,1) ont besoin d'un sommet proche d'un
+        // bord pour que leurs longs côtés tiennent dans la grille — centrer sur
+        // [3,7] les rendait tout simplement impossibles à générer (0% de succès
+        // mesuré), au profit silencieux des directions plus compactes.
         const sommetDroit = {
-            x: 3 + Math.floor(Math.random() * 5), // 3..7 : marge pour que les carrés restent visibles
-            y: 3 + Math.floor(Math.random() * 5)
+            x: BORNE_MIN + Math.floor(Math.random() * (BORNE_MAX - BORNE_MIN + 1)),
+            y: BORNE_MIN + Math.floor(Math.random() * (BORNE_MAX - BORNE_MIN + 1))
         };
         const P1 = { x: sommetDroit.x + s1 * k1 * a, y: sommetDroit.y + s1 * k1 * b };
         const P2 = { x: sommetDroit.x + s2 * k2 * perp[0], y: sommetDroit.y + s2 * k2 * perp[1] };
@@ -940,13 +1030,12 @@ function genererTriangleRectangle() {
     const candidat = genererSommetsTriangleRectangle();
     if (!candidat) return;
     points = candidat;
-    // Comme pour n'importe quel triangle : la vérification des angles reste
-    // gouvernée uniquement par l'affichage des trois aires (voir dessiner()),
-    // même quand on sait déjà que ce triangle est rectangle — pas de raccourci.
-    anglesVisibles = false;
-    afficherAnglesAigus = true;
+    anglesVisibles = true; // révèle immédiatement l'angle droit obtenu...
+    afficherAnglesAigus = false; // ...mais pas les deux angles aigus, à deviner
     airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    longueursVisibles = false;
     reinitialiserEtiquettes();
+    lancerVerificationAngles(); // fige le constat ("rectangle en X") sur CE triangle
     dessiner();
 }
 
@@ -1005,6 +1094,7 @@ function genererDefiAngle() {
     anglesVisibles = false;
     afficherAnglesAigus = true; // si l'élève vérifie ensuite, il voit tout
     airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    longueursVisibles = false;
     reinitialiserEtiquettes();
     dessiner();
 }
