@@ -1,7 +1,7 @@
 {
   "consignes": {
     "titre": "Le cube aux huit coins et son noyau",
-    "texte": "Calcule le nombre total de cubes de cette construction."
+    "texte": "Donne une expression numérique du nombre total de cubes."
   },
   "tableau": {
     "type": "Volume",

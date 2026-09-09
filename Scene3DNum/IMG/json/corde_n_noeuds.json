@@ -1,7 +1,7 @@
 {
   "consignes": {
     "titre": "La corde à nœuds",
-    "texte": "Calcule le nombre total de cubes de cette construction."
+    "texte": "Donne une expression numérique du nombre total de cubes."
   },
   "tableau": {
     "type": "Volume",
@@ -24,9 +24,22 @@
     "edgeColor": "#1f2724"
   },
   "parametres": {
-    "a": { "n_min": 3, "n_max": 7, "step": 2, "label": "Arête d'un nœud (cube)" },
-    "b": { "n_min": 2, "n_max": 6, "label": "Longueur d'un segment de jonction" },
-    "n": { "n_min": 2, "n_max": 5, "label": "Nombre de nœuds" }
+    "a": {
+      "n_min": 3,
+      "n_max": 7,
+      "step": 2,
+      "label": "Arête d'un nœud (cube)"
+    },
+    "b": {
+      "n_min": 2,
+      "n_max": 6,
+      "label": "Longueur d'un segment de jonction"
+    },
+    "n": {
+      "n_min": 2,
+      "n_max": 5,
+      "label": "Nombre de nœuds"
+    }
   },
   "objet": [
     {

@@ -1,7 +1,7 @@
 {
   "consignes": {
     "titre": "Le pavé droit",
-    "texte": "Calcule le nombre total de cubes de cette construction."
+    "texte": "Donne une expression numérique du nombre total de cubes."
   },
   "tableau": {
     "type": "Volume",
@@ -24,9 +24,21 @@
     "edgeColor": "#1f2724"
   },
   "parametres": {
-    "p": { "n_min": 3, "n_max": 8, "label": "Longueur" },
-    "q": { "n_min": 2, "n_max": 6, "label": "Largeur" },
-    "r": { "n_min": 2, "n_max": 6, "label": "Hauteur" }
+    "p": {
+      "n_min": 3,
+      "n_max": 8,
+      "label": "Longueur"
+    },
+    "q": {
+      "n_min": 2,
+      "n_max": 6,
+      "label": "Largeur"
+    },
+    "r": {
+      "n_min": 2,
+      "n_max": 6,
+      "label": "Hauteur"
+    }
   },
   "objet": [
     {

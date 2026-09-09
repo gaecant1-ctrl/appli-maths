@@ -1,7 +1,7 @@
 {
   "consignes": {
     "titre": "La dalle et son socle",
-    "texte": "Calcule le nombre total de cubes de cette construction."
+    "texte": "Donne une expression numérique du nombre total de cubes."
   },
   "tableau": {
     "type": "Volume",
@@ -24,7 +24,11 @@
     "edgeColor": "#1f2724"
   },
   "parametres": {
-    "n": { "n_min": 4, "n_max": 10, "label": "Arête de la dalle" }
+    "n": {
+      "n_min": 4,
+      "n_max": 10,
+      "label": "Arête de la dalle"
+    }
   },
   "objet": [
     {

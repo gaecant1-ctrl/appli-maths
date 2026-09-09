@@ -63,7 +63,7 @@
       <div class="panneau_corps">
         <div class="form-group">
           <label for="input_formule" class="form-label">
-            Calcule le nombre total de cubes de cette construction <br> et saisis ton expression numérique :
+            Donne une expression numérique du nombre total de cubes <br> de cette construction :
           </label>
         </div>
 
@@ -806,6 +806,14 @@
 function preparerExpressionNumerique(saisie) {
   let expr = saisie.toLowerCase().trim();
 
+  // Les claviers tactiles (tablette) proposent souvent de vrais symboles
+  // mathématiques (× ÷ −) au lieu des opérateurs ASCII attendus par le
+  // moteur de calcul : on les normalise en premier, avant toute autre
+  // transformation, sinon math.js échoue ou évalue de travers.
+  expr = expr.replace(/[×✕✖⋅∙]/g, '*');
+  expr = expr.replace(/[÷∕]/g, '/');
+  expr = expr.replace(/[−–—]/g, '-');
+
   // Ajoute '*' entre un nombre et une parenthèse ouvrante (ex: 2( -> 2*()
   expr = expr.replace(/(\d+)(?=\()/g, '$1*');
 
@@ -976,7 +984,8 @@ function validerCalculNumerique(saisie, formulaJSON, valeurs) {
     // reformule en consigne de calcul direct.
     function texteConsigneNumerique(texte) {
       let resultat = texte.replace(/\s*en fonction de\s*\$n\$\.?/i, '.');
-      resultat = resultat.replace(/^Exprime\b/i, 'Calcule');
+      resultat = resultat.replace(/^Exprime le (.+)\.$/i, 'Donne une expression numérique du $1.');
+      resultat = resultat.replace(/^Calcule le (.+)\.$/i, 'Donne une expression numérique du $1.');
       return resultat;
     }
 
