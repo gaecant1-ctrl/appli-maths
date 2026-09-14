@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calcul de durées</title>
+
+  <script>
+    MathJax = { tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <style>
+    /* Charte graphique commune (voir flash/style.css et arbreCalcul/style.css),
+       reprise telle quelle de calculExpression/index_grandeur.html. */
+    :root {
+      --papier:        #ffffff;
+      --papier-panel:  #f8effa;
+      --papier-encart: #ffffff;
+
+      --grille:        #e6cbe4;
+      --grille-forte:  #5c2a56;
+
+      --encre:         #3d1a3a;
+      --encre-douce:   #7a5a78;
+
+      --header-fond:        #f8eef6;
+      --header-bordure:     #e0bcdd;
+      --header-texte:       #5c2a56;
+      --header-texte-hover: #3d1a3a;
+      --header-accent-vif:  #6E3568;
+
+      --erreur:        #c44336;
+      --succes:        #2e9e5b;
+      --succes-fond:   #e3f4ea;
+      --attention:     #c47a1f;
+
+      --rayon-petit:   8px;
+
+      --card-bg:     var(--papier);
+      --panel-border: var(--grille);
+      --text:        var(--encre);
+      --text-dark:   #ffffff;
+      --primary:     #8E4585;
+      --accent:      #6E3568;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--papier-panel);
+      color: var(--encre);
+    }
+
+    /* ==================== EN-TÊTE ==================== */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 0 20px;
+      min-height: 54px;
+      background: var(--header-fond);
+      border-bottom: 1px solid var(--header-bordure);
+      flex-wrap: wrap;
+    }
+    header #titre_appli { font-size: 1.2rem; font-weight: 800; color: var(--header-accent-vif); padding: 0.5em 0; }
+    .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+
+    .btn-header {
+      background: transparent;
+      border: 0.5px solid var(--header-bordure);
+      height: 34px;
+      padding: 0 14px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: var(--rayon-petit);
+      cursor: pointer;
+      color: var(--header-texte);
+      white-space: nowrap;
+      transition: border-color .12s, color .12s, background-color .12s;
+    }
+    .btn-header:hover { border-color: var(--primary); color: var(--header-texte-hover); }
+    .btn-header.active { border-color: var(--primary); color: var(--primary); background: rgba(142,69,133,0.08); }
+    .filet-header { width: 1px; height: 22px; background: var(--header-bordure); flex-shrink: 0; }
+
+    /* ==================== CORPS ==================== */
+    #appBody {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    #panneauLateral {
+      flex: 0 0 220px;
+      width: 220px;
+      min-height: calc(100vh - 54px);
+      background: var(--papier-encart);
+      border-right: 1px solid var(--grille);
+      padding: 20px 16px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .panel-groupe-label {
+      font-size: 0.75em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--encre-douce);
+      margin-bottom: 4px;
+    }
+    .panel-btn {
+      width: 100%;
+      background: var(--papier-panel);
+      border: 1px solid var(--grille);
+      border-radius: var(--rayon-petit);
+      padding: 10px 14px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--encre);
+      cursor: pointer;
+      text-align: left;
+      margin-bottom: 8px;
+      transition: border-color .15s, color .15s, background-color .15s;
+    }
+    .panel-btn:last-child { margin-bottom: 0; }
+    .panel-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .panel-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+    .panel-btn:disabled {
+      cursor: default;
+      opacity: 0.55;
+    }
+    .panel-btn.accent {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+      text-align: center;
+      font-weight: 600;
+    }
+    .panel-btn.accent:hover { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+
+    .panel-filet-fixe { height: 1px; background: var(--grille); margin: 4px 0; flex-shrink: 0; }
+
+    main { flex: 1 1 auto; width: 100%; min-width: 0; }
+
+    #app {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 30px 16px 60px;
+    }
+
+    #scoreContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--primary);
+    }
+
+    #exercice-container {
+      background: var(--papier-encart);
+      border: 1px solid var(--grille);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(92,42,86,0.06);
+    }
+    .question { font-weight: 600; font-size: 18px; margin: 0 0 4px; color: var(--encre); }
+    .initial-wrapper, .input-wrapper {
+      display: flex; align-items: center; gap: .6em;
+      background: var(--papier-panel); border: 1px solid var(--grille); border-radius: 10px;
+      padding: 8px 10px; font-size: 16px;
+    }
+    .left-part { display: flex; align-items: baseline; gap: .6em; flex: 1 1 auto; min-width: 0; }
+    .input-wrapper input {
+      padding: 6px 10px; font-size: 16px; border-radius: 8px;
+      border: 2px solid var(--grille); background: var(--papier); color: var(--encre); width: 220px;
+    }
+    .input-wrapper input:focus { border-color: var(--primary); outline: none; }
+    .comment { font-size: 13px; padding: 4px 8px; border-radius: 8px; background: var(--papier-panel); color: var(--encre-douce); }
+    .comment.success { background: var(--succes-fond); color: var(--succes); }
+    .comment.error   { background: #fbe9e7; color: var(--erreur); }
+    .comment.info    { background: #fdf3e3; color: var(--attention); }
+    .comment:empty { display: none; }
+    .close-button { cursor: pointer; margin-right: 6px; }
+    .equal-sign { display: inline-block; min-width: 1ch; text-align: center; }
+    .equal-sign.state-correct { color: var(--succes); }
+    .equal-sign.state-incorrect { color: var(--erreur); }
+    .equal-sign.state-invalid, .equal-sign.state-ok { color: var(--attention); }
+    .ghost-equal { visibility: hidden; }
+    /* Bouton "Abandon" intégré à l'exercice (Exercice.js) masqué : "Je
+       renonce" (panneau latéral) gère cette fonction, sans révéler la
+       correction — voir btnAction.addEventListener dans le script plus bas. */
+    .bouton-correction { display: none; }
+    .correction-content:empty { display: none; }
+    .correction-content {
+      background: var(--papier-panel); border: 1px solid var(--grille);
+      border-radius: 10px; padding: 14px;
+    }
+
+    #status { text-align: center; margin-top: 16px; font-weight: 600; }
+
+    #controls { margin-top: 8px; }
+
+    /* ==================== ÉCRAN DE FIN (quiz) ==================== */
+    #zoneFin { display: flex; justify-content: center; margin-top: 20px; }
+    .fin-quiz { text-align: center; }
+    .fin-quiz-titre { margin: 0 0 8px; color: var(--encre); }
+    .fin-quiz-score { font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .fin-quiz-commentaire { color: var(--encre-douce); margin-bottom: 20px; }
+    .restart-btn {
+      padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; background: var(--primary); color: #ffffff;
+    }
+    .restart-btn:hover { background: var(--accent); }
+
+    /* ==================== OVERLAY GUIDE ==================== */
+    #overlayGuide {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(60,26,58,0.45);
+      z-index: 1000000;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    #overlayGuide.ouvert { display: flex; }
+    #guideCarte {
+      position: relative;
+      background: var(--papier);
+      color: var(--encre);
+      max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto;
+      border-radius: 12px; padding: 28px 32px;
+      border: 1px solid var(--header-bordure);
+    }
+    #btnFermerGuide {
+      position: absolute; top: 10px; right: 14px;
+      background: none; border: none; font-size: 28px; line-height: 1;
+      cursor: pointer; color: var(--encre-douce);
+    }
+    #btnFermerGuide:hover { color: var(--encre); }
+    #guideCarte h2 { margin-top: 0; color: var(--header-accent-vif); }
+    #guideContenu li { margin-bottom: 8px; line-height: 1.5; }
+    .formes-reponse { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .forme-ok, .forme-bad {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 8px; font-size: 0.9em;
+    }
+    .forme-ok { background: var(--succes-fond); color: var(--succes); font-weight: 600; }
+    .forme-bad { background: #fbe9e7; color: var(--erreur); font-weight: 600; }
+    .forme-bad code { text-decoration: line-through; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">Calcul de <b>durées</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="appBody">
+
+    <aside id="panneauLateral">
+      <div class="panel-groupe-label" id="panelModeLabel">Atelier</div>
+
+      <div id="scoreContainer" style="display:none;">
+        <div id="quizProgress"></div>
+        <div id="quizScore"></div>
+      </div>
+
+      <div id="controls">
+        <button id="btnAction" type="button" class="panel-btn accent">Je renonce</button>
+      </div>
+
+      <div class="panel-filet-fixe"></div>
+
+      <div class="panel-groupe-label">Type de calcul</div>
+      <div id="groupeTypes"></div>
+    </aside>
+
+    <main>
+      <div id="app">
+
+        <div id="zoneJeu">
+          <div id="exercice-container"></div>
+          <div id="status"></div>
+        </div>
+
+        <div id="zoneFin" style="display:none;">
+          <div id="ecranFin"></div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ==================== OVERLAY GUIDE ==================== -->
+  <div id="overlayGuide">
+    <div id="guideCarte">
+      <button id="btnFermerGuide" type="button" aria-label="Fermer">×</button>
+      <h2>Comment jouer</h2>
+      <div id="guideContenu">
+        <p>Une <strong>durée à calculer</strong> est affichée (ex. <code>(2h+30min)+(1h+15min)</code>, <code>4×54min</code>, <code>4h:3</code>...). Calcule le résultat et tape-le dans le champ de réponse.</p>
+        <ul>
+          <li>
+            <strong>Écriture de la réponse</strong> : toujours sous la forme <code>Xh+Ymin</code>, avec le <code>+</code> entre les heures et les minutes.
+            <div class="formes-reponse">
+              <div class="forme-ok">✅ <code>1h+20min</code></div>
+              <div class="forme-bad">❌ <code>1h20</code></div>
+              <div class="forme-bad">❌ <code>1h20min</code></div>
+            </div>
+          </li>
+          <li><strong>Multiplication</strong> : tapée avec le symbole <code>*</code> du clavier (affichée ensuite en <code>×</code>) — jamais un point ni une juxtaposition.</li>
+          <li><strong>Type de calcul</strong> (panneau à gauche) : Somme, Différence, Produit par un entier, Produit d'une durée proche d'une heure, Quotient par un entier — décoche ceux à exclure du tirage, toujours au moins un actif.</li>
+          <li><strong>Atelier</strong> : entraînement libre, sans score ni limite de questions — « Je renonce » passe directement à un nouvel exercice.</li>
+          <li><strong>Quiz</strong> : 10 questions notées. « Je renonce » compte comme une réponse fausse (sans pénalité) et passe à la suite. Le panneau « Type de calcul » reste figé le temps du quiz.</li>
+          <li><strong>Fiche papier</strong> : génère une série d'exercices imprimable (ou exportable en LaTeX), une fois par type de calcul.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="Utils.js"></script>
+  <script src="Nombre.js"></script>
+  <script src="Grandeur.js"></script>
+  <script src="Expression.js"></script>
+  <script src="Somme.js"></script>
+  <script src="Produit.js"></script>
+  <script src="ObjetString.js"></script>
+  <script src="Grader.js"></script>
+  <script src="Exercice.js"></script>
+  <script src="Enonce.js"></script>
+  <script src="EnonceDuree.js"></script>
+  <script src="FicheDuree.js"></script>
+
+  <script>
+    const NB_QUESTIONS = 10;
+
+    const zone = document.getElementById('exercice-container');
+    const statusEl = document.getElementById('status');
+    const btnAction = document.getElementById('btnAction');
+    const zoneJeu = document.getElementById('zoneJeu');
+    const zoneFin = document.getElementById('zoneFin');
+    const ecranFin = document.getElementById('ecranFin');
+    const scoreContainer = document.getElementById('scoreContainer');
+    const quizProgress = document.getElementById('quizProgress');
+    const quizScore = document.getElementById('quizScore');
+
+    // Panneau latéral "Type de calcul" : restreint les sous-types piochés
+    // par EnonceDuree (voir SOUS_TYPES_DUREE dans EnonceDuree.js) — toujours
+    // au moins un actif, comme le sélecteur de niveau de flash.
+    const TYPES = [
+      { key: 'somme',              label: 'Somme' },
+      { key: 'difference',         label: 'Différence' },
+      { key: 'produit',            label: 'Produit par un entier' },
+      { key: 'produitProcheHeure', label: 'Produit (durée ≈ 1h)' },
+      { key: 'division',           label: 'Quotient par un entier' },
+      { key: 'quotientLibre',      label: 'Quotient par un entier *' }
+    ];
+    // "quotientLibre" (variante plus difficile : heures quelconques, pas
+    // seulement kn+1) est désactivé par défaut — l'enseignant l'active
+    // volontairement.
+    const typesActifs = new Set(TYPES.map(t => t.key).filter(k => k !== 'quotientLibre'));
+    const enonce = new EnonceDuree({ seed: null, sharedOptions: { sousTypes: [...typesActifs] } });
+
+    let etatJeu = 'atelier'; // 'atelier' | 'quiz'
+    let questionIndex = 0;
+    let score = 0;
+    let phase = 'saisie'; // 'saisie' | 'next'
+    let exerciceCourant = null; // instance renvoyée par enonce.buildExercise()
+
+    function majBoutonAction() {
+      const termine = phase !== 'saisie';
+      btnAction.textContent = termine
+        ? (etatJeu === 'quiz' ? 'Question suivante' : 'Exercice suivant')
+        : 'Je renonce';
+    }
+
+    function majBandeau() {
+      scoreContainer.style.display = etatJeu === 'quiz' ? 'flex' : 'none';
+      if (etatJeu !== 'quiz') return;
+      quizProgress.textContent = `Question ${questionIndex}/${NB_QUESTIONS}`;
+      quizScore.textContent = `Score : ${score}/${Math.max(0, questionIndex - (phase === 'saisie' ? 1 : 0))}`;
+    }
+
+    function onValidee(e) {
+      const { status, verdict } = e.detail || {};
+      phase = 'next';
+
+      if (status === 'correct') {
+        statusEl.textContent = '✅ Correct !';
+        statusEl.style.color = 'var(--succes)';
+        if (etatJeu === 'quiz') score++;
+      } else if (verdict?.status === 'renonce') {
+        statusEl.textContent = 'Pas de souci, on passe à la suite. 🙂';
+        statusEl.style.color = 'var(--attention)';
+      } else {
+        statusEl.textContent = '❌ Incorrect.';
+        statusEl.style.color = 'var(--erreur)';
+      }
+
+      majBoutonAction();
+      majBandeau();
+    }
+
+    function nouvelleQuestion() {
+      if (etatJeu === 'quiz' && questionIndex >= NB_QUESTIONS) {
+        afficherFin();
+        return;
+      }
+
+      questionIndex++;
+      phase = 'saisie';
+      statusEl.textContent = '';
+      zone.removeEventListener('reponseValidee', onValidee);
+
+      exerciceCourant = enonce.buildExercise(zone, questionIndex, (verdict) => {
+        console.log('rejet:', verdict);
+      });
+
+      zone.addEventListener('reponseValidee', onValidee);
+      majBoutonAction();
+      majBandeau();
+    }
+
+    // Régénère l'exercice AFFICHÉ (même questionIndex, score/compteur
+    // inchangés) — utilisé quand le panneau "Type de calcul" change, pour
+    // que la question colle tout de suite au filtre choisi plutôt que
+    // d'attendre le prochain "Je renonce"/"Question suivante".
+    function regenererQuestionCourante() {
+      phase = 'saisie';
+      statusEl.textContent = '';
+      zone.removeEventListener('reponseValidee', onValidee);
+
+      exerciceCourant = enonce.buildExercise(zone, questionIndex, (verdict) => {
+        console.log('rejet:', verdict);
+      });
+
+      zone.addEventListener('reponseValidee', onValidee);
+      majBoutonAction();
+    }
+
+    btnAction.addEventListener('click', () => {
+      if (phase === 'saisie') {
+        // "Je renonce" : clôt l'exercice comme faux SANS révéler la
+        // correction. En atelier, passe directement au suivant (pas de
+        // pénalité) ; en quiz, compte comme faux avant l'avancée manuelle.
+        if (etatJeu === 'atelier') {
+          nouvelleQuestion();
+        } else if (exerciceCourant) {
+          exerciceCourant._finish('incorrect', { status: 'renonce' });
+        }
+        return;
+      }
+      nouvelleQuestion();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      if (phase === 'next') {
+        e.preventDefault();
+        nouvelleQuestion();
+      }
+    });
+
+    // ==================== ATELIER / QUIZ ====================
+    function relancer() {
+      questionIndex = 0;
+      score = 0;
+      zoneJeu.style.display = '';
+      zoneFin.style.display = 'none';
+      ecranFin.innerHTML = '';
+      nouvelleQuestion();
+    }
+
+    function choisirEtatJeu(etat) {
+      if (etat === etatJeu) return;
+      etatJeu = etat;
+      document.querySelectorAll('.btn-header[data-etat]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.etat === etat);
+      });
+      document.getElementById('panelModeLabel').textContent = etat === 'quiz' ? 'Quiz' : 'Atelier';
+      // Le panneau "Type de calcul" reste figé pendant un quiz — comme le
+      // sélecteur de niveau dans flash — pour ne pas changer les règles en
+      // cours de partie.
+      document.querySelectorAll('#groupeTypes .panel-btn').forEach(btn => {
+        btn.disabled = (etat === 'quiz');
+      });
+      relancer();
+    }
+
+    // ==================== PANNEAU "TYPE DE CALCUL" ====================
+    function toggleType(key) {
+      if (typesActifs.has(key)) {
+        if (typesActifs.size === 1) return; // toujours au moins un type actif
+        typesActifs.delete(key);
+      } else {
+        typesActifs.add(key);
+      }
+      enonce.sharedOptions.sousTypes = [...typesActifs];
+      rafraichirPanneauTypes();
+      if (questionIndex > 0) regenererQuestionCourante();
+    }
+
+    function rafraichirPanneauTypes() {
+      document.querySelectorAll('#groupeTypes .panel-btn').forEach(btn => {
+        btn.classList.toggle('active', typesActifs.has(btn.dataset.type));
+      });
+    }
+
+    function setupPanneauTypes() {
+      const conteneur = document.getElementById('groupeTypes');
+      TYPES.forEach(({ key, label }) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-btn';
+        btn.dataset.type = key;
+        btn.textContent = label;
+        btn.onclick = () => toggleType(key);
+        conteneur.appendChild(btn);
+      });
+      rafraichirPanneauTypes(); // reflète typesActifs dès le premier rendu
+    }
+
+    function afficherFin() {
+      zoneJeu.style.display = 'none';
+      zoneFin.style.display = 'flex';
+
+      const pourcentage = Math.round(100 * score / NB_QUESTIONS);
+      let commentaire;
+      if (pourcentage === 100) commentaire = "Parfait ! Tous les calculs de durées sont bons. 🎯";
+      else if (pourcentage >= 80) commentaire = "Très bon travail, tu maîtrises bien ! 👍";
+      else if (pourcentage >= 60) commentaire = "C'est correct, encore un peu d'entraînement et ce sera parfait. 🙂";
+      else commentaire = "Pas de souci, recommence : c'est en s'entraînant qu'on progresse. 💪";
+
+      ecranFin.innerHTML = '';
+      ecranFin.className = 'fin-quiz';
+
+      const titre = document.createElement('h2');
+      titre.className = 'fin-quiz-titre';
+      titre.textContent = 'Quiz terminé';
+
+      const scoreFinalDiv = document.createElement('div');
+      scoreFinalDiv.className = 'fin-quiz-score';
+      scoreFinalDiv.textContent = `${score} / ${NB_QUESTIONS}`;
+
+      const commentaireDiv = document.createElement('div');
+      commentaireDiv.className = 'fin-quiz-commentaire';
+      commentaireDiv.textContent = commentaire;
+
+      const btnRejouer = document.createElement('button');
+      btnRejouer.type = 'button';
+      btnRejouer.className = 'restart-btn';
+      btnRejouer.textContent = 'Rejouer';
+      btnRejouer.onclick = relancer;
+
+      ecranFin.append(titre, scoreFinalDiv, commentaireDiv, btnRejouer);
+      majBandeau();
+    }
+
+    // ==================== EN-TÊTE ====================
+    function setupBoutonsEtatJeu() {
+      const conteneur = document.getElementById('topButtonsBar');
+
+      const btnAtelier = document.createElement('button');
+      btnAtelier.type = 'button';
+      btnAtelier.className = 'btn-header active';
+      btnAtelier.dataset.etat = 'atelier';
+      btnAtelier.textContent = 'Atelier';
+      btnAtelier.onclick = () => choisirEtatJeu('atelier');
+
+      const btnQuiz = document.createElement('button');
+      btnQuiz.type = 'button';
+      btnQuiz.className = 'btn-header';
+      btnQuiz.dataset.etat = 'quiz';
+      btnQuiz.textContent = 'Quiz';
+      btnQuiz.onclick = () => choisirEtatJeu('quiz');
+
+      const filet = document.createElement('div');
+      filet.className = 'filet-header';
+
+      conteneur.append(btnAtelier, btnQuiz, filet);
+    }
+
+    function setupBoutonNouvelOnglet() {
+      const conteneur = document.getElementById('topButtonsBar');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-header';
+      btn.textContent = 'Nouvel onglet';
+      btn.onclick = () => window.open(window.location.href, '_blank', 'noopener');
+      conteneur.appendChild(btn);
+    }
+
+    function setupBoutonGuide() {
+      const conteneur = document.getElementById('topButtonsBar');
+      const filet = document.createElement('div');
+      filet.className = 'filet-header';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-header';
+      btn.textContent = 'Guide';
+      btn.onclick = ouvrirGuide;
+      conteneur.append(filet, btn);
+    }
+
+    function ouvrirGuide() { document.getElementById('overlayGuide').classList.add('ouvert'); }
+    function fermerGuide() { document.getElementById('overlayGuide').classList.remove('ouvert'); }
+
+    document.getElementById('btnFermerGuide').onclick = fermerGuide;
+    document.getElementById('overlayGuide').addEventListener('click', e => {
+      if (e.target.id === 'overlayGuide') fermerGuide();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.getElementById('overlayGuide').classList.contains('ouvert')) fermerGuide();
+    });
+
+    // ==================== FICHE PAPIER ====================
+    const fiche = new FicheDuree({
+      nbExercices: 10,
+      titre: "Calcul de durées",
+      sousTitre: "Somme, différence, produit, division"
+    });
+
+    // ==================== INIT ====================
+    setupBoutonsEtatJeu();
+    setupBoutonNouvelOnglet();
+    fiche.installerBouton(document.getElementById('topButtonsBar'));
+    setupBoutonGuide();
+    setupPanneauTypes();
+    nouvelleQuestion();
+  </script>
+
+</body>
+</html>

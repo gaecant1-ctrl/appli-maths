@@ -94,6 +94,7 @@ window.MathJax = {
     <div class="panel-groupe" id="groupeType">
       <div class="panel-groupe-label">Type</div>
       <button class="panel-btn" type="button" id="btnNegatifs">Avec relatifs</button>
+      <button class="panel-btn" type="button" id="btnFraction">Avec fraction</button>
     </div>
 
     <div class="panel-filet"></div>
@@ -295,6 +296,12 @@ window.MathJax = {
     selecteurThemes.rafraichirBoutons();
   });
 
+  document.getElementById("btnFraction").addEventListener("click", (e) => {
+    engine.toggleFraction();
+    e.currentTarget.classList.toggle("active", engine.getAvecFraction());
+    selecteurThemes.rafraichirBoutons();
+  });
+
   // Panneau "Cours" : trois boutons exclusifs (aucun/tous/melanger).
   document.getElementById("groupeCours").addEventListener("click", (e) => {
     const btn = e.target.closest(".panel-btn");
@@ -315,6 +322,7 @@ window.MathJax = {
     document.querySelectorAll("#selecteurNiveau .panel-btn")
       .forEach(b => b.disabled = oui);
     document.getElementById("btnNegatifs").disabled = oui;
+    document.getElementById("btnFraction").disabled = oui;
     document.getElementById("btnThemeTous").disabled = oui;
     document.getElementById("btnThemeParametrer").disabled = oui;
     document.querySelectorAll("#groupeCours .panel-btn")

@@ -355,6 +355,18 @@ const BANQUE_GABARITS_NUM = `
 [6,decimal,H] a*b+e+c$*d:d | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), intervalle(d,2,9), intervalle(e,2,9), dec(a,10), dec(e,10), dec(c,10)
 [6,decimal,H] a*b-c$*d:d +e | intervalle(a,4,9), intervalle(b,2,8), intervalle(c,2,9), intervalle(d,2,9), intervalle(e,2,9), isSuperieurOuEgal(a*b,c), dec(b,10), dec(c,10), dec(e,100)
 
+[6,entier,I] (a+b)*c | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9)
+[6,entier,I] (a-b)*c | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), isSuperieurOuEgal(a,b)
+[6,entier,I] c*(a+b) | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9)
+[6,entier,I] c*(a-b) | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), isSuperieurOuEgal(a,b)
+[6,entier,I] (a+b):c | intervalle(a,2,9), intervalle(b,2,9), parmiDiviseur(c,a+b)
+[6,entier,I] (a-b):c | intervalle(a,2,9), intervalle(b,2,9), isSuperieurOuEgal(a,b), parmiDiviseur(c,a-b)
+
+[6,decimal,I] (a+b)*c | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), dec(a,10)
+[6,decimal,I] (a-b)*c | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), isSuperieurOuEgal(a,b), dec(a,10)
+[6,decimal,I] c*(a+b) | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), dec(b,10)
+[6,decimal,I] c*(a-b) | intervalle(a,2,9), intervalle(b,2,9), intervalle(c,2,9), isSuperieurOuEgal(a,b), dec(b,10)
+
 [5,entier,A] a-b+c | intervalle(a,-9,9), intervalle(b,-9,9), intervalle(c,-9,9)
 [5,entier,A] a-(b+c) | intervalle(a,-9,9), intervalle(b,-9,9), intervalle(c,-9,9)
 [5,entier,B] a$*b$*c:b*c | intervalle(a,-9,9), intervalle(b,2,3), intervalle(c,2,9)

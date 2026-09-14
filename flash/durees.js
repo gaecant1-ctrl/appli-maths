@@ -26,7 +26,249 @@ function verifierHeureMinute(h, min, saisie) {
   return { ok, attendu, saisieLatex };
 }
 
+/* =========================================
+   CALCULS SUR LES DURÉES (somme, différence, produit, quotient)
+   Port de appli-maths/dureeCalcul/EnonceDuree.js : mêmes 6 sous-types,
+   mais générateurs en JS simple (h/min entiers) plutôt que la chaîne
+   ObjetString/Grader de dureeCalcul — cohérent avec le reste de durees.js,
+   qui vérifie déjà "...h + ...min" via verifierHeureMinute.
+   ========================================= */
+
+const MINUTES_POSSIBLES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+function uneDureeHMin(hMin, hMax) {
+  const h = rand(hMin, hMax);
+  const min = pick(MINUTES_POSSIBLES);
+  return { h, min, totalMin: h * 60 + min };
+}
+
+function latexHeuresSeules(h) {
+  return new Grandeur(Nombre.fromParts(h, 1, "entier"), { h: 1 }).toLatex();
+}
+
+function latexMinutesSeules(min) {
+  return new Grandeur(Nombre.fromParts(min, 1, "entier"), { min: 1 }).toLatex();
+}
+
 const duree = [
+
+  /* =========================================
+     SOMME DE DURÉES
+     ========================================= */
+
+  {
+    id: "calcul_duree_somme",
+    theme: "durees",
+    niveau: "6",
+    negatif: "non",
+    gen() {
+      const d1 = uneDureeHMin(1, 4);
+      const d2 = uneDureeHMin(1, 4);
+      const totalMin = d1.totalMin + d2.totalMin;
+      const h = Math.floor(totalMin / 60);
+      const min = totalMin % 60;
+
+      const expression = `(${latexHeureMinute(d1.h, d1.min)}) + (${latexHeureMinute(d2.h, d2.min)})`;
+
+      return {
+        latex: `
+        \\text{Calculer : }
+        \\,\\,${expression}
+        `,
+        correction: `
+        ${expression} = ${latexHeureMinute(h, min)}
+        `,
+        verifier(input) {
+          return verifierHeureMinute(h, min, input);
+        }
+      };
+    }
+  },
+
+  /* =========================================
+     DIFFÉRENCE DE DURÉES (toujours positive)
+     ========================================= */
+
+  {
+    id: "calcul_duree_difference",
+    theme: "durees",
+    niveau: "6",
+    negatif: "non",
+    gen() {
+      let d1 = uneDureeHMin(2, 6);
+      let d2 = uneDureeHMin(1, 5);
+      if (d2.totalMin >= d1.totalMin) [d1, d2] = [d2, d1];
+
+      let garde = 0;
+      while (d2.totalMin >= d1.totalMin && garde++ < 10) {
+        d2 = uneDureeHMin(1, Math.max(1, d1.h - 1));
+      }
+
+      const totalMin = d1.totalMin - d2.totalMin;
+      const h = Math.floor(totalMin / 60);
+      const min = totalMin % 60;
+
+      const expression = `(${latexHeureMinute(d1.h, d1.min)}) - (${latexHeureMinute(d2.h, d2.min)})`;
+
+      return {
+        latex: `
+        \\text{Calculer : }
+        \\,\\,${expression}
+        `,
+        correction: `
+        ${expression} = ${latexHeureMinute(h, min)}
+        `,
+        verifier(input) {
+          return verifierHeureMinute(h, min, input);
+        }
+      };
+    }
+  },
+
+  /* =========================================
+     PRODUIT D'UNE DURÉE PAR UN ENTIER
+     ========================================= */
+
+  {
+    id: "calcul_duree_produit",
+    theme: "durees",
+    niveau: "6",
+    negatif: "non",
+    gen() {
+      const d = uneDureeHMin(1, 3);
+      const facteur = rand(2, 5);
+      const totalMin = d.totalMin * facteur;
+      const h = Math.floor(totalMin / 60);
+      const min = totalMin % 60;
+
+      const expression = `(${latexHeureMinute(d.h, d.min)}) \\times ${facteur}`;
+
+      return {
+        latex: `
+        \\text{Calculer : }
+        \\,\\,${expression}
+        `,
+        correction: `
+        ${expression} = ${latexHeureMinute(h, min)}
+        `,
+        verifier(input) {
+          return verifierHeureMinute(h, min, input);
+        }
+      };
+    }
+  },
+
+  /* =========================================
+     PRODUIT PAR UN ENTIER D'UNE DURÉE PROCHE D'UNE HEURE
+     (minutes seules, 50 à 59) — force la conversion au résultat,
+     ex. 4×54min = 216min = 3h36min.
+     ========================================= */
+
+  {
+    id: "calcul_duree_produit_proche_heure",
+    theme: "durees",
+    niveau: "6",
+    negatif: "non",
+    gen() {
+      const minutesProchesHeure = rand(50, 59);
+      const facteur = rand(2, 6);
+      const totalMin = minutesProchesHeure * facteur;
+      const h = Math.floor(totalMin / 60);
+      const min = totalMin % 60;
+
+      const expression = `${facteur} \\times ${latexMinutesSeules(minutesProchesHeure)}`;
+
+      return {
+        latex: `
+        \\text{Calculer : }
+        \\,\\,${expression}
+        `,
+        correction: `
+        ${expression} = ${latexHeureMinute(h, min)}
+        `,
+        verifier(input) {
+          return verifierHeureMinute(h, min, input);
+        }
+      };
+    }
+  },
+
+  /* =========================================
+     QUOTIENT PAR UN ENTIER — (kn+1)h : n
+     n dans {2,3,4,5,6,10} (diviseurs de 60) : le "+1" garantit un reste net
+     d'exactement 1h à chaque tirage (jamais une division exacte triviale),
+     qui se convertit toujours pile en minutes puisque 60/n est entier
+     (ex. 4h:3 = 1h + 60min:3 = 1h20min).
+     ========================================= */
+
+  {
+    id: "calcul_duree_quotient",
+    theme: "durees",
+    niveau: "6",
+    negatif: "non",
+    gen() {
+      const diviseur = pick([2, 3, 4, 5, 6, 10]);
+      const k = rand(0, 3);
+      const hDividende = k * diviseur + 1;
+      const totalMin = hDividende * 60;
+      const h = Math.floor(totalMin / diviseur / 60);
+      const min = Math.floor(totalMin / diviseur) % 60;
+
+      const expression = `${latexHeuresSeules(hDividende)} \\div ${diviseur}`;
+
+      return {
+        latex: `
+        \\text{Calculer : }
+        \\,\\,${expression}
+        `,
+        correction: `
+        ${expression} = ${latexHeureMinute(h, min)}
+        `,
+        verifier(input) {
+          return verifierHeureMinute(h, min, input);
+        }
+      };
+    }
+  },
+
+  /* =========================================
+     QUOTIENT PAR UN ENTIER * — Xh:n, X entier QUELCONQUE (1 à 9)
+     n dans {2,3,4,5,6,10} toujours (reste convertible exactement), mais
+     sans la forme imposée kn+1 : variante plus difficile (division parfois
+     triviale, parfois non) — niveau 5e plutôt que 6e, pour ne pas sortir
+     par défaut avec les sélections 6e seules.
+     ========================================= */
+
+  {
+    id: "calcul_duree_quotient_libre",
+    theme: "durees",
+    niveau: "5",
+    negatif: "non",
+    gen() {
+      const diviseur = pick([2, 3, 4, 5, 6, 10]);
+      const hDividende = rand(1, 9);
+      const totalMin = hDividende * 60;
+      const h = Math.floor(totalMin / diviseur / 60);
+      const min = Math.floor(totalMin / diviseur) % 60;
+
+      const expression = `${latexHeuresSeules(hDividende)} \\div ${diviseur}`;
+
+      return {
+        latex: `
+        \\text{Calculer : }
+        \\,\\,${expression}
+        `,
+        correction: `
+        ${expression} = ${latexHeureMinute(h, min)}
+        `,
+        verifier(input) {
+          return verifierHeureMinute(h, min, input);
+        }
+      };
+    }
+  },
 
   /* =========================================
      DÉCIMAL → h + min

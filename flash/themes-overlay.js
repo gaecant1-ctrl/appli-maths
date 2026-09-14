@@ -34,7 +34,7 @@ export const TAXONOMIE = [
   // Colonne 2 — Calcul
   [
     { titre: "Calcul", items: [
-      { theme: "calcul-num" }, { theme: "fractions" }, { theme: "comparaison" },
+      { theme: "sensOperation" }, { theme: "calcul-num" }, { theme: "fractions" }, { theme: "comparaison" },
       { theme: "arithmetique" }, { theme: "durees" }, { theme: "conversion" },
       { theme: "arrondis" }
     ] },
@@ -227,7 +227,15 @@ class SelecteurThemes {
     this.overlay.classList.add("visible");
   }
 
+  // Refuse de fermer tant qu'aucun thème n'est coché (mode "parametrer") :
+  // décocher jusqu'à zéro reste possible pendant la sélection (voir
+  // engine.js:toggleThemeCoche), mais il faut en recocher au moins un avant
+  // de pouvoir quitter l'overlay.
   fermer() {
+    if (this.engine.getFiltreThemeMode() === "parametrer") {
+      const auMoinsUnCoche = this.engine.getThemesDisponibles().some(it => it.coche);
+      if (!auMoinsUnCoche) return;
+    }
     this.overlay.classList.remove("visible");
   }
 

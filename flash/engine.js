@@ -23,6 +23,7 @@ import evaluation from "./evaluation.js";
 import equation from "./equation.js";
 import probabilite from "./probabilite.js";
 import statistiques from "./statistiques.js";
+import sensOperation from "./sensOperation.js";
 
 /* =========================
    Banque d’exercices
@@ -53,7 +54,8 @@ const banqueFlash = [
   ...evaluation,
   ...equation,
   ...probabilite,
-  ...statistiques
+  ...statistiques,
+  ...sensOperation
 ];
 
 const banqueById = Object.fromEntries(
@@ -81,6 +83,14 @@ function niveauEligible(niveauExo, niveauxActifs) {
 // explicitement "oui" dépendent de avecNegatifs.
 function negatifEligible(exo, avecNegatifs) {
   return exo.negatif !== "oui" || avecNegatifs;
+}
+
+// exo.fraction ("oui"/absent) : un exercice de calcul dont le résultat (ou
+// une valeur intermédiaire) peut être une fraction non entière. Même
+// principe que negatifEligible : absent/"non" → toujours éligible ; seuls
+// les exercices tagués explicitement "oui" dépendent de avecFraction.
+function fractionEligible(exo, avecFraction) {
+  return exo.fraction !== "oui" || avecFraction;
 }
 
 // exo.cours ("oui"/absent) : question de cours plutôt qu'exercice
@@ -129,7 +139,8 @@ const THEME_LABELS = {
   "evaluation": "Évaluation",
   "equation": "Équations",
   "probabilite": "Probabilité",
-  "statistiques": "Statistiques"
+  "statistiques": "Statistiques",
+  "sensOperation": "Sens des opérations"
 };
 
 // Regroupement des thèmes en deux colonnes dans l'overlay de paramétrage
@@ -147,11 +158,12 @@ const THEME_CATEGORIES = {
   "echelle": "geometrie"
 };
 
-function recalculerBanqueEligible(niveauxActifs, avecNegatifs, modeCours) {
+function recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, modeCours) {
   banqueParTheme = {};
   banqueFlash.forEach(exo => {
     if (!exo.theme || !niveauEligible(exo.niveau, niveauxActifs)) return;
     if (!negatifEligible(exo, avecNegatifs)) return;
+    if (!fractionEligible(exo, avecFraction)) return;
     if (!coursEligible(exo, modeCours)) return;
     if (!banqueParTheme[exo.theme]) banqueParTheme[exo.theme] = [];
     banqueParTheme[exo.theme].push(exo.id);
@@ -468,6 +480,11 @@ const engine = (() => {
   // niveauxActifs démarre sur "6" seul.
   let avecNegatifs = false;
 
+  // Bouton "Avec fraction" (panneau latéral) : inclut ou non les exercices
+  // de calcul tagués fraction:"oui" (résultat pouvant être une fraction non
+  // entière). Désactivé par défaut, même principe que avecNegatifs.
+  let avecFraction = false;
+
   // Panneau "Thème" : "tous" (défaut) pioche parmi tous les thèmes
   // accessibles pour les niveaux actifs ; "parametrer" restreint le tirage
   // aux thèmes cochés dans l'overlay (voir themes-overlay.js).
@@ -478,7 +495,7 @@ const engine = (() => {
   // coursEligible() ci-dessus.
   let modeCours = "aucun";
 
-  recalculerBanqueEligible(niveauxActifs, avecNegatifs, modeCours);
+  recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, modeCours);
 
   function getNiveaux() {
     return [...niveauxActifs];
@@ -486,6 +503,10 @@ const engine = (() => {
 
   function getAvecNegatifs() {
     return avecNegatifs;
+  }
+
+  function getAvecFraction() {
+    return avecFraction;
   }
 
   // Pool réellement utilisé pour le tirage (randomTheme/nextTheme/shuffleAll) :
@@ -531,11 +552,14 @@ const engine = (() => {
     }
   }
 
-  // Coche/décoche un thème (mode "parametrer" uniquement) ; toujours au
-  // moins un thème coché, même principe que toggleNiveau.
+  // Coche/décoche un thème (mode "parametrer" uniquement) — peut retomber à
+  // zéro (comme "Aucun", voir cocherTousLesThemes/decocherTousLesThemes
+  // ci-dessous) : themesActifsPourPioche() retombe alors sur `themes`, donc
+  // le tirage continue de fonctionner. C'est à la fermeture de l'overlay
+  // (voir themes-overlay.js:fermer) qu'on exige au moins un thème coché,
+  // pas ici pendant la sélection.
   function toggleThemeCoche(theme) {
     if (themesCoches.has(theme)) {
-      if (themesCoches.size === 1) return;
       themesCoches.delete(theme);
     } else {
       themesCoches.add(theme);
@@ -612,7 +636,7 @@ const engine = (() => {
   }
 
   function relancerSelonFiltres() {
-    recalculerBanqueEligible(niveauxActifs, avecNegatifs, modeCours);
+    recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, modeCours);
 
     // Un changement de niveau peut rendre inaccessibles des thèmes cochés
     // dans l'overlay : on les retire. On NE force PAS un retour à "tous" si
@@ -647,7 +671,9 @@ const engine = (() => {
     return questions.map(q => ({
       numero: q.params.numero,
       latex: q.data.latex,
-      correction: q.data.correction
+      correction: q.data.correction,
+      typeId: q.params.typeId,
+      theme: banqueById[q.params.typeId]?.theme
     }));
   }
 
@@ -671,6 +697,12 @@ const engine = (() => {
   // seul bouton, pas de multi-sélection à gérer).
   function toggleNegatifs() {
     avecNegatifs = !avecNegatifs;
+    relancerSelonFiltres();
+  }
+
+  // Bascule le filtre "Avec fraction" — même principe que toggleNegatifs.
+  function toggleFraction() {
+    avecFraction = !avecFraction;
     relancerSelonFiltres();
   }
 
@@ -921,36 +953,60 @@ function moveUp(q) {
   }
 
 
+// Bouton 🎯 : cycle en boucle entre deux modes à chaque clic — "theme"
+// (thème de la question 1 imposé aux autres, types mélangés) puis
+// "themeEtType" (thème ET type exacts de la question 1 imposés partout).
+// La question 1 elle-même n'est jamais touchée (ni régénérée, ni
+// retypée) : elle sert uniquement de référence. Si son type a changé
+// depuis le dernier clic (régénérée entre-temps, ou plus la même
+// question), le cycle repart du début ("theme") plutôt que de continuer
+// sur "themeEtType" à propos d'une référence différente.
+let dernierRefTypeIdCible = null;
+let modeCible = "theme";
+
 function shuffleOneTheme() {
   if (questions.length === 0) return;
 
-  // thème de référence = question 1
-  const theme = banqueById[questions[0].params.typeId].theme;
+  const refTypeId = questions[0].params.typeId;
+  if (refTypeId !== dernierRefTypeIdCible) {
+    modeCible = "theme";
+  }
 
-  // tous les types possibles pour ce thème
-  const allTypeIds = [...banqueParTheme[theme]];
+  const theme = banqueById[refTypeId].theme;
 
-  // shuffle utilitaire
-  const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+  if (modeCible === "theme") {
+    // tous les types possibles pour ce thème
+    const allTypeIds = [...banqueParTheme[theme]];
 
-  // on mélange les types
-  shuffle(allTypeIds);
+    // shuffle utilitaire
+    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+    shuffle(allTypeIds);
 
-  questions.forEach((q, i) => {
-    let typeId;
+    questions.forEach((q, i) => {
+      if (i === 0) return; // question 1 : ne change pas, sert de référence
 
-    if (i < allTypeIds.length) {
-      // pas de doublon tant que possible
-      typeId = allTypeIds[i];
-    } else {
-      // plus de types disponibles → doublon autorisé
-      typeId = allTypeIds[Math.floor(Math.random() * allTypeIds.length)];
-    }
+      const idx = i - 1;
+      const typeId = idx < allTypeIds.length
+        ? allTypeIds[idx] // pas de doublon tant que possible
+        : allTypeIds[Math.floor(Math.random() * allTypeIds.length)]; // plus de types disponibles → doublon autorisé
 
-    q.params.typeId = typeId;
-    q.generate();
-    q.setMode(modeCorrection ? "correction" : "question");
-  });
+      q.params.typeId = typeId;
+      q.generate();
+      q.setMode(modeCorrection ? "correction" : "question");
+    });
+  } else {
+    // "themeEtType" : même exercice exact (id) que la question 1 partout
+    // — seules les valeurs tirées diffèrent d'une question à l'autre.
+    questions.forEach((q, i) => {
+      if (i === 0) return;
+      q.params.typeId = refTypeId;
+      q.generate();
+      q.setMode(modeCorrection ? "correction" : "question");
+    });
+  }
+
+  dernierRefTypeIdCible = refTypeId;
+  modeCible = modeCible === "theme" ? "themeEtType" : "theme";
 }
 
 
@@ -987,6 +1043,8 @@ function shuffleOneTheme() {
     toggleNiveau,
     getAvecNegatifs,
     toggleNegatifs,
+    getAvecFraction,
+    toggleFraction,
     getModeCours,
     setModeCours,
     getFiltreThemeMode,
