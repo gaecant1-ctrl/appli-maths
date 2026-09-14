@@ -286,6 +286,7 @@
     <aside id="panneauLateral">
         <div class="panel-groupe">
             <div class="panel-groupe-label">Générer</div>
+            <button id="btnTriangleLibre" class="panel-btn">Triangle libre</button>
             <button id="btnTriangleRectangle" class="panel-btn">Triangle rectangle</button>
             <button id="btnDefiAngle" class="panel-btn">Défi : droit ou presque ?</button>
         </div>
@@ -384,6 +385,11 @@ const POSITIONS_INITIALES = { A: { x: 2, y: 2 }, B: { x: 8, y: 3 }, C: { x: 3, y
 let points = JSON.parse(JSON.stringify(POSITIONS_INITIALES));
 
 const airesVisibles = { A: false, B: false, C: false }; // clé = sommet opposé au côté
+// Mode "Triangle libre" : l'élève déplace les points et affiche ce qu'il veut,
+// sans la limite pédagogique des 3 données (voir nbDonneesAffichees / les modes
+// "Triangle rectangle" et "Défi", eux gardés à 3 données max pour forcer une
+// vraie vérification plutôt que tout révéler d'un coup).
+let modeLibre = true;
 let anglesVisibles = false;
 // Après une génération de triangle rectangle, on ne veut révéler QUE l'angle droit
 // (marqueur vert), pas les deux étiquettes en degrés des angles aigus — celles-ci ne
@@ -523,7 +529,7 @@ function dessiner() {
             // total : la dernière pièce manquante ne doit s'obtenir que par la
             // vérification (bouton), jamais par un simple clic sur le carré.
             const reveleUneDonneeDePlus = !airesVisibles[cle];
-            if (reveleUneDonneeDePlus && nbDonneesAffichees() >= 3) return;
+            if (!modeLibre && reveleUneDonneeDePlus && nbDonneesAffichees() >= 3) return;
             airesVisibles[cle] = !airesVisibles[cle];
             dessiner();
         });
@@ -766,7 +772,7 @@ function toutesAiresVisibles() {
 }
 
 function anglesActivables() {
-    return toutesAiresVisibles() && nbDonneesAffichees() <= 3;
+    return modeLibre || (toutesAiresVisibles() && nbDonneesAffichees() <= 3);
 }
 
 /* ---------- Panneau de vérification des longueurs (théorème direct) ---------- */
@@ -787,7 +793,7 @@ function longueursPremissesValides() {
 }
 
 function longueursActivables() {
-    return longueursPremissesValides() && nbDonneesAffichees() <= 3;
+    return longueursPremissesValides() && (modeLibre || nbDonneesAffichees() <= 3);
 }
 
 function mettreAJourBoutonLongueurs() {
@@ -1029,10 +1035,16 @@ function genererSommetsTriangleRectangle() {
 function genererTriangleRectangle() {
     const candidat = genererSommetsTriangleRectangle();
     if (!candidat) return;
+    modeLibre = false;
     points = candidat;
     anglesVisibles = true; // révèle immédiatement l'angle droit obtenu...
     afficherAnglesAigus = false; // ...mais pas les deux angles aigus, à deviner
+    // On révèle d'emblée les aires des deux carrés construits sur les côtés de
+    // l'angle droit (les jambes) — pas celle de l'hypoténuse — pour amener
+    // directement au calcul "Calculer l'hypoténuse" via "Vérifier les longueurs".
+    const sommetDroit = trouverSommetDroit();
     airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    ['A', 'B', 'C'].filter(nom => nom !== sommetDroit).forEach(nom => { airesVisibles[nom] = true; });
     longueursVisibles = false;
     reinitialiserEtiquettes();
     lancerVerificationAngles(); // fige le constat ("rectangle en X") sur CE triangle
@@ -1040,6 +1052,22 @@ function genererTriangleRectangle() {
 }
 
 document.getElementById('btnTriangleRectangle').onclick = genererTriangleRectangle;
+
+// Mode libre : repart d'un triangle quelconque, sans rien révéler, et lève la
+// limite des 3 données — l'élève déplace les points et affiche/masque aires et
+// angle droit comme il veut, sans être bloqué par la logique de vérification.
+function genererTriangleLibre() {
+    modeLibre = true;
+    points = JSON.parse(JSON.stringify(POSITIONS_INITIALES));
+    airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    afficherAnglesAigus = true;
+    anglesVisibles = false;
+    longueursVisibles = false;
+    reinitialiserEtiquettes();
+    dessiner();
+}
+
+document.getElementById('btnTriangleLibre').onclick = genererTriangleLibre;
 
 // Écarte légèrement UN sommet d'un triangle rectangle (d'une unité de grille, en x
 // ou en y) pour casser l'angle droit exact tout en gardant un triangle qui y
@@ -1090,10 +1118,13 @@ function genererDefiAngle() {
     const vraiDroit = Math.random() < 0.5;
     const resultat = vraiDroit ? candidat : (presqueDroit(candidat) || candidat);
 
+    modeLibre = false;
     points = resultat;
     anglesVisibles = false;
     afficherAnglesAigus = true; // si l'élève vérifie ensuite, il voit tout
-    airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
+    // Défi : les trois aires sont données d'emblée — à l'élève de les comparer
+    // (réciproque du théorème) pour décider si le triangle est vraiment rectangle.
+    airesVisibles.A = airesVisibles.B = airesVisibles.C = true;
     longueursVisibles = false;
     reinitialiserEtiquettes();
     dessiner();
