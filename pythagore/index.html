@@ -377,11 +377,11 @@ for (let y = GRID_MIN; y <= GRID_MAX; y++) {
 /* ---------- État du triangle ---------- */
 const COULEUR = {
     A: { cote: '#4a7fe0', fond: 'rgba(74,127,224,0.35)' },   // côté FG (opposé à A)
-    B: { cote: '#e07a3e', fond: 'rgba(224,122,62,0.35)' },   // côté GE (opposé à B)
-    C: { cote: '#8e44ad', fond: 'rgba(142,68,173,0.35)' }    // côté EF (opposé à C)
+    B: { cote: '#8e44ad', fond: 'rgba(142,68,173,0.35)' },   // côté EF (opposé à B)
+    C: { cote: '#e07a3e', fond: 'rgba(224,122,62,0.35)' }    // côté GE (opposé à C)
 };
 
-const POSITIONS_INITIALES = { A: { x: 2, y: 2 }, B: { x: 8, y: 3 }, C: { x: 3, y: 8 } };
+const POSITIONS_INITIALES = { A: { x: 2, y: 2 }, B: { x: 3, y: 8 }, C: { x: 8, y: 3 } };
 let points = JSON.parse(JSON.stringify(POSITIONS_INITIALES));
 
 const airesVisibles = { A: false, B: false, C: false }; // clé = sommet opposé au côté
@@ -1039,12 +1039,11 @@ function genererTriangleRectangle() {
     points = candidat;
     anglesVisibles = true; // révèle immédiatement l'angle droit obtenu...
     afficherAnglesAigus = false; // ...mais pas les deux angles aigus, à deviner
-    // On révèle d'emblée les aires des deux carrés construits sur les côtés de
-    // l'angle droit (les jambes) — pas celle de l'hypoténuse — pour amener
-    // directement au calcul "Calculer l'hypoténuse" via "Vérifier les longueurs".
-    const sommetDroit = trouverSommetDroit();
+    // On révèle d'emblée deux aires parmi les trois, tirées au hasard (pas
+    // forcément les deux jambes) : ça peut aussi bien amener à calculer
+    // l'hypoténuse qu'un côté de l'angle droit via "Vérifier les longueurs".
     airesVisibles.A = airesVisibles.B = airesVisibles.C = false;
-    ['A', 'B', 'C'].filter(nom => nom !== sommetDroit).forEach(nom => { airesVisibles[nom] = true; });
+    melanger(['A', 'B', 'C']).slice(0, 2).forEach(nom => { airesVisibles[nom] = true; });
     longueursVisibles = false;
     reinitialiserEtiquettes();
     lancerVerificationAngles(); // fige le constat ("rectangle en X") sur CE triangle
