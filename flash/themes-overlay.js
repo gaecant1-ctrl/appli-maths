@@ -36,7 +36,7 @@ export const TAXONOMIE = [
     { titre: "Calcul", items: [
       { theme: "sensOperation" }, { theme: "calcul-num" }, { theme: "fractions" }, { theme: "comparaison" },
       { theme: "arithmetique" }, { theme: "durees" }, { theme: "conversion" },
-      { theme: "arrondis" }
+      { theme: "arrondis" }, { theme: "calcul-astucieux" }
     ] },
     { titre: "Calcul littéral", items: [
       { theme: "evaluation" },

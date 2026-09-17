@@ -95,6 +95,7 @@ window.MathJax = {
       <div class="panel-groupe-label">Type</div>
       <button class="panel-btn" type="button" id="btnNegatifs">Avec relatifs</button>
       <button class="panel-btn" type="button" id="btnFraction">Avec fraction</button>
+      <button class="panel-btn" type="button" id="btnDecimaux">Avec décimaux</button>
     </div>
 
     <div class="panel-filet"></div>
@@ -299,6 +300,12 @@ window.MathJax = {
   document.getElementById("btnFraction").addEventListener("click", (e) => {
     engine.toggleFraction();
     e.currentTarget.classList.toggle("active", engine.getAvecFraction());
+    selecteurThemes.rafraichirBoutons();
+  });
+
+  document.getElementById("btnDecimaux").addEventListener("click", (e) => {
+    engine.toggleDecimaux();
+    e.currentTarget.classList.toggle("active", engine.getAvecDecimaux());
     selecteurThemes.rafraichirBoutons();
   });
 

@@ -24,6 +24,7 @@ import equation from "./equation.js";
 import probabilite from "./probabilite.js";
 import statistiques from "./statistiques.js";
 import sensOperation from "./sensOperation.js";
+import calculAstucieux from "./calculAsctucieux.js";
 
 /* =========================
    Banque d’exercices
@@ -55,7 +56,8 @@ const banqueFlash = [
   ...equation,
   ...probabilite,
   ...statistiques,
-  ...sensOperation
+  ...sensOperation,
+  ...calculAstucieux
 ];
 
 const banqueById = Object.fromEntries(
@@ -91,6 +93,13 @@ function negatifEligible(exo, avecNegatifs) {
 // les exercices tagués explicitement "oui" dépendent de avecFraction.
 function fractionEligible(exo, avecFraction) {
   return exo.fraction !== "oui" || avecFraction;
+}
+
+// exo.decimal ("oui"/absent) : un exercice de calcul dont l'énoncé utilise
+// des nombres décimaux plutôt qu'entiers (ex: calcul astucieux avec
+// compléments décimaux). Même principe que negatifEligible/fractionEligible.
+function decimalEligible(exo, avecDecimaux) {
+  return exo.decimal !== "oui" || avecDecimaux;
 }
 
 // exo.cours ("oui"/absent) : question de cours plutôt qu'exercice
@@ -140,7 +149,8 @@ const THEME_LABELS = {
   "equation": "Équations",
   "probabilite": "Probabilité",
   "statistiques": "Statistiques",
-  "sensOperation": "Sens des opérations"
+  "sensOperation": "Sens des opérations",
+  "calcul-astucieux": "Calcul astucieux"
 };
 
 // Regroupement des thèmes en deux colonnes dans l'overlay de paramétrage
@@ -158,12 +168,13 @@ const THEME_CATEGORIES = {
   "echelle": "geometrie"
 };
 
-function recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, modeCours) {
+function recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, avecDecimaux, modeCours) {
   banqueParTheme = {};
   banqueFlash.forEach(exo => {
     if (!exo.theme || !niveauEligible(exo.niveau, niveauxActifs)) return;
     if (!negatifEligible(exo, avecNegatifs)) return;
     if (!fractionEligible(exo, avecFraction)) return;
+    if (!decimalEligible(exo, avecDecimaux)) return;
     if (!coursEligible(exo, modeCours)) return;
     if (!banqueParTheme[exo.theme]) banqueParTheme[exo.theme] = [];
     banqueParTheme[exo.theme].push(exo.id);
@@ -485,6 +496,12 @@ const engine = (() => {
   // entière). Désactivé par défaut, même principe que avecNegatifs.
   let avecFraction = false;
 
+  // Bouton "Avec décimaux" (panneau latéral) : inclut ou non les exercices
+  // de calcul tagués decimal:"oui" (énoncé utilisant des nombres décimaux,
+  // ex: calcul astucieux avec compléments décimaux). Désactivé par défaut,
+  // même principe que avecNegatifs/avecFraction.
+  let avecDecimaux = false;
+
   // Panneau "Thème" : "tous" (défaut) pioche parmi tous les thèmes
   // accessibles pour les niveaux actifs ; "parametrer" restreint le tirage
   // aux thèmes cochés dans l'overlay (voir themes-overlay.js).
@@ -495,7 +512,7 @@ const engine = (() => {
   // coursEligible() ci-dessus.
   let modeCours = "aucun";
 
-  recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, modeCours);
+  recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, avecDecimaux, modeCours);
 
   function getNiveaux() {
     return [...niveauxActifs];
@@ -507,6 +524,10 @@ const engine = (() => {
 
   function getAvecFraction() {
     return avecFraction;
+  }
+
+  function getAvecDecimaux() {
+    return avecDecimaux;
   }
 
   // Pool réellement utilisé pour le tirage (randomTheme/nextTheme/shuffleAll) :
@@ -636,7 +657,7 @@ const engine = (() => {
   }
 
   function relancerSelonFiltres() {
-    recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, modeCours);
+    recalculerBanqueEligible(niveauxActifs, avecNegatifs, avecFraction, avecDecimaux, modeCours);
 
     // Un changement de niveau peut rendre inaccessibles des thèmes cochés
     // dans l'overlay : on les retire. On NE force PAS un retour à "tous" si
@@ -703,6 +724,12 @@ const engine = (() => {
   // Bascule le filtre "Avec fraction" — même principe que toggleNegatifs.
   function toggleFraction() {
     avecFraction = !avecFraction;
+    relancerSelonFiltres();
+  }
+
+  // Bascule le filtre "Avec décimaux" — même principe que toggleNegatifs.
+  function toggleDecimaux() {
+    avecDecimaux = !avecDecimaux;
     relancerSelonFiltres();
   }
 
@@ -1045,6 +1072,8 @@ function shuffleOneTheme() {
     toggleNegatifs,
     getAvecFraction,
     toggleFraction,
+    getAvecDecimaux,
+    toggleDecimaux,
     getModeCours,
     setModeCours,
     getFiltreThemeMode,
