@@ -67,6 +67,15 @@ function tokeniserExpressionEtape(expr) {
       continue;
     }
 
+    // Puissance (utile pour les identités remarquables, ex. 31^2) : la plus
+    // haute priorité, jamais concernée par la logique de signe/alias
+    // ci-dessous — traitée à part avant elle.
+    if (c === "^") {
+      tokens.push({ type: "OP", value: "^" });
+      i++;
+      continue;
+    }
+
     const ALIAS_OP = { "/": ":", "÷": ":", "×": "*", "−": "-" };
     const cOp = ALIAS_OP[c] || c;
     if ("+-*:".includes(cOp)) {
@@ -135,13 +144,27 @@ function construireArbreExpressionEtape(tokens) {
   }
 
   function parseMultiplicatif() {
-    let gauche = parseFacteur();
+    let gauche = parsePuissance();
     if (gauche.erreur) return gauche;
     while (peek() && peek().type === "OP" && (peek().value === "*" || peek().value === ":")) {
       const op = avance().value;
-      const droite = parseFacteur();
+      const droite = parsePuissance();
       if (droite.erreur) return droite;
       gauche = { type: "op", op, gauche, droite };
+    }
+    return gauche;
+  }
+
+  // Puissance : priorité la plus haute, ex. "31^2" — utilisée par les
+  // identités remarquables (voir CalculAstucieux.js, m=15/16).
+  function parsePuissance() {
+    let gauche = parseFacteur();
+    if (gauche.erreur) return gauche;
+    while (peek() && peek().type === "OP" && peek().value === "^") {
+      avance();
+      const droite = parseFacteur();
+      if (droite.erreur) return droite;
+      gauche = { type: "op", op: "^", gauche, droite };
     }
     return gauche;
   }
@@ -189,6 +212,7 @@ function evaluerExpressionEtape(noeud) {
     case "-": return g.sub(d);
     case "*": return g.mul(d);
     case ":": return d.valeurNum.a === 0 ? null : g.div(d);
+    case "^": return d.valeurNum.b === 1 ? g.pow(d.valeurNum.a) : null;
   }
 }
 
@@ -222,6 +246,7 @@ function analyserEtapeReponse(texte) {
 // mais le REGROUPEMENT qui porte l'astuce (ex: "(a+c)+(b+d)" doit rester
 // visible tel quel, jamais réduit en "a+c+b+d").
 function prioriteOp(op) {
+  if (op === "^") return 3;
   return (op === "*" || op === ":") ? 2 : 1;
 }
 
@@ -239,6 +264,14 @@ function rendreCote(noeud, prioParent, cote, rendreNoeud) {
 
 function expressionEtapeVersLatex(noeud) {
   if (noeud.type === "NUM") return noeud.nombre.toLatex({ nombreAff: "canonique" });
+  // Puissance : notation exposant LaTeX, pas un opérateur infixe comme les
+  // autres — jamais de parenthèses de priorité autour de l'exposant
+  // lui-même (toujours un simple entier ici), seulement autour de la base
+  // si elle est composée (voir rendreCote, prio=3 = la plus haute).
+  if (noeud.op === "^") {
+    const base = rendreCote(noeud.gauche, 3, "gauche", expressionEtapeVersLatex);
+    return `${base}^{${expressionEtapeVersLatex(noeud.droite)}}`;
+  }
   const prio = prioriteOp(noeud.op);
   const txtGauche = rendreCote(noeud.gauche, prio, "gauche", expressionEtapeVersLatex);
   const txtDroite = rendreCote(noeud.droite, prio, "droite", expressionEtapeVersLatex);
@@ -251,6 +284,10 @@ function expressionEtapeVersTexte(noeud) {
   // brut, qui doit rester en convention française comme le reste de
   // l'appli.
   if (noeud.type === "NUM") return noeud.nombre.toString({ nombreAff: "canonique" }).replace(".", ",");
+  if (noeud.op === "^") {
+    const base = rendreCote(noeud.gauche, 3, "gauche", expressionEtapeVersTexte);
+    return `${base}^${expressionEtapeVersTexte(noeud.droite)}`;
+  }
   const prio = prioriteOp(noeud.op);
   const txtGauche = rendreCote(noeud.gauche, prio, "gauche", expressionEtapeVersTexte);
   const txtDroite = rendreCote(noeud.droite, prio, "droite", expressionEtapeVersTexte);

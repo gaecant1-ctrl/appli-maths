@@ -49,6 +49,11 @@ function subVars(expr, map) {
 
 const NOMBRES_RONDS_PRODUIT = [50, 100, 200, 500, 1000];
 
+// Nombres ronds utilisés comme repère pour les identités remarquables
+// (niveau troisième, m=15/16) — des dizaines proches de la plage de calcul
+// mental habituelle, pas des centaines/milliers comme NOMBRES_RONDS_PRODUIT.
+const NOMBRES_RONDS_CARRE = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
 // --- parseur d'expression (+ − × ÷, parenthèses) → arbre {type:'NUM'|'op'} ---
 // Même mécanisme que calculAstucieux/app.js : un nœud parenthésé dans le
 // texte source est marqué explicitParens pour que le rendu LaTeX conserve
@@ -64,7 +69,7 @@ function tokeniser(expr) {
       i++;
       continue;
     }
-    if ("+-*:".includes(c)) {
+    if (c === "^" || "+-*:".includes(c)) {
       tokens.push({ type: "OP", value: c });
       i++;
       continue;
@@ -103,11 +108,23 @@ function construireArbre(tokens) {
   }
 
   function parseMultiplicatif() {
-    let gauche = parseFacteur();
+    let gauche = parsePuissance();
     while (peek() && peek().type === "OP" && (peek().value === "*" || peek().value === ":")) {
       const op = avance().value;
-      const droite = parseFacteur();
+      const droite = parsePuissance();
       gauche = { type: "op", op, gauche, droite };
+    }
+    return gauche;
+  }
+
+  // Puissance : priorité la plus haute, ex. "31^2" (identités remarquables,
+  // m=15/16).
+  function parsePuissance() {
+    let gauche = parseFacteur();
+    while (peek() && peek().type === "OP" && peek().value === "^") {
+      avance();
+      const droite = parseFacteur();
+      gauche = { type: "op", op: "^", gauche, droite };
     }
     return gauche;
   }
@@ -141,6 +158,7 @@ function evaluer(noeud) {
     case "-": return g.sub(d);
     case "*": return g.mul(d);
     case ":": return g.div(d);
+    case "^": return g.pow(d.valeurNum.a);
   }
 }
 
@@ -149,6 +167,7 @@ function latexOp(op) {
 }
 
 function prioriteOp(op) {
+  if (op === "^") return 3;
   return (op === "*" || op === ":") ? 2 : 1;
 }
 
@@ -168,6 +187,12 @@ function rendreCote(noeud, prioParent, cote) {
 
 function versLatex(noeud) {
   if (noeud.type === "NUM") return noeud.nombre.toLatex({ nombreAff: "canonique" });
+  // Puissance : notation exposant, pas un opérateur infixe (voir
+  // expressionEtapeVersLatex de l'appli calculAstucieux, même logique).
+  if (noeud.op === "^") {
+    const base = rendreCote(noeud.gauche, 3, "gauche");
+    return `${base}^{${versLatex(noeud.droite)}}`;
+  }
   const prio = prioriteOp(noeud.op);
   const txtGauche = rendreCote(noeud.gauche, prio, "gauche");
   const txtDroite = rendreCote(noeud.droite, prio, "droite");
@@ -253,6 +278,22 @@ function genererTexte(m, avecDecimaux, vMax = 4) {
     a = randInt(2, 9) * 10 ** z1;
     b = randInt(2, 9) * 10 ** z2;
     quest = "a*b";
+  } else if (m === 15) {
+    // Identité remarquable (niveau 3e) : carré proche d'un nombre rond —
+    // ex. 31² = (30+1)², 19² = (20-1)².
+    const rond = NOMBRES_RONDS_CARRE[randInt(0, NOMBRES_RONDS_CARRE.length - 1)];
+    const delta = randInt(1, 3);
+    const signe = Math.random() < 0.5 ? 1 : -1;
+    b = rond + signe * delta;
+    quest = "b^2";
+  } else if (m === 16) {
+    // Identité remarquable (niveau 3e) : produit de deux nombres équidistants
+    // d'un nombre rond — ex. 29×31 = (30-1)(30+1) = 30²-1².
+    const rond = NOMBRES_RONDS_CARRE[randInt(0, NOMBRES_RONDS_CARRE.length - 1)];
+    const delta = randInt(1, 4);
+    a = rond - delta;
+    b = rond + delta;
+    quest = "a*b";
   }
 
   const map = { a, b, c: c === undefined ? 0 : c, d };
@@ -274,11 +315,11 @@ function genererTexte(m, avecDecimaux, vMax = 4) {
 // (tag decimal:"oui", filtré par le bouton "Avec décimaux" du panneau
 // latéral — voir decimalEligible dans engine.js). Absent/false → toujours
 // éligible, comme negatif/fraction (voir engine.js).
-function exoAstucieux(id, m, { decimal = false } = {}) {
+function exoAstucieux(id, m, { decimal = false, niveau = "6" } = {}) {
   return {
     id: `calcul-astucieux-${id}`,
     theme: "calcul-astucieux",
-    niveau: "6",
+    niveau,
     ...(decimal ? { decimal: "oui" } : {}),
     gen() {
       const texte = genererTexte(m, decimal);
@@ -322,6 +363,11 @@ const calcul = [
   exoAstucieux("25x4-double", 7),
   exoAstucieux("produit-nombre-rond", 13),
   exoAstucieux("produit-zeros", 14),
+  // Identités remarquables — niveau 3e, seuls exercices du thème tagués
+  // ainsi (le reste est niveau 6e) : n'apparaissent que si "3e" est actif
+  // parmi les niveaux (voir niveauEligible dans engine.js).
+  exoAstucieux("carre-nombre-rond", 15, { niveau: "3" }),
+  exoAstucieux("produit-conjugue-nombre-rond", 16, { niveau: "3" }),
 ];
 
 export default calcul;

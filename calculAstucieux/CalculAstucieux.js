@@ -48,12 +48,18 @@ function subVars(expr, map) {
 // désactiverait la dernière restante.
 const FAMILLES_ASTUCE = {
   sommes: { label: "Sommes", pool: [1, 2, 3, 4, 8, 9, 10, 11, 12] },
-  produits: { label: "Produits", pool: [5, 6, 7, 13, 14] },
+  produits: { label: "Produits", pool: [5, 6, 7, 13, 14, 15, 16] },
 };
 
 // Nombres ronds utilisés comme repère pour m=13 (produit proche d'un
 // nombre rond, ex. 7×99 ~ 7×100).
 const NOMBRES_RONDS_PRODUIT = [50, 100, 200, 500, 1000];
+
+// Nombres ronds utilisés comme repère pour m=15/16 (identités remarquables,
+// niveau troisième — ex. 31² = (30+1)², 29×31 = (30-1)(30+1)) : des
+// dizaines "proches" de la plage habituelle de calcul mental, pas des
+// centaines/milliers comme NOMBRES_RONDS_PRODUIT.
+const NOMBRES_RONDS_CARRE = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 // --- moteur de génération d'un cas m ---
 // avecDecimaux ne joue que sur les familles additives (m<=4,8..12) : les
@@ -161,6 +167,22 @@ function calcul(m, avecDecimaux, vMax = 7) {
     // v*a + b*v + c → v*(a+b)+c
     [a, b] = pair(); v = randInt(3, 7); c = randInt(5, 40);
     quest = `${v}*a+b*${v}+${c}`;
+  } else if (m === 15) {
+    // Identité remarquable (niveau 3e) : carré proche d'un nombre rond —
+    // ex. 31² = (30+1)² = 900+60+1, 19² = (20-1)² = 400-40+1.
+    const rond = NOMBRES_RONDS_CARRE[randInt(0, NOMBRES_RONDS_CARRE.length - 1)];
+    const delta = randInt(1, 3);
+    const signe = Math.random() < 0.5 ? 1 : -1;
+    b = rond + signe * delta;
+    quest = "b^2";
+  } else if (m === 16) {
+    // Identité remarquable (niveau 3e) : produit de deux nombres équidistants
+    // d'un nombre rond — ex. 29×31 = (30-1)(30+1) = 30²-1² = 899.
+    const rond = NOMBRES_RONDS_CARRE[randInt(0, NOMBRES_RONDS_CARRE.length - 1)];
+    const delta = randInt(1, 4);
+    a = rond - delta;
+    b = rond + delta;
+    quest = "a*b";
   }
 
   const map = { a, b, c, d };
