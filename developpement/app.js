@@ -84,8 +84,101 @@ const NIVEAUX_DISPONIBLES = {
     "3": BANQUE_5E.concat(BANQUE_4E_AJOUTS, BANQUE_3E_AJOUTS)
 };
 
+// ============================================================
+// SÉLECTION PAR FORME — alternative au choix par niveau.
+// Deux critères croisés (sélection multiple, au moins un bouton actif par groupe) :
+//   - distributivité : simple (k(ax+b)), double ((ax+b)(cx+d)) ou identités
+//     remarquables (chaque produit double devient (ax±b)² ou (ax+b)(ax−b)) ;
+//   - forme de l'expression : produit seul, somme/différence produit ± terme
+//     simple, somme/différence de deux produits.
+// Pour les formes à deux produits, "double" = au moins un des deux produits
+// est une double distributivité.
+// Le "terme simple" est tantôt une constante, tantôt un monôme (ex: 5x).
+// Le signe EXTÉRIEUR (+ / -) est fixé par la forme ; les signes internes aux
+// parenthèses restent aléatoires ("?").
+// ============================================================
+
+/** Raccourci : les constantes sont déduites du motif (toutes les lettres sauf x). */
+function typeForme(distrib, forme, pattern, forced) {
+    const constants = [...new Set(pattern.match(/[a-wyz]/g) || [])];
+    return { id: `${forme}_${distrib}_${pattern}`, distrib, forme, pattern, constants, forced };
+}
+
+const DISTRIBS_DISPONIBLES = [
+    { code: 'simple', label: 'Simple' },
+    { code: 'double', label: 'Double' },
+    { code: 'ir',     label: 'Identités remarquables' }
+];
+
+const FORMES_DISPONIBLES = [
+    { code: 'produit',        label: 'Produit' },
+    { code: 'sommeSimple',    label: 'Produit + terme simple' },
+    { code: 'sommeProduits',  label: 'Somme de deux produits' },
+    { code: 'diffSimple',     label: 'Produit − terme simple' },
+    { code: 'diffProduits',   label: 'Différence de deux produits' }
+];
+
+const BANQUE_FORMES = [
+    // --- Produit ---
+    typeForme('simple', 'produit', 'u(vx?w)',      ['u']),
+    typeForme('simple', 'produit', 'ux(vx?w)',     ['u']),
+    typeForme('double', 'produit', '(ux?v)(wx?t)', ['u', 'w']),
+
+    // --- Somme d'un produit et d'un terme simple ---
+    typeForme('simple', 'sommeSimple', 'w+u(vx?s)',        ['u']),
+    typeForme('simple', 'sommeSimple', 'u(vx?w)+s',        ['u']),
+    typeForme('simple', 'sommeSimple', 'wx+u(vx?s)',       ['u']),
+    typeForme('simple', 'sommeSimple', 'ux(vx?w)+s',       ['u']),
+    typeForme('double', 'sommeSimple', 's+(ux?v)(wx?t)',   ['u', 'w']),
+    typeForme('double', 'sommeSimple', '(ux?v)(wx?t)+s',   ['u', 'w']),
+    typeForme('double', 'sommeSimple', 'sx+(ux?v)(wx?t)',  ['u', 'w']),
+    typeForme('double', 'sommeSimple', '(ux?v)(wx?t)+sx',  ['u', 'w']),
+
+    // --- Somme de deux produits ---
+    typeForme('simple', 'sommeProduits', 'u(vx?w)+r(tx?s)',            ['u', 'r']),
+    typeForme('simple', 'sommeProduits', 'ux(vx?w)+rx(tx?s)',          ['u', 'r']),
+    typeForme('simple', 'sommeProduits', 'u(vx?w)+rx(tx?s)',           ['u', 'r']),
+    typeForme('double', 'sommeProduits', '(ux?v)(wx?t)+r(sx?q)',       ['u', 'w', 'r']),
+    typeForme('double', 'sommeProduits', 'u(vx?w)+(rx?s)(tx?q)',       ['u', 'r', 't']),
+    typeForme('double', 'sommeProduits', '(ux?v)(wx?t)+(rx?s)(qx?p)',  ['u', 'w', 'r', 'q']),
+
+    // --- Différence entre un produit et un terme simple (dans les deux sens) ---
+    typeForme('simple', 'diffSimple', 'w-u(vx?s)',        ['u']),
+    typeForme('simple', 'diffSimple', 'u(vx?w)-s',        ['u']),
+    typeForme('simple', 'diffSimple', 'wx-u(vx?s)',       ['u']),
+    typeForme('simple', 'diffSimple', 'ux-(vx?w)',        []),
+    typeForme('double', 'diffSimple', 's-(ux?v)(wx?t)',   ['u', 'w']),
+    typeForme('double', 'diffSimple', '(ux?v)(wx?t)-s',   ['u', 'w']),
+    typeForme('double', 'diffSimple', 'sx-(ux?v)(wx?t)',  ['u', 'w']),
+    typeForme('double', 'diffSimple', '(ux?v)(wx?t)-sx',  ['u', 'w']),
+
+    // --- Différence de deux produits ---
+    typeForme('simple', 'diffProduits', 'u(vx?w)-r(tx?s)',            ['u', 'r']),
+    typeForme('simple', 'diffProduits', 'ux(vx?w)-rx(tx?s)',          ['u', 'r']),
+    typeForme('simple', 'diffProduits', 'u(vx?w)-rx(tx?s)',           ['u', 'r']),
+    typeForme('double', 'diffProduits', '(ux?v)(wx?t)-r(sx?q)',       ['u', 'w', 'r']),
+    typeForme('double', 'diffProduits', 'u(vx?w)-(rx?s)(tx?q)',       ['u', 'r', 't']),
+    typeForme('double', 'diffProduits', '(ux?v)(wx?t)-(rx?s)(qx?p)',  ['u', 'w', 'r', 'q'])
+];
+
+// "Identités remarquables" : mêmes structures que la double distributivité,
+// mais CHAQUE produit (ax±b)(cx±d) y devient une IR au moment du tirage
+// (voir transformerEnIdentites).
+BANQUE_FORMES.push(...BANQUE_FORMES
+    .filter(t => t.distrib === 'double')
+    .map(t => ({ ...t, id: t.id.replace('_double_', '_ir_'), distrib: 'ir' })));
+
+let modeSelection = 'niveau';   // 'niveau' | 'forme'
 let niveauActuel = "5";
-let BANQUE_DE_TYPES = NIVEAUX_DISPONIBLES[niveauActuel];
+const distribsActives = new Set(['simple']);
+const formesActives = new Set(FORMES_DISPONIBLES.map(f => f.code));
+
+function calculerBanque() {
+    if (modeSelection === 'niveau') return NIVEAUX_DISPONIBLES[niveauActuel];
+    return BANQUE_FORMES.filter(t => distribsActives.has(t.distrib) && formesActives.has(t.forme));
+}
+
+let BANQUE_DE_TYPES = calculerBanque();
 
 const LETTRES_POSSIBLES = ['x', 'y', 'z', 'a', 'b'];
 
@@ -245,6 +338,7 @@ class InputWrapper {
         this.wrapper.appendChild(this.comment);
         this.container.appendChild(this.wrapper);
 
+        this.isQuestion = isQuestion;
         if (isQuestion) {
             this.renderStatic(this.expressionObj.expr);
         } else {
@@ -258,12 +352,28 @@ class InputWrapper {
     }
 
     renderStatic(exprText) {
-        const latex = formatToLatex(exprText);
+        // L'énoncé suit le réglage d'affichage des carrés ; les saisies de l'élève restent telles quelles.
+        const latex = formatToLatex(this.isQuestion ? appliquerAffichageCarre(exprText) : exprText);
         this.inputPart.innerHTML = `<div style="font-size:24px;">\\(${latex}\\)</div>`;
         if (window.MathJax) MathJax.typesetPromise();
     }
 
+    /** Place un texte dans le seul champ encore modifiable du conteneur, curseur en fin. */
+    static remplirChampActif(container, texte) {
+        const champ = container.querySelector('input');
+        if (!champ) return;
+        champ.value = texte;
+        champ.focus();
+        champ.setSelectionRange(texte.length, texte.length);
+    }
+
     handleInput(e) {
+        // Flèche haut : raccourci pour recopier la dernière saisie (champ vide uniquement).
+        if (e.key === "ArrowUp" && this.input.value === "") {
+            const precedents = [...this.container.querySelectorAll('.recopier-btn')];
+            if (precedents.length) { e.preventDefault(); precedents[precedents.length - 1].click(); }
+            return;
+        }
         if (e.key === "Enter") {
             e.stopPropagation();
             if (this.status === null && this.input.value.trim() !== "") {
@@ -281,6 +391,19 @@ class InputWrapper {
         this.comment.innerHTML = `<span>${msg}</span>`;
 
         if (msg !== "✅ Bravo !") {
+            // Recopie cette saisie dans le champ actif : l'élève corrige son
+            // erreur sans tout retaper.
+            if (this.input) {
+                const btnCopie = document.createElement('button');
+                btnCopie.type = 'button';
+                btnCopie.className = 'recopier-btn';
+                btnCopie.title = 'Recopier cette saisie dans le champ';
+                btnCopie.setAttribute('aria-label', btnCopie.title);
+                btnCopie.textContent = '↻';
+                btnCopie.onclick = () => InputWrapper.remplirChampActif(this.container, this.input.value);
+                this.comment.appendChild(btnCopie);
+            }
+
             const btnX = document.createElement('button');
             btnX.className = 'delete-btn';
             btnX.onclick = () => this.wrapper.remove();
@@ -348,12 +471,89 @@ function construireSelecteurNiveau(disabled = false) {
 function choisirNiveau(code) {
     if (!NIVEAUX_DISPONIBLES[code] || code === niveauActuel) return;
     niveauActuel = code;
-    BANQUE_DE_TYPES = NIVEAUX_DISPONIBLES[code];
+    appliquerNouvelleBanque();
+}
+
+/** Recalcule la banque, vide la pioche et relance une question. */
+function appliquerNouvelleBanque() {
+    BANQUE_DE_TYPES = calculerBanque();
     piocheEnCours = []; // pioche fraîche, cohérente avec la nouvelle banque
 
     renderPanneauLateral();
     document.getElementById("inputContainer").innerHTML = '';
     demarrerQuestion();
+}
+
+// ==================== SÉLECTEUR PAR FORME ====================
+
+/** Bascule "Par niveau" / "Par forme" (deux demi-boutons côte à côte). */
+function construireSelecteurMode(disabled = false) {
+    const wrap = document.createElement('div');
+    wrap.className = 'panel-groupe-paire';
+    [['niveau', 'Par niveau'], ['forme', 'Par forme']].forEach(([code, texte]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-btn panel-btn-half' + (code === modeSelection ? ' active' : '');
+        btn.textContent = texte;
+        btn.disabled = disabled;
+        btn.addEventListener('click', () => {
+            if (code === modeSelection) return;
+            modeSelection = code;
+            appliquerNouvelleBanque();
+        });
+        wrap.appendChild(btn);
+    });
+    return wrap;
+}
+
+/** Interrupteur d'écriture des carrés : activé -> (a+b)², désactivé -> (a+b)(a+b). */
+function construireSelecteurCarre(disabled = false) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-toggle';
+    btn.setAttribute('role', 'switch');
+    btn.setAttribute('aria-checked', afficherCarre);
+    btn.disabled = disabled;
+    btn.innerHTML = `<span class="panel-toggle-piste"><span class="panel-toggle-bouton"></span></span>
+        <span class="panel-toggle-texte">${afficherCarre ? '(a+b)²' : '(a+b)(a+b)'}</span>`;
+    btn.addEventListener('click', () => {
+        // Affichage seulement : l'énoncé en cours reste le même, il est juste réécrit.
+        afficherCarre = !afficherCarre;
+        renderPanneauLateral();
+        if (questionAffichee) questionAffichee.renderStatic(questionAffichee.expressionObj.expr);
+    });
+    return btn;
+}
+
+/**
+ * Liste de boutons à sélection multiple : un clic active/désactive l'option,
+ * mais le dernier bouton actif ne peut pas être désactivé (banque jamais vide).
+ */
+function construireListeMultiple(options, actives, ariaLabel, disabled = false) {
+    const wrap = document.createElement('div');
+    wrap.className = 'panel-type-list';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', ariaLabel);
+
+    options.forEach(({ code, label }) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-btn' + (actives.has(code) ? ' active' : '');
+        btn.setAttribute('aria-pressed', actives.has(code));
+        btn.textContent = label;
+        btn.disabled = disabled;
+        btn.addEventListener('click', () => {
+            if (actives.has(code)) {
+                if (actives.size === 1) return;
+                actives.delete(code);
+            } else {
+                actives.add(code);
+            }
+            appliquerNouvelleBanque();
+        });
+        wrap.appendChild(btn);
+    });
+    return wrap;
 }
 
 /** Installe le bouton "Nouvel onglet" dans le bandeau.
@@ -385,8 +585,34 @@ function setupBoutonNouvelOnglet() {
 // --- Fonctions de gestion du Quiz ---
 
 /** Applique la substitution lettres/signes d'UN type donné (indépendant du tirage aléatoire du type lui-même) — réutilisable pour tester chaque type explicitement. */
+// ==================== IDENTITÉS REMARQUABLES (mode "Par forme") ====================
+// Pour les types "ir", chaque produit (ax±b)(cx±d) du motif est remplacé par
+// une identité remarquable tirée au hasard (carré d'une somme, d'une
+// différence, ou produit de conjugués). Les lettres du 1er facteur sont
+// réutilisées dans les deux facteurs : la substitution par lettre étant
+// globale, la même valeur y est injectée — exactement ce que l'IR exige.
+const MOTIF_DOUBLE = /\(([a-wyz])x\?([a-wyz])\)\(([a-wyz])x\?([a-wyz])\)/g;
+
+// Réglage d'AFFICHAGE uniquement : l'énoncé est toujours stocké avec "^2" ;
+// seul son rendu (question à l'écran, fiche papier) l'écrit (2x+3)(2x+3).
+let afficherCarre = true; // true : (2x+3)^2 ; false : (2x+3)(2x+3)
+let questionAffichee = null; // InputWrapper de l'énoncé en cours (pour le ré-afficher)
+
+/** Remplace chaque produit double du motif par une IR (type tiré au hasard pour chacun). */
+function transformerEnIdentites(pattern) {
+    return pattern.replace(MOTIF_DOUBLE, (tout, a, b) => {
+        const ir = [`(${a}x+${b})^2`, `(${a}x-${b})^2`, `(${a}x+${b})(${a}x-${b})`];
+        return ir[Math.floor(Math.random() * ir.length)];
+    });
+}
+
+/** Écrit chaque carré (A)^2 sous la forme (A)(A) si l'affichage "carré" est désactivé. */
+function appliquerAffichageCarre(expr) {
+    return afficherCarre ? expr : expr.replace(/\(([^()]*)\)\^2/g, '($1)($1)');
+}
+
 function genererDepuisType(type) {
-    let expr = type.pattern;
+    let expr = type.distrib === 'ir' ? transformerEnIdentites(type.pattern) : type.pattern;
     const v = LETTRES_POSSIBLES[Math.floor(Math.random() * LETTRES_POSSIBLES.length)];
     expr = expr.replace(/x/g, v);
     const vals = {};
@@ -436,18 +662,85 @@ function demarrerQuestion() {
     if (etatJeu === 'quiz' && !quizDemarre) return;
     if (etatJeu === 'quiz' && questionCount >= 10) { showScore(); return; }
 
-    const cont = document.getElementById("inputContainer");
-    if (cont) cont.innerHTML = "";
-
-    const obj = generateRandomExpression();
-    new InputWrapper(obj, cont, true);
-    new InputWrapper(obj, cont, false);
+    afficherEnonce(generateRandomExpression());
 
     if (etatJeu === 'quiz') {
         questionCount++;
         updateScoreDisplay();
     }
     setupSkipButton();
+}
+
+/** Affiche un énoncé (ExpressionLitterale) et son premier champ de réponse. */
+function afficherEnonce(obj) {
+    const cont = document.getElementById("inputContainer");
+    if (cont) cont.innerHTML = "";
+    questionAffichee = new InputWrapper(obj, cont, true);
+    new InputWrapper(obj, cont, false);
+}
+
+// ==================== ÉNONCÉ PERSONNALISÉ (atelier) ====================
+// Le professeur (ou l'élève) tape sa propre expression ; elle remplace la
+// question en cours. "Suivant" / "Renoncer" reprennent ensuite le tirage
+// aléatoire selon les réglages du panneau.
+
+/** Harmonise les caractères qu'on tape souvent au clavier ou qu'on colle (², ×, −, espaces...). */
+function normaliserSaisieEnonce(texte) {
+    return texte
+        .replace(/\s+/g, '')
+        .replace(/²/g, '^2')
+        .replace(/[×·]/g, '*')
+        .replace(/[−–]/g, '-')
+        .toLowerCase();
+}
+
+/** Vérifie l'énoncé personnalisé ; renvoie { obj } si utilisable, sinon { erreur }. */
+function analyserEnoncePerso(texteBrut) {
+    const texte = normaliserSaisieEnonce(texteBrut);
+    if (!texte) return { erreur: "Tape une expression." };
+
+    const lettres = [...new Set(texte.match(/[a-z]/g) || [])];
+    if (lettres.length === 0) return { erreur: "Il faut une lettre (ex : x)." };
+    if (lettres.length > 1) return { erreur: "Une seule lettre possible." };
+
+    const obj = new ExpressionLitterale(texte, lettres[0]);
+    if (!obj.isValid()) return { erreur: "Expression invalide." };
+    if (obj.analyserForme().reduit) return { erreur: "Déjà développée et réduite." };
+    return { obj };
+}
+
+/** Champ + bouton du panneau latéral pour saisir un énoncé personnalisé. */
+function construireEnoncePerso() {
+    const wrap = document.createElement('div');
+    wrap.className = 'panel-type-list';
+
+    const champ = document.createElement('input');
+    champ.type = 'text';
+    champ.className = 'panel-input';
+    champ.placeholder = 'ex : 3(2x-5)+(x+1)^2';
+    champ.setAttribute('aria-label', 'Énoncé personnalisé');
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn';
+    btn.textContent = 'Utiliser cet énoncé';
+
+    const erreur = document.createElement('div');
+    erreur.className = 'panel-erreur';
+
+    const valider = () => {
+        const { obj, erreur: msg } = analyserEnoncePerso(champ.value);
+        erreur.textContent = msg || '';
+        if (!obj) { champ.focus(); return; }
+        champ.value = '';
+        afficherEnonce(obj);
+    };
+    btn.addEventListener('click', valider);
+    champ.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); valider(); } });
+    champ.addEventListener('input', () => { erreur.textContent = ''; });
+
+    wrap.append(champ, btn, erreur);
+    return wrap;
 }
 
 function updateScoreDisplay() {
@@ -510,17 +803,31 @@ function renderPanneauLateral() {
         panneau.appendChild(f);
     };
 
-    const groupe = document.createElement('div');
-    groupe.className = 'panel-groupe';
-    const label = document.createElement('div');
-    label.className = 'panel-groupe-label';
-    label.textContent = 'Niveau';
-    groupe.appendChild(label);
-    groupe.appendChild(construireSelecteurNiveau(etatJeu === 'quiz' && quizDemarre));
-    panneau.appendChild(groupe);
+    const verrouille = etatJeu === 'quiz' && quizDemarre;
+    const ajouterGroupe = (titre, contenu) => {
+        const groupe = document.createElement('div');
+        groupe.className = 'panel-groupe';
+        const label = document.createElement('div');
+        label.className = 'panel-groupe-label';
+        label.textContent = titre;
+        groupe.append(label, contenu);
+        panneau.appendChild(groupe);
+    };
+
+    panneau.appendChild(construireSelecteurMode(verrouille));
+    if (modeSelection === 'niveau') {
+        ajouterGroupe('Niveau', construireSelecteurNiveau(verrouille));
+    } else {
+        ajouterGroupe('Distributivité', construireListeMultiple(DISTRIBS_DISPONIBLES, distribsActives, 'Type de distributivité', verrouille));
+        ajouterGroupe('Forme', construireListeMultiple(FORMES_DISPONIBLES, formesActives, "Forme de l'expression", verrouille));
+    }
+    ajouterGroupe('Affichage des carrés', construireSelecteurCarre());
     ajouterFilet();
 
     if (etatJeu === 'atelier') {
+        ajouterGroupe('Énoncé personnalisé', construireEnoncePerso());
+        ajouterFilet();
+
         const skipBtn = document.createElement('button');
         skipBtn.id = 'skipButton';
         skipBtn.className = 'panel-btn';

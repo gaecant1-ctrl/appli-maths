@@ -56,21 +56,29 @@ class GuideAppli {
     const contenu = document.createElement('div');
     contenu.id = 'guideContenu';
     contenu.innerHTML = `
+      <h3>Comment écrire</h3>
+      <p>Pour obtenir \\(x^2\\), tape <kbd>x^2</kbd>.<br>
+      Pour obtenir \\(\\times\\), tape <kbd>*</kbd>.</p>
+
       <h3>Objectif</h3>
       <p>Entraîne-toi à développer puis réduire des expressions littérales au maximum.</p>
 
       <h3>Niveau</h3>
       <p>Choisis un niveau dans le panneau de gauche : <b>5e</b> (distributivité simple), <b>4e</b> (reprend la 5e et ajoute la double distributivité, produit de deux binômes), <b>3e</b> (reprend la 4e et ajoute les identités remarquables). Chaque niveau inclut les types du niveau précédent.</p>
+      <p>Avec <b>Par forme</b>, choisis plutôt la <b>distributivité</b> (simple, double, identités remarquables) et la <b>forme</b> de l'expression : produit, produit + terme simple, somme de deux produits, produit − terme simple, différence de deux produits. Plusieurs choix sont possibles dans chaque groupe. Avec « Identités remarquables », chaque produit double est une identité remarquable ; l'interrupteur <b>Affichage des carrés</b> permet de l'écrire (a+b)² ou (a+b)(a+b).</p>
+
+      <h3>Énoncé personnalisé</h3>
+      <p>En mode Atelier, tape ta propre expression dans le panneau (ex : <b>3(2x-5)+(x+1)^2</b>, ou avec ²) puis « Utiliser cet énoncé ». Une seule lettre est permise, et l'expression ne doit pas être déjà développée et réduite. « Suivant » ou « Renoncer » reprennent ensuite les tirages aléatoires.</p>
 
       <h3>Atelier / Quiz</h3>
       <p><b>Atelier</b> : entraînement libre, questions illimitées, sans score.<br>
       <b>Quiz</b> : clique sur « Commencer le Quiz » pour répondre à 10 questions ; le score s'affiche à la fin.</p>
 
       <h3>Répondre</h3>
-      <p>Saisis ta réponse développée dans le champ puis valide avec la touche Entrée. La réponse doit être à la fois <b>développée</b> (plus aucune parenthèse) et <b>réduite</b> (chaque terme fusionné, pas deux termes de même degré). En cas d'erreur, corrige et réessaie. Le bouton « Renoncer » passe à la question suivante sans compter de point.</p>
+      <p>Saisis ta réponse développée dans le champ puis valide avec la touche Entrée. La réponse doit être à la fois <b>développée</b> (plus aucune parenthèse) et <b>réduite</b> (chaque terme fusionné, pas deux termes de même degré). En cas d'erreur, corrige et réessaie : le bouton ↻ (ou la flèche ↑ dans un champ vide) recopie la saisie précédente pour ne pas tout retaper. Le bouton « Renoncer » passe à la question suivante sans compter de point.</p>
 
       <h3>Fiche papier</h3>
-      <p>Génère une fiche imprimable de 8 exercices (à imprimer ou à exporter en LaTeX) avec le niveau actuellement sélectionné.</p>
+      <p>Génère une fiche imprimable de 8 exercices (à imprimer ou à exporter en LaTeX) avec la sélection actuelle (niveau ou forme).</p>
     `;
 
     carte.append(btnFermer, h2, contenu);
@@ -94,6 +102,8 @@ class GuideAppli {
 
   ouvrir() {
     this.overlay.classList.add('visible');
+    // Rendu MathJax des formules du guide, une fois l'overlay visible.
+    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([this.overlay]);
   }
 
   fermer() {
@@ -170,6 +180,15 @@ class GuideAppli {
         margin:18px 0 6px;
       }
       #guideContenu h3:first-child{ margin-top:0; }
+      #guideContenu kbd{
+        font-family:ui-monospace, Menlo, monospace;
+        font-size:0.95em;
+        padding:1px 6px;
+        border:1px solid #bcd6f5;
+        border-radius:4px;
+        background:#eef4fc;
+        color:#22344a;
+      }
       #guideContenu p{
         margin:0 0 4px;
         line-height:1.5;

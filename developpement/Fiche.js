@@ -15,6 +15,11 @@
      fiche.ouvrir();                              // ouvre l'overlay
 ================================================== */
 
+/** Applique le réglage "Affichage des carrés" (app.js) s'il existe. */
+function ficheAffichageCarre(expr) {
+  return (typeof appliquerAffichageCarre === 'function') ? appliquerAffichageCarre(expr) : expr;
+}
+
 class FichePapier {
   constructor(opts = {}) {
     this.nbLignes = 4;
@@ -155,7 +160,7 @@ class FichePapier {
 
       const enonce = document.createElement('div');
       enonce.className = 'cellule-enonce';
-      const exprLatex = (typeof formatToLatex === 'function') ? formatToLatex(item.expr) : item.expr;
+      const exprLatex = (typeof formatToLatex === 'function') ? formatToLatex(ficheAffichageCarre(item.expr)) : item.expr;
       enonce.innerHTML = `\\(${exprLatex}\\)`;
 
       const zoneResolution = document.createElement('div');
@@ -211,7 +216,7 @@ class FichePapier {
     const cellulesTex = liste.map(item => {
       // formatToLatex() (définie dans app.js) produit déjà du LaTeX valide
       // — c'est le même rendu que celui affiché dans l'overlay HTML.
-      const exprTex = (typeof formatToLatex === 'function') ? formatToLatex(item.expr) : this._texEscape(item.expr);
+      const exprTex = (typeof formatToLatex === 'function') ? formatToLatex(ficheAffichageCarre(item.expr)) : this._texEscape(item.expr);
       const enonceTex = `$${exprTex}$`;
       // parbox[t][H][t] : positionné en haut ET contenu aligné en haut, sinon
       // une cellule plus "vide" que ses voisines se voit son contenu centré

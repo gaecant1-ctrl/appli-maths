@@ -506,3 +506,111 @@ input:focus {
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
+
+/* Interrupteur (toggle) du panneau latéral — ex : affichage des carrés */
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+}
+
+.panel-toggle-piste {
+  position: relative;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: var(--grille);
+  transition: background-color 0.15s;
+}
+
+.panel-toggle-bouton {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--papier);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+
+.panel-toggle[aria-checked="true"] .panel-toggle-piste {
+  background-color: var(--accent);
+}
+
+.panel-toggle[aria-checked="true"] .panel-toggle-bouton {
+  transform: translateX(16px);
+}
+
+.panel-toggle:hover .panel-toggle-texte {
+  color: var(--accent);
+}
+
+.panel-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Bouton "Recopier" : remet une saisie erronée dans le champ actif */
+.recopier-btn {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 50% !important;
+    border: 2px solid currentColor !important;
+    background-color: white !important;
+    color: var(--attention);
+    cursor: pointer;
+    margin-left: 12px;
+    padding: 0 !important;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.recopier-btn:hover {
+    background-color: var(--accent-clair) !important;
+    transform: scale(1.1);
+}
+
+.state-success .recopier-btn { color: var(--succes) !important; }
+.state-error   .recopier-btn { color: var(--erreur) !important; }
+.state-neutral .recopier-btn { color: var(--attention); }
+
+/* Énoncé personnalisé (panneau latéral) */
+.panel-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.panel-erreur {
+    min-height: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--erreur);
+}
+
+.panel-erreur:empty {
+    display: none;
+}
