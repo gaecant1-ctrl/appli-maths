@@ -9,7 +9,6 @@
   <script src="https://unpkg.com/blockly/blockly.min.js"></script>
   <!-- Style pour le canevas -->
   <style>
-    /* Ajouter un box-sizing global */
     * {
       box-sizing: border-box;
     }
@@ -26,9 +25,6 @@
       flex-direction: column;
     }
 
-    
-
-    
     #container {
       display: flex;
       justify-content: center;
@@ -36,7 +32,7 @@
       padding: 10px;
       width: 100%;
       flex: 1;
-      min-height: 660px; /* hauteur du panneau de rendu : en dessous, la page défile */
+      min-height: 640px; /* hauteur du panneau de rendu : en dessous, la page défile */
     }
 
     #rendu {
@@ -44,13 +40,12 @@
       flex-direction: column;
       align-items: center;
       flex: none;
-      width: 340px;
+      width: 300px;
       border: 2px solid #000;
       padding: 10px;
-      box-sizing: border-box;
       background : #f5f5dc;
     }
-    
+
     #prog {
       display: flex;
       flex-direction: column;
@@ -59,7 +54,6 @@
       position: relative;
       border: 2px solid #000;
       padding: 10px;
-      box-sizing: border-box;
       background : lightblue;
     }
 
@@ -67,27 +61,6 @@
       flex: 1;
       min-height: 0;
       border: 2px solid #000;
-      box-sizing: border-box;
-    }
-    
-#maGrille {
-  width: 250px;
-  height: 300px;
-    border: 2px solid #000;
- /* overflow: hidden; /* Empêche le débordement du contenu */
-  box-sizing: border-box; /* Inclut la bordure dans les dimensions */
-  position: relative; /* Pour un meilleur contrôle des éléments enfants */
-}
-
-#maGrille canvas {
-  width: 100%; /* Assure que le canevas prend toute la largeur du parent */
-  height: 100%; /* Assure que le canevas prend toute la hauteur du parent */
-  box-sizing: border-box; /* Inclut les bordures dans la taille du canevas */
-}
-    
-
-    /* Modifier la largeur de la flyout et de la barre de défilement */
-    .blocklyFlyout {
     }
 
     /* Bloc en cours d'exécution : contour jaune épais (Blockly ne le rend presque pas visible) */
@@ -100,7 +73,6 @@
     .blocklyScrollbarVertical {
       display: none; /* Masque complètement la barre de défilement */
     }
-
 
 button {
   border-radius: 8px;
@@ -278,46 +250,14 @@ button:hover {
   gap: 8px;
 }
 
-/* Choix de la série : deux boutons accolés, l'actif est plein */
-#serieChoix {
-  display: flex;
-  margin-right: 10px;
-}
-
-#serieChoix button {
-  margin: 0;
-  padding: 6px 10px;
-  font-size: 13px;
-  white-space: nowrap;
-  color: #155724;
-  background: white;
-  border: 2px solid #4CAF50;
-  box-shadow: none;
-}
-
-#serieChoix button:first-child {
-  border-radius: 8px 0 0 8px;
-}
-
-#serieChoix button:last-child {
-  border-radius: 0 8px 8px 0;
-  border-left: none;
-}
-
-#serieChoix button:hover {
-  transform: none;
-  background: #e8f5e9;
-}
-
-#serieChoix button.actif {
-  color: white;
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+#objec::before {
+  content: "🎯";
+  font-size: 24px;
 }
 
 .input-container {
   color: black;
   display: flex;
-  flex-direction : row;
   align-items: center;
   gap: 10px;
 }
@@ -335,51 +275,35 @@ input {
   text-align: center;
 }
 
-#objec::before {
-  content: "🎯";
-  font-size: 24px;
-}
-
 input[type="range"] {
-  width: 200px; /* Ajuste la largeur de la barre */
+  width: 200px;
 }
 
 .slider-container {
-            display: flex;
-            /*justify-content: space-between;  /* Espacement des éléments sur la même ligne */
-            align-items: center;  /* Centrage vertical des éléments */
-            gap: 0px;  /* Espacement entre les éléments */
-            width: 250px;  /* Fixer la largeur du conteneur pour éviter que les éléments ne s'étendent trop */
-            border: 2px solid purple;/*dure visible autour du conteneur du slider */
-            margin-top : 20px;
-  
+  display: flex;
+  align-items: center;
+  width: 250px;
+  border: 2px solid purple;
+  margin-top: 20px;
 }
 
-
-        /* Vous pouvez ajuster la valeur du margin-bottom selon vos préférences */
 .emoji-left, .emoji-right {
-  transform: scaleX(-1); 
-            font-size: 1rem;  /* Ajuster la taille des emojis */
-
-            padding: 5px; /* Padding pour rendre les bordures visibles */
-        }
+  transform: scaleX(-1);
+  font-size: 1rem;
+  padding: 5px;
+}
   </style>
-  
+
 </head>
 <body>
 <div id="objectif">
-  <span id="objec">Écrire un programme réalisant le tracé affiché</span>
+  <span id="objec">Ajouter des jetons dans les colonnes afin d'obtenir le résultat attendu</span>
   <div class="input-container">
-    <div id="serieChoix">
-      <button data-serie="sans" class="actif">Sans variable</button>
-      <button data-serie="avec">Avec variable</button>
-    </div>
     <label for="exoInput">Exercice :</label>
-    <input type="number" id="exoInput" min="1" max="6" value="1" />
+    <input type="number" id="exoInput" min="1" max="5" value="1" />
   </div>
   <button id="newTabButton" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗ Nouvel onglet</button>
 </div>
-  <!-- Div pour Blockly -->
   <div id="container">
     <div id="prog">
       <div id="blocklyDiv"></div>
@@ -389,20 +313,20 @@ input[type="range"] {
       </div>
     </div>
     <div id="rendu">
-
       <div id="maGrille"></div>
       <div id="compteurBlocs">Nb de blocs utilisés : <span id="nbBlocs">0</span>/<span id="nbBlocksTot">0</span></div>
-        <div class="slider-container">
-            <div class="emoji-left">🐢</div> <!-- Emoji de gauche -->
-            <input type="range" id="delai" min="0" max="950" step="50" value="0" oninput="updateValeur()">
-            <div class="emoji-right">🐇</div> <!-- Emoji de droite -->
-        </div>
+      <div class="slider-container">
+        <div class="emoji-left">🐢</div>
+        <input type="range" id="delai" min="0" max="950" step="50" value="0" oninput="updateValeur()">
+        <div class="emoji-right">🐇</div>
+      </div>
       <button id="button"></button>
       <button id="resetButton">Réinitialiser</button>
       <div id="variables">
         <div class="titre-variables">Variables</div>
         <div class="liste-variables">
           <span class="variable" id="var-n">n = <span class="valeur">?</span></span>
+          <span class="variable" id="var-c">c = <span class="valeur">?</span></span>
         </div>
       </div>
     </div>
@@ -410,18 +334,13 @@ input[type="range"] {
 
   <script>
 
-let delai=1000;
 
-function updateValeur() {
-            delai = 1000 - document.getElementById("delai").value;
-          
-        }
 
 Blockly.Blocks['programme'] = {
   init: function() {
     this.appendDummyInput()
         .appendField("Programme      "); // Texte affiché sur le bloc
-    this.setNextStatement(true, null);
+    this.setNextStatement(true, null);   // les blocs s'accrochent en dessous
     this.setColour(290); // Couleur du bloc
     this.setTooltip("Point de départ du programme.");
     this.setHelpUrl("");
@@ -429,8 +348,7 @@ Blockly.Blocks['programme'] = {
 };
 
 Blockly.JavaScript.forBlock['programme'] = function(block) {
-
-  return "";
+  return ""; // la suite est générée à partir des blocs accrochés en dessous
 };
 
 Blockly.Blocks['test_equals'] = {
@@ -466,8 +384,28 @@ Blockly.Blocks['math_number'] = {
   }
 };
 
-
+    Blockly.Blocks['colorier'] = {
+      init: function() {
+        this.appendValueInput("COLOR")
+            .setCheck("String")
+            .appendField("Ajouter un jeton ");
+        this.appendValueInput("C")
+            .setCheck("Number")
+            .appendField("dans la colonne ");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+        this.setTooltip("Colorier une cellule");
+        this.setHelpUrl("");
+      }
+    };
     
+let delai = 1000;
+
+function updateValeur() {
+    delai = 1000 - document.getElementById("delai").value;
+}
+
 // Chaque exécution a son numéro : une exécution remplacée (nouveau clic sur Exécuter)
 // ou interrompue (Réinitialiser) reste bloquée dans sa pause et ne reprend jamais.
 let executionId = 0;
@@ -491,7 +429,7 @@ function surligner(id) {
 
 // Suivi des variables : déclarées au début de chaque exécution (donc remises à « ? »),
 // affichées après chaque « mettre » / « ajouter »
-const VARIABLES_SUIVIES = ['n'];
+const VARIABLES_SUIVIES = ['n', 'c'];
 const NOMS_COULEURS = { red: "rouge", green: "vert" };
 const valeursAffichees = {};
 
@@ -512,10 +450,48 @@ function afficherVariables(valeurs) {
 }
 
 
+Blockly.JavaScript.forBlock['colorier'] = function(block) {
+    var index = Blockly.JavaScript.valueToCode(block, 'C', Blockly.JavaScript.ORDER_ATOMIC);
+    var couleur = Blockly.JavaScript.valueToCode(block, 'COLOR', Blockly.JavaScript.ORDER_ATOMIC);
+    
+    var code = `
+        await grille.ajouter(${couleur}, ${index});
+        await attendre(delai);
+    `;
+    
+    return code;
+};
 
 
+Blockly.Blocks['constant_red'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("rouge");
+        this.setOutput(true, "String");
+        this.setColour(230);
+        this.setTooltip("Retourne la couleur rouge");
+        this.setHelpUrl("");
+      }
+    };
 
+Blockly.JavaScript.forBlock['constant_red'] = function(block) {
+return ['"red"', Blockly.JavaScript.ORDER_ATOMIC];
+};
 
+Blockly.Blocks['constant_green'] = {
+      init: function() {
+        this.appendDummyInput()
+            .appendField("vert");
+        this.setOutput(true, "String");
+        this.setColour(230);
+        this.setTooltip("Retourne la couleur verte");
+        this.setHelpUrl("");
+      }
+    };
+
+Blockly.JavaScript.forBlock['constant_green'] = function(block) {
+return ['"green"', Blockly.JavaScript.ORDER_ATOMIC];
+};
 
   Blockly.Blocks['mettre_a'] = {
   init: function() {
@@ -577,12 +553,12 @@ function afficherVariables(valeurs) {
 // Définition du bloc "ajouter à"
 Blockly.Blocks['ajouter_a'] = {
   init: function() {
-    this.appendValueInput("VALUE")
-        .setCheck("Number")
-        .appendField("Ajouter ");
     this.appendValueInput("VAR")
         .setCheck("Number")
-        .appendField("à");
+        .appendField("Ajouter à ");
+    this.appendValueInput("VALUE")
+        .setCheck("Number")
+        .appendField(", ");
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
@@ -656,175 +632,45 @@ Blockly.JavaScript.forBlock['repeter_x_fois'] = function(block) {
     return code;
 };
 
-Blockly.Blocks['avancer'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Avancer de");
-        
-        this.appendValueInput("DISTANCE")
-            .setCheck("Number"); 
-        
-        this.appendDummyInput()
-            .appendField("unités");
-
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(160);
-    }
-};
 
 
-
-Blockly.Blocks['reculer'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Reculer de");
-        
-        this.appendValueInput("DISTANCE")
-            .setCheck("Number"); 
-        
-        this.appendDummyInput()
-            .appendField("unités");
-
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(160);
-    }
-};
-
-Blockly.Blocks['tourner'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Tourner à gauche de")
-            .appendField(new Blockly.FieldNumber(90), "ANGLE")
-            .appendField("degrés");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(230);
-    }
-};
-
-Blockly.Blocks['tourner_droite'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Tourner à droite de")
-            .appendField(new Blockly.FieldNumber(90), "ANGLE")
-            .appendField("degrés");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(230);
-    }
-};
-
-Blockly.Blocks['lever_stylo'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Lever le stylo");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(120);
-    }
-};
-
-Blockly.Blocks['baisser_stylo'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Baisser le stylo");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(120);
-    }
-};
-
-Blockly.Blocks['effacer'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Effacer le dessin");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(0);
-    }
-};
-
-
-Blockly.JavaScript.forBlock['avancer'] = function(block) {
-    var distance = Blockly.JavaScript.valueToCode(block, 'DISTANCE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-    return `grille.avancer(${distance});\n await attendre(delai);`;
-};
-
-Blockly.JavaScript.forBlock['reculer'] = function(block) {
-    var distance = Blockly.JavaScript.valueToCode(block, 'DISTANCE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-    return `grille.avancer(-(${distance}));\n await attendre(delai);`;
-};
-
-Blockly.JavaScript.forBlock['tourner'] = function(block) {
-    var angle = block.getFieldValue('ANGLE');
-    return `grille.tourner(${angle});\n await attendre(delai);`;
-};
-
-Blockly.JavaScript.forBlock['tourner_droite'] = function(block) {
-    var angle = block.getFieldValue('ANGLE');
-    return `grille.tourner(-${angle});\n await attendre(delai);`;
-};
-
-Blockly.JavaScript.forBlock['lever_stylo'] = function(block) {
-    return `grille.leverStylo();\n await attendre(delai);\n`;
-};
-
-Blockly.JavaScript.forBlock['baisser_stylo'] = function(block) {
-    return `grille.baisserStylo();\n await attendre(delai);\n`;
-};
-
-Blockly.JavaScript.forBlock['effacer'] = function(block) {
-    return `grille.effacer();\n await attendre(delai);\n`;
-};
-
-// Boîtes à outils : la série « avec variable » ajoute n, mettre, ajouter, = et si/sinon
-const BLOCS_SANS_VARIABLE = `
+// Configuration de Blockly avec des blocs de nombres et opérations
+const workspace = Blockly.inject('blocklyDiv', {
+  toolbox: `
+    <xml>
       <block type="programme"></block>
-      <block type="avancer"></block>
-      <block type="reculer"></block>
-      <block type="tourner"></block>
-      <block type="tourner_droite"></block>
-      <block type="math_number"></block>
-      <block type="repeter_x_fois"></block>
-      <block type="lever_stylo"></block>
-      <block type="baisser_stylo"></block>`;
-
-const TOOLBOX = {
-  sans: `<xml>${BLOCS_SANS_VARIABLE}</xml>`,
-  avec: `<xml>${BLOCS_SANS_VARIABLE}
-      <block type="n"></block>
       <block type="mettre_a"></block>
       <block type="ajouter_a"></block>
       <block type="test_equals"></block>
+      <block type="n"></block>
+      <block type="c"></block>
+      <block type="math_number"></block>
+      <block type="constant_red"></block>
+      <block type="constant_green"></block>
+      <block type="colorier"></block>
+      <block type="repeter_x_fois"></block>
       <block type="si_sinon"></block>
-    </xml>`
-};
+    </xml>
+  `,
 
-const workspace = Blockly.inject('blocklyDiv', {
-  toolbox: TOOLBOX.sans,
   media: 'https://unpkg.com/blockly/media/'
 });
 
-
-let block = workspace.newBlock('programme');
-block.initSvg();
-block.render();
-block.moveBy(50, 50); // Position du bloc
+// Bloc Programme posé d'office dans la zone de travail
+let blocProgramme = workspace.newBlock('programme');
+blocProgramme.initSvg();
+blocProgramme.render();
+blocProgramme.moveBy(50, 50);
 
  // Fonction pour exécuter le code généré par Blockly
 
-function attend(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+
 async function runCode() {
     executionId++;          // arrête une éventuelle exécution précédente
     const monId = executionId;
     workspace.highlightBlock(null);
     fermerAlerte();
-    grille.effacer();
-    await attend(500);
+    grille.vider();
     Blockly.JavaScript.init(workspace);
     let startBlock = workspace.getTopBlocks().find(b => b.type === "programme");
 
@@ -833,14 +679,11 @@ async function runCode() {
         return;
     }
     workspace.getAllBlocks().forEach(block => block.unselect());
-    executionEnCours=true;
+    executionEnCours=true
     try {
         const code = Blockly.JavaScript.blockToCode(startBlock);
-        console.log("Code généré :", code); // Vérifier le code généré
-        if (!code) {
-            console.log("Aucun code généré.");
-            return;
-        }
+        //console.log("Code généré :", code); // Vérifier le code généré
+
         // Création d'une fonction asynchrone dynamique
         let asyncFunction = new Function("attendre", "grille", "surligner", "afficherVariables", `
             return (async function() {
@@ -853,12 +696,24 @@ async function runCode() {
 
         // Exécution de la fonction avec `await`
         await asyncFunction(attendre, grille, surligner, afficherVariables);
+        workspace.highlightBlock(null);
 
+        if (grille.verifier()) {
+          let compteurElement = document.getElementById("nbBlocs").innerText;
+          let nbBlocksTot=document.getElementById("nbBlocksTot").innerText;
+          console.log(compteurElement)
+            if(+compteurElement<= +nbBlocksTot){
+              alerte("Mission réussie !");}
+            else{alerte("Ca marche mais trop de blocs utilisés");}
+             
+        } else {
+            alerte("Échec de la mission.");
+        }
     } catch (e) {
-        alerte("Erreur dans le code généré : " + e.message);
-        console.error(e);
-    } finally {
-        if (monId === executionId) workspace.highlightBlock(null);
+        if (monId === executionId) {
+            workspace.highlightBlock(null);
+            alerte("Erreur dans le code généré : " + e.message);
+        }
     }
 }
 
@@ -889,7 +744,7 @@ resetButton.onclick = function () {
     executionId++;
     workspace.highlightBlock(null);
     fermerAlerte();
-    grille.effacer(); 
+    grille.vider(); 
     //workspace.clear(); // Efface tous les blocs
     mettreAJourCompteur(); // Remet à jour le compteur après effacement
 };
@@ -936,149 +791,48 @@ function fermerAlerte() {
 <script>
 const grille = new Grille("maGrille");
 let executionEnCours=false;
-
 function nbTotChange(n){
-    document.getElementById("nbBlocksTot").innerText=n;
-}
-    
-    
-// Exercices par série : départ (x, y en px, angle), nombre de blocs visé, tracé modèle
-const EXERCICES = {
-  sans: [
-    { // carré
-      blocs: 6, x: 100, y: 200, angle: 0,
-      trace() {
-        for (let i = 0; i < 4; i++) { this.avancer(5); this.tourner(90); }
-      }
-    },
-    { // escalier
-      blocs: 9, x: 40, y: 240, angle: 0,
-      trace() {
-        for (let i = 0; i < 4; i++) {
-          this.avancer(3); this.tourner(90); this.avancer(2); this.tourner(-90);
-        }
-      }
-    },
-    { // croix
-      blocs: 8, x: 140, y: 140, angle: 0,
-      trace() {
-        for (let i = 0; i < 4; i++) {
-          this.avancer(5);
-          this.leverStylo();   // pas de retracé : les pointillés restent nets
-          this.avancer(-5);
-          this.baisserStylo();
-          this.tourner(90);
-        }
-      }
-    },
-    { // pointillés horizontaux
-      blocs: 9, x: 60, y: 140, angle: 0,
-      trace() {
-        for (let i = 0; i < 3; i++) {
-          this.avancer(2); this.leverStylo(); this.avancer(1); this.baisserStylo();
-        }
-      }
-    },
-    { // pointillés verticaux (tourner avant la boucle)
-      blocs: 10, x: 140, y: 240, angle: 0,
-      trace() {
-        this.tourner(90);
-        for (let i = 0; i < 3; i++) {
-          this.avancer(2); this.leverStylo(); this.avancer(1); this.baisserStylo();
-        }
-      }
-    },
-    { // pointillés en équerre (tourner en fin de boucle)
-      blocs: 10, x: 120, y: 180, angle: 0,
-      trace() {
-        for (let i = 0; i < 3; i++) {
-          this.avancer(2); this.leverStylo(); this.avancer(1); this.baisserStylo();
-          this.tourner(90);
-        }
-      }
-    }
-  ],
-  avec: [
-    { // carrés emboîtés
-      blocs: 14, x: 80, y: 240, angle: 0,
-      trace() {
-        let n = 4;
-        for (let j = 0; j < 5; j++) {
-          for (let i = 0; i < 4; i++) { this.avancer(n); this.tourner(90); }
-          n = n + 1;
-        }
-      }
-    },
-    { // carrés séparés, stylo levé
-      blocs: 18, x: 120, y: 40, angle: -90,
-      trace() {
-        let n = 2;
-        for (let j = 0; j < 3; j++) {
-          for (let i = 0; i < 4; i++) { this.avancer(n); this.tourner(90); }
-          this.leverStylo(); this.avancer(n + 1); this.baisserStylo();
-          n = n + 1;
-        }
-      }
-    },
-    { // triangles en rosace
-      blocs: 15, x: 120, y: 120, angle: 0,
-      trace() {
-        let n = 2;
-        for (let j = 0; j < 6; j++) {
-          for (let i = 0; i < 3; i++) { this.avancer(n); this.tourner(120); }
-          this.tourner(60);
-          n = n + 1;
-        }
-      }
-    },
-    { // carrés alternés 1 / 2
-      blocs: 23, x: 20, y: 180, angle: 0,
-      trace() {
-        let n = 1;
-        for (let j = 0; j < 9; j++) {
-          for (let i = 0; i < 4; i++) { this.avancer(n); this.tourner(90); }
-          this.avancer(n);
-          if (n == 1) { n = 2; } else { n = 1; }
-        }
-      }
-    }
-  ]
-};
+    document.getElementById("nbBlocksTot").innerText=n;}
 
-let serie = "sans";
-const exoInput = document.getElementById("exoInput");
 
 function changerExercice() {
-    const liste = EXERCICES[serie];
-    let numero = parseInt(exoInput.value) || 1;
-    numero = Math.min(Math.max(numero, 1), liste.length);
-    exoInput.value = numero;
-    const exo = liste[numero - 1];
+    let exercice = document.getElementById("exoInput").value;
+    
+    grille.vider(); // Vider la grille à chaque changement
 
-    grille.effacer();
-    nbTotChange(exo.blocs);
-    grille.setPosition(exo.x, exo.y);
-    grille.setOrientation(exo.angle);
-    grille.tracerFantome(exo.trace);
+    let phantom = []; // État fantôme basé sur l'exercice choisi
+    let nbBlocksTot= 0;
+    switch (parseInt(exercice)) {
+        case 1:
+            nbBlocksTot= 14;
+            phantom = [[], ["r","r","r","r"], ["g","g","g",],[],[]];
+            break;
+        case 2:
+            nbBlocksTot= 14;
+            phantom = [[],["r","r","r","r"], ["r","r","r","r"], ["r", "r", "r","r"],[]];
+            break;
+        case 3:
+            nbBlocksTot= 14;
+            phantom = [["g","g","g","g","g"],[],["g","g","g","g","g"],[],["g","g","g","g","g"]];
+            break;
+        case 4:
+            nbBlocksTot= 30
+            phantom = [["r","g","r","g","r"], ["g","r","g","r", "g"],["r","g","r","g","r"], ["g","r","g","r", "g"], ["r","g","r","g","r"]];
+            break;
+        case 5:
+            nbBlocksTot= 30
+            phantom = [["r"], ["g","g"], ["r","r","r"], ["g","g","g","g"], ["r","r","r","r","r"]];
+            break;
+        default:
+            phantom = [["r"], ["g"], ["r"], ["g"], ["r"]]; // Valeur par défaut
+    }
+    nbTotChange(nbBlocksTot);
+    grille.initPhantom(phantom);
 }
 
-function changerSerie(nouvelleSerie, numero = 1) {
-    serie = nouvelleSerie;
-    document.querySelectorAll("#serieChoix button").forEach(b =>
-        b.classList.toggle("actif", b.dataset.serie === serie));
-    workspace.updateToolbox(TOOLBOX[serie]);
-    document.getElementById("variables").style.display = serie === "avec" ? "" : "none";
-    exoInput.max = EXERCICES[serie].length;
-    exoInput.value = numero;
-    changerExercice();
-}
 
-document.querySelectorAll("#serieChoix button").forEach(b =>
-    b.onclick = () => { if (b.dataset.serie !== serie) changerSerie(b.dataset.serie); });
-
-
-// Ouvrir dans un nouvel onglet en transmettant la série, l'exercice et les blocs posés
-const CLE_TRANSFERT = "turtleBlockly_transfert";
+// Ouvrir dans un nouvel onglet en transmettant l'exercice et les blocs posés
+const CLE_TRANSFERT = "puissance4Blockly_transfert";
 
 document.getElementById("newTabButton").onclick = function () {
     try {
@@ -1086,13 +840,13 @@ document.getElementById("newTabButton").onclick = function () {
             Blockly.serialization.workspaces.save(workspace)));
     } catch (e) {}
     const url = new URL(window.location.href);
-    url.searchParams.set("serie", serie);
-    url.searchParams.set("exo", exoInput.value);
+    url.searchParams.set("exo", document.getElementById("exoInput").value);
     window.open(url.toString(), "_blank");
 };
 
-const params = new URLSearchParams(window.location.search);
-if (params.get("exo")) {
+const exoUrl = new URLSearchParams(window.location.search).get("exo");
+if (exoUrl) {
+    document.getElementById("exoInput").value = exoUrl;
     try {
         const etat = localStorage.getItem(CLE_TRANSFERT);
         if (etat) {
@@ -1101,8 +855,9 @@ if (params.get("exo")) {
         }
     } catch (e) {}
 }
-changerSerie(params.get("serie") === "avec" ? "avec" : "sans", params.get("exo") || 1);
 
+changerExercice()
+mettreAJourCompteur();
 
 workspace.addChangeListener(mettreAJourCompteur);
 document.getElementById("exoInput").addEventListener("change", changerExercice);
