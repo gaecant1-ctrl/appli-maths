@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compagnon GeoGebra 2D</title>
+<style>
+  :root{
+    --bg:#0f1420;
+    --panel:#161d2e;
+    --panel2:#1d2740;
+    --accent:#5b9dff;
+    --accent2:#7ee0c0;
+    --text:#e8ecf5;
+    --muted:#8a93ab;
+    --border:#2a3350;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overflow:hidden;
+  }
+  #app{ display:flex; height:100%; width:100%; }
+  #sidebar{
+    width:280px;
+    min-width:280px;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:16px;
+    gap:14px;
+    overflow-y:auto;
+  }
+  #sidebar h1{ font-size:15px; margin:0 0 2px 0; font-weight:600; }
+  #sidebar .sub{ color:var(--muted); font-size:12px; margin:0 0 8px 0; line-height:1.4; }
+  .group{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px;
+  }
+  .group h2{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--muted);
+    margin:0 0 8px 0;
+    font-weight:600;
+  }
+  details.group{ padding:0; }
+  details.group summary{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--muted);
+    font-weight:600;
+    cursor:pointer;
+    padding:10px;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    user-select:none;
+  }
+  details.group summary::-webkit-details-marker{ display:none; }
+  details.group summary::after{
+    content:"▾";
+    font-size:10px;
+    color:var(--muted);
+    transition:transform .15s;
+  }
+  details.group[open] summary::after{ transform:rotate(180deg); }
+  details.group summary:hover{ color:var(--text); }
+  details.group .details-body{ padding:0 10px 10px 10px; }
+  .row{ display:flex; gap:6px; flex-wrap:wrap; }
+  button{
+    background:#26314e;
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 10px;
+    font-size:12.5px;
+    cursor:pointer;
+    flex:1 1 auto;
+    transition:background .15s, border-color .15s;
+    white-space:nowrap;
+  }
+  button:hover{ background:#31406a; border-color:var(--accent); }
+  button.wide{ flex:1 1 100%; }
+  button.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#0b1120;
+    font-weight:600;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.35);
+  }
+  button.active:hover{ background:var(--accent); filter:brightness(1.05); }
+  button.accent{
+    background:linear-gradient(135deg,var(--accent),#4573c9);
+    border:none; color:#0b1120; font-weight:600;
+  }
+  button.accent:hover{ filter:brightness(1.08); }
+  .style-btn{
+    flex:0 0 auto;
+    width:38px; height:38px;
+    padding:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+  }
+  .swatch{
+    flex:0 0 auto;
+    width:28px; height:28px;
+    padding:0;
+    border-radius:50%;
+    border:2px solid var(--border);
+  }
+  .swatch:hover{ transform:scale(1.1); }
+  label.field-label{
+    font-size:11.5px;
+    color:var(--muted);
+    display:block;
+    margin:8px 0 4px 0;
+  }
+  input[type=range]{ width:100%; }
+  #stage{ flex:1; position:relative; background:#000; }
+  #ggb-container{ position:absolute; inset:0; }
+  #loading{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:14px;
+    background:var(--bg);
+    flex-direction:column; gap:10px;
+  }
+  #loading .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--accent);
+    animation:pulse 1s infinite ease-in-out;
+  }
+  @keyframes pulse{ 0%,100%{opacity:.3;transform:scale(.8);} 50%{opacity:1;transform:scale(1.1);} }
+  #toast{
+    position:absolute; top:14px; left:50%;
+    transform:translateX(-50%) translateY(-10px);
+    background:var(--accent2); color:#0b1120; font-weight:600;
+    font-size:12.5px; padding:7px 14px; border-radius:20px;
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #status{
+    margin-top:auto; font-size:11px; color:var(--muted);
+    border-top:1px solid var(--border); padding-top:10px; line-height:1.5;
+  }
+  #status b{ color:var(--accent2); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div>
+      <h1>Compagnon GeoGebra 2D</h1>
+      <p class="sub">GeoGebra Classic officiel, habillé de réglages globaux rapides — applique un style à <b>tous les points</b> ou <b>toutes les lignes</b> d'un coup, sans les sélectionner un par un.</p>
+    </div>
+
+    <div class="group">
+      <h2>Barre d'outils</h2>
+      <div class="row">
+        <button id="btn-toolbar-simple" class="active">Simple</button>
+        <button id="btn-toolbar-full">Complète</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Étiquettes des points</h2>
+      <div class="row">
+        <button id="btn-labels-show">Afficher</button>
+        <button id="btn-labels-hide">Masquer</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Essentiel</h2>
+      <label class="field-label">Création de point à la volée</label>
+      <div class="row">
+        <button id="btn-fly-points-allow" class="active">Autoriser</button>
+        <button id="btn-fly-points-deny">Interdire</button>
+      </div>
+      <label class="field-label" style="margin-top:10px;">Zoom / déplacement de la vue</label>
+      <div class="row">
+        <button id="btn-navlock-allow" class="active">Autoriser</button>
+        <button id="btn-navlock-deny">Bloquer</button>
+      </div>
+    </div>
+
+    <details class="group">
+      <summary>Points — style</summary>
+      <div class="details-body">
+        <div class="row" id="point-styles"></div>
+        <label class="field-label">Taille : <span id="point-size-val">5</span></label>
+        <input type="range" id="point-size" min="1" max="9" value="5">
+        <label class="field-label">Couleur</label>
+        <div class="row" id="point-colors"></div>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>Lignes — style</summary>
+      <div class="details-body">
+        <label class="field-label">Épaisseur : <span id="line-thickness-val">2</span></label>
+        <input type="range" id="line-thickness" min="1" max="13" value="2">
+        <label class="field-label">Couleur</label>
+        <div class="row" id="line-colors"></div>
+      </div>
+    </details>
+
+    <div class="group">
+      <h2>Affichage</h2>
+      <label class="field-label">Grille</label>
+      <div class="row">
+        <button id="btn-grid-on">Grille</button>
+        <button id="btn-grid-secondary">Secondaire</button>
+        <button id="btn-axes">Axes</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="btn-fullscreen" class="wide">Plein écran</button>
+      </div>
+    </div>
+
+
+    <div id="status">Statut : <b id="status-text">chargement de l'applet…</b></div>
+  </div>
+
+  <div id="stage">
+    <div id="ggb-container"></div>
+    <div id="loading"><div class="dot"></div>Chargement de GeoGebra…</div>
+    <div id="toast"></div>
+  </div>
+</div>
+
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+<script>
+  let ggbApplet = null;
+  const statusText = document.getElementById('status-text');
+  const loading = document.getElementById('loading');
+  const toastEl = document.getElementById('toast');
+
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.classList.remove('show'), 1800);
+  }
+  function setStatus(msg){ statusText.textContent = msg; }
+  function safe(fn, label){
+    try{ fn(); }
+    catch(e){ console.error(label, e); toast('Action indisponible : ' + label); }
+  }
+
+  // Simple toolbar: every id below is its own direct-click icon — no
+  // dropdown submenus, and only these 11 tools plus Move. In GeoGebra's
+  // toolbar syntax "|" is what actually creates a separate top-level
+  // icon; "," or " " group items into ONE icon's dropdown instead (confirmed
+  // live — a comma-separated list still rendered as a single dropdown).
+  // Point=1, Droite=2, Parallèle=3, Perpendiculaire=4, Intersection=5,
+  // Médiatrice=8, Cercle centre-point=10, Polygone=16, Segment=15,
+  // Demi-droite=18, Milieu ou centre=19 (ids confirmed live via getMode()).
+  const TOOLBAR_SIMPLE = "0 | 1 | 5 | 19 | 2 | 15 | 18 | 8 | 4 | 3 | 10 | 16";
+  // Trimmed classic toolbar: removed Ellipse(55), Hyperbole(56),
+  // Parabole(57), Conique par 5 points(12), Angle(36), Symétrie
+  // axiale(30) & centrale(29), Curseur(25), Déplacer Graphique(40) — ids
+  // confirmed live via getMode(). Droite(2) and Demi-droite(18) stay in
+  // the line group, as requested.
+  const TOOLBAR_FULL = "0 73 62 | 1 501 67 , 5 19 , 72 75 76 | 2 15 45 , 18 65 , 7 37 | 4 3 8 9 , 13 44 , 58 , 47 | 16 51 64 , 70 | 10 34 53 11 , 24  20 22 , 21 23 | 46 , 38 49  50 , 71  14  68 | 54 32 31 33 | 17 26 60 52 61 | 41 42 , 27 28 35 , 6";
+
+  function buildPerspectiveXML(toolbarStr){
+    // view id must be "1" (the real Graphics view, where the construction
+    // actually lives) — id "16" is Graphics View 2, a separate, normally
+    // hidden view. Using 16 here was the root cause behind three symptoms
+    // at once: objects seeming to vanish, the pan/zoom resetting, and the
+    // grid/axes toggles needing an XML-splice workaround to "reach" the
+    // view that was really on screen.
+    return `<perspective id="tmp">
+<panes><pane location="" divider="0.5" orientation="1"/></panes>
+<views>
+<view id="1" toolbar="${toolbarStr}" visible="true" inframe="false" stylebar="true" location="1" size="798" window="100,100,700,550"/>
+</views>
+<toolbar show="true" items="${toolbarStr}" position="1" help="false"/>
+<input show="true" cmd="true" top="algebra"/>
+<dockBar show="false" east="false"/>
+</perspective>`;
+  }
+
+  const ggbParams = {
+    appName: "classic",
+    width: 800,
+    height: 600,
+    showToolBar: true,
+    showToolBarHelp: false,
+    showAlgebraInput: false,
+    showMenuBar: false,
+    showResetIcon: true,
+    allowStyleBar: true,
+    enableRightClick: true,
+    enableShiftDragZoom: true,
+    language: "fr",
+    perspective: "G",
+    appletOnLoad: function(api){
+      ggbApplet = api;
+      loading.style.display = 'none';
+      setStatus('applet prêt');
+      ggbApplet.showTooltip(0); // 0 = never show GeoGebra's own object tooltips
+      registerDefaultStyleListener();
+      // Start on the simple toolbar rather than GeoGebra's native default.
+      ggbApplet.setPerspective(buildPerspectiveXML(TOOLBAR_SIMPLE));
+      afterPerspectiveSwitch();
+      window.addEventListener('resize', fitAppletToStage);
+    }
+  };
+  const applet = new GGBApplet(ggbParams, true);
+  window.addEventListener('load', ()=>applet.inject('ggb-container'));
+
+  function fitAppletToStage(){
+    if(!ggbApplet) return;
+    const stage = document.getElementById('stage');
+    ggbApplet.setSize(stage.clientWidth, stage.clientHeight);
+  }
+
+  // New objects start croix/bleu for points, noir for everything else —
+  // matches the bulk style buttons below instead of GeoGebra's own
+  // (filled circle / blue) defaults.
+  function registerDefaultStyleListener(){
+    ggbApplet.registerAddListener(name=>{
+      safe(()=>{
+        if(allPointNames().includes(name)){
+          ggbApplet.setPointStyle(name, 1);
+          ggbApplet.setColor(name, 25, 90, 210);
+          ggbApplet.setLabelVisible(name, true);
+        } else {
+          ggbApplet.setColor(name, 0, 0, 0);
+        }
+      }, 'style par défaut');
+    });
+  }
+
+  // --- helpers to bulk-apply a setting across the whole construction ---
+  function allPointNames(){
+    return safeNames(()=>ggbApplet.getAllObjectNames('point'));
+  }
+  function allNonPointNames(){
+    const all = safeNames(()=>ggbApplet.getAllObjectNames());
+    const points = new Set(allPointNames());
+    return all.filter(n=>!points.has(n));
+  }
+  function safeNames(fn){
+    try{ return fn() || []; }catch(e){ return []; }
+  }
+  function forEachSafe(names, fn){
+    let touched = 0;
+    names.forEach(n=>{
+      try{ fn(n); touched++; }catch(e){ /* not applicable to this object, skip */ }
+    });
+    return touched;
+  }
+
+  // --- Points: style ---
+  const POINT_STYLES = [
+    {v:0, label:'●'}, {v:1, label:'✕'}, {v:3, label:'+'}
+  ];
+  const pointStylesEl = document.getElementById('point-styles');
+  POINT_STYLES.forEach(s=>{
+    const b = document.createElement('button');
+    b.className = 'style-btn';
+    b.textContent = s.label;
+    b.title = 'Style ' + s.v;
+    b.addEventListener('click', ()=>{
+      safe(()=>{
+        const n = forEachSafe(allPointNames(), name=>ggbApplet.setPointStyle(name, s.v));
+        toast(n ? `Style appliqué à ${n} point(s)` : 'Aucun point dans la construction');
+      }, 'style de point');
+    });
+    pointStylesEl.appendChild(b);
+  });
+
+  // --- Points: size ---
+  const pointSizeInput = document.getElementById('point-size');
+  const pointSizeVal = document.getElementById('point-size-val');
+  pointSizeInput.addEventListener('input', ()=>{
+    pointSizeVal.textContent = pointSizeInput.value;
+    safe(()=>{
+      forEachSafe(allPointNames(), name=>ggbApplet.setPointSize(name, parseInt(pointSizeInput.value,10)));
+    }, 'taille de point');
+  });
+
+  // --- Colors (shared palette) ---
+  const PALETTE = [
+    [25,90,210],   // bleu
+    [211,47,47],   // rouge
+    [46,125,50],   // vert
+    [245,124,0]    // orange
+  ];
+  function buildSwatches(container, onPick){
+    PALETTE.forEach(([r,g,b])=>{
+      const btn = document.createElement('button');
+      btn.className = 'swatch';
+      btn.style.background = `rgb(${r},${g},${b})`;
+      btn.title = `rgb(${r},${g},${b})`;
+      btn.addEventListener('click', ()=>onPick(r,g,b));
+      container.appendChild(btn);
+    });
+  }
+  buildSwatches(document.getElementById('point-colors'), (r,g,b)=>{
+    safe(()=>{
+      const n = forEachSafe(allPointNames(), name=>ggbApplet.setColor(name, r, g, b));
+      toast(n ? `Couleur appliquée à ${n} point(s)` : 'Aucun point dans la construction');
+    }, 'couleur de point');
+  });
+  buildSwatches(document.getElementById('line-colors'), (r,g,b)=>{
+    safe(()=>{
+      const n = forEachSafe(allNonPointNames(), name=>ggbApplet.setColor(name, r, g, b));
+      toast(n ? `Couleur appliquée à ${n} objet(s)` : 'Aucune ligne dans la construction');
+    }, 'couleur de ligne');
+  });
+
+  // --- Lines: thickness ---
+  const thicknessInput = document.getElementById('line-thickness');
+  const thicknessVal = document.getElementById('line-thickness-val');
+  thicknessInput.addEventListener('input', ()=>{
+    thicknessVal.textContent = thicknessInput.value;
+    safe(()=>{
+      forEachSafe(allNonPointNames(), name=>ggbApplet.setLineThickness(name, parseInt(thicknessInput.value,10)));
+    }, 'épaisseur de ligne');
+  });
+
+  // --- Toolbar ---
+  function setToolbarButtonsActive(id){
+    ['btn-toolbar-simple','btn-toolbar-full'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  // setPerspective() resets the euclidianView to the perspective XML's own
+  // defaults, wiping whatever grid/secondary/axes state the user had set —
+  // reapply our own tracked state right after switching so the toolbar
+  // choice stays fully independent from display settings.
+  function reapplyDisplayState(){
+    if(gridOn) setGridType(secondaryOn ? 3 : 0);
+    ggbApplet.setGridVisible(gridOn);
+    setAxesVisibleBoth(axesOn);
+  }
+
+  // GeoGebra's own style bar (the little floating icon row in the top
+  // corner of the graphics view) re-expands itself every time
+  // setPerspective() rebuilds the view — there's no public API for its
+  // collapsed state, only the DOM toggle button real users click, so we
+  // click it ourselves whenever it comes back expanded (width>0).
+  function collapseStyleBar(){
+    const panel = document.querySelector('.styleBarW');
+    const btn = document.querySelector('.toggleStyleBar');
+    if(panel && btn && panel.getBoundingClientRect().width > 0){
+      btn.click();
+    }
+  }
+
+  // The toolbar row can wrap to a different height right after
+  // setPerspective(), so the very next fitAppletToStage() can measure the
+  // stage before that reflow settles — resize+recenter again a beat later
+  // to correct for it (same pattern as the fullscreenchange fix).
+  function afterPerspectiveSwitch(){
+    fitAppletToStage();
+    // Calling setXML (inside reapplyDisplayState, for the grid) right on
+    // the heels of setPerspective() has repeatedly desynced GeoGebra's
+    // renderer from its own XML model in this app (grid model says one
+    // thing, canvas paints another) — giving it a real pause first avoids
+    // that race instead of retrying rapidly into the same window.
+    setTimeout(()=>{ fitAppletToStage(); reapplyDisplayState(); collapseStyleBar(); }, 400);
+  }
+
+  document.getElementById('btn-toolbar-simple').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setPerspective(buildPerspectiveXML(TOOLBAR_SIMPLE));
+      afterPerspectiveSwitch();
+      setToolbarButtonsActive('btn-toolbar-simple');
+      toast('Barre simple');
+    }, 'barre simple');
+  });
+  document.getElementById('btn-toolbar-full').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setPerspective(buildPerspectiveXML(TOOLBAR_FULL));
+      afterPerspectiveSwitch();
+      setToolbarButtonsActive('btn-toolbar-full');
+      toast('Barre complète');
+    }, 'barre complète');
+  });
+
+  // --- Essentiel : création de point à la volée ---
+  function setFlyPointsButtonsActive(id){
+    ['btn-fly-points-allow','btn-fly-points-deny'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-fly-points-allow').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setOnTheFlyPointCreationActive(true);
+      setFlyPointsButtonsActive('btn-fly-points-allow');
+      toast('Points à la volée autorisés');
+    }, 'points à la volée');
+  });
+  document.getElementById('btn-fly-points-deny').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setOnTheFlyPointCreationActive(false);
+      setFlyPointsButtonsActive('btn-fly-points-deny');
+      toast('Points à la volée interdits');
+    }, 'points à la volée');
+  });
+
+  // --- Essentiel : bloquer zoom (molette) et déplacement (clic-glissé) de la vue ---
+  // enableRightClick(false) + enableShiftDragZoom(false) block wheel-zoom
+  // and right-drag-pan (confirmed live: view's scale/xZero/yZero stop
+  // changing on scroll once disabled). There's no separate GGBApplet
+  // method for plain left-drag panning — it's governed by the same flags.
+  function setNavLockButtonsActive(id){
+    ['btn-navlock-allow','btn-navlock-deny'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-navlock-allow').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.enableRightClick(true);
+      ggbApplet.enableShiftDragZoom(true);
+      setNavLockButtonsActive('btn-navlock-allow');
+      toast('Zoom / déplacement autorisés');
+    }, 'navigation');
+  });
+  document.getElementById('btn-navlock-deny').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.enableRightClick(false);
+      ggbApplet.enableShiftDragZoom(false);
+      setNavLockButtonsActive('btn-navlock-deny');
+      toast('Zoom / déplacement bloqués');
+    }, 'navigation');
+  });
+
+  // --- Labels (points only — other objects' labels stay under GeoGebra's own control) ---
+  document.getElementById('btn-labels-show').addEventListener('click', ()=>{
+    safe(()=>{
+      const n = forEachSafe(allPointNames(), name=>ggbApplet.setLabelVisible(name, true));
+      toast(n ? `Étiquettes affichées (${n} point(s))` : 'Aucun point dans la construction');
+    }, 'afficher étiquettes');
+  });
+  document.getElementById('btn-labels-hide').addEventListener('click', ()=>{
+    safe(()=>{
+      const n = forEachSafe(allPointNames(), name=>ggbApplet.setLabelVisible(name, false));
+      toast(n ? `Étiquettes masquées (${n} point(s))` : 'Aucun point dans la construction');
+    }, 'masquer étiquettes');
+  });
+
+  // --- Affichage : grille ---
+  // Grid is always base unit spacing (native default). GeoGebra's own
+  // gridType has no independent "secondary distance" attribute — but
+  // gridType 3 ("Quadrillage complet") natively draws its own automatic
+  // fine subdivisions on top of the unit lines, with zero manual XML
+  // hacking needed (confirmed live). gridType 0 ("Quadrillage principal")
+  // shows only the unit lines. That's the real principal/secondaire toggle.
+  function setGridType(type){
+    // The classic app's exported XML carries *two* <euclidianView> blocks
+    // (confirmed live) — a non-global replace only patched the first one,
+    // leaving the second (the one actually rendered) stuck at whatever
+    // gridType a prior setPerspective() call had defaulted it back to.
+    // Every replace here needs the /g flag to hit both.
+    let xml = ggbApplet.getXML();
+    xml = xml.replace(/<grid[^/]*\/>/g, ''); // drop any leftover custom <grid> element(s)
+    xml = xml.replace(/gridType="\d+"/g, `gridType="${type}"`);
+    xml = xml.replace(/gridIsBold="\w+"/g, 'gridIsBold="false"');
+    ggbApplet.setXML(xml, false);
+  }
+
+  let gridOn = false, secondaryOn = false, axesOn = false;
+
+  document.getElementById('btn-grid-on').addEventListener('click', (e)=>{
+    safe(()=>{
+      gridOn = !gridOn;
+      if(gridOn) setGridType(secondaryOn ? 3 : 0);
+      ggbApplet.setGridVisible(gridOn);
+      e.target.classList.toggle('active', gridOn);
+      toast(gridOn ? 'Grille affichée' : 'Grille masquée');
+    }, 'grille');
+  });
+
+  document.getElementById('btn-grid-secondary').addEventListener('click', (e)=>{
+    safe(()=>{
+      secondaryOn = !secondaryOn;
+      setGridType(secondaryOn ? 3 : 0);
+      ggbApplet.setGridVisible(true);
+      gridOn = true;
+      document.getElementById('btn-grid-on').classList.add('active');
+      e.target.classList.toggle('active', secondaryOn);
+      toast(secondaryOn ? 'Grille secondaire affichée' : 'Grille secondaire masquée');
+    }, 'grille secondaire');
+  });
+  function setAxesVisibleBoth(visible){
+    // ggbApplet.setAxesVisible() doesn't reliably stick after a
+    // setPerspective() switch, so this splices the XML directly instead.
+    // What actually drives rendering is each <axis id="0"/"1" show="…">
+    // element, not <evSettings axes="…">, which is a separate, cosmetic
+    // flag that doesn't affect what's drawn — patching only evSettings
+    // (an earlier attempt) had no visible effect.
+    let xml = ggbApplet.getXML();
+    xml = xml.replace(/(<axis id="\d+" show=")\w+(")/g, `$1${visible}$2`);
+    ggbApplet.setXML(xml, false);
+  }
+  document.getElementById('btn-axes').addEventListener('click', (e)=>{
+    safe(()=>{
+      axesOn = !axesOn;
+      setAxesVisibleBoth(axesOn);
+      e.target.classList.toggle('active', axesOn);
+      toast(axesOn ? 'Axes affichés' : 'Axes masqués');
+    }, 'axes');
+  });
+  document.getElementById('btn-fullscreen').addEventListener('click', ()=>{
+    const stage = document.getElementById('stage');
+    if(!document.fullscreenElement){
+      stage.requestFullscreen().catch(()=>toast('Plein écran refusé par le navigateur'));
+    } else {
+      document.exitFullscreen();
+    }
+  });
+  // requestFullscreen()/exitFullscreen() resolve/resize asynchronously —
+  // window's 'resize' event isn't reliably fired on exit in every browser,
+  // so re-fit explicitly on the real fullscreenchange event.
+  document.addEventListener('fullscreenchange', ()=>{
+    fitAppletToStage();
+    setTimeout(fitAppletToStage, 150); // layout can still settle a beat later
+  });
+</script>
+</body>
+</html>
