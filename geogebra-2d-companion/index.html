@@ -175,7 +175,7 @@
     <div class="group">
       <h2>Étiquettes des points</h2>
       <div class="row">
-        <button id="btn-labels-show">Afficher</button>
+        <button id="btn-labels-show" class="active">Afficher</button>
         <button id="btn-labels-hide">Masquer</button>
       </div>
     </div>
@@ -191,6 +191,16 @@
       <div class="row">
         <button id="btn-navlock-allow" class="active">Autoriser</button>
         <button id="btn-navlock-deny">Bloquer</button>
+      </div>
+      <label class="field-label" style="margin-top:10px;">Codage auto (angle droit, longueurs égales)</label>
+      <div class="row">
+        <button id="btn-autocode-on" class="active">Activer</button>
+        <button id="btn-autocode-off">Désactiver</button>
+      </div>
+      <label class="field-label" style="margin-top:10px;">Retour à la flèche après un outil</label>
+      <div class="row">
+        <button id="btn-autoarrow-on" class="active">Activer</button>
+        <button id="btn-autoarrow-off">Désactiver</button>
       </div>
     </div>
 
@@ -327,20 +337,124 @@
     ggbApplet.setSize(stage.clientWidth, stage.clientHeight);
   }
 
+  let autoCodeOn = true;
+
+  function isLineLike(type){
+    return type==='line' || type==='segment' || type==='ray';
+  }
+
+  // A segment built from two named points always has "Segment(A, B)" as
+  // its command string — used to recover a segment's endpoints without
+  // creating any new (visible) object just to ask for them.
+  function segmentEndpoints(segName){
+    const cs = safeNames(()=>ggbApplet.getCommandString(segName));
+    const m = cs && cs.match(/^Segment\((.+)\)$/);
+    if(!m) return null;
+    const args = m[1].split(',').map(s=>s.trim());
+    return args.length===2 ? args : null;
+  }
+
+  // Angle(line1,line2) picks one of the two supplementary directed
+  // angles depending on each line's internal direction vector — for a
+  // true perpendicular that's always exactly 90° or 270°; if we land on
+  // 270° we just ask for it the other way round instead.
+  function markRightAngle(lineA, lineB){
+    let name = ggbApplet.evalCommandGetLabels(`Angle(${lineA},${lineB})`);
+    if(!name) return;
+    if(Math.abs(ggbApplet.getValue(name) - Math.PI/2) > 0.01){
+      ggbApplet.deleteObject(name);
+      name = ggbApplet.evalCommandGetLabels(`Angle(${lineB},${lineA})`);
+    }
+    if(name) ggbApplet.setLabelVisible(name, false);
+  }
+
+  // Successive midpoints in the same figure alternate between the ">"
+  // and ">>" decorations, so distinct equal-length pairs stay
+  // distinguishable from each other instead of all wearing the same mark.
+  let equalMarkCount = 0;
+
+  // Draws the two half-segments A–M and M–B with a matching arrow mark
+  // (GeoGebra's own "equal length" decoration) and hides the original
+  // full segment when there was one, so it doesn't sit doubled underneath.
+  function markEqualLengths(A, M, B, sourceSegment){
+    const decoType = 4 + (equalMarkCount++ % 2); // 4 = ">", 5 = ">>"
+    [[A,M],[M,B]].forEach(([p,q])=>{
+      const seg = ggbApplet.evalCommandGetLabels(`Segment(${p},${q})`);
+      if(!seg) return;
+      ggbApplet.evalCommand(`SetDecoration(${seg},${decoType})`);
+      ggbApplet.setLabelVisible(seg, false);
+    });
+    if(sourceSegment) safe(()=>ggbApplet.setVisible(sourceSegment, false), 'masquer segment source');
+  }
+
+  function applyAutoCoding(name){
+    const cs = safeNames(()=>ggbApplet.getCommandString(name));
+    if(!cs) return;
+    let m = cs.match(/^Perpendiculaire\((.+)\)$/);
+    if(m && isLineLike(ggbApplet.getObjectType(name))){
+      const args = m[1].split(',').map(s=>s.trim());
+      if(args.length===2){
+        const point0 = ggbApplet.getObjectType(args[0])==='point';
+        const line = point0 ? args[1] : args[0];
+        if(isLineLike(ggbApplet.getObjectType(line))) markRightAngle(line, name);
+      }
+      return;
+    }
+    m = cs.match(/^MilieuCentre\((.+)\)$/);
+    if(m && ggbApplet.getObjectType(name)==='point'){
+      const args = m[1].split(',').map(s=>s.trim());
+      let A, B, sourceSegment;
+      if(args.length===2){ [A,B] = args; }
+      else if(args.length===1){
+        sourceSegment = args[0];
+        const ends = segmentEndpoints(sourceSegment);
+        if(ends) [A,B] = ends;
+      }
+      if(A && B) markEqualLengths(A, name, B, sourceSegment);
+    }
+  }
+
   // New objects start croix/bleu for points, noir for everything else —
   // matches the bulk style buttons below instead of GeoGebra's own
-  // (filled circle / blue) defaults.
+  // (filled circle / blue) defaults. Label visibility follows whichever
+  // of Afficher/Masquer was clicked last, so new points stay consistent
+  // with existing ones instead of always coming back labelled.
+  let labelsOn = true;
+
+  // Tool modes whose actual, final output is a point — for every other
+  // mode, a newly added point is just an on-the-fly helper GeoGebra
+  // created mid-construction (e.g. the first click of a Segment drawn
+  // from empty space), and switching to Move then would cut the tool off
+  // before its real output (the segment) exists.
+  const POINT_OUTPUT_MODES = new Set([1, 5, 19]); // Point, Intersection, Milieu
+  let returnToArrowOn = true;
+  function maybeReturnToArrow(name){
+    if(!returnToArrowOn) return;
+    const mode = ggbApplet.getMode();
+    if(mode === 0) return;
+    const type = ggbApplet.getObjectType(name);
+    if(type === 'point' && !POINT_OUTPUT_MODES.has(mode)) return;
+    // Calling setMode() synchronously from inside the add-listener — while
+    // GeoGebra is still in the middle of handling the click that created
+    // this very object — corrupts the tool's in-progress click sequence
+    // (seen live: it silently deleted the object just created). Deferring
+    // it lets that click finish first.
+    setTimeout(()=>{ if(ggbApplet.getMode() !== 0) ggbApplet.setMode(0); }, 0);
+  }
+
   function registerDefaultStyleListener(){
     ggbApplet.registerAddListener(name=>{
       safe(()=>{
         if(allPointNames().includes(name)){
           ggbApplet.setPointStyle(name, 1);
           ggbApplet.setColor(name, 25, 90, 210);
-          ggbApplet.setLabelVisible(name, true);
+          ggbApplet.setLabelVisible(name, labelsOn);
         } else {
           ggbApplet.setColor(name, 0, 0, 0);
         }
       }, 'style par défaut');
+      if(autoCodeOn) safe(()=>applyAutoCoding(name), 'codage automatique');
+      safe(()=>maybeReturnToArrow(name), 'retour à la flèche');
     });
   }
 
@@ -541,16 +655,57 @@
     }, 'navigation');
   });
 
+  function setAutoCodeButtonsActive(id){
+    ['btn-autocode-on','btn-autocode-off'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-autocode-on').addEventListener('click', ()=>{
+    autoCodeOn = true;
+    setAutoCodeButtonsActive('btn-autocode-on');
+    toast('Codage automatique activé');
+  });
+  document.getElementById('btn-autocode-off').addEventListener('click', ()=>{
+    autoCodeOn = false;
+    setAutoCodeButtonsActive('btn-autocode-off');
+    toast('Codage automatique désactivé');
+  });
+
+  function setAutoArrowButtonsActive(id){
+    ['btn-autoarrow-on','btn-autoarrow-off'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-autoarrow-on').addEventListener('click', ()=>{
+    returnToArrowOn = true;
+    setAutoArrowButtonsActive('btn-autoarrow-on');
+    toast('Retour à la flèche activé');
+  });
+  document.getElementById('btn-autoarrow-off').addEventListener('click', ()=>{
+    returnToArrowOn = false;
+    setAutoArrowButtonsActive('btn-autoarrow-off');
+    toast('Retour à la flèche désactivé');
+  });
+
   // --- Labels (points only — other objects' labels stay under GeoGebra's own control) ---
+  function setLabelsButtonsActive(id){
+    ['btn-labels-show','btn-labels-hide'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
   document.getElementById('btn-labels-show').addEventListener('click', ()=>{
     safe(()=>{
+      labelsOn = true;
       const n = forEachSafe(allPointNames(), name=>ggbApplet.setLabelVisible(name, true));
+      setLabelsButtonsActive('btn-labels-show');
       toast(n ? `Étiquettes affichées (${n} point(s))` : 'Aucun point dans la construction');
     }, 'afficher étiquettes');
   });
   document.getElementById('btn-labels-hide').addEventListener('click', ()=>{
     safe(()=>{
+      labelsOn = false;
       const n = forEachSafe(allPointNames(), name=>ggbApplet.setLabelVisible(name, false));
+      setLabelsButtonsActive('btn-labels-hide');
       toast(n ? `Étiquettes masquées (${n} point(s))` : 'Aucun point dans la construction');
     }, 'masquer étiquettes');
   });
