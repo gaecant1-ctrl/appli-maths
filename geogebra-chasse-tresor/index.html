@@ -189,6 +189,13 @@
     font-size:10.5px; text-transform:uppercase; letter-spacing:.5px;
     color:#7a6a00; font-weight:700; margin-bottom:4px;
   }
+  #hunt-instructions li.step-done{ color:#1d6b35; }
+  .step-tag{ font-weight:700; white-space:nowrap; }
+  .step-tag.done{ color:#2e9d4f; font-size:15px; }
+  .step-tag.unnamed{
+    font-size:11px; font-weight:600; color:#8a4b00;
+    background:#ffe0b2; border-radius:10px; padding:1px 7px; margin-left:2px;
+  }
   #hunt-tip{ font-size:11px; color:var(--muted); margin:8px 0 0 0; line-height:1.4; }
   #hunt-feedback{ font-size:12.5px; margin:8px 0 0 0; line-height:1.4; min-height:1em; }
   #hunt-feedback.ok{ color:var(--accent2); }
@@ -664,8 +671,10 @@
       }
     }, true);
     ggbApplet.registerClickListener(name=>onObjectClick(name));
+    ggbApplet.registerRemoveListener(()=>scheduleStepTicks());
     ggbApplet.registerRenameListener((oldName, newName)=>{
       safe(()=>{
+        scheduleStepTicks();
         if(renamingInternal || huntBuilding || huntNames.has(newName)) return;
         pupilNamed.delete(oldName);
         pupilNamed.add(newName);
@@ -708,8 +717,9 @@
   // Supporting line a·x + b·y + c = 0, normalised so equal lines compare equal.
   function lineOf(name){
     const c = xmlNums(name, 'coords');
-    if(!c) return null;
-    let [a,b,k] = [c.x, c.y, c.z];
+    return c ? normLine(c.x, c.y, c.z) : null;
+  }
+  function normLine(a, b, k){
     const n = Math.hypot(a,b);
     if(!n) return null;
     [a,b,k] = [a/n, b/n, k/n];
@@ -808,6 +818,7 @@
       }
       safe(()=>maybeReturnToArrow(name), 'retour à la flèche');
       neutralRename(name);
+      scheduleStepTicks();
     });
   }
 
@@ -1166,12 +1177,14 @@
       steps:['Tracer le segment [AG].',
              'Tracer le segment [HC].',
              'Nommer X le point d\'intersection entre [AG] et [HC].'],
+      checks:[{seg:['A','G']}, {seg:['H','C']}, null],
       solution:[4.694536,6.571035] },
     { level:'Programme de construction',
       points:{ A:[4.448552,4.292495,GREEN], G:[4.916741,2.705857,RED], H:[5.697054,5.749081,PURPLE], C:[7.72587,4.994778,BLUE] },
       steps:['Tracer la demi-droite d\'origine H passant par G.',
              'Tracer (c) le cercle de centre A passant par C.',
              'Nommer X le point d\'intersection entre [HG) et (c).'],
+      checks:[{ray:['H','G']}, {circle:['A','C'], name:'c'}, null],
       solution:[4.464165,0.940814] },
     { level:'Programme de construction',
       points:{ T:[8.142037,3.746276,BLUE], S:[2.705852,6.087217,GREEN], G:[1.45735,0.963157,RED], M:[5.671044,6.945562,PURPLE] },
@@ -1179,6 +1192,7 @@
              'Tracer la droite (GT).',
              'Tracer (d) la perpendiculaire à la droite (GT) passant par M.',
              'Nommer X le point d\'intersection entre (c) et (d), situé dans la zone jaune.'],
+      checks:[{circle:['T','S'], name:'c'}, {line:['G','T']}, {perp:['M',['G','T']], name:'d'}, null],
       solution:[4.932548,8.719332] },
     { level:'Programme de construction',
       // Created for this app (no .ggb source). E lies inside (c) and the ray
@@ -1190,6 +1204,7 @@
              'Tracer (c) le cercle de centre I passant par A.',
              'Tracer la demi-droite d\'origine E passant par I.',
              'Nommer X le point d\'intersection entre [EI) et (c).'],
+      checks:[{mid:['A','B'], name:'I'}, {circle:['I','A'], name:'c'}, {ray:['E','I']}, null],
       solution:[10.364926,6.217994] },
     { level:'Programme de construction',
       // base5.ggb, médiatrice not taught yet: it is built step by step
@@ -1200,6 +1215,7 @@
              'Placer I, le milieu du segment [GM].',
              'Tracer (d) la perpendiculaire à la droite (GM) passant par I.',
              'Nommer X le point d\'intersection entre (c) et (d), situé dans la zone jaune.'],
+      checks:[{circle:['T','S'], name:'c'}, {line:['G','M']}, {mid:['G','M'], name:'I'}, {perp:['I',['G','M']], name:'d'}, null],
       solution:[1.605463,2.205443] },
     { level:'Programme de construction',
       points:{ A:[1.795486,3.278087,GREEN], G:[8.922351,6.425353,RED], H:[4.942751,8.194063,PURPLE], C:[9.910748,2.445753,BLUE] },
@@ -1207,6 +1223,7 @@
              'Placer I, le milieu du segment [HG].',
              'Tracer le segment [IC].',
              'Nommer X le point d\'intersection entre (d) et [IC].'],
+      checks:[{par:['G',['A','H']], name:'d'}, {mid:['H','G'], name:'I'}, {seg:['I','C']}, null],
       solution:[8.182058,5.269028] },
     // --- Recherche: only the goal and the facts, no step list. Created for
     // this app; figures tilted (not along the grid), single answer. ---
@@ -1297,13 +1314,15 @@
     if(huntIndex < 0) return;
     const h = HUNTS[huntIndex];
     const body = h.steps
-      ? '<p>Suivre le programme de construction :</p><ol>' + h.steps.map(s=>`<li>${s}</li>`).join('') + '</ol>'
+      ? '<p>Suivre le programme de construction :</p><ol>' +
+        h.steps.map((s,i)=>`<li data-step="${i}">${s} <span class="step-tag"></span></li>`).join('') + '</ol>'
       : `<p>${h.goal}</p><ul>` + h.facts.map(s=>`<li>${s}</li>`).join('') + '</ul>';
     document.getElementById('btn-hunt-check').textContent =
       'Vérifier ' + Object.keys(h.targets || {X:0}).join(' et ');
     huntInstr.innerHTML =
       `<div class="level">Exercice ${huntIndex+1} — ${h.level}</div>` +
       `<p>${INTRO}</p>` + body;
+    scheduleStepTicks();
   }
 
   // Frame the 12×10 zone with a small margin, keeping a 1:1 scale.
@@ -1417,6 +1436,80 @@
   document.getElementById('btn-hunt-restart').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex), 'recommencer'));
   document.getElementById('btn-win-close').addEventListener('click', ()=>winEl.classList.remove('show'));
   document.getElementById('btn-win-next').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex+1), 'exercice suivant'));
+
+  // --- Coches du programme de construction ---
+  // Each step of exercises 1-6 has a `checks` entry describing the object
+  // it asks for, turned into the same geometric signature as the duplicate
+  // detector uses — so it is recognised however it was built (e.g. a
+  // parallel made of two perpendiculars). A step that names its object,
+  // "(c)", "I"…, is ticked only once the object carries that name; until
+  // then a "à nommer" tag shows. The last step (naming X) is left to the
+  // "Vérifier" button, so ticks never give the answer away.
+  function stepPoints(h){
+    const pts = {};
+    Object.entries(h.points).forEach(([n,[x,y]])=>{ pts[n] = [x,y]; });
+    (h.checks || []).forEach(c=>{
+      if(c && c.mid && c.name){
+        const [p,q] = c.mid.map(n=>pts[n]);
+        pts[c.name] = [(p[0]+q[0])/2, (p[1]+q[1])/2];
+      }
+    });
+    return pts;
+  }
+  function lineThrough(P, normal){
+    return normLine(normal[0], normal[1], -(normal[0]*P[0] + normal[1]*P[1]));
+  }
+  function expectedSignature(c, pts){
+    const P = n=>pts[n], dir = (p,q)=>[P(q)[0]-P(p)[0], P(q)[1]-P(p)[1]];
+    if(c.seg){
+      const ends = c.seg.map(P).sort((u,w)=>u[0]-w[0] || u[1]-w[1]);
+      return {kind:'segment', v:[...ends[0], ...ends[1]]};
+    }
+    if(c.ray){
+      const v = dir(...c.ray), n = Math.hypot(...v);
+      return {kind:'ray', v:[...P(c.ray[0]), v[0]/n, v[1]/n]};
+    }
+    if(c.circle){
+      const [O, Q] = c.circle.map(P);
+      return {kind:'circle', v:[O[0], O[1], Math.hypot(Q[0]-O[0], Q[1]-O[1])]};
+    }
+    if(c.mid){
+      const [p,q] = c.mid.map(P);
+      return {kind:'point', v:[(p[0]+q[0])/2, (p[1]+q[1])/2]};
+    }
+    if(c.line){ const v = dir(...c.line); return {kind:'line', v:lineThrough(P(c.line[0]), [-v[1], v[0]])}; }
+    if(c.perp){ const v = dir(...c.perp[1]); return {kind:'line', v:lineThrough(P(c.perp[0]), v)}; }
+    if(c.par){ const v = dir(...c.par[1]); return {kind:'line', v:lineThrough(P(c.par[0]), [-v[1], v[0]])}; }
+    return null;
+  }
+  function stepStatus(c, pts, objects){
+    const want = expectedSignature(c, pts);
+    if(!want) return 'todo';
+    const found = objects.find(o=>o.sig && sameSignature(want, o.sig));
+    if(!found) return 'todo';
+    return c.name && found.name !== c.name ? 'unnamed' : 'done';
+  }
+  function updateStepTicks(){
+    if(huntIndex < 0) return;
+    const h = HUNTS[huntIndex];
+    if(!h.checks) return;
+    const pts = stepPoints(h);
+    const objects = safeNames(()=>ggbApplet.getAllObjectNames())
+      .filter(n=>!huntNames.has(n))
+      .map(n=>{ let sig = null; try{ sig = signature(n); }catch(_){} return {name:n, sig}; });
+    huntInstr.querySelectorAll('li[data-step]').forEach(li=>{
+      const c = h.checks[+li.dataset.step];
+      const tag = li.querySelector('.step-tag');
+      const st = c ? stepStatus(c, pts, objects) : 'todo';
+      li.classList.toggle('step-done', st==='done');
+      tag.className = 'step-tag ' + st;
+      tag.textContent = st==='done' ? '✓' : st==='unnamed' ? `à nommer : ${c.name}` : '';
+    });
+  }
+  function scheduleStepTicks(){
+    clearTimeout(scheduleStepTicks._t);
+    scheduleStepTicks._t = setTimeout(()=>safe(updateStepTicks, 'coches'), 60);
+  }
 
   // --- Outil « Renommer un objet » ---
   // For pupils without an easy right-click (trackpad, tablet): press the
