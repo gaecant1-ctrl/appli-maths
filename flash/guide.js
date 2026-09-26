@@ -42,30 +42,38 @@ class GuideAppli {
     contenu.id = "guideContenu";
     contenu.innerHTML = `
       <h3>Objectif</h3>
-      <p>Entraîne-toi sur des automatismes de calcul de collège : fractions, calcul numérique/littéral, aires, périmètres, volumes, durées, conversions, arrondis, comparaisons...</p>
+      <p>S'entraîner sur les automatismes du collège : calcul (fractions, calcul numérique et littéral, durées, conversions, arrondis, calcul astucieux...), géométrie (bases de la géométrie, angles, aires, périmètres, volumes, Pythagore, Thalès...), proportionnalité, statistiques et probabilités — ainsi que des questions de cours.</p>
 
-      <h3>Niveau</h3>
-      <p>Panneau de gauche : plusieurs niveaux (<b>6e</b>, <b>5e</b>, <b>4e</b>, <b>3e</b>) peuvent être actifs à la fois — les questions piochées correspondent à L'UN d'eux, au hasard.</p>
-
-      <h3>Type</h3>
-      <p>Le bouton <b>« Avec relatifs »</b> inclut les exercices de calcul faisant intervenir des valeurs négatives. Désactivé par défaut.</p>
+      <h3>Panneau de gauche</h3>
+      <p><b>Niveau</b> : plusieurs niveaux (<b>6e</b>, <b>5e</b>, <b>4e</b>, <b>3e</b>) peuvent être actifs à la fois — chaque question est piochée dans l'un d'eux.<br>
+      <b>Type</b> : <b>« Avec relatifs »</b>, <b>« Avec fraction »</b> et <b>« Avec décimaux »</b> ajoutent les exercices faisant intervenir des nombres négatifs, des résultats fractionnaires ou des nombres décimaux. Désactivés par défaut.<br>
+      <b>Thème</b> : <b>Tous</b> pioche parmi tous les thèmes disponibles ; <b>Paramétrer</b> ouvre la liste des thèmes à cocher pour restreindre le tirage.<br>
+      <b>Cours</b> : <b>Aucun</b> (par défaut) = uniquement des exercices ; <b>Tous</b> = uniquement des questions de cours (vocabulaire, notations, propriétés) ; <b>Mélange</b> = les deux.</p>
 
       <h3>Atelier / Quiz</h3>
-      <p><b>Atelier</b> : entraînement libre, questions illimitées, sans score, régénérables à volonté.<br>
-      <b>Quiz</b> : choisis un nombre de questions puis clique sur « Commencer le Quiz » ; réponds en ligne à chaque question, le score s'affiche à la fin.</p>
+      <p><b>Atelier</b> : entraînement libre, sans score, questions régénérables à volonté.<br>
+      <b>Quiz</b> : choisis un nombre de questions puis clique sur « Commencer le Quiz ». Les réglages du panneau se verrouillent, on répond en ligne à chaque question et le score s'affiche au fur et à mesure.</p>
+
+      <h3>Bandeau du haut</h3>
+      <p>⏱ minuteur de 5 min (▶ lance / met en pause, ✖ referme et remet à zéro).<br>
+      🔀 régénère toutes les questions &nbsp;·&nbsp; 🎯 aligne toutes les questions sur la 1<sup>re</sup> : un premier clic = même thème, un second clic = même exercice avec d'autres valeurs &nbsp;·&nbsp; + / − ajoute ou retire une question &nbsp;·&nbsp; ✓ affiche / masque la correction &nbsp;·&nbsp; ✏️ active la réponse en ligne.</p>
 
       <h3>Boutons de chaque question</h3>
-      <p>🔀 régénère toutes les questions &nbsp;·&nbsp; 🎯 tout du même thème &nbsp;·&nbsp; + ajoute une question &nbsp;·&nbsp; − retire une question &nbsp;·&nbsp; ✓ affiche/masque la correction &nbsp;·&nbsp; ✏️ active la saisie en ligne (réponse à vérifier directement dans l'atelier).<br>
-      Sur chaque question : 🔁 nouvelles valeurs &nbsp;·&nbsp; 🎲 autre question du même thème &nbsp;·&nbsp; 🧩 passe au thème suivant &nbsp;·&nbsp; ⬆ remonte la question en haut de la liste.</p>
+      <p>🔁 nouvelles valeurs &nbsp;·&nbsp; 🧩 passe au thème suivant &nbsp;·&nbsp; 📖 question de cours du même thème &nbsp;·&nbsp; 🎲 autre question du même thème &nbsp;·&nbsp; 🗂️ choisir directement le thème &nbsp;·&nbsp; ⬆ remonte la question en haut de la liste.</p>
+
+      <h3>Réponse en ligne</h3>
+      <p>Tape ta réponse puis valide : une réponse juste ou fausse est figée.<br>
+      Trois messages laissent la réponse modifiable : <b>« correct mais mal écrit »</b> (accents, majuscules, espaces), <b>« presque ! relis bien »</b> (erreur fréquente, par exemple [AB] au lieu de (AB)) et <b>« format inattendu »</b> (réponse non reconnue, par exemple une unité manquante ou une fraction non simplifiée).<br>
+      Certaines questions (par exemple les déductions sur les droites parallèles / perpendiculaires) se répondent en choisissant dans un <b>menu déroulant</b> puis en validant avec ✓.</p>
 
       <h3>⚡ FLASH (mode compact)</h3>
-      <p>Masque les boutons de régénération de chaque question, remplacés par un simple bouton de correction individuelle — pratique pour un passage rapide en classe.</p>
+      <p>Masque les boutons de chaque question, remplacés par un simple bouton de correction individuelle — pratique pour un passage rapide en classe.</p>
 
       <h3>Nouvel onglet</h3>
-      <p>Ouvre une copie indépendante de la page dans un nouvel onglet (utile pour garder une série de questions ouverte pendant qu'on en régénère une autre).</p>
+      <p>Ouvre une copie indépendante de la page (utile pour garder une série de questions pendant qu'on en prépare une autre).</p>
 
       <h3>Fiche papier</h3>
-      <p>Reprend exactement les questions actuellement affichées dans l'atelier — jamais de génération séparée — sous forme de tableau imprimable (N°/Consigne/Réponse), avec un bouton d'impression/export PDF et un bouton de téléchargement au format LaTeX.</p>
+      <p>Reprend exactement les questions affichées dans l'atelier sous forme de tableau imprimable (N° / Consigne / Réponse), avec impression / export PDF et téléchargement au format LaTeX.</p>
     `;
 
     carte.append(btnFermer, h2, contenu);

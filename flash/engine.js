@@ -138,7 +138,7 @@ const THEME_LABELS = {
   "durees": "Durées",
   "conversion": "Conversions",
   "arrondis": "Arrondis",
-  "geometrieBase": "Géométrie",
+  "geometrieBase": "Bases de la géométrie",
   "trigonometrie": "Trigonométrie",
   "thales": "Thalès",
   "proportion": "Proportion",
@@ -354,15 +354,26 @@ setMode(mode) {
       if (this.saisieDiv.hidden) return;
 
       const valeur = QuestionDiv._echapperHtml(this.saisieBrouillon);
+      // QCM (voir qcm.js) : menu déroulant à la place du champ texte. Même
+      // classe .reponse-input, donc verifierReponse() lit sa valeur (indice
+      // de l'option choisie) exactement comme celle d'un champ texte.
+      const champ = this.data.qcm
+        ? `<select class="reponse-input reponse-select">
+             <option value="">choisir…</option>
+             ${this.data.qcm.options.map((texte, i) => `
+               <option value="${i}" ${String(i) === this.saisieBrouillon ? "selected" : ""}>${QuestionDiv._echapperHtml(texte)}</option>
+             `).join("")}
+           </select>`
+        : `<input type="text" class="reponse-input" placeholder="réponse" autocomplete="off" spellcheck="false" value="${valeur}">`;
       this.saisieDiv.innerHTML = `
-        <input type="text" class="reponse-input" placeholder="réponse" autocomplete="off" spellcheck="false" value="${valeur}">
+        ${champ}
         <button class="check" title="Vérifier">✓</button>
       `;
 
       if (this.saisieInvalide) {
         const inputEl = this.saisieDiv.querySelector(".reponse-input");
         inputEl.focus();
-        inputEl.select();
+        if (inputEl.select) inputEl.select();
       }
     }
 
@@ -409,7 +420,9 @@ setMode(mode) {
     if (this.saisieInvalide) {
       const msg = this.saisieMalEcrit
         ? "correct mais mal écrit"
-        : (this.saisiePresque ? "presque ! relis bien" : "format inattendu");
+        : this.saisiePresque ? "presque ! relis bien"
+        : this.data.qcm ? "choisis une réponse"
+        : "format inattendu";
       this.controlsDiv.innerHTML = `<span class="feedback-invalide">${msg}</span>`;
       return;
     }

@@ -659,6 +659,12 @@ header {
   background: #ffffff;
 }
 
+/* QCM (menu déroulant) : même gabarit que le champ texte. */
+.question .saisie .reponse-select {
+  text-align: left;
+  cursor: pointer;
+}
+
 .question .saisie .reponse-input:focus {
   outline: none;
   border-color: var(--accent);

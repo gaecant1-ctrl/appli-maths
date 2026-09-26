@@ -21,8 +21,8 @@ export const TAXONOMIE = [
   // Colonne 1 — Géométrie
   [
     { titre: "Géométrie", items: [
-      { theme: "aires" }, { theme: "perimetre" }, { theme: "volume" },
-      { theme: "angle" }, { theme: "geometrieBase" }
+      { theme: "geometrieBase" }, { theme: "aires" }, { theme: "perimetre" },
+      { theme: "volume" }, { theme: "angle" }
     ] },
     { titre: "Triangle rectangle", items: [
       { theme: "pythagore" }, { theme: "trigonometrie" }
