@@ -1,0 +1,7 @@
+% Propriété 3 : deux parallèles à une même droite
+droite (d1) passant par (-4,-3) et (4,-1)
+droite (d2) parallèle à (d1) passant par (0,0.5)
+droite (d3) parallèle à (d1) passant par (0,3)
+donnée (d2) // (d1)
+donnée (d3) // (d1)
+montrer (d2) // (d3)

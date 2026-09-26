@@ -1,0 +1,9 @@
+% Deux étapes : propriété 1 puis propriété 2
+droite (d3) passant par (-4,-3) et (4,-2)
+droite (d1) perpendiculaire à (d3) passant par (-2,0)
+droite (d2) perpendiculaire à (d3) passant par (2,0)
+droite (d4) perpendiculaire à (d1) passant par (0,2.5)
+donnée (d1) ⊥ (d3)
+donnée (d2) ⊥ (d3)
+donnée (d4) ⊥ (d1)
+montrer (d4) ⊥ (d2)

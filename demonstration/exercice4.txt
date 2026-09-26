@@ -1,0 +1,9 @@
+% Propriété 1 avec une donnée inutile
+droite (d1) passant par (-4,1) et (4,-1)
+droite (d2) perpendiculaire à (d1) passant par (-2,0)
+droite (d3) perpendiculaire à (d1) passant par (2.5,0)
+droite (d4) perpendiculaire à (d3) passant par (0,-3)
+donnée (d2) ⊥ (d1)
+donnée (d4) ⊥ (d3)
+donnée (d3) ⊥ (d1)
+montrer (d2) // (d3)

@@ -1,0 +1,9 @@
+% Deux étapes, données lues sur la figure : propriété 1 puis propriété 3
+droite (d2) passant par (-4,-2) et (4,-3)
+droite (d1) perpendiculaire à (d2) passant par (-2.5,0)
+droite (d3) perpendiculaire à (d2) passant par (0,0)
+droite (d4) parallèle à (d3) passant par (2.5,0)
+codage (d1) ⊥ (d2)
+codage (d3) ⊥ (d2)
+donnée (d4) // (d3)
+montrer (d1) // (d4)

@@ -1,0 +1,7 @@
+% Propriété 1 : deux perpendiculaires à une même droite
+droite (d3) passant par (-4,-2) et (4,1)
+droite (d1) perpendiculaire à (d3) passant par (-2,1)
+droite (d2) perpendiculaire à (d3) passant par (2,1)
+donnée (d1) ⊥ (d3)
+donnée (d2) ⊥ (d3)
+montrer (d1) // (d2)

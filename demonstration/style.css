@@ -1,0 +1,371 @@
+/* Même charte que geometrieBase. */
+* { box-sizing: border-box; }
+
+:root {
+    --papier: #ffffff;
+    --papier-panel: #f1f8f3;
+    --grille: #d3ead9;
+    --grille-forte: #1f5c33;
+    --encre: #23302a;
+    --encre-douce: #5f7a68;
+    --accent: #2f9e44;
+    --accent-hover: #237a35;
+    --accent-clair: #e6f7e9;
+    --header-fond: #f1f8f3;
+    --header-bordure: #d3ead9;
+    --header-texte: #1f5c33;
+    --erreur: #c0392b;
+    --erreur-fond: #fbeceb;
+    --succes: #1e7e34;
+    --succes-fond: #e6f6ea;
+    --rayon: 10px;
+    --rayon-petit: 6px;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    background: var(--papier-panel);
+    color: var(--encre);
+    min-height: 100vh;
+}
+
+/* ---------- Entête ---------- */
+
+header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    width: 100%;
+    margin: 0 0 20px 0;
+    padding: 0 20px;
+    min-height: 54px;
+    background: var(--header-fond);
+    border-bottom: 1px solid var(--header-bordure);
+}
+
+#titre_appli {
+    font-size: 1.2rem;
+    padding: 10px 0;
+}
+
+#titre_appli b {
+    font-weight: 700;
+    color: var(--header-texte);
+}
+
+/* ---------- Boutons de l'entête (comme geometrieBase) ---------- */
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.filet-header {
+    width: 1px;
+    height: 22px;
+    background-color: var(--header-bordure);
+    flex-shrink: 0;
+}
+
+.btn-header {
+    margin: 0;
+    background: transparent;
+    border: 0.5px solid var(--header-bordure);
+    height: 34px;
+    padding: 0 14px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--header-texte);
+}
+
+.btn-header:hover {
+    border-color: var(--header-texte);
+    color: var(--header-texte);
+}
+
+/* ---------- Guide (overlay) ---------- */
+
+.overlay-fond {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 30, 45, 0.45);
+    z-index: 1000000;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.overlay-fond.visible { display: flex; }
+
+.overlay-carte {
+    position: relative;
+    background: var(--papier);
+    color: var(--encre);
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: var(--rayon);
+    border: 1px solid var(--grille);
+    padding: 28px 32px;
+}
+
+.overlay-fermer {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--encre-douce);
+}
+
+.overlay-fermer:hover { color: var(--erreur); }
+
+.overlay-carte h2 {
+    text-align: center;
+    margin: 10px 0 20px;
+    font-size: 1.3em;
+    color: var(--header-texte);
+}
+
+.overlay-carte h3 { color: var(--header-texte); margin-bottom: 4px; }
+.overlay-carte p { margin-top: 0; line-height: 1.5; }
+
+/* Un bouton par exercice : entouré = affiché, vert = réussi. */
+#choixExercices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 8px 0;
+}
+
+#choixExercices .btn-exercice {
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    font-size: 0.8rem;
+}
+
+#choixExercices .btn-exercice.reussi {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+#choixExercices .btn-exercice.reussi:hover {
+    background: var(--accent-hover);
+}
+
+#choixExercices .btn-exercice.actuel {
+    outline: 2px solid var(--grille-forte);
+    outline-offset: 1px;
+}
+
+/* ---------- Mise en page ---------- */
+
+#container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 0 20px 20px 20px;
+}
+
+#prog {
+    flex: 1 1 800px;
+    min-width: 600px;
+    max-width: 900px;
+    height: 720px;
+    background: var(--papier);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon);
+    padding: 10px;
+    display: flex;
+}
+
+#blocklyDiv {
+    flex: 1;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+}
+
+#rendu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 440px;
+    flex: 0 0 440px;
+    background: var(--papier);
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon);
+    padding: 15px;
+}
+
+#ggb-element {
+    width: 400px;
+    height: 400px;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    overflow: hidden;
+}
+
+/* ---------- Énoncé ---------- */
+
+#enonce {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.enonce-bloc {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    font-size: 15px;
+}
+
+.enonce-titre {
+    display: block;
+    font-weight: 700;
+    color: var(--header-texte);
+    margin-bottom: 4px;
+}
+
+#listeDonnees {
+    margin: 0;
+    padding-left: 18px;
+}
+
+#listeDonnees li { margin: 2px 0; }
+
+#listeDonnees .donnee-codage {
+    list-style: none;
+    margin-left: -18px;
+    font-style: italic;
+    color: var(--encre-douce);
+}
+
+#texteMontrer {
+    font-weight: 600;
+}
+
+/* ---------- Boutons ---------- */
+
+button {
+    border-radius: var(--rayon-petit);
+    margin: 8px 4px;
+    padding: 9px 15px;
+    background: var(--papier);
+    color: var(--encre);
+    border: 1px solid var(--grille);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#barreExecution {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+}
+
+#btnVerifier {
+    min-width: 140px;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+#btnVerifier:hover {
+    background: var(--accent-hover);
+    color: #fff;
+}
+
+#btnRecommencer {
+    border-color: var(--erreur);
+    color: var(--erreur);
+}
+
+#btnRecommencer:hover {
+    background: var(--erreur);
+    color: #fff;
+}
+
+/* ---------- Messages ---------- */
+
+#messageContainer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 15px;
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: bold;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+}
+
+#messageContainer.consigne { background: var(--succes-fond); color: var(--succes); }
+#messageContainer.erreur { background: var(--erreur-fond); color: var(--erreur); border-color: var(--erreur); }
+#messageContainer.succes { background: var(--succes-fond); color: var(--succes); border-color: var(--succes); }
+#messageContainer.info { background: var(--accent-clair); color: var(--header-texte); border-color: var(--accent); }
+
+#messageAlerte {
+    flex: 1;
+    text-align: center;
+}
+
+#closeAlert {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--encre-douce);
+    border: 1px solid var(--encre-douce);
+    border-radius: 50%;
+}
+
+#messageContainer.consigne #closeAlert { display: none; }
+
+/* Indices des noms de droites : assez grands pour être lus. */
+sub {
+    font-size: 0.8em;
+    line-height: 0;
+}
+
+/* Mêmes couleurs que les codages de la figure. */
+.enonce-bloc.donnees .enonce-titre { color: #2f9e44; }
+.enonce-bloc.but .enonce-titre { color: #c0392b; }

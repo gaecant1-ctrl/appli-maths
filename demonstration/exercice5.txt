@@ -1,0 +1,7 @@
+% Propriété 2, une donnée lue sur la figure
+droite (d1) passant par (-4,-1) et (4,1)
+droite (d2) parallèle à (d1) passant par (0,2.5)
+droite (d3) perpendiculaire à (d2) passant par (-1,0)
+donnée (d1) // (d2)
+codage (d3) ⊥ (d2)
+montrer (d3) ⊥ (d1)

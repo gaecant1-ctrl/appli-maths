@@ -1,0 +1,7 @@
+% Propriété 2 : parallèles + une perpendiculaire
+droite (d1) passant par (-4,2) et (4,3)
+droite (d2) parallèle à (d1) passant par (0,-1.5)
+droite (d3) perpendiculaire à (d1) passant par (0.5,0)
+donnée (d1) // (d2)
+donnée (d3) ⊥ (d1)
+montrer (d3) ⊥ (d2)

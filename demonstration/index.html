@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Démonstration - Parallèles et perpendiculaires</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://unpkg.com/blockly/blockly.min.js"></script>
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+</head>
+<body>
+
+<header>
+    <span id="titre_appli"><b>Démonstration</b> : parallèles et perpendiculaires</span>
+    <div id="choixExercices"></div>
+    <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="container">
+    <div id="prog">
+        <div id="blocklyDiv"></div>
+    </div>
+
+    <div id="rendu">
+        <div id="ggb-element"></div>
+
+        <div id="enonce">
+            <div class="enonce-bloc donnees">
+                <span class="enonce-titre">Données</span>
+                <ul id="listeDonnees"></ul>
+            </div>
+            <div class="enonce-bloc but">
+                <span class="enonce-titre">À démontrer</span>
+                <span id="texteMontrer"></span>
+            </div>
+        </div>
+
+        <div id="barreExecution">
+            <button id="btnVerifier" disabled>Vérifier</button>
+            <button id="btnRecommencer" disabled>Recommencer</button>
+        </div>
+
+        <div id="messageContainer">
+            <span id="messageAlerte"></span>
+            <span id="closeAlert">✖</span>
+        </div>
+    </div>
+</div>
+
+<script src="verification.js"></script>
+<script src="figure.js"></script>
+<script src="blocs.js"></script>
+<script src="Guide.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
