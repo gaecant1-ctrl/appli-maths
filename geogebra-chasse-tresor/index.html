@@ -158,8 +158,16 @@
 
   /* --- Chasse au trésor --- */
   #hunt-picker button{ flex:1 1 0; padding:8px 0; min-width:0; }
-  #hunt-picker button.solved{ border-color:var(--accent2); color:var(--accent2); }
-  #hunt-picker button.solved.active{ color:#0b1120; }
+  /* Treasure found: the button turns green; the current exercise keeps a
+     blue ring so it stays visible when it is also solved. */
+  #hunt-picker button.solved{
+    background:#2e9d4f; border-color:#2e9d4f; color:#fff; font-weight:700;
+  }
+  #hunt-picker button.solved:hover{ background:#35b05a; }
+  #hunt-picker button.solved.active{
+    background:#2e9d4f; color:#fff;
+    box-shadow:0 0 0 3px var(--accent), inset 0 2px 4px rgba(0,0,0,.25);
+  }
   #hunt-score{
     display:flex; align-items:center; justify-content:space-between; gap:8px;
     margin-bottom:8px; font-size:13px;
@@ -190,6 +198,22 @@
     border:none; color:#1b1300; font-weight:700;
   }
   button.check:hover{ filter:brightness(1.08); }
+  #rename-dlg{
+    position:absolute; inset:0; display:none; z-index:9;
+    align-items:flex-start; justify-content:center; padding-top:90px;
+    background:rgba(0,0,0,.25);
+  }
+  #rename-dlg.show{ display:flex; }
+  #rename-dlg .card{
+    background:#fff; color:#1b1b1b; border-radius:12px; padding:16px 18px;
+    width:280px; display:flex; flex-direction:column; gap:8px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4); font-size:14px;
+  }
+  #rename-input{
+    font-size:18px; padding:6px 10px; border:2px solid #5b9dff; border-radius:8px;
+  }
+  #rename-err{ margin:0; min-height:1em; font-size:12px; color:#c62828; }
+  #rename-dlg .row button:not(.check){ background:#eef1f7; color:#1b1b1b; border-color:#cfd6e4; }
   #win{
     position:absolute; inset:0; display:none;
     align-items:center; justify-content:center;
@@ -218,13 +242,16 @@
     <div class="group">
       <h2>Chasse au trésor</h2>
       <div id="hunt-score">
-        <span>Trésors trouvés : <b id="hunt-score-val">0 / 6</b></span>
+        <span>Trésors trouvés : <b id="hunt-score-val">0 / 10</b></span>
         <button id="btn-score-reset" title="Remettre le compteur à zéro">Remettre à zéro</button>
       </div>
       <div class="row" id="hunt-picker"></div>
       <div id="hunt-body" hidden>
         <div id="hunt-instructions"></div>
-        <p id="hunt-tip">Pour nommer un point, une droite ou un cercle : clic droit dessus → <b>Renommer</b>, puis tape seulement la lettre (X, c, d…).</p>
+        <div class="row" style="margin-top:8px;">
+          <button id="btn-rename-tool" class="wide" title="Clique ensuite sur l'objet à renommer">✎ Renommer un objet</button>
+        </div>
+        <p id="hunt-tip">Pour nommer un point, une droite ou un cercle : bouton <b>Renommer un objet</b> puis clic sur l'objet (ou clic droit dessus → Renommer). Tape seulement la lettre (X, c, d…).</p>
         <div class="row" style="margin-top:8px;">
           <button id="btn-hunt-check" class="check">Vérifier X</button>
           <button id="btn-hunt-restart">Recommencer</button>
@@ -319,6 +346,17 @@
     <div id="ggb-container"></div>
     <div id="loading"><div class="dot"></div>Chargement de GeoGebra…</div>
     <div id="toast"></div>
+    <div id="rename-dlg" role="dialog" aria-label="Renommer">
+      <form class="card" id="rename-form">
+        <label for="rename-input" id="rename-label">Nouveau nom :</label>
+        <input id="rename-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="12">
+        <p id="rename-err"></p>
+        <div class="row">
+          <button type="button" id="btn-rename-cancel">Annuler</button>
+          <button type="submit" class="check">OK</button>
+        </div>
+      </form>
+    </div>
     <div id="win">
       <div class="card">
         <div class="imgs"><img src="img/bravo.png" alt="Bravo"><img src="img/tresor.png" alt="Trésor"></div>
@@ -548,6 +586,13 @@
   // "(c)" typed there becomes plain "c". Any object (points aside) named
   // with a lowercase letter — optionally indexed: d1, d_1, d' — is then
   // displayed in parentheses, "(c)", like in the instructions.
+  // "©"→"c", "(c)"→"c", and smart quotes back to "'" (macOS turns "c'"
+  // into "c’", which GeoGebra refuses in a name).
+  function normalizeName(v){
+    v = v.replace(/©/g, 'c').replace(/®/g, 'r').replace(/[’‘`´]/g, "'");
+    const m = v.match(/^\s*\(\s*([A-Za-z][A-Za-z0-9_']*)\s*\)\s*$/);
+    return m ? m[1] : v;
+  }
   const pupilNamed = new Set(); // names given by the pupil via "Renommer"
   // GeoGebra's automatic names collide with the ones the instructions ask
   // for: the first circle is auto-named "c", a midpoint may get "I"… Then
@@ -610,17 +655,15 @@
     document.addEventListener('input', e=>{
       const el = e.target;
       if(!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
-      if(!container.contains(el) && !el.closest('.gwt-PopupPanel, .dialogComponent, [role=dialog]')) return;
-      // Smart quotes turn "c'" into "c’", which GeoGebra refuses in a name.
-      let v = el.value.replace(/©/g, 'c').replace(/®/g, 'r').replace(/[’‘`´]/g, "'");
-      const m = v.match(/^\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\)\s*$/);
-      if(m) v = m[1];
+      if(!container.contains(el) && !el.closest('.gwt-PopupPanel, .dialogComponent, [role=dialog], #rename-dlg')) return;
+      const v = normalizeName(el.value);
       if(v !== el.value){
         const pos = v.length;
         el.value = v;
         try{ el.setSelectionRange(pos, pos); }catch(_){}
       }
     }, true);
+    ggbApplet.registerClickListener(name=>onObjectClick(name));
     ggbApplet.registerRenameListener((oldName, newName)=>{
       safe(()=>{
         if(renamingInternal || huntBuilding || huntNames.has(newName)) return;
@@ -1109,7 +1152,8 @@
   // (exact coordinates), same 12×10 yellow zone. Order = growing
   // difficulty: base0, base1, base4, new "milieu + cercle + demi-droite",
   // base5 (médiatrice built as milieu + perpendiculaire), base3.
-  // base2 dropped (same construction as base5). Solutions were
+  // base2 dropped (same construction as base5). Then three "Recherche"
+  // exercises (rectangle, rectangle with Y on a line, square). Solutions were
   // recomputed from the geometry (base3.ggb's cached one was stale) and
   // each is the only candidate lying on the right objects inside the zone.
   const HUNT_ZONE = 'zoneTresor';
@@ -1164,6 +1208,37 @@
              'Tracer le segment [IC].',
              'Nommer X le point d\'intersection entre (d) et [IC].'],
       solution:[8.182058,5.269028] },
+    // --- Recherche: only the goal and the facts, no step list. Created for
+    // this app; figures tilted (not along the grid), single answer. ---
+    { level:'Recherche',
+      // Exact right angle at B (C computed from the rounded A, B).
+      points:{ A:[2.02,2.62,GREEN], B:[3.7,8.72,BLUE], C:[8.319388,7.447775,RED] },
+      goal:'Construire le point X sachant que :',
+      facts:['Le quadrilatère ABCX est un rectangle.'],
+      targets:{ X:[6.639388,1.347775] } },
+    { level:'Recherche',
+      points:{ E:[1.75,5.76,GREEN], F:[6.68,7.92,BLUE], G:[6.08,1.6,RED], H:[10.64,8.77,PURPLE] },
+      goal:'Construire les points Y et X sachant que :',
+      facts:['Le quadrilatère EFYX est un rectangle.',
+             'Y est sur la droite (GH).'],
+      targets:{ Y:[8.074784,4.736535], X:[3.144784,2.576535] } },
+    { level:'Recherche',
+      // The other square (on the other side of [EF]) lies entirely left of
+      // the zone, so "dans la zone jaune" leaves a single answer.
+      points:{ E:[2.99,1.2,GREEN], F:[1.01,6.86,BLUE] },
+      goal:'Construire les points Y et X sachant que :',
+      facts:['Le quadrilatère EFYX est un carré.',
+             'Le carré EFYX est dans la zone jaune.'],
+      targets:{ Y:[6.67,8.84], X:[8.65,3.18] } },
+    { level:'Recherche',
+      // E inside the circle (centre A, radius AB), F outside: [EF] meets it
+      // once. The line (EF) would give a second point, still in the zone —
+      // the check refuses it, which makes "segment" matter.
+      points:{ A:[4.86,3.09,GREEN], B:[9.3,3.29,BLUE], E:[1.73,2.91,RED], F:[9.68,8.78,PURPLE] },
+      goal:'Construire le point X sachant que :',
+      facts:['Le triangle ABX est isocèle en A.',
+             'X est sur le segment [EF].'],
+      targets:{ X:[7.14043,6.904871] } },
   ];
 
   let huntIndex = -1;          // -1 = pas encore chargé
@@ -1221,11 +1296,14 @@
     setHuntFeedback('');
     if(huntIndex < 0) return;
     const h = HUNTS[huntIndex];
-    const list = '<ol>' + h.steps.map(s=>`<li>${s}</li>`).join('') + '</ol>';
+    const body = h.steps
+      ? '<p>Suivre le programme de construction :</p><ol>' + h.steps.map(s=>`<li>${s}</li>`).join('') + '</ol>'
+      : `<p>${h.goal}</p><ul>` + h.facts.map(s=>`<li>${s}</li>`).join('') + '</ul>';
+    document.getElementById('btn-hunt-check').textContent =
+      'Vérifier ' + Object.keys(h.targets || {X:0}).join(' et ');
     huntInstr.innerHTML =
       `<div class="level">Exercice ${huntIndex+1} — ${h.level}</div>` +
-      `<p>${INTRO}</p>` +
-      '<p>Suivre le programme de construction :</p>' + list;
+      `<p>${INTRO}</p>` + body;
   }
 
   // Frame the 12×10 zone with a small margin, keeping a 1:1 scale.
@@ -1257,6 +1335,7 @@
 
   function loadHunt(i){
     winEl.classList.remove('show');
+    closeRenameDialog();
     huntIndex = i;
     huntNames.clear();
     pupilNamed.clear();
@@ -1303,36 +1382,103 @@
 
   function checkHunt(){
     if(huntIndex < 0) return;
-    const [sx, sy] = HUNTS[huntIndex].solution;
-    if(!ggbApplet.exists('X') || ggbApplet.getObjectType('X') !== 'point'){
-      setHuntFeedback('Aucun point ne s\'appelle <b>X</b>. Clic droit sur ton point d\'intersection → Renommer.', 'ko');
-      return;
+    const h = HUNTS[huntIndex];
+    const targets = h.targets || { X: h.solution };
+    for(const [name, [sx, sy]] of Object.entries(targets)){
+      if(!ggbApplet.exists(name) || ggbApplet.getObjectType(name) !== 'point'){
+        setHuntFeedback(`Aucun point ne s'appelle <b>${name}</b>. Clic droit sur ton point d'intersection → Renommer.`, 'ko');
+        return;
+      }
+      // Points have to be *constructed*, not guessed: a free point (or a
+      // point merely slid onto a line) is refused. getCommandString with
+      // localize=false gives the English form, e.g. "Intersect[c, r, 1]".
+      if(ggbApplet.isIndependent(name) || !/^Intersect/.test(ggbApplet.getCommandString(name, false))){
+        setHuntFeedback(`Le point ${name} a été placé à la main : il doit être construit comme point d'intersection.`, 'ko');
+        return;
+      }
+      const d = Math.hypot(ggbApplet.getXcoord(name)-sx, ggbApplet.getYcoord(name)-sy);
+      if(d >= HUNT_TOLERANCE){
+        setHuntFeedback(name === 'X'
+          ? 'Il n\'y a pas de trésor en ce point. Vérifie ta construction ou recommence.'
+          : `Le point ${name} n'est pas au bon endroit. Vérifie ta construction ou recommence.`, 'ko');
+        return;
+      }
     }
-    // The treasure has to be *constructed*, not guessed: a free point (or
-    // a point merely slid onto a line) is refused. getCommandString with
-    // localize=false gives the English form, e.g. "Intersect[c, r, 1]".
-    if(ggbApplet.isIndependent('X') || !/^Intersect/.test(ggbApplet.getCommandString('X', false))){
-      setHuntFeedback('Le point X a été placé à la main : il doit être construit comme point d\'intersection.', 'ko');
-      return;
-    }
-    const d = Math.hypot(ggbApplet.getXcoord('X')-sx, ggbApplet.getYcoord('X')-sy);
-    if(d < HUNT_TOLERANCE){
-      setHuntFeedback('Bravo, tu as trouvé le trésor !', 'ok');
-      solved.add(huntIndex);
-      saveScore();
-      renderScore();
-      document.getElementById('btn-win-next').style.display =
-        huntIndex < HUNTS.length-1 ? '' : 'none';
-      winEl.classList.add('show');
-    } else {
-      setHuntFeedback('Il n\'y a pas de trésor en ce point. Vérifie ta construction ou recommence.', 'ko');
-    }
+    setHuntFeedback('Bravo, tu as trouvé le trésor !', 'ok');
+    solved.add(huntIndex);
+    saveScore();
+    renderScore();
+    document.getElementById('btn-win-next').style.display =
+      huntIndex < HUNTS.length-1 ? '' : 'none';
+    winEl.classList.add('show');
   }
 
   document.getElementById('btn-hunt-check').addEventListener('click', ()=>safe(checkHunt, 'vérification'));
   document.getElementById('btn-hunt-restart').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex), 'recommencer'));
   document.getElementById('btn-win-close').addEventListener('click', ()=>winEl.classList.remove('show'));
   document.getElementById('btn-win-next').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex+1), 'exercice suivant'));
+
+  // --- Outil « Renommer un objet » ---
+  // For pupils without an easy right-click (trackpad, tablet): press the
+  // button, click the object, type the name. Same result as GeoGebra's
+  // own dialog — the rename listener adds the "(c)" caption and label.
+  const renameBtn = document.getElementById('btn-rename-tool');
+  const renameDlg = document.getElementById('rename-dlg');
+  const renameInput = document.getElementById('rename-input');
+  const renameErr = document.getElementById('rename-err');
+  let renameToolOn = false, renameTarget = null;
+  const TYPE_LABEL = { point:'ce point', line:'cette droite', segment:'ce segment',
+                       ray:'cette demi-droite', circle:'ce cercle' };
+
+  function setRenameTool(on){
+    renameToolOn = on;
+    renameBtn.classList.toggle('active', on);
+    if(on){
+      safe(()=>ggbApplet.setMode(0), 'flèche'); // clicks must select, not draw
+      toast('Clique sur l\'objet à renommer', 3000);
+    }
+  }
+  function closeRenameDialog(){
+    renameDlg.classList.remove('show');
+    renameTarget = null;
+    setRenameTool(false);
+  }
+  function openRenameDialog(name){
+    renameTarget = name;
+    document.getElementById('rename-label').textContent =
+      'Nouveau nom pour ' + (TYPE_LABEL[ggbApplet.getObjectType(name)] || 'cet objet') + ' :';
+    renameInput.value = '';
+    renameErr.textContent = '';
+    renameDlg.classList.add('show');
+    toastEl.classList.remove('show');
+    safe(()=>ggbApplet.evalCommand(`SelectObjects(${name})`), 'sélection');
+    // GeoGebra grabs the keyboard focus back once it has handled the click
+    // on the object (seen live: typed letters went to the applet), so the
+    // field is focused again after that.
+    renameInput.focus();
+    [50, 200].forEach(ms=>setTimeout(()=>{ if(renameTarget) renameInput.focus(); }, ms));
+  }
+  function onObjectClick(name){
+    if(!renameToolOn || renameTarget) return;
+    if(huntNames.has(name)){
+      toast('Ce point est donné par l\'énoncé : il garde son nom.', 2500);
+      return;
+    }
+    openRenameDialog(name);
+  }
+  renameBtn.addEventListener('click', ()=>setRenameTool(!renameToolOn));
+  document.getElementById('btn-rename-cancel').addEventListener('click', closeRenameDialog);
+  renameDlg.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeRenameDialog(); });
+  document.getElementById('rename-form').addEventListener('submit', e=>{
+    e.preventDefault();
+    const name = normalizeName(renameInput.value).trim();
+    if(!name){ renameErr.textContent = 'Tape un nom (une lettre suffit).'; return; }
+    if(name === renameTarget){ closeRenameDialog(); return; }
+    if(ggbApplet.exists(name)){ renameErr.textContent = `Le nom ${name} est déjà utilisé.`; return; }
+    safe(()=>ggbApplet.renameObject(renameTarget, name), 'renommer');
+    if(!ggbApplet.exists(name)){ renameErr.textContent = 'GeoGebra n\'accepte pas ce nom.'; return; }
+    closeRenameDialog();
+  });
 </script>
 </body>
 </html>
