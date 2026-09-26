@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L’affaire du trophée</title>
+<style>
+  :root{
+    --bg:#f5f1e8;
+    --panel:#fffdf8;
+    --ink:#1f2430;
+    --muted:#6b6f7a;
+    --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --sais:#e6eefc;   --sais-b:#9db6ec;
+    --regle:#fdf0d8;  --regle-b:#e5b865;
+    --donc:#e3f4e8;   --donc-b:#86c79a;
+    --ok:#1f8a4c;     --ok-bg:#e3f4e8;
+    --ko:#c0392b;     --ko-bg:#fbe6e3;
+    --hint:#9a6a00;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;min-height:100vh;
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  header{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+    padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;}
+  nav{display:flex;gap:6px;flex-wrap:wrap;}
+  button{font:inherit;cursor:pointer;}
+  .tab{
+    border:1px solid var(--border);background:var(--bg);color:var(--ink);
+    padding:6px 14px;border-radius:999px;font-size:.85rem;
+  }
+  .tab.actif{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+
+  main{
+    display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:24px;
+    max-width:1200px;margin:0 auto;padding:24px;
+  }
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;padding:16px;gap:16px;}
+    .colonne{display:contents;}
+    #boite-suspects{order:-1;}
+    #validation{order:1;}
+    #suspects{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  }
+
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;}
+  .entete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .entete h2{margin:0;font-size:1.3rem;}
+  .points{display:flex;gap:6px;}
+  .point{
+    width:28px;height:28px;border-radius:50%;border:2px solid var(--border);
+    background:var(--bg);font-size:.75rem;color:var(--muted);padding:0;
+  }
+  .point.fait{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .point.courant{border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .consigne{margin:0 0 20px;font-weight:600;font-size:1.1rem;}
+
+  .chaine{display:flex;flex-direction:column;align-items:stretch;}
+  .maillon{border:2px solid;border-radius:12px;padding:12px 16px;}
+  .maillon .etiquette{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+  .maillon p{margin:0;font-size:1.1rem;}
+  .maillon ul{margin:0;padding-left:1.2em;font-size:1.1rem;}
+  .m-sais{background:var(--sais);border-color:var(--sais-b);}
+  .m-sais .etiquette{color:#2a4f9e;}
+  .m-regle{background:var(--regle);border-color:var(--regle-b);}
+  .m-regle .etiquette{color:#8a5a00;}
+  .m-donc{background:var(--donc);border-color:var(--donc-b);}
+  .m-donc .etiquette{color:#1d6b3c;}
+  .m-question{background:#fff;border-color:var(--accent);}
+  .m-question .etiquette{color:var(--accent);}
+  .vide{border-style:dashed;background:#fff;}
+  .vide p{color:var(--muted);font-style:italic;}
+  .m-donc.vide{border-color:var(--ok);animation:attente 1.6s ease-in-out infinite;}
+  .m-regle.vide{border-color:#c98a10;animation:attente 1.6s ease-in-out infinite;}
+  @keyframes attente{50%{box-shadow:0 0 0 5px rgba(0,0,0,.06);}}
+  .rempli{animation:pop .35s ease;}
+  @keyframes pop{0%{transform:scale(.97);}60%{transform:scale(1.02);}100%{transform:scale(1);}}
+  .fleche{align-self:center;color:var(--muted);font-size:1.3rem;line-height:1;padding:4px 0;}
+  .note{font-size:.85rem;color:var(--hint);margin-top:6px;font-style:italic;}
+
+  .choix-titre{margin:24px 0 10px;font-weight:600;}
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .options.verdict{flex-direction:row;flex-wrap:wrap;}
+  .option{
+    text-align:left;border:2px solid var(--border);background:#fff;color:var(--ink);
+    border-radius:10px;padding:12px 16px;font-size:1.05rem;transition:border-color .15s,background .15s;
+  }
+  .options.verdict .option{flex:1 1 160px;text-align:center;font-weight:600;}
+  .option:hover:not(:disabled){border-color:var(--accent);}
+  .opt-conclusion{border-left:8px solid var(--donc-b);}
+  .opt-regle{border-left:8px solid var(--regle-b);}
+  .option.faux{border-color:var(--ko);background:var(--ko-bg);color:var(--ko);cursor:default;opacity:.8;}
+  .option.juste{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);}
+  .option:disabled{cursor:default;}
+
+  .retour{border-radius:10px;padding:14px 16px;font-size:1.05rem;}
+  .retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  .retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+  .retour .info{margin-top:8px;font-weight:600;}
+  .actions{margin-top:18px;display:flex;justify-content:flex-end;}
+  .suite{
+    background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:12px 22px;font-size:1.05rem;font-weight:600;
+  }
+
+  .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
+  .colonne aside{align-self:stretch;}
+  #validation:empty{display:none;}
+  #validation .retour{margin-top:0;margin-bottom:12px;}
+  #validation .suite{width:100%;}
+  .changer{width:100%;margin-top:8px;background:none;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--muted);font-size:.95rem;}
+  .changer:hover{border-color:var(--accent);color:var(--accent);}
+  .aide{color:var(--muted);font-size:.9rem;margin:0 0 12px;}
+  .suite:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .glissable{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .glissable:hover{border-color:var(--accent);}
+  .option.en-cours{visibility:hidden;}
+  .fantome{position:fixed;z-index:1000;pointer-events:none;cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.2);background:#fff;}
+  .m-reponse{background:#fff;border-color:var(--accent);}
+  .m-reponse .etiquette{color:var(--accent);}
+  .m-reponse.vide{border-color:var(--accent);animation:attente 1.6s ease-in-out infinite;}
+  .provisoire{border-style:solid;border-color:var(--accent)!important;background:#eef3ff!important;}
+  [data-cible].survol{border-color:var(--accent)!important;background:#dde7ff!important;transform:scale(1.02);}
+  .rappel{animation:secoue .4s ease;}
+  @keyframes secoue{25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;align-self:start;}
+  aside h3{margin:0 0 8px;font-size:1rem;}
+  .suspect{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:6px;background:var(--bg);font-size:.95rem;}
+  .suspect .ico{font-size:1.4rem;}
+  .suspect .nom{flex:1;}
+  .suspect .statut{font-size:.8rem;font-weight:600;color:var(--muted);}
+  .suspect.innocent{background:var(--ok-bg);}
+  .suspect.innocent .nom{text-decoration:line-through;color:var(--muted);}
+  .suspect.innocent .statut{color:var(--ok);}
+  .suspect.trouve{background:var(--regle);outline:2px solid var(--regle-b);}
+  .suspect.trouve .statut{color:#8a5a00;}
+  .suspect.change{animation:flash 1.2s ease;}
+  @keyframes flash{0%,40%{transform:scale(1.06);box-shadow:0 0 0 4px var(--donc-b);}100%{transform:scale(1);box-shadow:none;}}
+
+  .intro p,.finale p{font-size:1.15rem;}
+  .cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0;}
+  .carte{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
+  .carte .ico{font-size:2rem;display:block;}
+  .regle-or{background:var(--regle);border:2px solid var(--regle-b);border-radius:12px;padding:12px 16px;font-weight:600;font-size:1.1rem;}
+  .liste-regles{list-style:none;padding:0;margin:16px 0;display:flex;flex-direction:column;gap:8px;}
+  .liste-regles li{display:flex;gap:12px;align-items:baseline;background:var(--regle);border:1px solid var(--regle-b);border-radius:10px;padding:10px 14px;font-size:1.05rem;}
+  .liste-regles li.vedette{border-width:2px;font-weight:600;}
+  .liste-regles .num{font-weight:700;color:#8a5a00;min-width:2.2em;}
+  dialog{border:none;border-radius:14px;padding:24px;max-width:640px;width:calc(100% - 32px);background:var(--panel);color:var(--ink);}
+  dialog::backdrop{background:rgba(0,0,0,.4);}
+  dialog h2{margin-top:0;}
+  .appris{background:var(--bg);border-radius:12px;padding:12px 16px 12px 36px;}
+  .appris li{margin-bottom:6px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔍 L’affaire du trophée</h1>
+  <nav id="nav"></nav>
+  <button class="onglet" id="voir-regles">📜 Règles</button>
+  <button class="onglet" id="onglet" title="Ouvrir l’appli dans un nouvel onglet">↗ Nouvel onglet</button>
+</header>
+<main>
+  <section class="scene" id="scene"></section>
+  <div class="colonne">
+    <aside id="boite-suspects">
+      <h3>🕵️ Les suspects</h3>
+      <div id="suspects"></div>
+    </aside>
+    <aside id="validation"></aside>
+  </div>
+</main>
+<dialog id="fenetre-regles">
+  <h2>📜 Les règles de l’enquête</h2>
+  <div id="contenu-regles"></div>
+  <div class="actions"><button class="suite" id="fermer-regles">Fermer</button></div>
+</dialog>
+
+<script>
+const SUSPECTS = {
+  ines:   { ico: "👧", nom: "Inès", role: "élève de 6B", innocent: "innocentée ✓" },
+  tom:    { ico: "👦", nom: "Tom", role: "élève de 6C", innocent: "innocenté ✓" },
+  rossi:  { ico: "👩‍🏫", nom: "Mme Rossi", role: "prof de musique", innocent: "innocentée ✓" },
+  dubois: { ico: "🧹", nom: "M. Dubois", role: "le gardien" }
+};
+
+// Les règles de l'enquête, numérotées comme les propriétés d'un cours
+const REGLES = {
+  1: "Si quelqu’un est à un endroit, alors il n’est pas ailleurs au même moment.",
+  2: "Si un élève est en cours de sport, alors il est au gymnase.",
+  3: "Si un élève oublie son carnet 3 fois dans la semaine, alors il est en retenue le mercredi de 10 h à 12 h.",
+  4: "Si un élève est en retenue, alors ses parents sont prévenus.",
+  5: "Si un élève va à l’infirmerie, alors il passe par le hall.",
+  6: "Si une vitrine est ouverte sans être cassée, alors on l’a ouverte avec une clé.",
+  7: "Si M. Dubois lave le hall, alors le sol est mouillé."
+};
+const NOM_REGLE = { 1: "📌 non-ubiquité" };
+
+const NIVEAUX = [
+  {
+    nom: "Niveau 1",
+    titre: "Tirer la conclusion",
+    consigne: "🎯 On te donne la règle. À toi de trouver la conclusion !",
+    items: [
+      {
+        type: "conclusion",
+        sais: ["Mercredi de 10 h à 11 h, Inès était en cours de sport."],
+        regle: 2,
+        options: [
+          { t: "Mercredi, Inès a pris le trophée.", fb: "On ne parle pas du trophée. Pas de preuve !" },
+          { t: "Mercredi de 10 h à 11 h, Inès était au gymnase.", ok: true, fb: "Bravo ! Ce qu’on sait correspond au début de la règle." },
+          { t: "Inès est très forte en sport.", fb: "La règle ne dit pas si elle est forte." }
+        ]
+      },
+      {
+        type: "conclusion",
+        sais: ["Mercredi de 10 h à 11 h, Inès était au gymnase."],
+        note: "Ce que tu as trouvé devient ce que tu sais !",
+        regle: 1,
+        options: [
+          { t: "Mercredi à 10 h 30, Inès était dans le hall.", fb: "Impossible : elle était au gymnase !" },
+          { t: "Mercredi à 14 h, Inès n’était pas dans le hall.", fb: "À 14 h ? On ne sait rien sur 14 h !" },
+          { t: "Mercredi de 10 h à 11 h, Inès n’était pas dans le hall.", ok: true, fb: "Exactement ! Même jour, même heure." }
+        ],
+        innocente: "ines"
+      },
+      {
+        type: "conclusion",
+        sais: ["Mercredi de 10 h à 11 h, Mme Rossi était en salle de musique."],
+        regle: 1,
+        options: [
+          { t: "Mercredi de 10 h à 11 h, Mme Rossi n’était pas dans le hall.", ok: true, fb: "Oui !" },
+          { t: "Mardi de 10 h à 11 h, Mme Rossi n’était pas dans le hall.", fb: "Mardi ? On ne sait rien sur mardi !" },
+          { t: "Mercredi de 10 h à 11 h, Mme Rossi était dans le hall.", fb: "Impossible : elle était en salle de musique !" }
+        ],
+        innocente: "rossi"
+      }
+    ]
+  },
+  {
+    nom: "Niveau 2",
+    titre: "Trouver la bonne règle",
+    consigne: "🔎 On te donne la conclusion. À toi de trouver la règle !",
+    items: [
+      {
+        type: "regle",
+        sais: ["Cette semaine, Tom a oublié son carnet 3 fois."],
+        donc: "Mercredi de 10 h à 12 h, Tom était en retenue.",
+        options: [
+          { r: 2, fb: "Cette règle parle du sport, pas du carnet." },
+          { r: 4, fb: "Cette règle part de la retenue. Nous, on part du carnet !" },
+          { r: 3, ok: true, fb: "Oui ! Elle part du carnet et arrive à la retenue." }
+        ]
+      },
+      {
+        type: "regle",
+        sais: ["Mercredi de 10 h à 12 h, Tom était en retenue en salle 12."],
+        donc: "Mercredi de 10 h à 12 h, Tom n’était pas dans le hall.",
+        options: [
+          { r: 4, fb: "Vrai, mais ça ne dit pas où était Tom." },
+          { r: 1, ok: true, fb: "Exactement ! La non-ubiquité, encore elle !" },
+          { r: 5, fb: "Tom n’est pas allé à l’infirmerie !" }
+        ],
+        innocente: "tom"
+      },
+      {
+        type: "regle",
+        sais: ["La vitrine a été ouverte, mais la vitre n’est pas cassée."],
+        donc: "Quelqu’un a ouvert la vitrine avec une clé.",
+        options: [
+          { r: 7, fb: "Cette règle parle du sol, pas de la vitrine." },
+          { r: 6, ok: true, fb: "Bien vu !" },
+          { r: 1, fb: "Ici, personne n’est à deux endroits à la fois." }
+        ]
+      }
+    ]
+  },
+  {
+    nom: "Niveau 3",
+    titre: "Vrai, faux… ou on ne peut pas savoir ?",
+    consigne: "Attention : parfois, il manque des informations !",
+    items: [
+      {
+        type: "verdict",
+        sais: ["Mercredi à 10 h 30, Lucas est allé à l’infirmerie."],
+        regle: 5,
+        affirmation: "Mercredi à 10 h 30, Lucas est passé dans le hall.",
+        reponse: "vrai",
+        fb: { faux: "Relis la règle !", nsp: "Si : la règle s’applique à Lucas." },
+        explication: "Vrai !",
+        info: "🗣️ Lucas : « J’ai vu un adulte avec un chiffon près de la vitrine. »"
+      },
+      {
+        type: "verdict",
+        sais: ["Mercredi à 10 h 30, Lucas était dans le hall."],
+        affirmation: "Mercredi à 10 h 30, tous les élèves étaient en classe.",
+        reponse: "faux",
+        fb: { vrai: "Et Lucas ? Il était dans le hall !", nsp: "Un seul élève hors de la classe suffit." },
+        explication: "Faux : Lucas n’était pas en classe. Un seul cas suffit !"
+      },
+      {
+        type: "verdict",
+        sais: ["On a interrogé 3 élèves de 6C.", "Ces 3 élèves n’ont vu personne près de la vitrine."],
+        affirmation: "Aucun élève de 6C n’a vu quelqu’un près de la vitrine.",
+        reponse: "nsp",
+        fb: { vrai: "On n’a interrogé que 3 élèves !", faux: "Rien ne montre que c’est faux." },
+        explication: "On ne peut pas savoir : 3 élèves, ce n’est pas toute la classe."
+      },
+      {
+        type: "verdict",
+        sais: ["Mercredi à 10 h 45, le sol du hall est mouillé."],
+        regle: 7,
+        affirmation: "Mercredi matin, M. Dubois a lavé le hall.",
+        reponse: "nsp",
+        fb: { vrai: "Le sol peut être mouillé pour une autre raison !", faux: "Rien ne montre que c’est faux." },
+        explication: "On ne peut pas savoir : quelqu’un a peut-être renversé de l’eau."
+      },
+      {
+        type: "verdict",
+        sais: ["La vitrine a été ouverte avec une clé.", "M. Dubois a une clé."],
+        affirmation: "C’est M. Dubois qui a ouvert la vitrine.",
+        reponse: "nsp",
+        fb: { vrai: "D’autres personnes ont peut-être une clé !", faux: "Rien ne prouve que ce n’est pas lui." },
+        explication: "On ne peut pas savoir : d’autres ont peut-être une clé.",
+        info: "🔑 Seuls M. Dubois et la principale ont une clé."
+      },
+      {
+        type: "verdict",
+        sais: [
+          "Seuls M. Dubois et la principale ont une clé.",
+          "Mercredi entre 10 h et 11 h, la vitrine a été ouverte avec une clé.",
+          "Mercredi toute la matinée, la principale était à la mairie."
+        ],
+        regle: 1,
+        affirmation: "C’est M. Dubois qui a ouvert la vitrine.",
+        reponse: "vrai",
+        fb: { faux: "Il n’y a que deux clés… et la principale était à la mairie !", nsp: "Il n’y a que deux clés… et la principale était à la mairie !" },
+        explication: "Vrai : la principale n’était pas au collège. Il ne reste que M. Dubois !",
+        trouve: "dubois"
+      }
+    ]
+  }
+];
+
+const REPONSES = { vrai: "Vrai", faux: "Faux", nsp: "On ne peut pas savoir" };
+
+// État : écran courant et questions réussies
+let ecran = { type: "intro" };           // intro | item | finale
+let fait = {};                            // "n-i" -> true
+let essai = { rate: new Set(), reussi: false, choix: null };
+let statutsAvant = {};                    // pour animer le suspect qui change
+
+// Espaces insécables avant ? ! : ; » et après «
+const fr = s => s.replace(/ ([?!:;»])/g, " $1").replace(/« /g, "« ");
+const $ = id => document.getElementById(id);
+
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of enfants) if (c != null) e.append(typeof c === "string" ? fr(c) : c);
+  return e;
+}
+
+function maillon(classe, etiquette, contenu, extra) {
+  const corps = Array.isArray(contenu)
+    ? (contenu.length > 1 ? el("ul", {}, ...contenu.map(t => el("li", {}, t))) : el("p", {}, contenu[0]))
+    : el("p", {}, contenu);
+  return el("div", { class: "maillon " + classe }, el("div", { class: "etiquette" }, etiquette), corps, extra);
+}
+const etiquetteRegle = k => "La règle n°" + k + " dit…" + (NOM_REGLE[k] ? " " + NOM_REGLE[k] : "");
+const texteOption = o => o.r ? "n°" + o.r + " : " + REGLES[o.r] : o.t;
+const fleche = () => el("div", { class: "fleche" }, "↓");
+
+function allerA(n, i) {
+  ecran = { type: "item", n, i };
+  essai = { rate: new Set(), reussi: !!fait[n + "-" + i], choix: null };
+  rendu();
+}
+
+function suivant() {
+  const { n, i } = ecran;
+  if (i + 1 < NIVEAUX[n].items.length) allerA(n, i + 1);
+  else if (n + 1 < NIVEAUX.length) allerA(n + 1, 0);
+  else { ecran = { type: "finale" }; rendu(); }
+}
+
+function listeOptions(item) {
+  return item.type === "verdict"
+    ? Object.keys(REPONSES).map(k => ({ cle: k, t: REPONSES[k], ok: k === item.reponse }))
+    : item.options.map((o, k) => ({ cle: k, t: texteOption(o), ok: !!o.ok }));
+}
+
+function choisir(cle) {
+  if (essai.reussi || essai.rate.has(cle)) return;
+  essai.choix = cle;
+  rendu();
+}
+
+function attacherGlisser(carte, cle) {
+  carte.classList.add("glissable");
+  carte.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    e.preventDefault();
+    const x0 = e.clientX, y0 = e.clientY, rect = carte.getBoundingClientRect();
+    let fantome = null, survol = null;
+    const cibleSous = ev => {
+      const t = document.elementFromPoint(ev.clientX, ev.clientY);
+      return t && t.closest("[data-cible]");
+    };
+    const bouge = ev => {
+      if (!fantome) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+        fantome = carte.cloneNode(true);
+        fantome.classList.add("fantome");
+        fantome.style.width = rect.width + "px";
+        document.body.append(fantome);
+        carte.classList.add("en-cours");
+      }
+      fantome.style.left = (ev.clientX - (x0 - rect.left)) + "px";
+      fantome.style.top = (ev.clientY - (y0 - rect.top)) + "px";
+      const c = cibleSous(ev);
+      if (c !== survol) { survol && survol.classList.remove("survol"); survol = c; c && c.classList.add("survol"); }
+    };
+    const fin = ev => {
+      document.removeEventListener("pointermove", bouge);
+      document.removeEventListener("pointerup", fin);
+      document.removeEventListener("pointercancel", fin);
+      if (!fantome) {
+        // Simple clic : on rappelle qu'il faut glisser
+        const c = document.querySelector("[data-cible]");
+        if (c) { c.classList.remove("rappel"); void c.offsetWidth; c.classList.add("rappel"); }
+        return;
+      }
+      fantome.remove();
+      carte.classList.remove("en-cours");
+      if (ev.type === "pointerup" && cibleSous(ev)) choisir(cle);
+      else survol && survol.classList.remove("survol");
+    };
+    document.addEventListener("pointermove", bouge);
+    document.addEventListener("pointerup", fin);
+    document.addEventListener("pointercancel", fin);
+  });
+}
+
+function valider() {
+  const item = NIVEAUX[ecran.n].items[ecran.i];
+  const o = listeOptions(item).find(o => o.cle === essai.choix);
+  if (!o) return;
+  if (o.ok) { essai.reussi = true; fait[ecran.n + "-" + ecran.i] = true; }
+  else essai.rate.add(o.cle);
+  essai.choix = null;
+  rendu();
+}
+
+function rendu() {
+  renduNav();
+  renduSuspects();
+  const s = $("scene");
+  s.replaceChildren();
+  s.className = "scene";
+  $("validation").replaceChildren();
+  if (ecran.type === "intro") return renduIntro(s);
+  if (ecran.type === "regles") return renduRegles(s);
+  if (ecran.type === "finale") return renduFinale(s);
+
+  const niv = NIVEAUX[ecran.n], item = niv.items[ecran.i];
+  s.append(
+    el("div", { class: "entete" },
+      el("h2", {}, niv.nom + " — " + niv.titre),
+      el("div", { class: "points" }, ...niv.items.map((_, k) =>
+        el("button", {
+          class: "point" + (fait[ecran.n + "-" + k] ? " fait" : "") + (k === ecran.i ? " courant" : ""),
+          title: "Question " + (k + 1), onclick: () => allerA(ecran.n, k)
+        }, String(k + 1))))
+    ),
+    el("p", { class: "consigne" }, niv.consigne)
+  );
+
+  const chaine = el("div", { class: "chaine" });
+  const note = item.note ? el("div", { class: "note" }, item.note) : null;
+  chaine.append(maillon("m-sais", "Je sais que…", item.sais, note), fleche());
+
+  // Case où l'on dépose la réponse : vide, provisoire (déposée, pas encore validée) ou validée
+  const liste = listeOptions(item);
+  const posee = liste.find(o => o.cle === essai.choix);
+  const bonne = liste.findIndex(o => o.ok);
+  const cible = (classe, etiquette, texteJuste) => {
+    if (essai.reussi) return maillon(classe + " rempli", etiquette, texteJuste);
+    const m = posee
+      ? maillon(classe + " provisoire", etiquette, posee.t)
+      : maillon(classe + " vide", etiquette + " ← glisse ta réponse ici", "?");
+    m.dataset.cible = "1";
+    return m;
+  };
+
+  if (item.type === "conclusion") {
+    chaine.append(maillon("m-regle", etiquetteRegle(item.regle), REGLES[item.regle]), fleche());
+    chaine.append(cible("m-donc", "Donc…", item.options[bonne].t));
+  } else if (item.type === "regle") {
+    const r = item.options[bonne].r;
+    chaine.append(cible("m-regle", etiquetteRegle(essai.reussi ? r : "…").replace("n°… ", ""), REGLES[r]));
+    chaine.append(fleche(), maillon("m-donc", "Donc…", item.donc));
+  } else {
+    if (item.regle) chaine.append(maillon("m-regle", etiquetteRegle(item.regle), REGLES[item.regle]), fleche());
+    chaine.append(maillon("m-question", "Vrai ou faux ?", item.affirmation), fleche());
+    chaine.append(cible("m-reponse", "Ta réponse", REPONSES[item.reponse]));
+  }
+  s.append(chaine);
+
+  // Dès qu'une réponse est posée, les choix disparaissent : il ne reste que le raisonnement à relire
+  if (essai.choix !== null || essai.reussi) return renduValidation(item, niv, bonne);
+
+  const titreChoix = { conclusion: "Les conclusions possibles :", regle: "Les règles possibles :", verdict: "Les réponses possibles :" };
+  s.append(el("div", { class: "choix-titre" }, titreChoix[item.type]));
+
+  const zone = el("div", { class: "options" + (item.type === "verdict" ? " verdict" : "") });
+  for (const o of liste) {
+    let cls = "option opt-" + item.type;
+    if (essai.rate.has(o.cle)) cls += " faux";
+    if (essai.reussi && o.ok) cls += " juste";
+    const b = el("div", { class: cls }, o.t);
+    if (!essai.rate.has(o.cle) && !essai.reussi) attacherGlisser(b, o.cle);
+    zone.append(b);
+  }
+  s.append(zone);
+
+  renduValidation(item, niv, bonne);
+}
+
+function renduValidation(item, niv, bonne) {
+  const v = $("validation");
+  v.append(el("h3", {}, "✔️ Ta réponse"));
+  if (essai.reussi) {
+    const texte = item.type === "verdict" ? item.explication : item.options[bonne].fb;
+    const r = el("div", { class: "retour ok" }, "✅ ", texte);
+    if (item.innocente) {
+      const p = SUSPECTS[item.innocente];
+      r.append(el("div", { class: "info" }, p.ico + " " + p.nom + " est " + p.innocent.replace(" ✓", "") + " !"));
+    }
+    if (item.info) r.append(el("div", { class: "info" }, item.info));
+    const dernier = ecran.n === NIVEAUX.length - 1 && ecran.i === niv.items.length - 1;
+    v.append(r, el("button", { class: "suite", onclick: suivant }, dernier ? "Résoudre l’affaire →" : "Suite →"));
+    return;
+  }
+  if (essai.rate.size) {
+    const derniere = [...essai.rate].pop();
+    const texte = item.type === "verdict" ? item.fb[derniere] : item.options[derniere].fb;
+    v.append(el("div", { class: "retour ko" }, "❌ ", texte, " Essaie encore !"));
+  }
+  if (essai.choix === null) {
+    v.append(el("p", { class: "aide" }, "Glisse une réponse dans la case."));
+    return;
+  }
+  v.append(
+    el("p", { class: "aide" }, "Relis ta démonstration de haut en bas. Tout s’enchaîne ?"),
+    el("button", { class: "suite", onclick: valider }, "Valider"),
+    el("button", { class: "changer", onclick: () => { essai.choix = null; rendu(); } }, "↩ Changer de réponse")
+  );
+}
+
+function renduIntro(s) {
+  s.classList.add("intro");
+  s.append(
+    el("h2", {}, "Le trophée a disparu !"),
+    el("p", {}, "Mercredi à 10 h, il était dans la vitrine du hall. À 11 h, plus rien !"),
+    el("p", {}, "4 suspects :"),
+    el("div", { class: "cartes" }, ...Object.values(SUSPECTS).map(p =>
+      el("div", { class: "carte" }, el("span", { class: "ico" }, p.ico), el("strong", {}, p.nom), el("br"), p.role))),
+    el("div", { class: "regle-or" }, "⭐ Règle d’or : on n’accuse jamais sans preuve !"),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => { ecran = { type: "regles" }; rendu(); } }, "Voir les règles →"))
+  );
+}
+
+function listeRegles() {
+  return el("ol", { class: "liste-regles" }, ...Object.entries(REGLES).map(([k, t]) =>
+    el("li", { class: NOM_REGLE[k] ? "vedette" : "" },
+      el("span", { class: "num" }, "n°" + k), el("span", {}, (NOM_REGLE[k] ? NOM_REGLE[k] + " : " : "") + t))));
+}
+
+function renduRegles(s) {
+  s.append(
+    el("h2", {}, "📜 Les règles de l’enquête"),
+    el("p", {}, "Toutes ces règles sont vraies. Tu t’en serviras pour démontrer."),
+    listeRegles(),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => allerA(0, 0) }, "Commencer l’enquête →"))
+  );
+}
+
+function renduFinale(s) {
+  s.classList.add("finale");
+  s.append(
+    el("h2", {}, "🏆 Affaire résolue !"),
+    el("p", {}, "M. Dubois sort le trophée d’un placard : « Je l’ai pris pour le faire briller ! »"),
+    el("p", {}, "Personne n’a été accusé sans preuve. Bravo, détective !"),
+    el("h3", {}, "Ce que tu as appris"),
+    el("ul", { class: "appris" },
+      el("li", {}, "Pour conclure, il faut un fait et une règle."),
+      el("li", {}, "Une même règle peut servir plusieurs fois."),
+      el("li", {}, "Quelques exemples ne suffisent pas."),
+      el("li", {}, "Un seul cas suffit pour dire « faux »."),
+      el("li", {}, "Parfois, on ne peut pas savoir.")
+    ),
+    el("h3", {}, "Et en maths ? Pareil !"),
+    el("p", {}, "En maths, les règles s’appellent des propriétés."),
+    el("div", { class: "chaine" },
+      maillon("m-sais", "Je sais que…", "(d₁) ⊥ (d) et (d₂) ⊥ (d)."),
+      fleche(),
+      maillon("m-regle", "La propriété dit…", "Si deux droites sont perpendiculaires à une même droite, alors elles sont parallèles."),
+      fleche(),
+      maillon("m-donc", "Donc…", "(d₁) // (d₂).")
+    ),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => { fait = {}; ecran = { type: "intro" }; rendu(); } }, "Recommencer"))
+  );
+}
+
+function renduNav() {
+  const nav = $("nav");
+  nav.replaceChildren(...NIVEAUX.map((niv, n) =>
+    el("button", { class: "tab" + (ecran.type === "item" && ecran.n === n ? " actif" : ""), onclick: () => allerA(n, 0) }, niv.nom)));
+}
+
+function renduSuspects() {
+  const statuts = {};
+  NIVEAUX.forEach((niv, n) => niv.items.forEach((it, i) => {
+    if (!fait[n + "-" + i]) return;
+    if (it.innocente) statuts[it.innocente] = "innocent";
+    if (it.trouve) statuts[it.trouve] = "trouve";
+  }));
+  $("suspects").replaceChildren(...Object.entries(SUSPECTS).map(([k, p]) => {
+    const st = statuts[k] || "";
+    const txt = st === "innocent" ? p.innocent : st === "trouve" ? "🔑 la clé !" : "suspect";
+    const cls = "suspect " + st + (st && st !== statutsAvant[k] ? " change" : "");
+    return el("div", { class: cls },
+      el("span", { class: "ico" }, p.ico), el("span", { class: "nom" }, p.nom), el("span", { class: "statut" }, txt));
+  }));
+  statutsAvant = statuts;
+}
+
+$("voir-regles").onclick = () => { $("contenu-regles").replaceChildren(listeRegles()); $("fenetre-regles").showModal(); };
+$("fermer-regles").onclick = () => $("fenetre-regles").close();
+$("onglet").onclick = () => window.open(location.href, "_blank");
+
+rendu();
+</script>
+</body>
+</html>
