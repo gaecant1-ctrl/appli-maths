@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chasse au trésor GeoGebra</title>
+<style>
+  :root{
+    --bg:#0f1420;
+    --panel:#161d2e;
+    --panel2:#1d2740;
+    --accent:#5b9dff;
+    --accent2:#7ee0c0;
+    --text:#e8ecf5;
+    --muted:#8a93ab;
+    --border:#2a3350;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overflow:hidden;
+  }
+  #app{ display:flex; height:100%; width:100%; }
+  #sidebar{
+    width:560px;
+    min-width:560px;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:16px;
+    gap:14px;
+    overflow-y:auto;
+  }
+  #sidebar h1{ font-size:15px; margin:0 0 2px 0; font-weight:600; }
+  #sidebar .sub{ color:var(--muted); font-size:12px; margin:0 0 8px 0; line-height:1.4; }
+  .group{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px;
+  }
+  .group h2{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--muted);
+    margin:0 0 8px 0;
+    font-weight:600;
+  }
+  details.group{ padding:0; }
+  details.group summary{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--muted);
+    font-weight:600;
+    cursor:pointer;
+    padding:10px;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    user-select:none;
+  }
+  details.group summary::-webkit-details-marker{ display:none; }
+  details.group summary::after{
+    content:"▾";
+    font-size:10px;
+    color:var(--muted);
+    transition:transform .15s;
+  }
+  details.group[open] summary::after{ transform:rotate(180deg); }
+  details.group summary:hover{ color:var(--text); }
+  details.group .details-body{ padding:0 10px 10px 10px; }
+  .row{ display:flex; gap:6px; flex-wrap:wrap; }
+  button{
+    background:#26314e;
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 10px;
+    font-size:12.5px;
+    cursor:pointer;
+    flex:1 1 auto;
+    transition:background .15s, border-color .15s;
+    white-space:nowrap;
+  }
+  button:hover{ background:#31406a; border-color:var(--accent); }
+  button.wide{ flex:1 1 100%; }
+  button.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#0b1120;
+    font-weight:600;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.35);
+  }
+  button.active:hover{ background:var(--accent); filter:brightness(1.05); }
+  button.accent{
+    background:linear-gradient(135deg,var(--accent),#4573c9);
+    border:none; color:#0b1120; font-weight:600;
+  }
+  button.accent:hover{ filter:brightness(1.08); }
+  .style-btn{
+    flex:0 0 auto;
+    width:38px; height:38px;
+    padding:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+  }
+  .swatch{
+    flex:0 0 auto;
+    width:28px; height:28px;
+    padding:0;
+    border-radius:50%;
+    border:2px solid var(--border);
+  }
+  .swatch:hover{ transform:scale(1.1); }
+  label.field-label{
+    font-size:11.5px;
+    color:var(--muted);
+    display:block;
+    margin:8px 0 4px 0;
+  }
+  input[type=range]{ width:100%; }
+  #stage{ flex:1; position:relative; background:#000; }
+  #ggb-container{ position:absolute; inset:0; }
+  #loading{
+    position:absolute; inset:0; z-index:5;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:14px;
+    background:var(--bg);
+    flex-direction:column; gap:10px;
+  }
+  #loading .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--accent);
+    animation:pulse 1s infinite ease-in-out;
+  }
+  @keyframes pulse{ 0%,100%{opacity:.3;transform:scale(.8);} 50%{opacity:1;transform:scale(1.1);} }
+  #toast{
+    position:absolute; top:64px; /* just under the GeoGebra toolbar, never over it */ left:50%;
+    transform:translateX(-50%) translateY(-10px);
+    background:var(--accent2); color:#0b1120; font-weight:600;
+    font-size:12.5px; padding:7px 14px; border-radius:20px;
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
+    max-width:80%; text-align:center; z-index:6;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #status{
+    margin-top:auto; font-size:11px; color:var(--muted);
+    border-top:1px solid var(--border); padding-top:10px; line-height:1.5;
+  }
+  #status b{ color:var(--accent2); }
+
+  /* --- Chasse au trésor --- */
+  #hunt-picker button{ flex:1 1 0; padding:8px 0; min-width:0; }
+  #hunt-picker button.solved{ border-color:var(--accent2); color:var(--accent2); }
+  #hunt-picker button.solved.active{ color:#0b1120; }
+  #hunt-score{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-bottom:8px; font-size:13px;
+  }
+  #hunt-score b{ color:var(--accent2); font-size:16px; }
+  #hunt-score button{ flex:0 0 auto; padding:4px 8px; font-size:11px; }
+  #hunt-picker button.free{ flex:1 1 100%; margin-top:2px; }
+  #hunt-body{ margin-top:10px; }
+  #hunt-body[hidden]{ display:none; }
+  #hunt-instructions{
+    background:#fffbd6; color:#1b1b1b;
+    border-radius:8px; padding:10px 12px;
+    font-size:13px; line-height:1.5;
+  }
+  #hunt-instructions p{ margin:0 0 6px 0; }
+  #hunt-instructions ol, #hunt-instructions ul{ margin:0; padding-left:20px; }
+  #hunt-instructions li{ margin:3px 0; }
+  #hunt-instructions .level{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.5px;
+    color:#7a6a00; font-weight:700; margin-bottom:4px;
+  }
+  #hunt-tip{ font-size:11px; color:var(--muted); margin:8px 0 0 0; line-height:1.4; }
+  #hunt-feedback{ font-size:12.5px; margin:8px 0 0 0; line-height:1.4; min-height:1em; }
+  #hunt-feedback.ok{ color:var(--accent2); }
+  #hunt-feedback.ko{ color:#ff8a80; }
+  button.check{
+    background:linear-gradient(135deg,#f5c542,#e0a100);
+    border:none; color:#1b1300; font-weight:700;
+  }
+  button.check:hover{ filter:brightness(1.08); }
+  #win{
+    position:absolute; inset:0; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55); z-index:10;
+  }
+  #win.show{ display:flex; }
+  #win .card{
+    background:#fff; border-radius:16px; padding:20px 26px;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    box-shadow:0 10px 40px rgba(0,0,0,.5);
+  }
+  #win .imgs{ display:flex; align-items:center; gap:16px; }
+  #win .imgs img{ max-height:180px; }
+  #win .row{ width:100%; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div>
+      <h1>Chasse au trésor GeoGebra</h1>
+      <p class="sub">Suis le programme de construction pour trouver le point <b>X</b> où se cache le trésor dans la zone jaune.</p>
+      <div class="row"><button id="btn-new-tab" class="wide">Ouvrir dans un nouvel onglet ↗</button></div>
+    </div>
+
+    <div class="group">
+      <h2>Chasse au trésor</h2>
+      <div id="hunt-score">
+        <span>Trésors trouvés : <b id="hunt-score-val">0 / 6</b></span>
+        <button id="btn-score-reset" title="Remettre le compteur à zéro">Remettre à zéro</button>
+      </div>
+      <div class="row" id="hunt-picker"></div>
+      <div id="hunt-body" hidden>
+        <div id="hunt-instructions"></div>
+        <p id="hunt-tip">Pour nommer un point, une droite ou un cercle : clic droit dessus → <b>Renommer</b>, puis tape seulement la lettre (X, c, d…).</p>
+        <div class="row" style="margin-top:8px;">
+          <button id="btn-hunt-check" class="check">Vérifier X</button>
+          <button id="btn-hunt-restart">Recommencer</button>
+        </div>
+        <p id="hunt-feedback"></p>
+      </div>
+    </div>
+
+    <!-- Réglages du compagnon : cachés dans cette appli (cadre figé), gardés
+         dans le DOM car le script y accroche ses écouteurs. -->
+    <div id="settings-panels" hidden>
+    <div class="group">
+      <h2>Barre d'outils</h2>
+      <div class="row">
+        <button id="btn-toolbar-simple" class="active">Simple</button>
+        <button id="btn-toolbar-full">Complète</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Étiquettes des points</h2>
+      <div class="row">
+        <button id="btn-labels-show" class="active">Afficher</button>
+        <button id="btn-labels-hide">Masquer</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Essentiel</h2>
+      <label class="field-label">Création de point à la volée</label>
+      <div class="row">
+        <button id="btn-fly-points-allow" class="active">Autoriser</button>
+        <button id="btn-fly-points-deny">Interdire</button>
+      </div>
+      <label class="field-label" style="margin-top:10px;">Zoom / déplacement de la vue</label>
+      <div class="row">
+        <button id="btn-navlock-allow" class="active">Autoriser</button>
+        <button id="btn-navlock-deny">Bloquer</button>
+      </div>
+      <label class="field-label" style="margin-top:10px;">Codage auto (angle droit, longueurs égales)</label>
+      <div class="row">
+        <button id="btn-autocode-on" class="active">Activer</button>
+        <button id="btn-autocode-off">Désactiver</button>
+      </div>
+      <label class="field-label" style="margin-top:10px;">Retour à la flèche après un outil</label>
+      <div class="row">
+        <button id="btn-autoarrow-on" class="active">Activer</button>
+        <button id="btn-autoarrow-off">Désactiver</button>
+      </div>
+    </div>
+
+    <details class="group">
+      <summary>Points — style</summary>
+      <div class="details-body">
+        <div class="row" id="point-styles"></div>
+        <label class="field-label">Taille : <span id="point-size-val">5</span></label>
+        <input type="range" id="point-size" min="1" max="9" value="5">
+        <label class="field-label">Couleur</label>
+        <div class="row" id="point-colors"></div>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>Lignes — style</summary>
+      <div class="details-body">
+        <label class="field-label">Épaisseur : <span id="line-thickness-val">2</span></label>
+        <input type="range" id="line-thickness" min="1" max="13" value="2">
+        <label class="field-label">Couleur</label>
+        <div class="row" id="line-colors"></div>
+      </div>
+    </details>
+
+    <div class="group">
+      <h2>Affichage</h2>
+      <label class="field-label">Grille</label>
+      <div class="row">
+        <button id="btn-grid-on">Grille</button>
+        <button id="btn-grid-secondary">Secondaire</button>
+        <button id="btn-axes">Axes</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="btn-fullscreen" class="wide">Plein écran</button>
+      </div>
+    </div>
+    </div>
+
+
+    <div id="status">Statut : <b id="status-text">chargement de l'applet…</b></div>
+  </div>
+
+  <div id="stage">
+    <div id="ggb-container"></div>
+    <div id="loading"><div class="dot"></div>Chargement de GeoGebra…</div>
+    <div id="toast"></div>
+    <div id="win">
+      <div class="card">
+        <div class="imgs"><img src="img/bravo.png" alt="Bravo"><img src="img/tresor.png" alt="Trésor"></div>
+        <div class="row">
+          <button id="btn-win-close">Fermer</button>
+          <button id="btn-win-next" class="check">Exercice suivant</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+<script>
+  let ggbApplet = null;
+  const statusText = document.getElementById('status-text');
+  const loading = document.getElementById('loading');
+  const toastEl = document.getElementById('toast');
+
+  function toast(msg, ms=1800){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.classList.remove('show'), ms);
+  }
+  function setStatus(msg){ statusText.textContent = msg; }
+  function safe(fn, label){
+    try{ fn(); }
+    catch(e){ console.error(label, e); toast('Action indisponible : ' + label); }
+  }
+
+  // Simple toolbar: every id below is its own direct-click icon — no
+  // dropdown submenus, and only these 9 tools plus Move. In GeoGebra's
+  // toolbar syntax "|" is what actually creates a separate top-level
+  // icon; "," or " " group items into ONE icon's dropdown instead (confirmed
+  // live — a comma-separated list still rendered as a single dropdown).
+  // Point=1, Droite=2, Parallèle=3, Perpendiculaire=4, Intersection=5,
+  // Médiatrice=8, Cercle centre-point=10, Polygone=16, Segment=15,
+  // Demi-droite=18, Milieu ou centre=19 (ids confirmed live via getMode()).
+  // Parallèle (3) and Médiatrice (8) are left out on purpose: pupils
+  // build them with the compass (circles) and perpendiculars instead.
+  const TOOLBAR_SIMPLE = "0 | 1 | 5 | 19 | 2 | 15 | 18 | 4 | 10 | 16";
+  // Trimmed classic toolbar: removed Ellipse(55), Hyperbole(56),
+  // Parabole(57), Conique par 5 points(12), Angle(36), Symétrie
+  // axiale(30) & centrale(29), Curseur(25), Déplacer Graphique(40) — ids
+  // confirmed live via getMode(). Droite(2) and Demi-droite(18) stay in
+  // the line group, as requested.
+  const TOOLBAR_FULL = "0 73 62 | 1 501 67 , 5 19 , 72 75 76 | 2 15 45 , 18 65 , 7 37 | 4 3 8 9 , 13 44 , 58 , 47 | 16 51 64 , 70 | 10 34 53 11 , 24  20 22 , 21 23 | 46 , 38 49  50 , 71  14  68 | 54 32 31 33 | 17 26 60 52 61 | 41 42 , 27 28 35 , 6";
+
+  function buildPerspectiveXML(toolbarStr){
+    // view id must be "1" (the real Graphics view, where the construction
+    // actually lives) — id "16" is Graphics View 2, a separate, normally
+    // hidden view. Using 16 here was the root cause behind three symptoms
+    // at once: objects seeming to vanish, the pan/zoom resetting, and the
+    // grid/axes toggles needing an XML-splice workaround to "reach" the
+    // view that was really on screen.
+    return `<perspective id="tmp">
+<panes><pane location="" divider="0.5" orientation="1"/></panes>
+<views>
+<view id="1" toolbar="${toolbarStr}" visible="true" inframe="false" stylebar="false" location="1" size="798" window="100,100,700,550"/>
+</views>
+<toolbar show="true" items="${toolbarStr}" position="1" help="false"/>
+<input show="true" cmd="true" top="algebra"/>
+<dockBar show="false" east="false"/>
+</perspective>`;
+  }
+
+  const ggbParams = {
+    appName: "classic",
+    width: 800,
+    height: 600,
+    showToolBar: true,
+    showToolBarHelp: false,
+    showAlgebraInput: false,
+    showMenuBar: false,
+    showResetIcon: false,
+    allowStyleBar: false,
+    enableRightClick: true,
+    enableShiftDragZoom: false,
+    language: "fr",
+    perspective: "G",
+    // No grid/axes from the very first frame (the hunt never shows them).
+    showGrid: false,
+    showAxes: false,
+    appletOnLoad: function(api){
+      ggbApplet = api;
+      setStatus('applet prêt');
+      ggbApplet.showTooltip(0); // 0 = never show GeoGebra's own object tooltips
+      registerDefaultStyleListener();
+      registerNamingHelpers();
+      // Start on the simple toolbar rather than GeoGebra's native default.
+      ggbApplet.setPerspective(buildPerspectiveXML(TOOLBAR_SIMPLE));
+      afterPerspectiveSwitch();
+      window.addEventListener('resize', ()=>{ fitAppletToStage(); refitZone(); });
+      // Fixed frame: no zoom / pan of the view (the companion's "Bloquer").
+      // Right-click stays on — it's how pupils rename their point X.
+      ggbApplet.enableShiftDragZoom(false);
+      setNavLockButtonsActive('btn-navlock-deny');
+      // Open straight on exercise 1, once the perspective switch settled.
+      // The loading screen stays up until then, so pupils never see
+      // GeoGebra's default view flash before the yellow zone appears.
+      setTimeout(()=>{
+        safe(()=>loadHunt(0), 'exercice 1');
+        setTimeout(()=>{ loading.style.display = 'none'; }, 250); // after fitZone's second pass
+      }, 600);
+    }
+  };
+  const applet = new GGBApplet(ggbParams, true);
+  window.addEventListener('load', ()=>applet.inject('ggb-container'));
+
+  function fitAppletToStage(){
+    if(!ggbApplet) return;
+    const stage = document.getElementById('stage');
+    ggbApplet.setSize(stage.clientWidth, stage.clientHeight);
+  }
+
+  let autoCodeOn = true;
+
+  function isLineLike(type){
+    return type==='line' || type==='segment' || type==='ray';
+  }
+
+  // A segment built from two named points always has "Segment(A, B)" as
+  // its command string — used to recover a segment's endpoints without
+  // creating any new (visible) object just to ask for them.
+  function segmentEndpoints(segName){
+    const cs = safeNames(()=>ggbApplet.getCommandString(segName));
+    const m = cs && cs.match(/^Segment\((.+)\)$/);
+    if(!m) return null;
+    const args = m[1].split(',').map(s=>s.trim());
+    return args.length===2 ? args : null;
+  }
+
+  // Angle(line1,line2) picks one of the two supplementary directed
+  // angles depending on each line's internal direction vector — for a
+  // true perpendicular that's always exactly 90° or 270°; if we land on
+  // 270° we just ask for it the other way round instead.
+  function markRightAngle(lineA, lineB){
+    let name = ggbApplet.evalCommandGetLabels(`Angle(${lineA},${lineB})`);
+    if(!name) return;
+    if(Math.abs(ggbApplet.getValue(name) - Math.PI/2) > 0.01){
+      ggbApplet.deleteObject(name);
+      name = ggbApplet.evalCommandGetLabels(`Angle(${lineB},${lineA})`);
+    }
+    if(name) ggbApplet.setLabelVisible(name, false);
+  }
+
+  // Successive midpoints in the same figure alternate between the ">"
+  // and ">>" decorations, so distinct equal-length pairs stay
+  // distinguishable from each other instead of all wearing the same mark.
+  let equalMarkCount = 0;
+
+  // Draws the two half-segments A–M and M–B with a matching arrow mark
+  // (GeoGebra's own "equal length" decoration) and hides the original
+  // full segment when there was one, so it doesn't sit doubled underneath.
+  function markEqualLengths(A, M, B, sourceSegment){
+    const decoType = 4 + (equalMarkCount++ % 2); // 4 = ">", 5 = ">>"
+    [[A,M],[M,B]].forEach(([p,q])=>{
+      const seg = ggbApplet.evalCommandGetLabels(`Segment(${p},${q})`);
+      if(!seg) return;
+      ggbApplet.evalCommand(`SetDecoration(${seg},${decoType})`);
+      ggbApplet.setLabelVisible(seg, false);
+    });
+    if(sourceSegment) safe(()=>ggbApplet.setVisible(sourceSegment, false), 'masquer segment source');
+  }
+
+  function applyAutoCoding(name){
+    const cs = safeNames(()=>ggbApplet.getCommandString(name));
+    if(!cs) return;
+    let m = cs.match(/^Perpendiculaire\((.+)\)$/);
+    if(m && isLineLike(ggbApplet.getObjectType(name))){
+      const args = m[1].split(',').map(s=>s.trim());
+      if(args.length===2){
+        const point0 = ggbApplet.getObjectType(args[0])==='point';
+        const line = point0 ? args[1] : args[0];
+        if(isLineLike(ggbApplet.getObjectType(line))) markRightAngle(line, name);
+      }
+      return;
+    }
+    m = cs.match(/^MilieuCentre\((.+)\)$/);
+    if(m && ggbApplet.getObjectType(name)==='point'){
+      const args = m[1].split(',').map(s=>s.trim());
+      let A, B, sourceSegment;
+      if(args.length===2){ [A,B] = args; }
+      else if(args.length===1){
+        sourceSegment = args[0];
+        const ends = segmentEndpoints(sourceSegment);
+        if(ends) [A,B] = ends;
+      }
+      if(A && B) markEqualLengths(A, name, B, sourceSegment);
+    }
+  }
+
+  // New objects start croix/bleu for points, noir for everything else —
+  // matches the bulk style buttons below instead of GeoGebra's own
+  // (filled circle / blue) defaults. Label visibility follows whichever
+  // of Afficher/Masquer was clicked last, so new points stay consistent
+  // with existing ones instead of always coming back labelled.
+  let labelsOn = true;
+
+  // Tool modes whose actual, final output is a point — for every other
+  // mode, a newly added point is just an on-the-fly helper GeoGebra
+  // created mid-construction (e.g. the first click of a Segment drawn
+  // from empty space), and switching to Move then would cut the tool off
+  // before its real output (the segment) exists.
+  const POINT_OUTPUT_MODES = new Set([1, 5, 19]); // Point, Intersection, Milieu
+  let returnToArrowOn = true;
+  function maybeReturnToArrow(name){
+    if(!returnToArrowOn) return;
+    const mode = ggbApplet.getMode();
+    if(mode === 0) return;
+    const type = ggbApplet.getObjectType(name);
+    if(type === 'point' && !POINT_OUTPUT_MODES.has(mode)) return;
+    // Calling setMode() synchronously from inside the add-listener — while
+    // GeoGebra is still in the middle of handling the click that created
+    // this very object — corrupts the tool's in-progress click sequence
+    // (seen live: it silently deleted the object just created). Deferring
+    // it lets that click finish first.
+    setTimeout(()=>{ if(ggbApplet.getMode() !== 0) ggbApplet.setMode(0); }, 0);
+  }
+
+  // --- Naming (c), (d)… ---
+  // The instructions name lines and circles "(c)", "(d)". macOS text
+  // replacement turns a typed "(c)" into "©" in web text fields, and
+  // GeoGebra refuses parentheses in a name anyway — so every text field
+  // GeoGebra opens (rename dialog…) gets autocorrect off, and "©" or
+  // "(c)" typed there becomes plain "c". Any object (points aside) named
+  // with a lowercase letter — optionally indexed: d1, d_1, d' — is then
+  // displayed in parentheses, "(c)", like in the instructions.
+  const pupilNamed = new Set(); // names given by the pupil via "Renommer"
+  // GeoGebra's automatic names collide with the ones the instructions ask
+  // for: the first circle is auto-named "c", a midpoint may get "I"… Then
+  // "Renommer → c" changes nothing, fires no rename event, and the label
+  // never shows up. So every object a pupil creates first gets a neutral
+  // name (objet1, objet2…): whatever letter they type is a real rename.
+  let neutralCount = 0, renamingInternal = false;
+  function neutralRename(name){
+    if(pupilNamed.has(name) || /^objet\d+$/.test(name)) return;
+    // Deferred, like setMode() in maybeReturnToArrow: renaming from inside
+    // the add-listener would cut into the click GeoGebra is still handling.
+    setTimeout(()=>{
+      if(!ggbApplet.exists(name) || pupilNamed.has(name)) return;
+      let target;
+      do{ target = 'objet' + (++neutralCount); }while(ggbApplet.exists(target));
+      renamingInternal = true;
+      try{ ggbApplet.renameObject(name, target); }
+      finally{ renamingInternal = false; }
+    }, 0);
+  }
+  const PAREN_NAME = /^[a-z](?:_?\d+|'+)?$/;
+  function parenCaption(name){ return `(${name})`; }
+  function registerNamingHelpers(){
+    const container = document.getElementById('ggb-container');
+    const tame = el=>{
+      if(el.dataset.noAutocorrect) return;
+      el.dataset.noAutocorrect = '1';
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocomplete','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+    };
+    const tameAll = root=>root.querySelectorAll?.('input, textarea').forEach(tame);
+    tameAll(document);
+    new MutationObserver(muts=>muts.forEach(m=>m.addedNodes.forEach(n=>{
+      if(n.nodeType!==1) return;
+      if(n.matches('input, textarea')) tame(n);
+      tameAll(n);
+    }))).observe(document.body, {childList:true, subtree:true});
+    // The "Renommer" field opens pre-filled with the current name (objet3…),
+    // which pupils would have to erase first: start it empty instead.
+    // Deferred because GeoGebra fills the value around the time it focuses.
+    document.addEventListener('focusin', e=>{
+      const el = e.target;
+      if(!(el instanceof HTMLInputElement)) return;
+      let p = el, isRename = false;
+      // Dialog seen live: label "Nouveau nom pour …" 4 levels up, title
+      // "Renommer" 8 levels up.
+      for(let i=0; i<10 && p && !isRename; i++, p=p.parentElement){
+        isRename = /^(Renommer|Nouveau nom pour)/.test(p.firstElementChild?.textContent || '');
+      }
+      if(!isRename) return;
+      let typed = false;
+      el.addEventListener('input', ()=>{ typed = true; }, {once:true});
+      const clear = ()=>{ if(!typed && document.activeElement===el) el.value = ''; };
+      setTimeout(clear, 0);
+      setTimeout(clear, 80); // in case GeoGebra fills it a beat later
+    }, true);
+    // Capture phase: fix the value before GeoGebra reads it.
+    document.addEventListener('input', e=>{
+      const el = e.target;
+      if(!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
+      if(!container.contains(el) && !el.closest('.gwt-PopupPanel, .dialogComponent, [role=dialog]')) return;
+      // Smart quotes turn "c'" into "c’", which GeoGebra refuses in a name.
+      let v = el.value.replace(/©/g, 'c').replace(/®/g, 'r').replace(/[’‘`´]/g, "'");
+      const m = v.match(/^\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\)\s*$/);
+      if(m) v = m[1];
+      if(v !== el.value){
+        const pos = v.length;
+        el.value = v;
+        try{ el.setSelectionRange(pos, pos); }catch(_){}
+      }
+    }, true);
+    ggbApplet.registerRenameListener((oldName, newName)=>{
+      safe(()=>{
+        if(renamingInternal || huntBuilding || huntNames.has(newName)) return;
+        pupilNamed.delete(oldName);
+        pupilNamed.add(newName);
+        ggbApplet.setLabelVisible(newName, true);
+        if(ggbApplet.getObjectType(newName)==='point') return;
+        if(PAREN_NAME.test(newName)){
+          ggbApplet.setCaption(newName, parenCaption(newName));
+          ggbApplet.setLabelStyle(newName, 3); // 3 = caption
+          ggbApplet.setLabelVisible(newName, true);
+        } else if(ggbApplet.getCaption(newName) === parenCaption(oldName)){
+          // Renamed again to something else: drop the stale "(c)".
+          ggbApplet.setCaption(newName, '');
+          ggbApplet.setLabelStyle(newName, 0); // 0 = name
+        }
+      }, 'nom entre parenthèses');
+    });
+  }
+
+  // --- Pas de construction en double ---
+  // Pupils who forgot to rename an object often draw it again on top of
+  // itself, and clicking then hits a pile of identical objects. Each new
+  // object gets a geometric signature; if an existing object has the same
+  // one, the new copy is removed and the pupil is sent to "Renommer".
+  const EPS = 1e-6;
+  let autoCoding = false;
+  function cmdArgs(name){
+    const cs = ggbApplet.getCommandString(name, false) || '';
+    const m = cs.match(/^\w+[\[(](.*)[\])]$/);
+    return m ? m[1].split(',').map(s=>s.trim()) : [];
+  }
+  function isPoint(n){ return !!n && ggbApplet.exists(n) && ggbApplet.getObjectType(n)==='point'; }
+  function xy(n){ return [ggbApplet.getXcoord(n), ggbApplet.getYcoord(n)]; }
+  function xmlNums(name, tag){
+    const m = ggbApplet.getXML(name).match(new RegExp(`<${tag} ([^>]*)/?>`));
+    if(!m) return null;
+    const o = {};
+    m[1].replace(/(\w+)="([^"]*)"/g, (_,k,v)=>{ o[k] = parseFloat(v); });
+    return o;
+  }
+  // Supporting line a·x + b·y + c = 0, normalised so equal lines compare equal.
+  function lineOf(name){
+    const c = xmlNums(name, 'coords');
+    if(!c) return null;
+    let [a,b,k] = [c.x, c.y, c.z];
+    const n = Math.hypot(a,b);
+    if(!n) return null;
+    [a,b,k] = [a/n, b/n, k/n];
+    if(a < -EPS || (Math.abs(a) <= EPS && b < 0)) [a,b,k] = [-a,-b,-k];
+    return [a,b,k];
+  }
+  function signature(name){
+    const type = ggbApplet.getObjectType(name);
+    if(type==='point') return {kind:'point', v:xy(name)};
+    if(type==='line'){ const l = lineOf(name); return l && {kind:'line', v:l}; }
+    if(type==='segment'){
+      const [p,q] = cmdArgs(name);
+      if(!isPoint(p) || !isPoint(q)) return null;
+      const ends = [xy(p), xy(q)].sort((u,w)=>u[0]-w[0] || u[1]-w[1]);
+      return {kind:'segment', v:[...ends[0], ...ends[1]]};
+    }
+    if(type==='ray'){
+      const [p,q] = cmdArgs(name);
+      if(!isPoint(p) || !isPoint(q)) return null;
+      const [x0,y0] = xy(p), [x1,y1] = xy(q), n = Math.hypot(x1-x0, y1-y0);
+      return n ? {kind:'ray', v:[x0, y0, (x1-x0)/n, (y1-y0)/n]} : null;
+    }
+    if(type==='circle'){
+      const m = xmlNums(name, 'matrix');
+      if(!m || !m.A0) return null;
+      const cx = -m.A4/m.A0, cy = -m.A5/m.A0;
+      return {kind:'circle', v:[cx, cy, Math.sqrt(Math.max(0, cx*cx+cy*cy-m.A2/m.A0))]};
+    }
+    return null; // angles, texts, polygons…: never treated as duplicates
+  }
+  function sameSignature(s, t){
+    return s.kind===t.kind && s.v.every((x,i)=>Math.abs(x - t.v[i]) < EPS*Math.max(1, Math.abs(x)));
+  }
+  function findTwin(name){
+    const sig = safeNames(()=>signature(name));
+    if(!sig || !sig.kind) return null;
+    const others = safeNames(()=>ggbApplet.getAllObjectNames())
+      .filter(n=>n!==name && n!==HUNT_ZONE);
+    for(const n of others){
+      let t = null;
+      try{ t = signature(n); }catch(_){}
+      if(t && sameSignature(sig, t)) return n;
+    }
+    return null;
+  }
+  // Only a name the pupil can actually see on the figure is worth quoting;
+  // GeoGebra's automatic names of unlabelled objects would just confuse.
+  function visibleName(n){
+    if(!ggbApplet.getLabelVisible(n)) return '';
+    return ggbApplet.getCaption(n) || n;
+  }
+  function rejectDuplicate(name, twin){
+    // Deferred like setMode() in maybeReturnToArrow: deleting from inside
+    // the add-listener would cut into the click GeoGebra is still handling.
+    setTimeout(()=>{
+      if(ggbApplet.exists(name)) ggbApplet.deleteObject(name);
+      if(ggbApplet.getMode() !== 0) ggbApplet.setMode(0);
+      safe(()=>ggbApplet.evalCommand(`SelectObjects(${twin})`), 'sélection');
+      const isPt = ggbApplet.getObjectType(twin)==='point';
+      const shown = visibleName(twin);
+      const head = isPt
+        ? (shown ? `Ce point existe déjà : c'est ${shown}.` : 'Ce point existe déjà.')
+        : (shown ? `Déjà tracé : c'est ${shown}.` : 'Déjà tracé !');
+      toast(`${head} Pour le nommer : clic droit dessus → Renommer.`, 4000);
+    }, 0);
+  }
+
+  function registerDefaultStyleListener(){
+    ggbApplet.registerAddListener(name=>{
+      // Objects of a treasure-hunt setup (zone, given points) keep their own
+      // style — also when setXML (grid/axes toggles) re-adds them.
+      if(huntBuilding || huntNames.has(name)) return;
+      // Checked before styling / auto-coding, so a rejected copy never
+      // leaves decorations behind (e.g. a duplicate midpoint's marks).
+      // Objects the auto-coding itself adds (half-segments of a midpoint)
+      // may legitimately overlap a pupil's segment: not checked.
+      const twin = autoCoding ? null : findTwin(name);
+      if(twin){ rejectDuplicate(name, twin); return; }
+      safe(()=>{
+        if(allPointNames().includes(name)){
+          ggbApplet.setPointStyle(name, 1);
+          ggbApplet.setColor(name, 25, 90, 210);
+        } else {
+          ggbApplet.setColor(name, 0, 0, 0);
+        }
+        // No label at creation: GeoGebra's automatic names (D, f, g…) only
+        // confuse pupils. A label appears once they rename the object.
+        // (Names they chose are kept visible if GeoGebra re-adds the object,
+        // e.g. on undo.)
+        ggbApplet.setLabelVisible(name, pupilNamed.has(name));
+      }, 'style par défaut');
+      if(autoCodeOn){
+        autoCoding = true;
+        try{ safe(()=>applyAutoCoding(name), 'codage automatique'); }
+        finally{ autoCoding = false; }
+      }
+      safe(()=>maybeReturnToArrow(name), 'retour à la flèche');
+      neutralRename(name);
+    });
+  }
+
+  // --- helpers to bulk-apply a setting across the whole construction ---
+  function allPointNames(){
+    return safeNames(()=>ggbApplet.getAllObjectNames('point'));
+  }
+  function allNonPointNames(){
+    const all = safeNames(()=>ggbApplet.getAllObjectNames());
+    const points = new Set(allPointNames());
+    return all.filter(n=>!points.has(n) && n!==HUNT_ZONE);
+  }
+  function safeNames(fn){
+    try{ return fn() || []; }catch(e){ return []; }
+  }
+  function forEachSafe(names, fn){
+    let touched = 0;
+    names.forEach(n=>{
+      try{ fn(n); touched++; }catch(e){ /* not applicable to this object, skip */ }
+    });
+    return touched;
+  }
+
+  // --- Points: style ---
+  const POINT_STYLES = [
+    {v:0, label:'●'}, {v:1, label:'✕'}, {v:3, label:'+'}
+  ];
+  const pointStylesEl = document.getElementById('point-styles');
+  POINT_STYLES.forEach(s=>{
+    const b = document.createElement('button');
+    b.className = 'style-btn';
+    b.textContent = s.label;
+    b.title = 'Style ' + s.v;
+    b.addEventListener('click', ()=>{
+      safe(()=>{
+        const n = forEachSafe(allPointNames(), name=>ggbApplet.setPointStyle(name, s.v));
+        toast(n ? `Style appliqué à ${n} point(s)` : 'Aucun point dans la construction');
+      }, 'style de point');
+    });
+    pointStylesEl.appendChild(b);
+  });
+
+  // --- Points: size ---
+  const pointSizeInput = document.getElementById('point-size');
+  const pointSizeVal = document.getElementById('point-size-val');
+  pointSizeInput.addEventListener('input', ()=>{
+    pointSizeVal.textContent = pointSizeInput.value;
+    safe(()=>{
+      forEachSafe(allPointNames(), name=>ggbApplet.setPointSize(name, parseInt(pointSizeInput.value,10)));
+    }, 'taille de point');
+  });
+
+  // --- Colors (shared palette) ---
+  const PALETTE = [
+    [25,90,210],   // bleu
+    [211,47,47],   // rouge
+    [46,125,50],   // vert
+    [245,124,0]    // orange
+  ];
+  function buildSwatches(container, onPick){
+    PALETTE.forEach(([r,g,b])=>{
+      const btn = document.createElement('button');
+      btn.className = 'swatch';
+      btn.style.background = `rgb(${r},${g},${b})`;
+      btn.title = `rgb(${r},${g},${b})`;
+      btn.addEventListener('click', ()=>onPick(r,g,b));
+      container.appendChild(btn);
+    });
+  }
+  buildSwatches(document.getElementById('point-colors'), (r,g,b)=>{
+    safe(()=>{
+      const n = forEachSafe(allPointNames(), name=>ggbApplet.setColor(name, r, g, b));
+      toast(n ? `Couleur appliquée à ${n} point(s)` : 'Aucun point dans la construction');
+    }, 'couleur de point');
+  });
+  buildSwatches(document.getElementById('line-colors'), (r,g,b)=>{
+    safe(()=>{
+      const n = forEachSafe(allNonPointNames(), name=>ggbApplet.setColor(name, r, g, b));
+      toast(n ? `Couleur appliquée à ${n} objet(s)` : 'Aucune ligne dans la construction');
+    }, 'couleur de ligne');
+  });
+
+  // --- Lines: thickness ---
+  const thicknessInput = document.getElementById('line-thickness');
+  const thicknessVal = document.getElementById('line-thickness-val');
+  thicknessInput.addEventListener('input', ()=>{
+    thicknessVal.textContent = thicknessInput.value;
+    safe(()=>{
+      forEachSafe(allNonPointNames(), name=>ggbApplet.setLineThickness(name, parseInt(thicknessInput.value,10)));
+    }, 'épaisseur de ligne');
+  });
+
+  // --- Toolbar ---
+  function setToolbarButtonsActive(id){
+    ['btn-toolbar-simple','btn-toolbar-full'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  // setPerspective() resets the euclidianView to the perspective XML's own
+  // defaults, wiping whatever grid/secondary/axes state the user had set —
+  // reapply our own tracked state right after switching so the toolbar
+  // choice stays fully independent from display settings.
+  function reapplyDisplayState(){
+    if(gridOn) setGridType(secondaryOn ? 3 : 0);
+    ggbApplet.setGridVisible(gridOn);
+    setAxesVisibleBoth(axesOn);
+  }
+
+  // GeoGebra's own style bar (the little floating icon row in the top
+  // corner of the graphics view) re-expands itself every time
+  // setPerspective() rebuilds the view — there's no public API for its
+  // collapsed state, only the DOM toggle button real users click, so we
+  // click it ourselves whenever it comes back expanded (width>0).
+  function collapseStyleBar(){
+    const panel = document.querySelector('.styleBarW');
+    const btn = document.querySelector('.toggleStyleBar');
+    if(panel && btn && panel.getBoundingClientRect().width > 0){
+      btn.click();
+    }
+  }
+
+  // The toolbar row can wrap to a different height right after
+  // setPerspective(), so the very next fitAppletToStage() can measure the
+  // stage before that reflow settles — resize+recenter again a beat later
+  // to correct for it (same pattern as the fullscreenchange fix).
+  function afterPerspectiveSwitch(){
+    fitAppletToStage();
+    // Calling setXML (inside reapplyDisplayState, for the grid) right on
+    // the heels of setPerspective() has repeatedly desynced GeoGebra's
+    // renderer from its own XML model in this app (grid model says one
+    // thing, canvas paints another) — giving it a real pause first avoids
+    // that race instead of retrying rapidly into the same window.
+    setTimeout(()=>{ fitAppletToStage(); reapplyDisplayState(); collapseStyleBar(); }, 400);
+  }
+
+  document.getElementById('btn-toolbar-simple').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setPerspective(buildPerspectiveXML(TOOLBAR_SIMPLE));
+      afterPerspectiveSwitch();
+      setToolbarButtonsActive('btn-toolbar-simple');
+      toast('Barre simple');
+    }, 'barre simple');
+  });
+  document.getElementById('btn-toolbar-full').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setPerspective(buildPerspectiveXML(TOOLBAR_FULL));
+      afterPerspectiveSwitch();
+      setToolbarButtonsActive('btn-toolbar-full');
+      toast('Barre complète');
+    }, 'barre complète');
+  });
+
+  // --- Essentiel : création de point à la volée ---
+  function setFlyPointsButtonsActive(id){
+    ['btn-fly-points-allow','btn-fly-points-deny'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-fly-points-allow').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setOnTheFlyPointCreationActive(true);
+      setFlyPointsButtonsActive('btn-fly-points-allow');
+      toast('Points à la volée autorisés');
+    }, 'points à la volée');
+  });
+  document.getElementById('btn-fly-points-deny').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.setOnTheFlyPointCreationActive(false);
+      setFlyPointsButtonsActive('btn-fly-points-deny');
+      toast('Points à la volée interdits');
+    }, 'points à la volée');
+  });
+
+  // --- Essentiel : bloquer zoom (molette) et déplacement (clic-glissé) de la vue ---
+  // enableRightClick(false) + enableShiftDragZoom(false) block wheel-zoom
+  // and right-drag-pan (confirmed live: view's scale/xZero/yZero stop
+  // changing on scroll once disabled). There's no separate GGBApplet
+  // method for plain left-drag panning — it's governed by the same flags.
+  function setNavLockButtonsActive(id){
+    ['btn-navlock-allow','btn-navlock-deny'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-navlock-allow').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.enableRightClick(true);
+      ggbApplet.enableShiftDragZoom(true);
+      setNavLockButtonsActive('btn-navlock-allow');
+      toast('Zoom / déplacement autorisés');
+    }, 'navigation');
+  });
+  document.getElementById('btn-navlock-deny').addEventListener('click', ()=>{
+    safe(()=>{
+      ggbApplet.enableRightClick(false);
+      ggbApplet.enableShiftDragZoom(false);
+      setNavLockButtonsActive('btn-navlock-deny');
+      toast('Zoom / déplacement bloqués');
+    }, 'navigation');
+  });
+
+  function setAutoCodeButtonsActive(id){
+    ['btn-autocode-on','btn-autocode-off'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-autocode-on').addEventListener('click', ()=>{
+    autoCodeOn = true;
+    setAutoCodeButtonsActive('btn-autocode-on');
+    toast('Codage automatique activé');
+  });
+  document.getElementById('btn-autocode-off').addEventListener('click', ()=>{
+    autoCodeOn = false;
+    setAutoCodeButtonsActive('btn-autocode-off');
+    toast('Codage automatique désactivé');
+  });
+
+  function setAutoArrowButtonsActive(id){
+    ['btn-autoarrow-on','btn-autoarrow-off'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-autoarrow-on').addEventListener('click', ()=>{
+    returnToArrowOn = true;
+    setAutoArrowButtonsActive('btn-autoarrow-on');
+    toast('Retour à la flèche activé');
+  });
+  document.getElementById('btn-autoarrow-off').addEventListener('click', ()=>{
+    returnToArrowOn = false;
+    setAutoArrowButtonsActive('btn-autoarrow-off');
+    toast('Retour à la flèche désactivé');
+  });
+
+  // --- Labels (points only — other objects' labels stay under GeoGebra's own control) ---
+  function setLabelsButtonsActive(id){
+    ['btn-labels-show','btn-labels-hide'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-labels-show').addEventListener('click', ()=>{
+    safe(()=>{
+      labelsOn = true;
+      const n = forEachSafe(allPointNames(), name=>ggbApplet.setLabelVisible(name, true));
+      setLabelsButtonsActive('btn-labels-show');
+      toast(n ? `Étiquettes affichées (${n} point(s))` : 'Aucun point dans la construction');
+    }, 'afficher étiquettes');
+  });
+  document.getElementById('btn-labels-hide').addEventListener('click', ()=>{
+    safe(()=>{
+      labelsOn = false;
+      const n = forEachSafe(allPointNames(), name=>ggbApplet.setLabelVisible(name, false));
+      setLabelsButtonsActive('btn-labels-hide');
+      toast(n ? `Étiquettes masquées (${n} point(s))` : 'Aucun point dans la construction');
+    }, 'masquer étiquettes');
+  });
+
+  // --- Affichage : grille ---
+  // Grid is always base unit spacing (native default). GeoGebra's own
+  // gridType has no independent "secondary distance" attribute — but
+  // gridType 3 ("Quadrillage complet") natively draws its own automatic
+  // fine subdivisions on top of the unit lines, with zero manual XML
+  // hacking needed (confirmed live). gridType 0 ("Quadrillage principal")
+  // shows only the unit lines. That's the real principal/secondaire toggle.
+  function setGridType(type){
+    // The classic app's exported XML carries *two* <euclidianView> blocks
+    // (confirmed live) — a non-global replace only patched the first one,
+    // leaving the second (the one actually rendered) stuck at whatever
+    // gridType a prior setPerspective() call had defaulted it back to.
+    // Every replace here needs the /g flag to hit both.
+    let xml = ggbApplet.getXML();
+    xml = xml.replace(/<grid[^/]*\/>/g, ''); // drop any leftover custom <grid> element(s)
+    xml = xml.replace(/gridType="\d+"/g, `gridType="${type}"`);
+    xml = xml.replace(/gridIsBold="\w+"/g, 'gridIsBold="false"');
+    ggbApplet.setXML(xml, false);
+  }
+
+  let gridOn = false, secondaryOn = false, axesOn = false;
+
+  document.getElementById('btn-grid-on').addEventListener('click', (e)=>{
+    safe(()=>{
+      gridOn = !gridOn;
+      if(gridOn) setGridType(secondaryOn ? 3 : 0);
+      ggbApplet.setGridVisible(gridOn);
+      e.target.classList.toggle('active', gridOn);
+      toast(gridOn ? 'Grille affichée' : 'Grille masquée');
+    }, 'grille');
+  });
+
+  document.getElementById('btn-grid-secondary').addEventListener('click', (e)=>{
+    safe(()=>{
+      secondaryOn = !secondaryOn;
+      setGridType(secondaryOn ? 3 : 0);
+      ggbApplet.setGridVisible(true);
+      gridOn = true;
+      document.getElementById('btn-grid-on').classList.add('active');
+      e.target.classList.toggle('active', secondaryOn);
+      toast(secondaryOn ? 'Grille secondaire affichée' : 'Grille secondaire masquée');
+    }, 'grille secondaire');
+  });
+  function setAxesVisibleBoth(visible){
+    // ggbApplet.setAxesVisible() doesn't reliably stick after a
+    // setPerspective() switch, so this splices the XML directly instead.
+    // What actually drives rendering is each <axis id="0"/"1" show="…">
+    // element, not <evSettings axes="…">, which is a separate, cosmetic
+    // flag that doesn't affect what's drawn — patching only evSettings
+    // (an earlier attempt) had no visible effect.
+    let xml = ggbApplet.getXML();
+    xml = xml.replace(/(<axis id="\d+" show=")\w+(")/g, `$1${visible}$2`);
+    ggbApplet.setXML(xml, false);
+  }
+  document.getElementById('btn-axes').addEventListener('click', (e)=>{
+    safe(()=>{
+      axesOn = !axesOn;
+      setAxesVisibleBoth(axesOn);
+      e.target.classList.toggle('active', axesOn);
+      toast(axesOn ? 'Axes affichés' : 'Axes masqués');
+    }, 'axes');
+  });
+  document.getElementById('btn-fullscreen').addEventListener('click', ()=>{
+    const stage = document.getElementById('stage');
+    if(!document.fullscreenElement){
+      stage.requestFullscreen().catch(()=>toast('Plein écran refusé par le navigateur'));
+    } else {
+      document.exitFullscreen();
+    }
+  });
+  // requestFullscreen()/exitFullscreen() resolve/resize asynchronously —
+  // window's 'resize' event isn't reliably fired on exit in every browser,
+  // so re-fit explicitly on the real fullscreenchange event.
+  document.addEventListener('fullscreenchange', ()=>{
+    fitAppletToStage();
+    setTimeout(fitAppletToStage, 150); // layout can still settle a beat later
+    refitZone();
+  });
+
+  // Opens this same app in a new browser tab (handy when it's embedded).
+  document.getElementById('btn-new-tab').addEventListener('click', ()=>{
+    window.open(location.href, '_blank', 'noopener');
+  });
+
+  // ===================== Chasse au trésor =====================
+  // Exercises ported from chassetresorbase/base*.ggb: same given points
+  // (exact coordinates), same 12×10 yellow zone. Order = growing
+  // difficulty: base0, base1, base4, new "milieu + cercle + demi-droite",
+  // base5 (médiatrice built as milieu + perpendiculaire), base3.
+  // base2 dropped (same construction as base5). Solutions were
+  // recomputed from the geometry (base3.ggb's cached one was stale) and
+  // each is the only candidate lying on the right objects inside the zone.
+  const HUNT_ZONE = 'zoneTresor';
+  const HUNT_TOLERANCE = 0.3; // same as the original check: squared distance < 0.1
+  const BLUE=[0,0,255], GREEN=[0,160,0], RED=[255,0,0], PURPLE=[127,0,255];
+  const INTRO = 'On cherche le point <b>X</b> où se trouve le trésor dans la zone jaune.';
+  const HUNTS = [
+    { level:'Programme de construction',
+      points:{ A:[2.694691,1.059233,GREEN], G:[5.358918,8.402147,RED], H:[0.58322,5.514437,PURPLE], C:[8.881301,7.647023,BLUE] },
+      steps:['Tracer le segment [AG].',
+             'Tracer le segment [HC].',
+             'Nommer X le point d\'intersection entre [AG] et [HC].'],
+      solution:[4.694536,6.571035] },
+    { level:'Programme de construction',
+      points:{ A:[4.448552,4.292495,GREEN], G:[4.916741,2.705857,RED], H:[5.697054,5.749081,PURPLE], C:[7.72587,4.994778,BLUE] },
+      steps:['Tracer la demi-droite d\'origine H passant par G.',
+             'Tracer (c) le cercle de centre A passant par C.',
+             'Nommer X le point d\'intersection entre [HG) et (c).'],
+      solution:[4.464165,0.940814] },
+    { level:'Programme de construction',
+      points:{ T:[8.142037,3.746276,BLUE], S:[2.705852,6.087217,GREEN], G:[1.45735,0.963157,RED], M:[5.671044,6.945562,PURPLE] },
+      steps:['Tracer (c) le cercle de centre T passant par S.',
+             'Tracer la droite (GT).',
+             'Tracer (d) la perpendiculaire à la droite (GT) passant par M.',
+             'Nommer X le point d\'intersection entre (c) et (d), situé dans la zone jaune.'],
+      solution:[4.932548,8.719332] },
+    { level:'Programme de construction',
+      // Created for this app (no .ggb source). E lies inside (c) and the ray
+      // passes through the centre I: one intersection, crossed square-on.
+      // Going the wrong way ([IE) instead of [EI)) lands on another point
+      // of the zone, which the check refuses.
+      points:{ A:[9.26,2.33,GREEN], B:[4.2,7.97,BLUE], E:[4.79,4.58,RED] },
+      steps:['Placer I, le milieu du segment [AB].',
+             'Tracer (c) le cercle de centre I passant par A.',
+             'Tracer la demi-droite d\'origine E passant par I.',
+             'Nommer X le point d\'intersection entre [EI) et (c).'],
+      solution:[10.364926,6.217994] },
+    { level:'Programme de construction',
+      // base5.ggb, médiatrice not taught yet: it is built step by step
+      // (milieu, then perpendiculaire) without being named.
+      points:{ T:[9.598622,3.746276,BLUE], S:[1.509371,4.656642,GREEN], G:[6.997577,2.029586,RED], M:[3.694249,7.179656,PURPLE] },
+      steps:['Tracer (c) le cercle de centre T passant par S.',
+             'Tracer la droite (GM).',
+             'Placer I, le milieu du segment [GM].',
+             'Tracer (d) la perpendiculaire à la droite (GM) passant par I.',
+             'Nommer X le point d\'intersection entre (c) et (d), situé dans la zone jaune.'],
+      solution:[1.605463,2.205443] },
+    { level:'Programme de construction',
+      points:{ A:[1.795486,3.278087,GREEN], G:[8.922351,6.425353,RED], H:[4.942751,8.194063,PURPLE], C:[9.910748,2.445753,BLUE] },
+      steps:['Tracer (d) la parallèle à la droite (AH) passant par G.',
+             'Placer I, le milieu du segment [HG].',
+             'Tracer le segment [IC].',
+             'Nommer X le point d\'intersection entre (d) et [IC].'],
+      solution:[8.182058,5.269028] },
+  ];
+
+  let huntIndex = -1;          // -1 = pas encore chargé
+  let huntBuilding = false;
+  const huntNames = new Set();
+  const huntPicker = document.getElementById('hunt-picker');
+  const huntBody = document.getElementById('hunt-body');
+  const huntInstr = document.getElementById('hunt-instructions');
+  const huntFeedback = document.getElementById('hunt-feedback');
+  const winEl = document.getElementById('win');
+
+  // --- Compteur de réussite ---
+  // Solved exercises are remembered in this browser (survives a reload or
+  // "nouvel onglet"); "Remettre à zéro" clears it for the next pupil.
+  const SCORE_KEY = 'chasseTresor.solved.v5';
+  let solved = new Set();
+  try{ solved = new Set(JSON.parse(localStorage.getItem(SCORE_KEY) || '[]')); }catch(_){}
+  function saveScore(){
+    try{ localStorage.setItem(SCORE_KEY, JSON.stringify([...solved])); }catch(_){}
+  }
+  function renderScore(){
+    document.getElementById('hunt-score-val').textContent = `${solved.size} / ${HUNTS.length}`;
+    [...huntPicker.children].forEach((b,i)=>{
+      b.classList.toggle('solved', solved.has(i));
+      b.textContent = solved.has(i) ? `${i+1} ✓` : String(i+1);
+    });
+  }
+  document.getElementById('btn-score-reset').addEventListener('click', ()=>{
+    if(!solved.size || !confirm('Remettre le compteur de trésors à zéro ?')) return;
+    solved.clear();
+    saveScore();
+    renderScore();
+    toast('Compteur remis à zéro');
+  });
+
+  HUNTS.forEach((h,i)=>{
+    const b = document.createElement('button');
+    b.textContent = String(i+1);
+    b.title = `Exercice ${i+1} — ${h.level}`;
+    b.addEventListener('click', ()=>safe(()=>loadHunt(i), 'chasse au trésor'));
+    huntPicker.appendChild(b);
+  });
+
+  function setHuntFeedback(msg, cls){
+    huntFeedback.innerHTML = msg;
+    huntFeedback.className = cls || '';
+  }
+
+  function renderHunt(){
+    [...huntPicker.children].forEach((b,i)=>{
+      b.classList.toggle('active', i===huntIndex);
+    });
+    renderScore();
+    huntBody.hidden = huntIndex < 0;
+    setHuntFeedback('');
+    if(huntIndex < 0) return;
+    const h = HUNTS[huntIndex];
+    const list = '<ol>' + h.steps.map(s=>`<li>${s}</li>`).join('') + '</ol>';
+    huntInstr.innerHTML =
+      `<div class="level">Exercice ${huntIndex+1} — ${h.level}</div>` +
+      `<p>${INTRO}</p>` +
+      '<p>Suivre le programme de construction :</p>' + list;
+  }
+
+  // Frame the 12×10 zone with a small margin, keeping a 1:1 scale.
+  function fitZone(){
+    const vp = JSON.parse(ggbApplet.getViewProperties(1));
+    const w = vp.width, h = vp.height;
+    if(!w || !h) return;
+    const scale = Math.min(w/14, h/12);
+    const hx = w/scale/2, hy = h/scale/2;
+    ggbApplet.setCoordSystem(6-hx, 6+hx, 5-hy, 5+hy);
+  }
+  // The frame stays fixed: after any resize the zone is framed again.
+  function refitZone(){
+    if(huntIndex < 0) return;
+    clearTimeout(refitZone._t);
+    refitZone._t = setTimeout(()=>{
+      // When the applet grows after being small, GeoGebra redraws its own
+      // default toolbar (with Move Graphics View, Slider…) although its
+      // model still holds ours (seen live) — put ours back.
+      safe(()=>ggbApplet.setCustomToolBar(TOOLBAR_SIMPLE), 'barre d\'outils');
+      safe(fitZone, 'cadrage');
+    }, 200);
+  }
+
+  function setFlyPoints(allowed){
+    ggbApplet.setOnTheFlyPointCreationActive(allowed);
+    setFlyPointsButtonsActive(allowed ? 'btn-fly-points-allow' : 'btn-fly-points-deny');
+  }
+
+  function loadHunt(i){
+    winEl.classList.remove('show');
+    huntIndex = i;
+    huntNames.clear();
+    pupilNamed.clear();
+    equalMarkCount = 0;
+    huntBuilding = true;
+    try{
+      ggbApplet.newConstruction();
+      if(i >= 0){
+        const h = HUNTS[i];
+        ggbApplet.evalCommand(`${HUNT_ZONE}=Polygon({(0,0),(12,0),(12,10),(0,10)})`);
+        huntNames.add(HUNT_ZONE);
+        ggbApplet.setColor(HUNT_ZONE, 255, 235, 90);
+        ggbApplet.setFilling(HUNT_ZONE, 0.45);
+        ggbApplet.setLineThickness(HUNT_ZONE, 3);
+        ggbApplet.setLabelVisible(HUNT_ZONE, false);
+        ggbApplet.setLayer(HUNT_ZONE, 0);
+        ggbApplet.setFixed(HUNT_ZONE, true, false); // not clickable: tools go through it
+        Object.entries(h.points).forEach(([name,[x,y,[r,g,b]]])=>{
+          ggbApplet.evalCommand(`${name}=(${x},${y})`);
+          huntNames.add(name);
+          ggbApplet.setColor(name, r, g, b);
+          ggbApplet.setPointStyle(name, 1);
+          ggbApplet.setPointSize(name, 5);
+          ggbApplet.setLabelVisible(name, true);
+          ggbApplet.setFixed(name, true, true); // fixed, but still usable by tools
+        });
+      }
+    } finally {
+      huntBuilding = false;
+    }
+    // Like the original files: only the given points may be used.
+    setFlyPoints(i < 0);
+    ggbApplet.setMode(0);
+    renderHunt();
+    if(i >= 0){
+      fitZone();
+      setTimeout(fitZone, 150);
+      toast(`Exercice ${i+1}`);
+    } else {
+      toast('Construction libre');
+    }
+    reapplyDisplayState();
+  }
+
+  function checkHunt(){
+    if(huntIndex < 0) return;
+    const [sx, sy] = HUNTS[huntIndex].solution;
+    if(!ggbApplet.exists('X') || ggbApplet.getObjectType('X') !== 'point'){
+      setHuntFeedback('Aucun point ne s\'appelle <b>X</b>. Clic droit sur ton point d\'intersection → Renommer.', 'ko');
+      return;
+    }
+    // The treasure has to be *constructed*, not guessed: a free point (or
+    // a point merely slid onto a line) is refused. getCommandString with
+    // localize=false gives the English form, e.g. "Intersect[c, r, 1]".
+    if(ggbApplet.isIndependent('X') || !/^Intersect/.test(ggbApplet.getCommandString('X', false))){
+      setHuntFeedback('Le point X a été placé à la main : il doit être construit comme point d\'intersection.', 'ko');
+      return;
+    }
+    const d = Math.hypot(ggbApplet.getXcoord('X')-sx, ggbApplet.getYcoord('X')-sy);
+    if(d < HUNT_TOLERANCE){
+      setHuntFeedback('Bravo, tu as trouvé le trésor !', 'ok');
+      solved.add(huntIndex);
+      saveScore();
+      renderScore();
+      document.getElementById('btn-win-next').style.display =
+        huntIndex < HUNTS.length-1 ? '' : 'none';
+      winEl.classList.add('show');
+    } else {
+      setHuntFeedback('Il n\'y a pas de trésor en ce point. Vérifie ta construction ou recommence.', 'ko');
+    }
+  }
+
+  document.getElementById('btn-hunt-check').addEventListener('click', ()=>safe(checkHunt, 'vérification'));
+  document.getElementById('btn-hunt-restart').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex), 'recommencer'));
+  document.getElementById('btn-win-close').addEventListener('click', ()=>winEl.classList.remove('show'));
+  document.getElementById('btn-win-next').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex+1), 'exercice suivant'));
+</script>
+</body>
+</html>
