@@ -33,12 +33,12 @@ async function demarrerGeometrie() {
     appliquerPointsBase(POINTS_BASE_DEFAUT);
 
     await chargerFiguresTexte('figure', FIGURES);
-    genererCible();
+    construireBoutonsFigures();
+    genererCible(0);
     appliquerStylePoints(2); // "croix" par défaut
 
     document.getElementById("button").disabled = false;
     document.getElementById("button").innerText = "Exécuter";
-    document.getElementById("nouvelleFigureButton").disabled = false;
     document.getElementById("resetButton").disabled = false;
     document.getElementById("stylePointsButton").disabled = false;
     document.getElementById("btnEtiquettesFantome").disabled = false;

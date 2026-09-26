@@ -446,6 +446,49 @@ body.fiche-ouverte { overflow: hidden; }
     display: none !important;
 }
 
+/* Un bouton par figure, dans l'entête : entouré = figure affichée, vert = réussie. */
+#choixFigures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 8px 0;
+}
+
+#choixFigures .btn-figure {
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--encre);
+    background: var(--papier);
+    border: 1px solid var(--grille);
+    border-radius: 6px;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+#choixFigures .btn-figure:hover {
+    border-color: var(--accent);
+}
+
+#choixFigures .btn-figure.reussie {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+#choixFigures .btn-figure.reussie:hover {
+    background: var(--accent-hover);
+}
+
+#choixFigures .btn-figure.actuelle {
+    outline: 2px solid var(--grille-forte);
+    outline-offset: 1px;
+}
+
 #barreFigure {
     display: flex;
     justify-content: center;
@@ -562,16 +605,6 @@ button:disabled {
 
 #resetButton:hover {
     background: var(--erreur);
-    color: #fff;
-}
-
-#nouvelleFigureButton {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-#nouvelleFigureButton:hover {
-    background: var(--accent);
     color: #fff;
 }
 

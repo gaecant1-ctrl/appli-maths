@@ -1,0 +1,10 @@
+% A(-2.5,0) B(2,0) C(0,2.5)
+tracer [AB]
+tracer [BC]
+tracer [CA)
+tracer (f) la droite perpendiculaire à (AB) passant par C
+placer F le point d'intersection visible entre [AB] et (f)
+tracer (n) la droite perpendiculaire à (BC) passant par F
+tracer (t) la droite perpendiculaire à (n) passant par A
+placer E le point d'intersection visible entre (t) et (f)
+tracer [BE)

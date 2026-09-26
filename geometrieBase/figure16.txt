@@ -1,0 +1,10 @@
+% A(-3,-2) B(3,-1) C(1,2)
+tracer [AB]
+placer G le milieu de [AB]
+%coder AG=GB
+tracer (n) la droite perpendiculaire à (AB) passant par G
+tracer [AC)
+placer E le point d'intersection visible entre [AC) et (n)
+tracer [BE)
+tracer (m) la droite perpendiculaire à (n) passant par C
+placer F le point d'intersection visible entre [BE) et (m)

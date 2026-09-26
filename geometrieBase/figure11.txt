@@ -1,0 +1,6 @@
+% A(-3,1) B(3,1.5) C(-3,-3) D(1.5,-1)
+tracer [BC]
+tracer [AD]
+placer I le point d'intersection visible entre [BC] et [AD]
+tracer (c) le cercle de centre I passant par B
+placer J le point d'intersection visible entre (c) et [AD]

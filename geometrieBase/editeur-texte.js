@@ -456,7 +456,10 @@ async function executerToutLeCodeTexte() {
             await executerLigneEleve(ligne);
             await pauseEtape();
         }
-        if (verifierReussite()) alerte("Réussi ! La construction correspond à la figure fantôme.");
+        if (verifierReussite()) {
+            enregistrerReussite();
+            alerte("Réussi ! La construction correspond à la figure fantôme.");
+        }
         else alerte("Ce n'est pas encore la bonne construction, modifiez votre code et réessayez.");
     } catch (e) {
         alerte("Erreur : " + e.message);

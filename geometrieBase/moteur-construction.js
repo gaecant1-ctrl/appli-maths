@@ -751,17 +751,52 @@ async function chargerFiguresTexte(prefixe, tableauCible) {
 }
 
 let indexDerniereFigure = -1;
+
+// Figures réussies pendant la séance (remis à zéro au rechargement de la page).
+const figuresReussies = new Set();
+
+// Un bouton numéroté par figure : clic = afficher cette figure. Le bouton de la figure
+// affichée est entouré, ceux des figures réussies passent en vert.
+function construireBoutonsFigures() {
+    const conteneur = document.getElementById('choixFigures');
+    conteneur.innerHTML = '';
+    FIGURES.forEach((_, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-figure';
+        btn.textContent = i + 1;
+        btn.title = `Figure ${i + 1}`;
+        btn.onclick = () => {
+            nettoyerDessin();
+            genererCible(i);
+        };
+        conteneur.appendChild(btn);
+    });
+    mettreAJourBoutonsFigures();
+}
+
+function mettreAJourBoutonsFigures() {
+    document.querySelectorAll('#choixFigures .btn-figure').forEach((btn, i) => {
+        btn.classList.toggle('actuelle', i === indexDerniereFigure);
+        btn.classList.toggle('reussie', figuresReussies.has(i));
+    });
+}
+
+function enregistrerReussite() {
+    figuresReussies.add(indexDerniereFigure);
+    mettreAJourBoutonsFigures();
+}
 let texteFigureActuelle = null; // pour pouvoir restaurer l'exercice après capture d'images (Fiche)
 
-function genererCible() {
+// Sans argument : figure suivante (en boucle). Avec un index : cette figure-là.
+function genererCible(indexVoulu) {
     if (ggbApplet.exists('cible')) ggbApplet.deleteObject('cible');
     ciblesAuxiliaires.forEach(nom => { if (ggbApplet.exists(nom)) ggbApplet.deleteObject(nom); });
     ciblesAuxiliaires = [];
     etiquettesCible = {};
     contexteMarquage = 'cible';
 
-    // Dans l'ordre et en boucle (figure1, figure2, ..., puis on recommence à figure1).
-    const index = (indexDerniereFigure + 1) % FIGURES.length;
+    const index = (indexVoulu !== undefined) ? indexVoulu : (indexDerniereFigure + 1) % FIGURES.length;
     indexDerniereFigure = index;
 
     const texte = FIGURES[index];
@@ -774,6 +809,7 @@ function genererCible() {
     }
     appliquerEtiquettesFantome(indexEtiquettesFantome);
     contexteMarquage = 'eleve';
+    mettreAJourBoutonsFigures();
 }
 
 // Affiche temporairement une figure donnée (pour capturer son image dans la Fiche),
@@ -839,6 +875,7 @@ async function runCode() {
             if (ggbApplet.exists('verifRes')) ggbApplet.deleteObject('verifRes');
             if (ok) { reussite = true; break; }
         }
+        if (reussite) enregistrerReussite();
         alerte(reussite ? "Réussi ! La construction correspond à la figure fantôme." : "Ce n'est pas encore la bonne construction, réessaie.");
     } catch (e) {
         alerte("Erreur dans le programme : " + e.message);
@@ -913,11 +950,6 @@ function reinitialiser() {
 }
 
 document.getElementById("resetButton").onclick = reinitialiser;
-
-document.getElementById("nouvelleFigureButton").onclick = function () {
-    nettoyerDessin();
-    genererCible();
-};
 
 // Cycle en boucle : petit point -> point normal -> croix -> petit point ...
 const STYLES_POINTS = [
