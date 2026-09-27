@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le chemin des règles</title>
+<script src="https://unpkg.com/blockly/blockly.min.js"></script>
+<script src="https://unpkg.com/blockly/msg/fr.js"></script>
+<style>
+  :root{
+    --bg:#f5f1e8;
+    --panel:#fffdf8;
+    --ink:#1f2430;
+    --muted:#6b6f7a;
+    --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --sais:#e6eefc;   --sais-b:#9db6ec;
+    --regle:#fdf0d8;  --regle-b:#e5b865;
+    --donc:#e3f4e8;   --donc-b:#86c79a;
+    --ok:#1f8a4c;     --ok-bg:#e3f4e8;
+    --ko:#c0392b;     --ko-bg:#fbe6e3;
+    --case:#fbf8f1;   --trace:#fff1c9;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;min-height:100vh;
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  header{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+    padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;}
+  nav{display:flex;gap:6px;flex-wrap:wrap;}
+  button{font:inherit;cursor:pointer;}
+  .tab{
+    border:1px solid var(--border);background:var(--bg);color:var(--ink);
+    padding:6px 14px;border-radius:999px;font-size:.85rem;
+  }
+  .tab.actif{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+
+  main{
+    display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px;
+    max-width:1480px;margin:0 auto;padding:24px;
+  }
+  @media (max-width:980px){ main{grid-template-columns:1fr;padding:16px;gap:16px;} }
+
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;}
+  .entete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .entete h2{margin:0;font-size:1.3rem;}
+  .points{display:flex;gap:6px;}
+  .point{
+    width:28px;height:28px;border-radius:50%;border:2px solid var(--border);
+    background:var(--bg);font-size:.75rem;color:var(--muted);padding:0;
+  }
+  .point.fait{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .point.courant{border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .consigne{margin:0 0 18px;font-weight:600;font-size:1.1rem;}
+
+  .plateau{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;}
+
+  /* Grille */
+  .grille{display:grid;gap:3px;background:var(--border);padding:3px;border-radius:10px;flex:none;}
+  .case{
+    width:50px;height:50px;background:var(--case);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;font-size:1.8rem;position:relative;
+  }
+  .case.objectif{background:#e6eefc;box-shadow:inset 0 0 0 2px #9db6ec;}
+  .case.trace{background:var(--trace);}
+  .case.objectif.trace{background:#c9ecd4;box-shadow:inset 0 0 0 2px var(--donc-b);}
+  .case.hors{background:#f9d9d4;}
+  .case .pas{position:absolute;left:3px;top:1px;font-size:.7rem;color:#6d8fd6;}
+  .case .lettre{
+    position:absolute;right:3px;bottom:1px;font-size:.8rem;font-weight:800;color:var(--accent);
+  }
+  .case.souris{outline:3px solid var(--accent);outline-offset:-3px;}
+  .case .perso{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.9rem;z-index:2;}
+  .case .perso svg{width:42px;height:42px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));}
+  /* Quand la souris est sur un emoji, l'emoji passe dans le coin pour rester visible */
+  .case.occupee .emo-case{position:absolute;left:1px;top:-2px;font-size:1rem;}
+  .case.boum{background:var(--ko-bg);}
+  /* case que la souris regarde */
+  .case.regardee{outline:3px dashed #e59a00;outline-offset:-3px;}
+
+  /* Programme : Blockly */
+  .programme{flex:1;min-width:440px;display:flex;flex-direction:column;}
+  @media (max-width:560px){ .programme{min-width:0;} }
+  #blockly{height:620px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  /* Bloc en cours d'exécution : contour jaune épais */
+  .blocklyHighlighted > .blocklyPath{stroke:#ffc400 !important;stroke-width:5px !important;filter:drop-shadow(0 0 6px #ffc400);}
+
+  .prediction{margin-top:14px;display:flex;align-items:center;gap:10px;font-weight:600;flex-wrap:wrap;}
+  .slot{
+    min-width:60px;min-height:42px;border-radius:10px;border:2px dashed var(--accent);background:#fff;color:var(--accent);
+    display:inline-flex;align-items:center;justify-content:center;padding:0 10px;font-size:1rem;
+  }
+  .slot.rempli{border-style:solid;color:var(--ink);}
+  .slot.survol{background:#dde7ff;transform:scale(1.06);}
+  .rappel{animation:secoue .4s ease;}
+  @keyframes secoue{25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+  .palette{display:flex;gap:10px;flex-wrap:wrap;}
+  .gauche{flex:none;}
+  .gauche .prediction{margin-top:18px;}
+  .propositions{margin-top:32px;padding-top:12px;border-top:1px dashed var(--border);}
+  .propositions-titre{font-weight:600;color:var(--muted);margin-bottom:8px;}
+  .piece{
+    border:2px solid var(--border);background:#fff;border-radius:10px;padding:8px 14px;font-size:1rem;
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .piece:hover{border-color:var(--accent);}
+  .fantome{position:fixed;z-index:1000;pointer-events:none;box-shadow:0 10px 24px rgba(0,0,0,.2);}
+
+  /* Colonne de droite */
+  .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;}
+  aside h3{margin:0 0 10px;font-size:1rem;}
+  .boutons{display:flex;flex-direction:column;gap:8px;}
+  .suite{
+    background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:12px 22px;font-size:1.05rem;font-weight:600;width:100%;
+  }
+  .suite:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .second{width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--ink);font-size:.95rem;}
+  .second:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .second:disabled{color:var(--muted);cursor:default;}
+  .bilan{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--sais);border:1px solid var(--sais-b);font-size:.92rem;}
+  .bilan .question{margin-top:6px;font-weight:600;}
+  .numero{font-weight:400;color:var(--muted);font-size:1rem;}
+  .aller-numero{display:flex;align-items:center;gap:6px;font-size:.85rem;}
+  .aller-numero input{width:78px;font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:8px;text-align:center;}
+  .erreur-numero{color:var(--ko);font-size:.8rem;}
+  .ligne-numero{display:flex;align-items:center;gap:8px;font-size:.95rem;}
+  .champ-numero{width:90px;font:inherit;padding:8px;border:1px solid var(--border);border-radius:8px;}
+  .ok-numero{width:auto !important;padding:8px 14px !important;}
+  .aide{color:var(--muted);font-size:.9rem;margin:0 0 12px;}
+
+  .demo{display:flex;flex-direction:column;gap:0;font-size:.92rem;}
+  .demo .m{border:2px solid;border-radius:10px;padding:6px 10px;}
+  .demo .m b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;}
+  .demo .m-sais{background:var(--sais);border-color:var(--sais-b);}
+  .demo .m-sais b{color:#2a4f9e;}
+  .demo .m-regle{background:var(--regle);border-color:var(--regle-b);}
+  .demo .m-regle b{color:#8a5a00;}
+  .demo .m-donc{background:var(--donc);border-color:var(--donc-b);}
+  .demo .m-donc b{color:#1d6b3c;}
+  .demo .fl{text-align:center;color:var(--muted);line-height:1.2;}
+  .compteur{font-size:.8rem;color:var(--muted);margin-bottom:6px;}
+
+  .retour{border-radius:10px;padding:12px 14px;font-size:1rem;margin-top:12px;}
+  .retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  .retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+
+  .intro p{font-size:1.1rem;}
+  .etapes{background:#f1edfc;border:2px solid #7a5fd0;border-radius:12px;padding:12px 16px 12px 40px;font-size:1.05rem;}
+  .etapes li{margin-bottom:4px;}
+  .actions{margin-top:18px;display:flex;justify-content:flex-end;}
+  .actions .suite{width:auto;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐭 Le chemin des règles</h1>
+  <nav id="nav"></nav>
+  <form class="aller-numero" id="allerNumero" autocomplete="off">
+    <label for="champNumero">Grille n°</label>
+    <input id="champNumero" type="text" inputmode="numeric" maxlength="5" placeholder="12483">
+    <button type="submit" class="onglet">OK</button>
+    <span id="erreurNumero" class="erreur-numero"></span>
+  </form>
+  <button class="onglet" id="onglet" title="Ouvrir l’appli dans un nouvel onglet">↗ Nouvel onglet</button>
+</header>
+<main>
+  <section class="scene" id="scene"></section>
+  <div class="colonne" id="colonne"></div>
+</main>
+
+<script>
+// ---------- Données ----------
+// Cases : "." vide, "S" départ, "F" fromage, "a" 🌸, "b" 🍄, "c" 🌳, "A"/"B"/"C" arrivées lettrées
+// "p" : crotte déposée par la souris (niveau 5)
+const EMO = { a: "🌸", b: "🍄", c: "🌳", p: "💩" };
+const ACTIONS = {
+  G: { t: "tourner à gauche" },
+  D: { t: "tourner à droite" },
+  T: { t: "faire demi-tour" }
+};
+// Directions : 0 haut, 1 droite, 2 bas, 3 gauche
+const DR = [-1, 0, 1, 0], DC = [0, 1, 0, -1];
+
+const NIVEAUX = [
+  {
+    nom: "1. Prévoir",
+    consigne: "Lis les règles. Où la souris va-t-elle s’arrêter ?",
+    items: [
+      {
+        mode: "prevoir",
+        genere: { emos: 1, virages: 2 },
+        grille: ["......", "b...B.", ".....b", "......", "...C.A", "S...a."],
+        dir: 0,
+        regles: [{ e: "a", a: "G" }, { e: "b", a: "D" }],
+        reponse: "A"
+      },
+      {
+        mode: "prevoir",
+        genere: { emos: 2, virages: 3 },
+        grille: ["....B.", "..c...", "A....b", "....C.", "......", "..S..."],
+        dir: 0,
+        regles: [{ e: "c", a: "D" }, { e: "b", a: "G" }],
+        reponse: "B"
+      },
+      {
+        mode: "prevoir",
+        genere: { emos: 2, virages: 4, demiTour: true },
+        grille: ["......", ".C....", "......", "aS...b", ".B..A.", "......"],
+        dir: 1,
+        regles: [{ e: "b", a: "T" }, { e: "a", a: "D" }],
+        reponse: "C"
+      }
+    ]
+  },
+  {
+    nom: "2. Compléter",
+    consigne: "Il manque un morceau de règle. Glisse la bonne pièce, puis lance le programme.",
+    items: [
+      {
+        mode: "completer",
+        genere: { emos: 2, virages: 3, trou: "action" },
+        grille: ["S...b.", "......", "......", ".....F", "...a..", "......"],
+        dir: 1,
+        regles: [{ e: "a", a: "G" }, { e: "b", a: null }],
+        solution: [{ e: "a", a: "G" }, { e: "b", a: "D" }]
+      },
+      {
+        mode: "completer",
+        genere: { emos: 2, virages: 3, trou: "emoji" },
+        grille: ["....a.", "..c...", "F.....", "......", "......", ".b...S"],
+        dir: 3,
+        regles: [{ e: null, a: "G" }, { e: "b", a: "D" }],
+        solution: [{ e: "c", a: "G" }, { e: "b", a: "D" }]
+      }
+    ]
+  },
+  {
+    nom: "3. Écrire",
+    consigne: "Écris toi-même les règles pour que la souris trouve le fromage.",
+    items: [
+      {
+        mode: "ecrire",
+        genere: { emos: 2, virages: 3 },
+        grille: [".....S", "......", "......", "a.....", "....Fc", ".a...."],
+        dir: 2,
+        regles: [{ e: null, a: null }, { e: null, a: null }],
+        solution: [{ e: "a", a: "G" }, { e: "c", a: "D" }]
+      },
+      {
+        mode: "ecrire",
+        genere: { emos: 2, virages: 3, demiTour: true },
+        grille: [".F....", "......", "c.S..b", "......", "......", "......"],
+        dir: 1,
+        regles: [{ e: null, a: null }, { e: null, a: null }],
+        solution: [{ e: "b", a: "T" }, { e: "c", a: "D" }]
+      }
+    ]
+  },
+  {
+    nom: "4. Déboguer",
+    consigne: "La souris se perd ! Lance le programme, trouve la règle fausse et corrige-la.",
+    items: [
+      {
+        mode: "deboguer",
+        genere: { emos: 2, virages: 4, bug: true },
+        grille: ["......", "...b..", ".....c", "......", ".....F", "S...a."],
+        dir: 1,
+        regles: [{ e: "a", a: "G" }, { e: "b", a: "G" }, { e: "c", a: "D" }],
+        solution: [{ e: "a", a: "G" }, { e: "b", a: "D" }, { e: "c", a: "D" }]
+      }
+    ]
+  },
+  {
+    nom: "5. Explorer",
+    consigne: "La grille est vide ! Écris un programme pour que la souris trouve le fromage.",
+    items: [
+      {
+        mode: "explorer",
+        grille: ["S.....", "......", "......", "....F.", "......", "......"],
+        dir: 1,
+        regles: []
+      }
+    ]
+  }
+];
+
+// ---------- État ----------
+let ecran = { type: "intro" };
+let fait = {};
+let programme = [];       // programme lu dans Blockly (voir lireProgramme)
+let prediction = null;    // lettre glissée (mode prévoir)
+let sim = null;           // état de la simulation
+let minuteur = null;
+let ws = null;            // espace de travail Blockly
+
+const fr = s => s.replace(/ ([?!:;»])/g, " $1").replace(/« /g, "« ");
+const $ = id => document.getElementById(id);
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of enfants) if (c != null) e.append(typeof c === "string" ? fr(c) : c);
+  return e;
+}
+
+const itemCourant = () => NIVEAUX[ecran.n].items[ecran.i];
+
+const SOURIS = `<svg viewBox="0 0 40 40" aria-label="souris">
+  <path d="M20 33 C20 38 27 37 29 39" fill="none" stroke="#c98b9b" stroke-width="1.6" stroke-linecap="round"/>
+  <ellipse cx="20" cy="23" rx="9" ry="11" fill="#9aa1ab"/>
+  <circle cx="12.5" cy="11" r="4.5" fill="#b8bec6"/><circle cx="12.5" cy="11" r="2.5" fill="#f2b6c4"/>
+  <circle cx="27.5" cy="11" r="4.5" fill="#b8bec6"/><circle cx="27.5" cy="11" r="2.5" fill="#f2b6c4"/>
+  <ellipse cx="20" cy="11" rx="6" ry="8" fill="#9aa1ab"/>
+  <circle cx="17.3" cy="8.5" r="1.2" fill="#1f2430"/><circle cx="22.7" cy="8.5" r="1.2" fill="#1f2430"/>
+  <circle cx="20" cy="3.4" r="1.8" fill="#e5798f"/>
+  <path d="M17 5 L11 3.5 M17 5.5 L11 6 M23 5 L29 3.5 M23 5.5 L29 6" stroke="#6b6f7a" stroke-width=".6"/>
+</svg>`;
+
+// ---------- Blocs ----------
+const COUL = { evenement: "#ffbf00", controle: "#ffab19", mouvement: "#4c97ff" };
+// Le 💩 n'est proposé qu'au niveau 5
+const CHOIX_EMO = () => [["?", "?"], ["🌸", "a"], ["🍄", "b"], ["🌳", "c"]]
+  .concat(ecran.type === "item" && itemCourant().mode === "explorer" ? [["💩", "p"]] : []);
+
+Blockly.Blocks["depart"] = { init() {
+  this.appendDummyInput().appendField("quand ▶ Lancer est cliqué");
+  this.setNextStatement(true); this.setColour(COUL.evenement);
+  this.hat = "cap";
+} };
+Blockly.Blocks["repeter_arrivee"] = { init() {
+  this.appendDummyInput().appendField("répéter jusqu’à l’arrivée").appendField(new Blockly.FieldLabelSerializable("🧀"), "BUT");
+  this.appendStatementInput("DO");
+  this.setPreviousStatement(true); this.setColour(COUL.controle);
+} };
+// « si » dont on peut choisir l'emoji
+Blockly.Blocks["si_case"] = { init() {
+  this.appendDummyInput().appendField("si la case de devant contient").appendField(new Blockly.FieldDropdown(CHOIX_EMO), "EMO").appendField("alors");
+  this.appendStatementInput("DO");
+  this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.controle);
+} };
+// « si » dont l'emoji est imposé
+Blockly.Blocks["si_case_fixe"] = { init() {
+  this.appendDummyInput().appendField("si la case de devant contient").appendField(new Blockly.FieldLabelSerializable(""), "EMO").appendField("alors");
+  this.appendStatementInput("DO");
+  this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.controle);
+} };
+Blockly.Blocks["si_bord"] = { init() {
+  this.appendDummyInput().appendField("si il n’y a pas de case devant alors");
+  this.appendStatementInput("DO");
+  this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.controle);
+} };
+Blockly.Blocks["si_vide"] = { init() {
+  this.appendDummyInput().appendField("si la case de devant est vide alors");
+  this.appendStatementInput("DO");
+  this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.controle);
+} };
+for (const [type, texte] of [["tourner_gauche", "tourner à gauche"], ["tourner_droite", "tourner à droite"], ["demi_tour", "faire demi-tour"], ["deposer", "déposer une crotte"], ["avancer", "avancer d’une case"]]) {
+  Blockly.Blocks[type] = { init() {
+    this.appendDummyInput().appendField(texte);
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.mouvement);
+  } };
+}
+// Texte des blocs plus grand, pour que les emojis soient lisibles
+const THEME = Blockly.Theme.defineTheme("souris", { base: Blockly.Themes.Classic, fontStyle: { size: 13, weight: "bold" } });
+const TYPE_ACTION = { G: "tourner_gauche", D: "tourner_droite", T: "demi_tour" };
+const ACTION_TYPE = { tourner_gauche: "G", tourner_droite: "D", demi_tour: "T", deposer: "P", avancer: "A" };
+
+// Construit le programme de l'item dans Blockly ; les parties imposées sont verrouillées
+function construireProgramme(item) {
+  const libre = item.mode === "deboguer" || item.mode === "ecrire" || item.mode === "explorer";
+  const verrou = b => { b.setMovable(false); b.setDeletable(false); };
+  const nouveau = type => { const b = ws.newBlock(type); b.initSvg(); return b; };
+  const boucle = nouveau("repeter_arrivee"); verrou(boucle);
+  if (item.mode === "prevoir") boucle.setFieldValue("🏁", "BUT");
+  // En mode « écrire », l'élève part d'une boucle vide
+  if (item.mode === "ecrire" || item.mode === "explorer") {
+    boucle.render();
+    boucle.moveBy(16, 16);
+    return;
+  }
+  const dep = nouveau("depart"); verrou(dep);
+  dep.nextConnection.connect(boucle.previousConnection);
+  let precedent = null;
+  const accrocher = b => {
+    (precedent ? precedent.nextConnection : boucle.getInput("DO").connection).connect(b.previousConnection);
+    precedent = b;
+  };
+  for (const r of item.regles) {
+    if (r.e === "bord") {
+      const si = nouveau("si_bord");
+      if (!libre) verrou(si);
+      accrocher(si);
+      if (r.a) {
+        const act = nouveau(TYPE_ACTION[r.a]);
+        if (!libre) verrou(act);
+        si.getInput("DO").connection.connect(act.previousConnection);
+      }
+      continue;
+    }
+    const emoFixe = r.e !== null && !libre;
+    const si = nouveau(emoFixe ? "si_case_fixe" : "si_case");
+    si.setFieldValue(emoFixe ? EMO[r.e] : (r.e || "?"), "EMO");
+    if (emoFixe) si.data = r.e;
+    if (!libre) verrou(si);
+    accrocher(si);
+    if (r.a) {
+      const act = nouveau(TYPE_ACTION[r.a]);
+      if (!libre) verrou(act);
+      si.getInput("DO").connection.connect(act.previousConnection);
+    }
+  }
+  const vide = nouveau("si_vide"); verrou(vide);
+  accrocher(vide);
+  const av = nouveau("avancer"); verrou(av);
+  vide.getInput("DO").connection.connect(av.previousConnection);
+  ws.getAllBlocks(false).forEach(b => b.render());
+  dep.moveBy(16, 16);
+}
+
+// Lit le programme : liste d'instructions dans la boucle
+function lireProgramme() {
+  const boucle = ws.getAllBlocks(false).find(b => b.type === "repeter_arrivee");
+  const prog = [];
+  let b = boucle && boucle.getInputTargetBlock("DO");
+  while (b) {
+    if (b.type === "si_case" || b.type === "si_case_fixe" || b.type === "si_vide" || b.type === "si_bord") {
+      const e = b.type === "si_vide" ? "vide" : b.type === "si_bord" ? "bord" : b.type === "si_case_fixe" ? b.data : b.getFieldValue("EMO");
+      const actions = [];
+      let a = b.getInputTargetBlock("DO");
+      while (a) { if (ACTION_TYPE[a.type]) actions.push({ t: ACTION_TYPE[a.type], id: a.id }); a = a.getNextBlock(); }
+      prog.push({ si: true, e: e === "?" ? null : e, actions, id: b.id });
+    } else if (ACTION_TYPE[b.type]) prog.push({ t: ACTION_TYPE[b.type], id: b.id });
+    b = b.getNextBlock();
+  }
+  return prog;
+}
+
+// Programme équivalent à une liste de règles (pour la solution)
+const depuisRegles = rs => [...rs.map((r, k) => ({ si: true, e: r.e, actions: [{ t: r.a }], id: "regle" + k })), { si: true, e: "vide", actions: [{ t: "A" }] }];
+
+// ---------- Simulation ----------
+function depart(item) {
+  for (let r = 0; r < item.grille.length; r++) {
+    const c = item.grille[r].indexOf("S");
+    if (c >= 0) return { r, c, d: item.dir, pas: 0, trace: new Set([r + "," + c]), crottes: new Set(), fin: null, journal: null, ids: [] };
+  }
+}
+
+const estArrivee = ch => ch === "F" || "ABC".includes(ch);
+const estVide = ch => ch !== null && !EMO[ch];
+const VERBE = { G: "je tourne à gauche", D: "je tourne à droite", T: "je fais demi-tour", P: "je dépose une crotte", A: "j’avance" };
+const INFINITIF = { G: "tourner à gauche", D: "tourner à droite", T: "faire demi-tour", P: "déposer une crotte", A: "avancer" };
+
+// Un tour de boucle : on exécute les blocs dans l'ordre
+function unPas(item, e, prog = programme) {
+  // La souris regarde la case devant elle (null si c'est le bord de la grille)
+  const vr = e.r + DR[e.d], vc = e.c + DC[e.d];
+  const ch = !(vr >= 0 && vc >= 0 && vr < item.grille.length && vc < item.grille[0].length) ? null
+    : e.crottes.has(vr + "," + vc) ? "p" : item.grille[vr][vc];
+  const faits = [], ids = [];
+  let regle = null;
+  const executer = ins => {
+    ids.push(ins.id);
+    faits.push(VERBE[ins.t]);
+    if (ins.t === "G") e.d = (e.d + 3) % 4;
+    else if (ins.t === "D") e.d = (e.d + 1) % 4;
+    else if (ins.t === "T") e.d = (e.d + 2) % 4;
+    else if (ins.t === "P") e.crottes.add(e.r + "," + e.c);
+    else {
+      const nr = e.r + DR[e.d], nc = e.c + DC[e.d];
+      if (nr < 0 || nc < 0 || nr >= item.grille.length || nc >= item.grille[0].length) { e.fin = "sortie"; e.boum = true; return; }
+      e.r = nr; e.c = nc;
+      e.trace.add(nr + "," + nc);
+      if (estArrivee(item.grille[nr][nc])) e.fin = item.grille[nr][nc];
+    }
+  };
+  for (const ins of prog) {
+    if (e.fin) break;
+    if (ins.si) {
+      if (ins.e === "vide" ? !estVide(ch) : ins.e === "bord" ? ch !== null : ins.e !== ch) continue;
+      ids.push(ins.id);
+      if (!regle) regle = (ins.e === "vide" ? "si la case de devant est vide" : ins.e === "bord" ? "si il n’y a pas de case devant" : "si la case de devant contient " + EMO[ins.e]) + " alors " + (ins.actions.map(a => INFINITIF[a.t]).join(", puis ") || "rien") + ".";
+      for (const a of ins.actions) { if (e.fin) break; executer(a); }
+    } else executer(ins);
+  }
+  e.pas++;
+  if (!e.fin && !faits.length) e.fin = "bloque";
+  if (!e.fin && e.pas >= 200) e.fin = "boucle";
+  e.ids = ids;
+  const phrase = faits.length ? faits.join(", puis ") : "je ne fais rien";
+  e.journal = {
+    sais: ch === null ? "Devant moi, c’est le bord de la grille." : EMO[ch] ? "La case de devant contient " + EMO[ch] + "."
+      : ch === "F" ? "La case de devant est vide : il n’y a que le fromage 🧀." : "ABC".includes(ch) ? "La case de devant est vide : il n’y a que le drapeau 🏁 " + ch + "." : "La case de devant est vide.",
+    regle: regle || (EMO[ch] ? "Aucune règle pour " + EMO[ch] + "." : "Aucune règle pour cette case."),
+    donc: phrase.charAt(0).toUpperCase() + phrase.slice(1) + "."
+  };
+  return e;
+}
+
+// Chemin à suivre, calculé avec la solution (pas affiché en mode « prévoir »)
+function cheminObjectif(item) {
+  if (!item.solution) return new Map();
+  const prog = depuisRegles(item.solution), e = depart(item), chemin = new Map();
+  const noter = (cle, d) => { if (!chemin.has(cle)) chemin.set(cle, []); if (d !== null) chemin.get(cle).push(d); };
+  while (!e.fin) { const r = e.r, c = e.c; unPas(item, e, prog); if (e.r !== r || e.c !== c) noter(r + "," + c, e.d); }
+  noter(e.r + "," + e.c, null);
+  return chemin;
+}
+
+// ---------- Création automatique des grilles ----------
+// ⚠️ NUMÉROS FIGÉS : le professeur a enregistré des numéros de grilles (fiches papier).
+// Un numéro ne redonne la même grille que si RIEN ne change ici : ni l'ordre des tirages
+// (hasard/choisir/melangeTab), ni les réglages « genere » des items, ni les grilles de
+// secours, ni la simulation (unPas). Pour ajouter une variante, créer un NOUVEL item
+// (nouvelle pastille) plutôt que de modifier un générateur existant.
+// On trace un vrai chemin en posant les obstacles devant la souris au bon moment ;
+// le bord de la grille sert aussi d'obstacle (règle « si il n'y a pas de case devant »).
+// Tirage pseudo-aléatoire reproductible : un même numéro de grille donne toujours la même grille
+let alea = Math.random;
+function graine(n) {
+  let a = n >>> 0;
+  alea = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const hasard = n => Math.floor(alea() * n);
+const choisir = t => t[hasard(t.length)];
+function melangeTab(t) { t = [...t]; for (let k = t.length - 1; k > 0; k--) { const j = hasard(k + 1); [t[k], t[j]] = [t[j], t[k]]; } return t; }
+const TOURNE = { G: d => (d + 3) % 4, D: d => (d + 1) % 4, T: d => (d + 2) % 4 };
+const H = 6, W = 6, dedans = (r, c) => r >= 0 && c >= 0 && r < H && c < W;
+
+function simulerJusquAuBout(item, regles) {
+  const e = depart(item), cases = [];
+  while (!e.fin) { unPas(item, e, depuisRegles(regles)); cases.push(e.r + "," + e.c); }
+  return { fin: e.fin, cases };
+}
+
+// Règles : des emojis + le bord ; au moins une gauche et une droite ; éventuellement un demi-tour
+function tirerRegles(o) {
+  const cles = melangeTab(["a", "b", "c"]).slice(0, o.emos).concat(["bord"]);
+  let acts;
+  do { acts = cles.map(() => choisir(["G", "D"])); } while (!(acts.includes("G") && acts.includes("D")));
+  if (o.demiTour) acts[hasard(acts.length)] = "T";
+  return melangeTab(cles.map((e, k) => ({ e, a: acts[k] })));
+}
+
+// Trace un chemin ; renvoie la grille (tableau de tableaux) avec S et F, ou null
+function tracerChemin(o) {
+  const regles = tirerRegles(o);
+  const n = regles.length;
+  const virages = melangeTab([...Array(n).keys()].concat(Array.from({ length: Math.max(0, o.virages - n) }, () => hasard(n))));
+  const g = Array.from({ length: H }, () => Array(W).fill("."));
+  let r = hasard(H), c = hasard(W), d = hasard(4);
+  const r0 = r, c0 = c, d0 = d, chemin = new Set([r + "," + c]);
+  const pas = () => {
+    const nr = r + DR[d], nc = c + DC[d];
+    if (!dedans(nr, nc) || g[nr][nc] !== ".") return false;
+    r = nr; c = nc; chemin.add(r + "," + c); return true;
+  };
+  for (const k of virages) {
+    const regle = regles[k];
+    if (regle.e === "bord") {
+      // tout droit jusqu'au bord
+      while (dedans(r + DR[d], c + DC[d])) if (!pas()) return null;
+    } else {
+      const lg = 1 + hasard(3);
+      for (let i = 0; i < lg; i++) if (!pas()) return null;
+      const or = r + DR[d], oc = c + DC[d];
+      if (!dedans(or, oc) || chemin.has(or + "," + oc) || g[or][oc] !== ".") return null;
+      g[or][oc] = regle.e;
+    }
+    d = TOURNE[regle.a](d);
+  }
+  const lg = 1 + hasard(3);
+  for (let i = 0; i < lg; i++) if (!pas()) return null;
+  if (r === r0 && c === c0) return null;
+  g[r0][c0] = "S";
+  return { g, regles, d0, r0, c0, chemin, fin: [r, c] };
+}
+
+const enItem = (t, extra) => ({ grille: t.g.map(l => l.join("")), dir: t.d0, ...extra });
+
+// Le chemin est-il vraiment celui-là, et utilise-t-il toutes les règles ?
+function cheminValide(t, lettre = "F") {
+  const [fr, fc] = t.fin;
+  t.g[fr][fc] = lettre;
+  const item = enItem(t);
+  const e = depart(item), utilisees = new Set();
+  const prog = depuisRegles(t.regles);
+  while (!e.fin) {
+    unPas(item, e, prog);
+    e.ids.forEach(id => { if (typeof id === "string" && id.startsWith("regle")) utilisees.add(id); });
+  }
+  return e.fin === lettre && utilisees.size === t.regles.length;
+}
+
+// Autres actions possibles pour une règle (erreur de lecture)
+const autresActions = a => ["G", "D", "T"].filter(x => x !== a);
+
+function genererPrevoir(o) {
+  for (let essai = 0; essai < 4000; essai++) {
+    const t = tracerChemin(o);
+    if (!t || !cheminValide(t, "A")) continue;
+    // Deux pièges : on se trompe sur une seule règle
+    const pieges = melangeTab([...t.regles.keys()]).slice(0, 2);
+    let ok = true;
+    for (const [idx, l] of [[pieges[0], "B"], [pieges[1], "C"]]) {
+      const faux = t.regles[idx].a === "T" ? choisir(["G", "D"]) : t.regles[idx].a === "G" ? "D" : "G";
+      const autres = t.regles.map((x, j) => j === idx ? { e: x.e, a: faux } : x);
+      const res = simulerJusquAuBout(enItem(t), autres);
+      const libres = res.cases.filter(cl => {
+        const [x, y] = cl.split(",").map(Number);
+        return !t.chemin.has(cl) && t.g[x][y] === "." && Math.abs(x - t.r0) + Math.abs(y - t.c0) >= 2;
+      });
+      if (!libres.length) { ok = false; break; }
+      const [x, y] = libres[Math.min(libres.length - 1, hasard(2))].split(",").map(Number);
+      t.g[x][y] = l;
+    }
+    if (!ok) continue;
+    const item = enItem(t, { regles: t.regles, reponse: "A" });
+    if (simulerJusquAuBout(item, t.regles).fin !== "A") continue;
+    // chaque piège correspond bien à une erreur sur une règle
+    const atteint = l => pieges.some((idx, j) => (j ? "C" : "B") === l &&
+      autresActions(t.regles[idx].a).some(x => simulerJusquAuBout(item, t.regles.map((y, m) => m === idx ? { e: y.e, a: x } : y)).fin === l));
+    if (atteint("B") && atteint("C")) return item;
+  }
+  return null;
+}
+
+function genererItem(mode, o) {
+  if (mode === "prevoir") return genererPrevoir(o);
+  for (let essai = 0; essai < 4000; essai++) {
+    const t = tracerChemin(o);
+    if (!t || !cheminValide(t)) continue;
+    const item = enItem(t, { solution: t.regles });
+    const echoue = rs => simulerJusquAuBout(item, rs).fin !== "F";
+    if (mode === "ecrire") return { ...item, regles: [] };
+    if (mode === "completer") {
+      // une case manquante ; toute autre pièce doit faire échouer la souris
+      const cand = o.trou === "emoji" ? [...t.regles.keys()].filter(k => t.regles[k].e !== "bord") : [...t.regles.keys()];
+      const k = choisir(cand);
+      if (o.trou === "emoji") {
+        const pris = t.regles.map(x => x.e);
+        const alternatives = ["a", "b", "c"].filter(x => !pris.includes(x));
+        if (!alternatives.length || !alternatives.every(x => echoue(t.regles.map((y, j) => j === k ? { e: x, a: y.a } : y)))) continue;
+        return { ...item, regles: t.regles.map((y, j) => j === k ? { e: null, a: y.a } : y) };
+      }
+      if (!autresActions(t.regles[k].a).every(x => echoue(t.regles.map((y, j) => j === k ? { e: y.e, a: x } : y)))) continue;
+      return { ...item, regles: t.regles.map((y, j) => j === k ? { e: y.e, a: null } : y) };
+    }
+    if (mode === "deboguer") {
+      const k = hasard(t.regles.length), x = choisir(autresActions(t.regles[k].a));
+      const bug = t.regles.map((y, j) => j === k ? { e: y.e, a: x } : y);
+      if (!echoue(bug)) continue;
+      return { ...item, regles: bug };
+    }
+  }
+  return null;
+}
+
+// ---------- Actions ----------
+// Lettres des arrivées tirées au hasard à chaque affichage d'une grille « prévoir »
+let melange = { A: "A", B: "B", C: "C" };
+const lettre = l => melange[l] || l;
+function melanger() {
+  const l = ["A", "B", "C"];
+  for (let k = l.length - 1; k > 0; k--) { const j = hasard(k + 1); [l[k], l[j]] = [l[j], l[k]]; }
+  melange = { A: l[0], B: l[1], C: l[2] };
+}
+
+// numero : numéro de grille imposé (dicté par le professeur) ; sinon tiré au hasard
+function allerA(n, i, numero) {
+  arreter();
+  ecran = { type: "item", n, i };
+  const it = itemCourant();
+  if (it.mode === "explorer") { it.grilleInitiale = it.grilleInitiale || it.grille; it.grille = it.grilleInitiale; essais = []; }
+  if (it.genere) {
+    // numéro à 5 chiffres : niveau, pastille, puis 3 chiffres (ex. 12483 = niveau 1, grille ②)
+    it.numero = numero || (n + 1) * 10000 + (i + 1) * 1000 + Math.floor(Math.random() * 1000);
+    graine(it.numero);
+    const g = genererItem(it.mode, it.genere);
+    if (g) Object.assign(it, g);
+  }
+  melanger();
+  alea = Math.random;
+  prediction = null;
+  sim = depart(itemCourant());
+  rendu();
+}
+
+function arreter() { clearTimeout(minuteur); minuteur = null; }
+
+function problemes() {
+  const item = itemCourant(), pb = [];
+  if (item.mode === "prevoir") { if (prediction === null) pb.push("Glisse ta prévision dans la case, puis avance pas à pas."); return pb; }
+  const sis = programme.filter(x => x.si);
+  if (sis.some(x => !x.e)) pb.push("Choisis l’emoji de chaque bloc « si ».");
+  if (sis.some(x => !x.actions.length)) pb.push("Chaque bloc « si » doit contenir une action.");
+  const emos = sis.filter(x => x.e && x.e !== "vide" && x.e !== "bord").map(x => x.e);
+  if (new Set(emos).size < emos.length) pb.push("Deux règles pour le même emoji : une seule règle par emoji !");
+  if (!sis.some(x => x.e !== "vide") && item.mode !== "prevoir") pb.push("Glisse des blocs « si » dans la boucle.");
+  return pb;
+}
+const pret = () => problemes().length === 0;
+
+// Le tour à venir, calculé sur une copie : le raisonnement affiché correspond
+// à la position actuelle de la souris et à la case qu'elle regarde
+function apercu() {
+  if (sim.fin || !pret()) return null;
+  return unPas(itemCourant(), { ...sim, trace: new Set(sim.trace), crottes: new Set(sim.crottes) });
+}
+
+function surligner() {
+  if (!ws) return;
+  ws.highlightBlock(null);
+  const a = apercu();
+  const ids = a ? a.ids : sim.fin ? sim.ids : [];
+  ids.forEach(id => ws.highlightBlock(id, true));
+}
+
+function lancer(pasAPas) {
+  const item = itemCourant();
+  if (sim.fin) sim = depart(item);
+  if (pasAPas) { arreter(); unPas(item, sim); terminerSiFini(); majVue(); return; }
+  const boucle = () => {
+    unPas(item, sim);
+    if (!terminerSiFini()) minuteur = setTimeout(boucle, item.mode === "explorer" ? 200 : 550);
+    majVue();
+  };
+  arreter();
+  minuteur = setTimeout(boucle, 200);
+  majVue();
+}
+
+function terminerSiFini() {
+  if (!sim.fin) return false;
+  arreter();
+  if (reussite()) fait[ecran.n + "-" + ecran.i] = true;
+  if (itemCourant().mode === "explorer") essais.push(reussite());
+  return true;
+}
+
+// Niveau 5 : bilan des positions du fromage essayées
+let essais = [];
+function autrePosition() {
+  const item = itemCourant();
+  // toutes les cases vides (ni le départ, ni la place actuelle du fromage)
+  const libres = [];
+  item.grille.forEach((l, r) => [...l].forEach((ch, c) => { if (ch === ".") libres.push([r, c]); }));
+  const [r, c] = libres[hasard(libres.length)];
+  const g = item.grille.map(l => l.replace("F", "."));
+  g[r] = g[r].slice(0, c) + "F" + g[r].slice(c + 1);
+  item.grille = g;
+  arreter();
+  sim = depart(item);
+  majVue();
+}
+
+function reussite() {
+  const item = itemCourant();
+  if (!sim || !sim.fin) return false;
+  return item.mode === "prevoir" ? sim.fin === item.reponse && prediction === lettre(item.reponse) : sim.fin === "F";
+}
+
+function recommencer() {
+  arreter();
+  sim = depart(itemCourant());
+  majVue();
+}
+
+function suivant() {
+  const { n, i } = ecran;
+  if (i + 1 < NIVEAUX[n].items.length) allerA(n, i + 1);
+  else if (n + 1 < NIVEAUX.length) allerA(n + 1, 0);
+  else { arreter(); ecran = { type: "fin" }; rendu(); }
+}
+
+// ---------- Fiche papier ----------
+// Page A4 autonome : même grille (même numéro), programme en blocs dessinés,
+// zone de réponse et arrivées possibles sous la grille.
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+function ficheBlocs(item) {
+  const but = item.mode === "prevoir" ? "🏁" : "🧀";
+  const action = a => a
+    ? `<div class="b mouv">${esc(INFINITIF[a] === "avancer" ? "avancer d’une case" : INFINITIF[a])}</div>`
+    : `<div class="b trou">…………………………</div>`;
+  const cond = e => e === "bord" ? "si il n’y a pas de case devant alors"
+    : e === "vide" ? "si la case de devant est vide alors"
+    : `si la case de devant contient <span class="bulle">${e ? EMO[e] : "&nbsp;&nbsp;&nbsp;"}</span> alors`;
+  const si = (e, a) => `<div class="c"><div class="c-t">${cond(e)}</div><div class="c-m">${action(a)}</div><div class="c-p"></div></div>`;
+  let corps;
+  if (item.mode === "ecrire") {
+    corps = [1, 2, 3, 4].map(() => `<div class="ligne-ecrire">si ………………………………………… alors<br>&nbsp;&nbsp;&nbsp;&nbsp;…………………………………………</div>`).join("");
+  } else {
+    corps = item.regles.map(r => si(r.e, r.a)).join("") + si("vide", "A");
+  }
+  const chapeau = item.mode === "ecrire" ? "" : `<div class="b chap">quand ▶ Lancer est cliqué</div>`;
+  return `${chapeau}<div class="c boucle"><div class="c-t">répéter jusqu’à l’arrivée ${but}</div><div class="c-m">${corps}</div><div class="c-p"></div></div>`;
+}
+
+function ficheGrille(item) {
+  const chemin = item.mode === "prevoir" ? new Map() : cheminObjectif(item);
+  let h = "<table class=\"fgrille\">";
+  item.grille.forEach((ligne, r) => {
+    h += "<tr>";
+    [...ligne].forEach((ch, c) => {
+      const cle = r + "," + c;
+      let contenu = "";
+      if (chemin.has(cle) && ch !== "S") contenu += chemin.get(cle).map((d, k) => `<span class="pas" style="left:${2 + k * 4}mm;transform:rotate(${[-90, 0, 90, 180][d]}deg)">➜</span>`).join("");
+      if (EMO[ch]) contenu += EMO[ch];
+      if (ch === "F") contenu += "🧀";
+      if ("ABC".includes(ch)) contenu += `🏁<span class="lettre">${lettre(ch)}</span>`;
+      if (ch === "S") contenu += `<div class="souris" style="transform:rotate(${item.dir * 90}deg)">${SOURIS}</div>`;
+      h += `<td class="${chemin.has(cle) ? "obj" : ""}">${contenu}</td>`;
+    });
+    h += "</tr>";
+  });
+  return h + "</table>";
+}
+
+function ficheContenu() {
+  const niv = NIVEAUX[ecran.n], item = itemCourant();
+  const consignes = {
+    prevoir: "Lis le programme. Suis la souris case par case avec ton crayon. Où va-t-elle s’arrêter ?",
+    completer: "Il manque un morceau du programme. Complète-le pour que la souris suive le chemin bleu jusqu’au fromage.",
+    ecrire: "Écris les règles du programme pour que la souris suive le chemin bleu jusqu’au fromage.",
+    deboguer: "La souris se perd ! Trouve la règle fausse, barre-la et corrige-la.",
+    explorer: "Écris un programme pour que la souris trouve le fromage."
+  };
+  const reserve = {
+    completer: "Pièces possibles : tourner à gauche — tourner à droite — faire demi-tour" + (item.regles.some(r => r.e === null) ? " — 🌸 — 🍄 — 🌳" : ""),
+    ecrire: "Conditions : il n’y a pas de case devant — la case de devant contient 🌸 / 🍄 / 🌳 — la case de devant est vide<br>Actions : tourner à gauche — tourner à droite — faire demi-tour — avancer d’une case",
+    deboguer: "Actions possibles : tourner à gauche — tourner à droite — faire demi-tour"
+  }[item.mode];
+  const reponse = item.mode === "prevoir"
+    ? `<div class="rep">La souris s’arrête sur : <span class="case-rep"></span></div>` : "";
+  return `
+<h2>🐭 Le chemin des règles — ${esc(niv.nom)} <span class="num">— grille n°${item.numero || ""}</span></h2>
+<p class="consigne">${esc(consignes[item.mode])}</p>
+<div class="corps">
+  <div class="gauche">${ficheGrille(item)}${reponse}</div>
+  <div class="prog">${ficheBlocs(item)}${reserve ? `<div class="reserve">${reserve}</div>` : ""}</div>
+</div>`;
+}
+
+// Styles de la fiche, limités à l'overlay ; à l'impression, seul l'overlay est visible.
+// Les blocs ont un texte foncé sur fond clair + bordure colorée : lisibles même
+// si le navigateur n'imprime pas les couleurs de fond.
+const FICHE_CSS = `
+#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(210mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #d9d2c3;background:#f5f1e8;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .fiche-actions button.principal{background:#2f5fd0;color:#fff;border-color:#2f5fd0;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .ligne-identite{display:flex;gap:12mm;margin-bottom:6mm;}
+#overlayFiche .trait{display:inline-block;width:70mm;border-bottom:1px solid #1f2430;}
+#overlayFiche .trait.court{width:25mm;}
+#overlayFiche h2{font-size:15pt;margin:0 0 2mm;}
+#overlayFiche .num{font-weight:400;color:#6b6f7a;}
+#overlayFiche .consigne{font-weight:600;margin:0 0 6mm;}
+#overlayFiche .corps{display:flex;gap:8mm;align-items:flex-start;}
+#overlayFiche .fgrille{border-collapse:collapse;}
+#overlayFiche .fgrille td{width:14mm;height:14mm;border:1px solid #777;text-align:center;vertical-align:middle;font-size:8mm;position:relative;padding:0;}
+#overlayFiche .fgrille td.obj{background:#e6eefc;}
+#overlayFiche .pas{position:absolute;top:.5mm;font-size:3mm;color:#4a6fc0;}
+#overlayFiche .lettre{position:absolute;right:1mm;bottom:0;font-size:4mm;font-weight:800;color:#2f5fd0;}
+#overlayFiche .souris{width:11mm;height:11mm;margin:auto;}
+#overlayFiche .souris svg{width:100%;height:100%;}
+#overlayFiche .rep{margin-top:6mm;font-weight:600;display:flex;align-items:center;gap:3mm;}
+#overlayFiche .case-rep{display:inline-block;width:20mm;height:11mm;border:2px dashed #1f2430;border-radius:3mm;}
+#overlayFiche .possibles{margin-top:10mm;padding-top:3mm;border-top:1px dashed #999;font-size:13pt;}
+#overlayFiche .possibles .t{color:#555;font-weight:600;font-size:11pt;margin-bottom:2mm;}
+#overlayFiche .prog{font-size:10pt;font-weight:700;}
+#overlayFiche .b{display:inline-block;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm;margin:.6mm 0;border:1.5px solid;}
+#overlayFiche .chap{background:#fff1bf;border-color:#cc9900;border-radius:5mm 5mm 1.5mm 1.5mm;padding-top:3mm;}
+#overlayFiche .mouv{background:#dbe9ff;border-color:#3373cc;}
+#overlayFiche .trou{background:#fff;color:#999;border:1.5px dashed #3373cc;font-weight:400;}
+#overlayFiche .c{width:max-content;min-width:60mm;margin:.6mm 0;}
+#overlayFiche .c-t{background:#ffe3b3;border:1.5px solid #cf8b17;border-bottom:none;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm 1.5mm 0 0;}
+#overlayFiche .c-m{border-left:5mm solid #ffc978;padding:1mm 0 1mm 1mm;min-height:8mm;box-shadow:-1.5px 0 0 #cf8b17;}
+#overlayFiche .c-p{background:#ffe3b3;border:1.5px solid #cf8b17;border-top:none;height:4mm;border-radius:0 0 1.5mm 1.5mm;width:100%;}
+#overlayFiche .bulle{display:inline-block;background:#fff;border:1px solid #999;border-radius:999px;min-width:8mm;padding:0 1.5mm;text-align:center;font-size:11pt;}
+#overlayFiche .ligne-ecrire{font-weight:400;color:#555;line-height:2.2;margin:1mm 0 3mm;}
+#overlayFiche .reserve{margin-top:6mm;font-size:10pt;color:#333;line-height:1.6;font-weight:400;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  @page{margin:.8cm;size:A4;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body *{visibility:hidden;}
+  #overlayFiche,#overlayFiche *{visibility:visible;}
+  #overlayFiche{position:absolute;inset:0;background:#fff;padding:0;display:flex !important;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+}`;
+
+function ouvrirFiche() {
+  let ov = $("overlayFiche");
+  if (!ov) {
+    const st = document.createElement("style");
+    st.textContent = FICHE_CSS;
+    document.head.append(st);
+    ov = el("div", { id: "overlayFiche" });
+    ov.addEventListener("click", e => { if (e.target === ov) fermerFiche(); });
+    document.body.append(ov);
+  }
+  ov.innerHTML = `<div id="ficheCarte">
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions">
+      <button type="button" class="principal" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button>
+    </div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong> et coche <strong>« Graphiques d’arrière-plan »</strong> pour garder les couleurs.</p>
+    ${ficheContenu()}
+  </div>`;
+  $("btnFermerFiche").onclick = fermerFiche;
+  $("btnImprimerFiche").onclick = () => window.print();
+  ov.classList.add("ouverte");
+  document.body.classList.add("fiche-ouverte");
+}
+
+function fermerFiche() {
+  const ov = $("overlayFiche");
+  if (ov) ov.classList.remove("ouverte");
+  document.body.classList.remove("fiche-ouverte");
+}
+
+// ---------- Glisser-déposer ----------
+function attacherGlisser(piece, type, val) {
+  piece.addEventListener("pointerdown", e => {
+    if (e.button > 0 || minuteur) return;
+    e.preventDefault();
+    const x0 = e.clientX, y0 = e.clientY, rect = piece.getBoundingClientRect();
+    let fantome = null, survol = null;
+    const cibleSous = ev => {
+      const t = document.elementFromPoint(ev.clientX, ev.clientY);
+      const c = t && t.closest("[data-cible]");
+      return c && c.dataset.type === type ? c : null;
+    };
+    const bouge = ev => {
+      if (!fantome) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+        fantome = piece.cloneNode(true);
+        fantome.classList.add("fantome");
+        fantome.style.width = rect.width + "px";
+        document.body.append(fantome);
+      }
+      fantome.style.left = (ev.clientX - (x0 - rect.left)) + "px";
+      fantome.style.top = (ev.clientY - (y0 - rect.top)) + "px";
+      const c = cibleSous(ev);
+      if (c !== survol) { survol && survol.classList.remove("survol"); survol = c; c && c.classList.add("survol"); }
+    };
+    const fin = ev => {
+      document.removeEventListener("pointermove", bouge);
+      document.removeEventListener("pointerup", fin);
+      document.removeEventListener("pointercancel", fin);
+      if (!fantome) {
+        const c = document.querySelector('[data-cible][data-type="' + type + '"]');
+        if (c) { c.classList.remove("rappel"); void c.offsetWidth; c.classList.add("rappel"); }
+        return;
+      }
+      fantome.remove();
+      survol && survol.classList.remove("survol");
+      const c = ev.type === "pointerup" ? cibleSous(ev) : null;
+      if (c) deposer(c.dataset.cible, val);
+    };
+    document.addEventListener("pointermove", bouge);
+    document.addEventListener("pointerup", fin);
+    document.addEventListener("pointercancel", fin);
+  });
+}
+
+function deposer(cible, val) {
+  prediction = val;
+  sim = depart(itemCourant());
+  majVue();
+}
+
+// ---------- Rendu ----------
+function rendu() {
+  renduNav();
+  if (ws) { ws.dispose(); ws = null; }
+  const s = $("scene");
+  s.replaceChildren(); $("colonne").replaceChildren();
+  s.className = "scene";
+  if (ecran.type === "intro") return renduIntro(s);
+  if (ecran.type === "fin") return renduFin(s);
+
+  const niv = NIVEAUX[ecran.n], item = itemCourant();
+  s.append(
+    el("div", { class: "entete" },
+      el("h2", {}, niv.nom, item.numero ? el("span", { class: "numero" }, " — grille n°" + item.numero) : null),
+      niv.items.length > 1 ? el("div", { class: "points", id: "points" }) : null
+    ),
+    el("p", { class: "consigne" }, niv.consigne),
+    el("div", { class: "plateau" },
+      // panneau de gauche : la grille, puis la zone de réponse (même disposition que la fiche papier)
+      el("div", { class: "gauche" }, el("div", { id: "grille" }), el("div", { id: "prediction" })),
+      el("div", { class: "programme" }, el("div", { id: "blockly" })))
+  );
+
+  const libre = item.mode === "ecrire" || item.mode === "deboguer" || item.mode === "explorer";
+  const outils = item.mode === "prevoir" ? [] : item.mode === "explorer"
+    ? ["si_bord", "si_case", "si_vide", "tourner_gauche", "tourner_droite", "demi_tour", "deposer", "avancer"]
+    : libre
+    ? ["si_bord", "si_case", "si_vide", "tourner_gauche", "tourner_droite", "demi_tour", "avancer"]
+    : item.regles.some(r => !r.a) ? ["tourner_gauche", "tourner_droite", "demi_tour"] : [];
+  ws = Blockly.inject("blockly", {
+    renderer: "zelos",
+    theme: THEME,
+    readOnly: item.mode === "prevoir",
+    toolbox: outils.length ? { kind: "flyoutToolbox", contents: outils.map(t => ({ kind: "block", type: t })) } : undefined,
+    trashcan: libre,
+    move: { scrollbars: true, drag: true, wheel: true },
+    zoom: { startScale: 0.85 }
+  });
+  // Pas d'événements pendant la construction (sinon ils relancent la souris au départ un peu plus tard)
+  Blockly.Events.disable();
+  construireProgramme(item);
+  Blockly.Events.enable();
+  programme = lireProgramme();
+  ws.addChangeListener(ev => {
+    if (ev.isUiEvent) return;
+    programme = lireProgramme();
+    arreter();
+    sim = depart(itemCourant());
+    majVue();
+  });
+  majVue();
+}
+
+// Met à jour tout sauf Blockly
+function majVue() {
+  const item = itemCourant();
+  const pts = $("points");
+  if (pts) pts.replaceChildren(...NIVEAUX[ecran.n].items.map((_, k) =>
+    el("button", {
+      class: "point" + (fait[ecran.n + "-" + k] ? " fait" : "") + (k === ecran.i ? " courant" : ""),
+      onclick: () => allerA(ecran.n, k)
+    }, String(k + 1))));
+  $("grille").replaceChildren(renduGrille(item));
+  $("prediction").replaceChildren(...renduPrediction(item));
+  const col = $("colonne");
+  col.replaceChildren();
+  renduColonne(col, item);
+  surligner();
+}
+
+function renduPrediction(item) {
+  if (item.mode !== "prevoir") return [];
+  const sl = el("span", { class: "slot" + (prediction ? " rempli" : "") }, prediction ? "🏁 " + prediction : "?");
+  if (!minuteur && sim.pas === 0) { sl.dataset.cible = "prediction"; sl.dataset.type = "lettre"; }
+  const pal = el("div", { class: "palette" });
+  for (const l of "ABC") { const pc = el("div", { class: "piece" }, "🏁 " + l); attacherGlisser(pc, "lettre", l); pal.append(pc); }
+  // Sous la grille : la réponse, puis, à distance, les arrivées possibles
+  return [
+    el("div", { class: "prediction" }, "La souris s’arrête sur :", sl),
+    el("div", { class: "propositions" }, el("div", { class: "propositions-titre" }, "Arrivées possibles :"), pal)
+  ];
+}
+
+function renduGrille(item) {
+  const objectif = cheminObjectif(item);
+  const raisonne = apercu() !== null;
+  const g = el("div", { class: "grille" });
+  g.style.gridTemplateColumns = "repeat(" + item.grille[0].length + ", auto)";
+  item.grille.forEach((ligne, r) => [...ligne].forEach((ch, c) => {
+    const ici = sim.r === r && sim.c === c;
+    // La case regardée n'est encadrée que lorsque le raisonnement est affiché
+    const regardee = raisonne && sim.r + DR[sim.d] === r && sim.c + DC[sim.d] === c;
+    const cle = r + "," + c, surChemin = objectif.has(cle), passe = sim.trace.has(cle);
+    const cls = "case" + (surChemin ? " objectif" : "") + (passe ? (surChemin || !objectif.size ? " trace" : " hors") : "")
+      + (ici ? " souris" : "") + (ici && sim.boum ? " boum" : "") + (regardee ? " regardee" : "");
+    const cse = el("div", { class: cls });
+    if (surChemin && !ici) objectif.get(cle).forEach((d, k) => {
+      const f = el("span", { class: "pas" }, "➜");
+      f.style.transform = "rotate(" + [-90, 0, 90, 180][d] + "deg)";
+      f.style.left = (3 + k * 11) + "px";
+      cse.append(f);
+    });
+    if (EMO[ch]) cse.append(el("span", { class: "emo-case" }, EMO[ch]));
+    if (sim.crottes.has(cle) && ch !== "F") { cse.append(el("span", { class: "emo-case" }, "💩")); if (ici) cse.classList.add("occupee"); }
+    if (ch === "F") cse.append(el("span", { class: "emo-case" }, "🧀"));
+    if ("ABC".includes(ch)) cse.append(el("span", { class: "emo-case" }, "🏁"), el("span", { class: "lettre" }, lettre(ch)));
+    if (ici) {
+      if (ch !== "." && ch !== "S") cse.classList.add("occupee");
+      const perso = el("div", { class: "perso" });
+      if (sim.boum) perso.append("💥");
+      else {
+        perso.innerHTML = SOURIS;
+        perso.firstChild.style.transform = "rotate(" + sim.d * 90 + "deg)";
+      }
+      cse.append(perso);
+    }
+    g.append(cse);
+  }));
+  return g;
+}
+
+function renduColonne(col, item) {
+  // Commandes
+  const cmd = el("aside", {}, el("h3", {}, "▶ Programme"));
+  const ok = pret();
+  for (const pb of problemes()) cmd.append(el("p", { class: "aide" }, pb));
+  // En mode « prévoir », seulement le pas à pas : on observe le raisonnement tour par tour
+  const prevoir = item.mode === "prevoir";
+  const lancerB = el("button", { class: "suite", onclick: () => lancer(false) }, "▶ Lancer");
+  const pasB = el("button", { class: prevoir ? "suite" : "second", onclick: () => lancer(true) }, "⏭ Pas à pas");
+  const recB = el("button", { class: "second", onclick: recommencer }, "↺ Remettre la souris au départ");
+  if (!ok || minuteur) { lancerB.disabled = true; pasB.disabled = true; }
+  if (prevoir) lancerB.style.display = "none";
+  if (sim.pas === 0 && !minuteur) recB.disabled = true;
+  const boutons = el("div", { class: "boutons" }, lancerB, pasB, recB);
+  if (item.genere) {
+    boutons.append(el("button", { class: "second", onclick: () => allerA(ecran.n, ecran.i) }, "🎲 Nouvelle grille"));
+    boutons.append(el("button", { class: "second", onclick: ouvrirFiche }, "🖨 Fiche papier"));
+  }
+  cmd.append(boutons);
+
+  // Niveau 5 : une fois le cas de départ réussi, on peut essayer d'autres positions du fromage
+  if (item.mode === "explorer" && fait[ecran.n + "-" + ecran.i]) {
+    const b = el("button", { class: "second", onclick: autrePosition }, "🎲 Autre position du fromage");
+    if (minuteur) b.disabled = true;
+    boutons.append(b);
+  }
+
+  // Résultat
+  if (sim.fin) {
+    let r;
+    if (reussite()) {
+      r = el("div", { class: "retour ok" }, item.mode === "prevoir"
+        ? "✅ Bien prévu : la souris s’arrête sur 🏁 " + lettre(sim.fin) + " !"
+        : "✅ Bravo ! La souris a trouvé le fromage 🧀");
+      const dernier = ecran.n === NIVEAUX.length - 1 && ecran.i === NIVEAUX[ecran.n].items.length - 1;
+      cmd.append(r, el("div", { style: "margin-top:10px" }, el("button", { class: "suite", onclick: suivant }, dernier ? "Terminer →" : "Suite →")));
+    } else {
+      const msg = {
+        sortie: "💥 La souris est sortie de la grille !",
+        boucle: "🔁 La souris tourne en rond !",
+        bloque: "🧱 La souris est bloquée : aucune règle ne dit quoi faire devant ça !",
+        F: "La souris a trouvé le fromage… mais ce n’était pas ta prévision."
+      }[sim.fin] || (item.mode === "prevoir" ? "❌ La souris s’arrête sur 🏁 " + lettre(sim.fin) + ", pas sur 🏁 " + prediction + "." : "❌ Ce n’est pas le fromage !");
+      r = el("div", { class: "retour ko" }, msg, " ", prevoir ? "Relis le raisonnement de la souris à chaque tour." : "Corrige une règle et relance.");
+      cmd.append(r);
+    }
+  }
+  // Niveau 5 : bilan des essais, pour lancer le débat
+  if (item.mode === "explorer" && essais.length) {
+    const ok = essais.filter(x => x).length;
+    cmd.append(el("div", { class: "bilan" },
+      el("div", {}, "Positions du fromage essayées : " + essais.length + " — réussies : " + ok),
+      el("div", { class: "question" }, "🤔 Ton programme marcherait-il quelle que soit la position du fromage ?")));
+  }
+  col.append(cmd);
+
+  // La démonstration du dernier tour
+  const demo = el("aside", {}, el("h3", {}, "🧠 Le raisonnement de la souris"));
+  // Avant chaque tour : ce que la souris voit et va faire. À la fin : le dernier tour joué.
+  const a = apercu();
+  const [journal, tour] = a ? [a.journal, sim.pas + 1] : sim.fin ? [sim.journal, sim.pas] : [null, 0];
+  if (!journal) demo.append(el("p", { class: "aide" }, "À chaque tour, la souris regarde la case devant elle, puis applique la règle qui correspond."));
+  else {
+    demo.append(el("div", { class: "compteur" }, "Tour n°" + tour + (a ? " — ce que la souris va faire" : "")),
+      el("div", { class: "demo" },
+        el("div", { class: "m m-sais" }, el("b", {}, "Je sais que…"), journal.sais),
+        el("div", { class: "fl" }, "↓"),
+        el("div", { class: "m m-regle" }, el("b", {}, "La règle dit…"), journal.regle),
+        el("div", { class: "fl" }, "↓"),
+        el("div", { class: "m m-donc" }, el("b", {}, "Donc…"), journal.donc)));
+  }
+  col.append(demo);
+}
+
+function renduIntro(s) {
+  s.classList.add("intro");
+  s.append(
+    el("h2", {}, "La souris cherche le fromage 🧀"),
+    el("p", {}, "La souris 🐭 ne réfléchit pas toute seule : elle suit les règles du programme."),
+    el("p", {}, "À chaque tour :"),
+    el("ol", { class: "etapes" },
+      el("li", {}, "elle regarde la case devant elle (encadrée en orange) ;"),
+      el("li", {}, "elle applique la règle qui correspond : tourner, ou avancer si la case est vide."),
+    ),
+    el("p", {}, "Attention : une seule règle par emoji !"),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => allerA(0, 0) }, "Commencer →"))
+  );
+}
+
+function renduFin(s) {
+  s.append(
+    el("h2", {}, "🏆 Bravo !"),
+    el("p", {}, "Tu as écrit des règles « Si… alors… » et la souris les a suivies à la lettre."),
+    el("p", {}, "C’est comme une démonstration : chaque pas est justifié par une règle."),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => { fait = {}; ecran = { type: "intro" }; rendu(); } }, "Recommencer"))
+  );
+}
+
+function renduNav() {
+  $("nav").replaceChildren(...NIVEAUX.map((niv, n) =>
+    el("button", { class: "tab" + (ecran.type === "item" && ecran.n === n ? " actif" : ""), onclick: () => allerA(n, 0) }, niv.nom)));
+}
+
+// Aller directement à une grille à partir de son numéro (celui de la fiche papier)
+$("allerNumero").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const v = $("champNumero").value.trim(), code = parseInt(v, 10);
+  const n = Math.floor(code / 10000) - 1, i = Math.floor(code / 1000) % 10 - 1;
+  const it = /^\d{5}$/.test(v) && NIVEAUX[n] && NIVEAUX[n].items[i];
+  if (!it || !it.genere) { $("erreurNumero").textContent = "Numéro inconnu"; return; }
+  $("erreurNumero").textContent = "";
+  $("champNumero").value = "";
+  allerA(n, i, code);
+});
+$("onglet").onclick = () => window.open(location.href, "_blank");
+rendu();
+</script>
+</body>
+</html>
