@@ -46,7 +46,7 @@
   /* L'appli tient dans la fenêtre : le chantier se met à l'échelle, Blockly prend le reste */
   main{
     flex:1;min-height:0;width:100%;
-    display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:14px;padding:14px;
+    display:grid;grid-template-columns:minmax(0,1fr) 375px;gap:14px;padding:14px;
   }
   .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;min-height:0;}
   .entete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
@@ -137,11 +137,19 @@
   .second:disabled{color:var(--muted);cursor:default;}
   .bilan{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--sais);border:1px solid var(--sais-b);font-size:.92rem;}
   .bilan .question{margin-top:6px;font-weight:600;}
+  .bilan.rate{background:var(--ko-bg);border-color:#e7a79e;}
+  .rates{display:flex;gap:6px;flex-wrap:wrap;}
+  .pile-ratee{background:#fff;border:2px solid var(--border);border-radius:8px;padding:3px;}
+  .pile-ratee:hover{border-color:var(--ko);}
+  .pile-ratee .mini{border:none;padding:0;}
+  .pile-ratee .n{display:none;}
   .numero{font-weight:400;color:var(--muted);font-size:1rem;}
   .aller-numero{display:flex;align-items:center;gap:6px;font-size:.85rem;}
   .aller-numero input{width:78px;font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:8px;text-align:center;}
   .erreur-numero{color:var(--ko);font-size:.8rem;}
   .aide{color:var(--muted);font-size:.9rem;margin:0 0 12px;}
+  .nb-blocs{font-size:.9rem;margin:0 0 10px;padding:6px 10px;border-radius:8px;background:var(--bg);display:flex;justify-content:space-between;gap:8px;}
+  .nb-blocs b{font-size:1rem;}
 
   .demo{display:flex;flex-direction:column;gap:0;font-size:.92rem;}
   .demo .m{border:2px solid;border-radius:10px;padding:6px 10px;}
@@ -494,7 +502,7 @@ let res = null;           // exécution complète du programme
 let idx = 0;              // étape affichée
 let minuteur = null;
 let ws = null;            // espace de travail Blockly
-let essais = [];          // niveau 5 : piles essayées
+let tests = null;         // niveau 5 : résultats du programme sur d'autres piles
 
 const fr = s => s.replace(/ ([?!:;»])/g, " $1").replace(/« /g, "« ");
 const $ = id => document.getElementById(id);
@@ -602,6 +610,15 @@ function problemes() {
 }
 const pret = () => problemes().length === 0;
 
+// Compteur de blocs (sans le bloc « quand ▶ Lancer est cliqué ») et record à battre
+const compter = l => l.reduce((n, nd) => n + 1 + (nd.corps ? compter(nd.corps) : 0), 0);
+function record(item) {
+  if (item.mode === "ecrire") return compter(item.solution);
+  // tri : répéter, attraper, puis pour la pile k : si, k × droite, lâcher, k × gauche
+  if (item.mode === "trier") return 2 + item.couleurs.reduce((n, _, k) => n + 2 + 2 * (k + 1), 0);
+  return null;
+}
+
 // ---------- Le chantier (dessin de la grue) ----------
 const COLW = 72, CS = 48, PAD = 14, PH = 14, HAUT = 36;
 const SOL = HAUT + PH + CS + 14 + HMAX * CS;
@@ -622,8 +639,7 @@ function construireChantier(item) {
     // niveau 5 : l’étiquette attendue sur chaque pile
     if (item.mode === "trier" && c > 0 && item.couleurs[c - 1]) {
       const m = el("div", { class: "marque" }, COUL[item.couleurs[c - 1]].emo);
-      Object.assign(m.style, { left: (xCol(c) - CS / 2) + "px", width: CS + "px", top: (SOL + 12) + "px" });
-      n.style.top = (SOL + 36) + "px";
+      Object.assign(m.style, { left: (xCol(c) - CS / 2) + "px", width: CS + "px", top: (SOL + 34) + "px" });
       ch.append(m);
     }
   }
@@ -724,8 +740,8 @@ function recommencer() {
 
 function terminer() {
   const item = itemCourant();
-  if (reussite()) fait[ecran.n + "-" + ecran.i] = true;
-  if (item.mode === "trier") essais.push(reussite());
+  // tri : validé seulement si le programme résiste aux autres piles (voir testerPiles)
+  if (reussite() && item.mode !== "trier") fait[ecran.n + "-" + ecran.i] = true;
 }
 
 // Niveau 5 : chaque couleur sur sa pile, la pile 1 vide
@@ -753,22 +769,50 @@ function allerA(n, i, numero) {
     Object.assign(it, genererItem(it.mode, it.genere));
     alea = Math.random;
   }
-  if (it.mode === "trier") { nouvellePile(it); essais = []; it.prog = []; }
+  if (it.mode === "trier") { it.piles0 = null; nouvellePile(it); it.prog = []; }
+  tests = null;
   prediction = null;
   rendu();
 }
 
-function nouvellePile(it) {
+// Pile bien mélangée : autant de caisses de chaque sorte (à une près), au plus deux caisses
+// identiques côte à côte, et jamais la même pile que la précédente
+function tirerPile(it) {
+  const k = it.couleurs.length, bas = Math.floor(it.n / k), haut = Math.ceil(it.n / k);
+  const melangee = p => it.couleurs.every(c => { const x = [...p].filter(y => y === c).length; return x >= bas && x <= haut; })
+    && [...p].filter((c, i) => i > 0 && c === p[i - 1]).length <= 1;
   let p;
-  do { p = Array.from({ length: it.n }, () => choisir(it.couleurs)).join(""); } while (!it.couleurs.every(c => p.includes(c)));
+  do { p = Array.from({ length: it.n }, () => choisir(it.couleurs)).join(""); } while (!melangee(p));
+  return p;
+}
+function nouvellePile(it) {
+  const avant = it.piles0 && it.piles0[0];
+  let p;
+  do { p = tirerPile(it); } while (p === avant);
   it.ncols = it.couleurs.length + 1;
   it.piles0 = [p, ...it.couleurs.map(() => "")];
 }
 
-function autrePile() {
+// Le programme résiste-t-il au changement de pile ? On l'essaie sur 10 autres mélanges.
+function testerPiles() {
+  const item = itemCourant(), vues = new Set([item.piles0[0]]);
+  tests = [];
+  for (let essai = 0; essai < 1000 && tests.length < 10; essai++) {
+    const p = tirerPile(item);
+    if (vues.has(p)) continue;
+    vues.add(p);
+    const r = executer([p, ...item.couleurs.map(() => "")], item.ncols, programme);
+    tests.push({ pile: p, ok: r.fin === "ok" && r.tient === null && trie(item, r.final) });
+  }
+  if (reussite() && tests.every(t => t.ok)) fait[ecran.n + "-" + ecran.i] = true;
+  majVue();
+}
+
+// Charge une pile précise (une pile ratée au test) pour regarder la grue s'y tromper
+function chargerPile(p) {
   const item = itemCourant();
   arreter();
-  nouvellePile(item);
+  item.piles0 = [p, ...item.couleurs.map(() => "")];
   recalculer();
   $("chantier").replaceChildren(construireChantier(item));
   dessiner(res.frames[0].etats[0], true);
@@ -1003,6 +1047,7 @@ function rendu() {
     if (ev.isUiEvent) return;
     arreter();
     programme = lireProgramme();
+    tests = null;
     recalculer();
     dessiner(res.frames[0].etats[0], true);
     majVue();
@@ -1066,6 +1111,8 @@ function renduColonne(col, item) {
   const cmd = el("aside", {}, el("h3", {}, "▶ Programme"));
   const ok = pret();
   for (const pb of problemes()) cmd.append(el("p", { class: "aide" }, pb));
+  const rec = record(item), nb = compter(programme);
+  if (rec) cmd.append(el("div", { class: "nb-blocs" }, el("span", {}, "🧱 Blocs : ", el("b", {}, String(nb))), el("span", {}, "🏆 Record : ", el("b", {}, String(rec)))));
   const prevoir = item.mode === "prevoir";
   const lancerB = el("button", { class: "suite", onclick: () => lancer(false) }, "▶ Lancer");
   const pasB = el("button", { class: "second", onclick: () => lancer(true) }, "⏭ Pas à pas");
@@ -1077,20 +1124,23 @@ function renduColonne(col, item) {
     boutons.append(el("button", { class: "second", onclick: () => allerA(ecran.n, ecran.i) }, "🎲 Nouvelle grille"));
     boutons.append(el("button", { class: "second", onclick: ouvrirFiche }, "🖨 Fiche papier"));
   }
-  if (item.mode === "trier" && fait[ecran.n + "-" + ecran.i]) {
-    const b = el("button", { class: "second", onclick: autrePile }, "🎲 Autre pile de caisses");
-    if (minuteur) b.disabled = true;
-    boutons.append(b);
-  }
   cmd.append(boutons);
 
   if (fini() && !minuteur) {
     if (reussite()) {
       const r = el("div", { class: "retour ok" }, prevoir
         ? "✅ Bien prévu : c’est le résultat " + item.reponse + " !"
-        : item.mode === "trier" ? "✅ Bravo ! Toutes les caisses sont rangées." : "✅ Bravo ! C’est le modèle.");
+        : item.mode === "trier" ? "✅ Cette pile est rangée !" : "✅ Bravo ! C’est le modèle.");
+      if (rec) r.append(el("br"), nb > rec ? "Mais on peut le faire en " + rec + " blocs : essaie de réduire !"
+        : nb < rec ? "🏆 Record battu : " + nb + " blocs !" : "🏆 Record égalé !");
       const dernier = ecran.n === NIVEAUX.length - 1 && ecran.i === NIVEAUX[ecran.n].items.length - 1;
-      cmd.append(r, el("div", { style: "margin-top:10px" }, el("button", { class: "suite", onclick: suivant }, dernier ? "Terminer →" : "Suite →")));
+      const suiteB = el("div", { style: "margin-top:10px" }, el("button", { class: "suite", onclick: suivant }, dernier ? "Terminer →" : "Suite →"));
+      // tri : avant la suite, le programme doit marcher avec d'autres piles
+      if (item.mode === "trier" && !tests) cmd.append(r, el("div", { class: "bilan" },
+        el("div", { class: "question" }, "🤔 Et avec une autre pile de caisses ?"),
+        el("div", { style: "margin-top:8px" }, el("button", { class: "suite", onclick: testerPiles }, "🧪 Tester d’autres piles"))));
+      else if (item.mode === "trier" && tests.some(t => !t.ok)) cmd.append(r);
+      else cmd.append(r, suiteB);
     } else {
       const msg = {
         sortie: "💥 La grue est sortie du rail !",
@@ -1105,10 +1155,19 @@ function renduColonne(col, item) {
       cmd.append(el("div", { class: "retour ko" }, msg, " ", prevoir ? "Relis le programme pas à pas." : "Corrige le programme et relance."));
     }
   }
-  if (item.mode === "trier" && essais.length) {
-    cmd.append(el("div", { class: "bilan" },
-      el("div", {}, "Piles essayées : " + essais.length + " — réussies : " + essais.filter(x => x).length),
-      el("div", { class: "question" }, "🤔 Ton programme marcherait-il avec n’importe quel ordre des caisses ?")));
+  if (item.mode === "trier" && tests && !minuteur) {
+    const ok = tests.filter(t => t.ok).length, rates = tests.filter(t => !t.ok);
+    const b = el("div", { class: "bilan" + (rates.length ? " rate" : "") },
+      el("div", { class: "question" }, rates.length
+        ? "🧪 Piles réussies : " + ok + " sur " + tests.length + ". Ton programme ne marche pas pour toutes les piles !"
+        : "🧪 " + ok + " piles sur " + tests.length + " : ton programme marche à tous les coups ! 🏆"));
+    if (rates.length) {
+      b.append(el("div", { class: "aide", style: "margin:6px 0" }, "Clique sur une pile ratée pour la charger :"));
+      const l = el("div", { class: "rates" });
+      for (const t of rates.slice(0, 6)) l.append(el("button", { class: "pile-ratee", title: "Charger cette pile", onclick: () => chargerPile(t.pile) }, mini([t.pile], 12)));
+      b.append(l);
+    }
+    cmd.append(b);
   }
   col.append(cmd);
 
