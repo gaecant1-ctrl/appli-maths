@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Le chemin des règles</title>
+<title>La souris</title>
 <script src="https://unpkg.com/blockly/blockly.min.js"></script>
 <script src="https://unpkg.com/blockly/msg/fr.js"></script>
 <style>
@@ -164,7 +164,7 @@
 </head>
 <body>
 <header>
-  <h1>🐭 Le chemin des règles</h1>
+  <h1>🐭 La souris</h1>
   <nav id="nav"></nav>
   <form class="aller-numero" id="allerNumero" autocomplete="off">
     <label for="champNumero">Grille n°</label>
@@ -704,7 +704,7 @@ function arreter() { clearTimeout(minuteur); minuteur = null; }
 
 function problemes() {
   const item = itemCourant(), pb = [];
-  if (item.mode === "prevoir") { if (prediction === null) pb.push("Glisse ta prévision dans la case, puis avance pas à pas."); return pb; }
+  if (item.mode === "prevoir") { if (prediction === null) pb.push("Glisse ta prévision dans la case, puis lance le programme."); return pb; }
   const sis = programme.filter(x => x.si);
   if (sis.some(x => !x.e)) pb.push("Choisis l’emoji de chaque bloc « si ».");
   if (sis.some(x => !x.actions.length)) pb.push("Chaque bloc « si » doit contenir une action.");
@@ -719,6 +719,8 @@ const pret = () => problemes().length === 0;
 // à la position actuelle de la souris et à la case qu'elle regarde
 function apercu() {
   if (sim.fin || !pret()) return null;
+  // En mode « prévoir », le raisonnement ne commence qu'une fois le programme lancé
+  if (itemCourant().mode === "prevoir" && sim.pas === 0 && !minuteur) return null;
   return unPas(itemCourant(), { ...sim, trace: new Set(sim.trace), crottes: new Set(sim.crottes) });
 }
 
@@ -848,7 +850,7 @@ function ficheContenu() {
   const reponse = item.mode === "prevoir"
     ? `<div class="rep">La souris s’arrête sur : <span class="case-rep"></span></div>` : "";
   return `
-<h2>🐭 Le chemin des règles — ${esc(niv.nom)} <span class="num">— grille n°${item.numero || ""}</span></h2>
+<h2>🐭 La souris — ${esc(niv.nom)} <span class="num">— grille n°${item.numero || ""}</span></h2>
 <p class="consigne">${esc(consignes[item.mode])}</p>
 <div class="corps">
   <div class="gauche">${ficheGrille(item)}${reponse}</div>
@@ -1119,10 +1121,9 @@ function renduColonne(col, item) {
   // En mode « prévoir », seulement le pas à pas : on observe le raisonnement tour par tour
   const prevoir = item.mode === "prevoir";
   const lancerB = el("button", { class: "suite", onclick: () => lancer(false) }, "▶ Lancer");
-  const pasB = el("button", { class: prevoir ? "suite" : "second", onclick: () => lancer(true) }, "⏭ Pas à pas");
+  const pasB = el("button", { class: "second", onclick: () => lancer(true) }, "⏭ Pas à pas");
   const recB = el("button", { class: "second", onclick: recommencer }, "↺ Remettre la souris au départ");
   if (!ok || minuteur) { lancerB.disabled = true; pasB.disabled = true; }
-  if (prevoir) lancerB.style.display = "none";
   if (sim.pas === 0 && !minuteur) recB.disabled = true;
   const boutons = el("div", { class: "boutons" }, lancerB, pasB, recB);
   if (item.genere) {
