@@ -6,6 +6,8 @@
 <title>La grue</title>
 <script src="https://unpkg.com/blockly/blockly.min.js"></script>
 <script src="https://unpkg.com/blockly/msg/fr.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#f5f1e8;
@@ -148,6 +150,12 @@
   .aller-numero input{width:78px;font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:8px;text-align:center;}
   .erreur-numero{color:var(--ko);font-size:.8rem;}
   .aide{color:var(--muted);font-size:.9rem;margin:0 0 12px;}
+  .eleve{font-size:.85rem;font-weight:600;}
+  .eleve .note{background:var(--ok-bg);border:1px solid var(--donc-b);border-radius:999px;padding:3px 10px;margin-left:6px;}
+  .nom-eleve{display:flex;flex-direction:column;gap:6px;margin:18px 0 6px;font-weight:600;font-size:1.05rem;}
+  .nom-eleve input{font:inherit;font-weight:400;padding:10px 12px;border:2px solid var(--border);border-radius:10px;max-width:420px;}
+  .nom-eleve input:focus{outline:none;border-color:var(--accent);}
+  .points-ex{font-size:.9rem;margin:0 0 10px;padding:6px 10px;border-radius:8px;background:#fff6d6;display:flex;justify-content:space-between;gap:8px;}
   .nb-blocs{font-size:.9rem;margin:0 0 10px;padding:6px 10px;border-radius:8px;background:var(--bg);display:flex;justify-content:space-between;gap:8px;}
   .nb-blocs b{font-size:1rem;}
 
@@ -176,7 +184,11 @@
     .programme{min-width:min(300px,100%);}
     #blockly{flex:none;height:480px;}
   }
-  .intro p{font-size:1.1rem;}
+  .intro p{font-size:1.05rem;margin:0 0 8px;}
+  .intro h2{margin:0 0 10px;}
+  .intro .etapes{margin:0 0 10px;padding-top:8px;padding-bottom:8px;}
+  .intro .actions{margin-top:10px;}
+  .intro{overflow:auto;scrollbar-width:none;}
   .etapes{background:#f1edfc;border:2px solid #7a5fd0;border-radius:12px;padding:12px 16px 12px 40px;font-size:1.05rem;}
   .etapes li{margin-bottom:4px;}
   .actions{margin-top:18px;display:flex;justify-content:flex-end;}
@@ -193,6 +205,8 @@
     <button type="submit" class="onglet">OK</button>
     <span id="erreurNumero" class="erreur-numero"></span>
   </form>
+  <span class="eleve" id="eleveInfo"></span>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme" style="display:none">🎓 Diplôme</button>
   <button class="onglet" id="onglet" title="Ouvrir l’appli dans un nouvel onglet">↗ Nouvel onglet</button>
 </header>
 <main>
@@ -201,6 +215,9 @@
 </main>
 
 <script>
+// Tout le code est enfermé dans une fonction : taper « eleve » ou « noter » dans la console ne donne rien.
+(() => {
+"use strict";
 // === MOTEUR === (simulation + création des grilles, sans affichage)
 // Caisses : une lettre par sorte de caisse (couleur + étiquette emoji, pour l'impression en noir et blanc). Une pile = une chaîne, du bas vers le haut (ex. "rb" : 🐟 posée sur 🍎).
 const COUL = {
@@ -488,10 +505,41 @@ const NIVEAUX = [
     consigne: "Range chaque caisse sur la pile de son étiquette.",
     items: [
       { mode: "trier", couleurs: ["r", "b"], n: 5 },
-      { mode: "trier", couleurs: ["r", "b", "g"], n: 5 }
+      { mode: "trier", couleurs: ["r", "b", "g"], n: 5, points: 2 }
     ]
   }
 ];
+
+// ---------- Élève et note sur 20 ----------
+// Chaque exercice rapporte des points ; on garde la meilleure note obtenue (mémorisée dans ce navigateur).
+const BAREME = { prevoir: 1, completer: 1, deboguer: 1, ecrire: 2, trier: 3 };
+const CLE_ELEVE = "grue.eleve";
+// Au chargement, personne n'est connecté : l'élève retape son nom, et le même nom retrouve sa note enregistrée
+let eleve = { nom: "", notes: {} };
+let enregistre = null;
+function empreinte(nom, notes) {
+  const t = "grue✦" + nom + "✦" + Object.keys(notes).sort().map(k => k + "=" + notes[k]).join(";");
+  let h = 2166136261;
+  for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(36);
+}
+try {
+  const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
+  if (e && typeof e.nom === "string" && e.notes && e.cle === empreinte(e.nom, e.notes)) enregistre = { nom: e.nom, notes: e.notes };
+} catch (e) {}
+const sauverEleve = () => {
+  try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ nom: eleve.nom, notes: eleve.notes, cle: empreinte(eleve.nom, eleve.notes) })); } catch (e) {}
+};
+let echecs = 0;           // essais ratés sur la grille en cours
+const fmt = x => String(x).replace(".", ",");
+// un exercice peut valoir un autre nombre de points que ceux de son mode (« points »)
+const maxPts = it => it.points || BAREME[it.mode];
+const noteMax = () => NIVEAUX.reduce((t, niv) => t + niv.items.reduce((u, it) => u + maxPts(it), 0), 0);
+const noteTotale = () => Object.values(eleve.notes).reduce((a, b) => a + b, 0);
+function noter(p) {
+  const k = ecran.n + "-" + ecran.i;
+  if (p > (eleve.notes[k] || 0)) { eleve.notes[k] = p; sauverEleve(); }
+}
 
 // ---------- État ----------
 let ecran = { type: "intro" };
@@ -742,6 +790,21 @@ function terminer() {
   const item = itemCourant();
   // tri : validé seulement si le programme résiste aux autres piles (voir testerPiles)
   if (reussite() && item.mode !== "trier") fait[ecran.n + "-" + ecran.i] = true;
+  if (reussite()) noter(pointsGrille()); else echecs++;
+}
+
+// Points gagnés sur la grille en cours :
+//  prévoir : 1 si la première prévision est la bonne ; compléter, déboguer : 1 du premier coup, ½ après des essais ratés ;
+//  écrire : réussite (1 ou ½) + 1 si le record de blocs est atteint ; ranger : + 1 si le programme marche sur toutes les piles
+function pointsGrille() {
+  const item = itemCourant();
+  if (!fini() || !reussite()) return 0;
+  const base = item.mode === "prevoir" ? (echecs ? 0 : 1) : (echecs ? 0.5 : 1);
+  const rec = record(item), recOk = rec && compter(programme) <= rec ? 1 : 0;
+  if (item.mode === "ecrire") return base + recOk;
+  // tri : + 1 si le programme marche sur toutes les piles, + 1 pour le record (si l'exercice vaut 3 points)
+  if (item.mode === "trier") return base + (tests && tests.every(t => t.ok) ? 1 : 0) + (maxPts(item) >= 3 ? recOk : 0);
+  return base;
 }
 
 // Niveau 5 : chaque couleur sur sa pile, la pile 1 vide
@@ -760,6 +823,9 @@ function reussite() {
 // numero : numéro de grille imposé (dicté par le professeur) ; sinon tiré au hasard
 function allerA(n, i, numero) {
   arreter();
+  // on ne commence pas sans son nom (il figure sur le diplôme)
+  if (!eleve.nom) { ecran = { type: "intro" }; rendu(); return; }
+  echecs = 0;
   ecran = { type: "item", n, i };
   const it = itemCourant();
   if (it.genere) {
@@ -805,6 +871,7 @@ function testerPiles() {
     tests.push({ pile: p, ok: r.fin === "ok" && r.tient === null && trie(item, r.final) });
   }
   if (reussite() && tests.every(t => t.ok)) fait[ecran.n + "-" + ecran.i] = true;
+  if (reussite()) noter(pointsGrille());
   majVue();
 }
 
@@ -905,6 +972,7 @@ const FICHE_CSS = `
 #overlayFiche .b{display:block;width:max-content;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm;margin:.6mm 0;border:1.5px solid;}
 #overlayFiche .chap{background:#fff1bf;border-color:#cc9900;border-radius:5mm 5mm 1.5mm 1.5mm;padding-top:3mm;}
 #overlayFiche .mouv{background:#dbe9ff;border-color:#3373cc;}
+#overlayFiche .var{background:#ffe2c4;border-color:#d9700a;}
 #overlayFiche .trou{background:#fff;color:#999;border:1.5px dashed #3373cc;font-weight:400;}
 #overlayFiche .c{width:max-content;min-width:50mm;margin:.6mm 0;}
 #overlayFiche .c-t{background:#ffe3b3;border:1.5px solid #cf8b17;border-bottom:none;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm 1.5mm 0 0;}
@@ -913,18 +981,61 @@ const FICHE_CSS = `
 #overlayFiche .bulle{display:inline-block;background:#fff;border:1px solid #999;border-radius:999px;min-width:8mm;padding:0 1.5mm;text-align:center;font-size:11pt;}
 #overlayFiche .ligne-ecrire{font-weight:400;color:#555;line-height:2.2;}
 #overlayFiche .reserve{margin-top:6mm;font-size:10pt;color:#333;line-height:1.6;font-weight:400;}
+#ficheCarte.large{width:min(297mm,100%);}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-grue{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;margin:0;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto 1mm;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:9px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:4mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 5mm;min-width:36mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10.5pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-etoiles{font-size:12pt;letter-spacing:.5mm;color:#d9d2c3;}
+#overlayFiche .d-etoiles .pleine{color:#d4a62a;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;}
+#overlayFiche .d-frise span{width:6mm;height:6mm;border-radius:1mm;display:flex;align-items:center;justify-content:center;font-size:3.6mm;box-shadow:inset 0 0 0 .4mm rgba(0,0,0,.2);}
+@media print{#overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}}
 body.fiche-ouverte{overflow:hidden;}
 @media print{
   @page{margin:.8cm;size:A4;}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  body *{visibility:hidden;}
-  #overlayFiche,#overlayFiche *{visibility:visible;}
-  #overlayFiche{position:absolute;inset:0;background:#fff;padding:0;display:flex !important;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
   #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
   #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
 }`;
 
-function ouvrirFiche() {
+function ouvrirFiche() { ouvrirOverlay(ficheContenu()); orientation("portrait"); }
+
+// Orientation proposée par la fenêtre d'impression (réglage ajouté après les autres styles, donc prioritaire)
+function orientation(sens) {
+  let st = $("styleOrientation");
+  if (!st) { st = el("style", { id: "styleOrientation" }); document.head.append(st); }
+  st.textContent = "@page{size:A4 " + sens + ";margin:" + (sens === "landscape" ? "10mm" : ".8cm") + ";}";
+}
+
+function ouvrirOverlay(contenu) {
   let ov = $("overlayFiche");
   if (!ov) {
     const st = document.createElement("style");
@@ -940,7 +1051,7 @@ function ouvrirFiche() {
       <button type="button" class="principal" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button>
     </div>
     <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong> et coche <strong>« Graphiques d’arrière-plan »</strong> pour garder les couleurs.</p>
-    ${ficheContenu()}
+    ${contenu}
   </div>`;
   $("btnFermerFiche").onclick = fermerFiche;
   $("btnImprimerFiche").onclick = () => window.print();
@@ -1070,6 +1181,7 @@ function cadrer() {
 // Met à jour tout sauf Blockly et le chantier
 function majVue() {
   const item = itemCourant();
+  majEleve();
   const pts = $("points");
   if (pts) pts.replaceChildren(...NIVEAUX[ecran.n].items.map((_, k) =>
     el("button", {
@@ -1112,6 +1224,8 @@ function renduColonne(col, item) {
   const ok = pret();
   for (const pb of problemes()) cmd.append(el("p", { class: "aide" }, pb));
   const rec = record(item), nb = compter(programme);
+  const k = ecran.n + "-" + ecran.i;
+  cmd.append(el("div", { class: "points-ex" }, el("span", {}, "⭐ Points de l’exercice"), el("b", {}, fmt(eleve.notes[k] || 0) + " / " + maxPts(item))));
   if (rec) cmd.append(el("div", { class: "nb-blocs" }, el("span", {}, "🧱 Blocs : ", el("b", {}, String(nb))), el("span", {}, "🏆 Record : ", el("b", {}, String(rec)))));
   const prevoir = item.mode === "prevoir";
   const lancerB = el("button", { class: "suite", onclick: () => lancer(false) }, "▶ Lancer");
@@ -1133,6 +1247,9 @@ function renduColonne(col, item) {
         : item.mode === "trier" ? "✅ Cette pile est rangée !" : "✅ Bravo ! C’est le modèle.");
       if (rec) r.append(el("br"), nb > rec ? "Mais on peut le faire en " + rec + " blocs : essaie de réduire !"
         : nb < rec ? "🏆 Record battu : " + nb + " blocs !" : "🏆 Record égalé !");
+      // points perdus à cause des essais ratés : comment les récupérer
+      if (echecs && prevoir) r.append(el("br"), "Pas de point : ta première prévision était fausse. Prends une 🎲 nouvelle grille !");
+      else if (echecs && item.mode !== "prevoir") r.append(el("br"), "½ point seulement : il y a eu des essais ratés. Réussis du premier coup sur une 🎲 nouvelle grille !");
       const dernier = ecran.n === NIVEAUX.length - 1 && ecran.i === NIVEAUX[ecran.n].items.length - 1;
       const suiteB = el("div", { style: "margin-top:10px" }, el("button", { class: "suite", onclick: suivant }, dernier ? "Terminer →" : "Suite →"));
       // tri : avant la suite, le programme doit marcher avec d'autres piles
@@ -1208,20 +1325,145 @@ function renduIntro(s) {
       el("li", {}, "lâcher la caisse sur la pile.")
     ),
     el("p", {}, "Attention : une seule caisse à la fois !"),
-    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => allerA(0, 0) }, "Commencer →"))
+    el("p", {}, "Chaque exercice rapporte des points. Tu peux le refaire : seule ta meilleure note compte. Vise 20/20 !")
   );
+  const champ = el("input", { id: "champNom", type: "text", autocomplete: "off", placeholder: "Prénom Nom", maxlength: "40" });
+  // champ toujours vide à l'accueil : chaque élève tape son nom (le même nom retrouve sa note)
+  const erreur = el("span", { class: "erreur-numero" });
+  const commencer = () => {
+    const nom = champ.value.trim().replace(/\s+/g, " ");
+    if (nom.length < 2) { erreur.textContent = "Écris ton prénom et ton nom."; champ.focus(); return; }
+    // nouvel élève sur ce poste : on repart de zéro
+    if (nom !== eleve.nom) {
+      eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, notes: {} };
+      enregistre = eleve;
+      fait = {};
+      sauverEleve();
+    }
+    allerA(0, 0);
+  };
+  champ.addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+  s.append(
+    el("label", { class: "nom-eleve", for: "champNom" }, "Ton prénom et ton nom (pour le diplôme) :", champ, erreur),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: commencer }, "Commencer →"))
+  );
+  setTimeout(() => champ.focus(), 0);
+}
+
+// Premier exercice où il manque des points (pour améliorer sa note)
+function exerciceAAmeliorer() {
+  for (let n = 0; n < NIVEAUX.length; n++)
+    for (let i = 0; i < NIVEAUX[n].items.length; i++)
+      if ((eleve.notes[n + "-" + i] || 0) < maxPts(NIVEAUX[n].items[i])) return [n, i];
+  return null;
 }
 
 function renduFin(s) {
+  if (!eleve.nom) { ecran = { type: "intro" }; return renduIntro(s); }
+  const note = noteTotale(), max = noteMax(), a = exerciceAAmeliorer();
   s.append(
-    el("h2", {}, "🏆 Bravo !"),
+    el("h2", {}, "🏆 Bravo " + eleve.nom + " !"),
     el("p", {}, "Tu as écrit des programmes et la grue les a suivis à la lettre."),
     el("p", {}, "Avec « répéter » et « si… alors… », un programme court fait beaucoup de travail."),
-    el("div", { class: "actions" }, el("button", { class: "suite", onclick: () => { fait = {}; ecran = { type: "intro" }; rendu(); } }, "Recommencer"))
+    el("p", { style: "font-size:1.4rem;font-weight:700" }, "📝 Ta note : " + fmt(note) + " / " + max),
+    a ? el("p", {}, "Il te manque des points : refais les exercices pour viser " + max + "/" + max + " !") : el("p", {}, "🌟 Note parfaite !"),
+    el("div", { class: "actions", style: "gap:10px" },
+      a ? el("button", { class: "second", style: "width:auto", onclick: () => allerA(a[0], a[1]) }, "↺ Améliorer ma note") : null,
+      el("button", { class: "suite", onclick: ouvrirDiplome }, "🎓 Mon diplôme"))
   );
 }
 
+// ---------- Diplôme ----------
+function mention(note, max) {
+  const x = note / max * 20;
+  return x >= 20 ? "Félicitations !" : x >= 16 ? "Très bien" : x >= 14 ? "Bien" : x >= 12 ? "Assez bien" : x >= 10 ? "Réussi" : "Continue tes efforts";
+}
+function diplomeContenu() {
+  const note = noteTotale(), max = noteMax();
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  // une médaille par niveau, avec ses étoiles (une par point entier)
+  const medailles = NIVEAUX.map((niv, n) => {
+    const pts = niv.items.reduce((t, _, i) => t + (eleve.notes[n + "-" + i] || 0), 0);
+    const m = niv.items.reduce((t, it) => t + maxPts(it), 0);
+    const etoiles = Array.from({ length: m }, (_, k) => `<span class="${k < Math.floor(pts) ? "pleine" : ""}">★</span>`).join("");
+    return `<div class="d-med${pts >= m ? " complete" : ""}"><div class="d-med-nom">${esc(niv.nom.replace(/^\d+\.\s*/, ""))}</div><div class="d-med-pts">${fmt(pts)} / ${m}</div><div class="d-etoiles">${etoiles}</div></div>`;
+  }).join("");
+  // sceau doré : cercle festonné, rubans, note au centre
+  const festons = Array.from({ length: 48 }, (_, k) => {
+    const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+    return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+  }).join(" ") + "Z";
+  const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${fmt(note)}</text>
+    <text x="50" y="66" text-anchor="middle" class="d-sceau-sur">sur ${max}</text>
+  </svg>`;
+  // la grue et sa caisse
+  const grue = `<svg class="d-grue" viewBox="0 0 120 110" aria-hidden="true">
+    <g stroke="#1d3b8f" stroke-width="2.2" fill="none" stroke-linejoin="round">
+      <path d="M22 106 V14 M34 106 V14 M22 14 H34"/>
+      ${Array.from({ length: 7 }, (_, k) => `<path d="M22 ${106 - k * 13} L34 ${93 - k * 13} M34 ${106 - k * 13} L22 ${93 - k * 13}"/>`).join("")}
+      <path d="M8 14 H112 M8 22 H112 M28 4 L8 14 M28 4 L112 14"/>
+      ${Array.from({ length: 9 }, (_, k) => `<path d="M${40 + k * 8} 14 L${44 + k * 8} 22"/>`).join("")}
+      <path d="M96 22 V58" stroke-width="1.4"/>
+    </g>
+    <rect x="4" y="14" width="12" height="12" fill="#c9a227"/>
+    <rect x="12" y="102" width="32" height="6" fill="#1d3b8f"/>
+    <rect x="84" y="58" width="24" height="24" rx="2" fill="#e0473a" stroke="#1d3b8f" stroke-width="1.5"/>
+    <text x="96" y="76" text-anchor="middle" font-size="14">🍎</text>
+  </svg>`;
+  const coin = `<svg class="d-coin" viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+  const caisses = ["r", "b", "g", "y", "r", "b", "g", "y", "r", "b", "g", "y"].map(c => `<span style="background:${COUL[c].hex}">${COUL[c].emo}</span>`).join("");
+  return `<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${grue}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">de programmation · <b>La grue</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${esc(eleve.nom || "……………………")}</div>
+        <div class="d-pour">pour avoir programmé une grue avec des boucles et des conditions.</div>
+        <div class="d-mention">${mention(note, max)}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-meds">${medailles}</div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${caisses}</div>
+  </div>
+</div>`;
+}
+// Le diplôme garde sa taille A4 (paysage) ; à l'écran, il est réduit pour tenir dans la fenêtre
+function ouvrirDiplome() {
+  // pas de diplôme sans nom : retour à l'accueil pour l'écrire
+  if (!eleve.nom) { fermerFiche(); arreter(); ecran = { type: "intro" }; rendu(); return; }
+  ouvrirOverlay(diplomeContenu());
+  orientation("landscape");
+  $("ficheCarte").classList.add("large");
+  const d = document.querySelector("#overlayFiche .diplome");
+  const carte = getComputedStyle(d.parentElement);
+  const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+  const r = d.getBoundingClientRect();            // taille réelle affichée (zoom compris)
+  const e = Math.min(1, place / r.width);
+  d.style.transform = "scale(" + e + ")";
+  d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+  d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+}
+
+function majEleve() {
+  const info = $("eleveInfo");
+  info.replaceChildren(...(eleve.nom ? ["👤 " + eleve.nom, el("span", { class: "note" }, "📝 " + fmt(noteTotale()) + " / " + noteMax())] : []));
+  $("btnDiplome").style.display = eleve.nom ? "" : "none";
+}
+
 function renduNav() {
+  majEleve();
   $("nav").replaceChildren(...NIVEAUX.map((niv, n) =>
     el("button", { class: "tab" + (ecran.type === "item" && ecran.n === n ? " actif" : ""), onclick: () => allerA(n, 0) }, niv.nom)));
 }
@@ -1254,7 +1496,9 @@ function ajuster() {
 }
 window.addEventListener("resize", () => { ajuster(); cadrer(); });
 $("onglet").onclick = () => window.open(location.href, "_blank");
+$("btnDiplome").onclick = ouvrirDiplome;
 rendu();
+})();
 </script>
 </body>
 </html>
