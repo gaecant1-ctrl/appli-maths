@@ -510,7 +510,9 @@ const construire = {
         const nom = noms[0];
         afficherSansEtiquette(nom);
         dernierObjet = nom;
-        objetsConstruits.push(nom);
+        // Les côtés comptent aussi pour la vérification : "tracer le triangle ABC"
+        // doit réussir une figure fantôme tracée côté par côté ([AB], [BC], [CA]).
+        objetsConstruits.push(...noms);
         await attendre(400);
     },
     // "label" est le nom interne (sans parenthèses/crochets, utilisé pour résoudre les
@@ -571,6 +573,25 @@ function verifierReussite() {
         if (ok) return true;
     }
     return false;
+}
+
+// Noms donnés dans la figure fantôme (I, (d), c...) que l'élève n'a pas donnés à son
+// tour. Renvoie le texte affiché (ex: "(d)") pour le message à l'élève.
+function nomsManquants() {
+    return Object.keys(etiquettesCible)
+        .filter(label => !etiquettes[label] || !ggbApplet.exists(etiquettes[label]))
+        .map(label => ggbApplet.getCaption(etiquettesCible[label]) || label);
+}
+
+// Bilan affiché à la fin de l'exécution (mode texte comme mode blocs) : la figure doit
+// correspondre ET tous les objets nommés sur la figure fantôme doivent l'être aussi.
+function bilanVerification() {
+    if (!verifierReussite()) return { reussite: false, message: null };
+    const manquants = nomsManquants();
+    if (manquants.length > 0) {
+        return { reussite: false, message: `La construction est juste, mais il faut aussi nommer : ${manquants.join(', ')}.` };
+    }
+    return { reussite: true, message: "Réussi ! La construction correspond à la figure fantôme." };
 }
 
 /* ---------- Génération de la figure fantôme (cible) ---------- */
@@ -655,9 +676,10 @@ function executerFigureTexte(texte) {
         const nomInlineComplet = extrait.nomInlineComplet;
         const ligne = extrait.ligne;
         let m;
-        if ((m = ligne.match(/^tracer le polygone ([A-Z]+)$/i))) {
+        if ((m = ligne.match(REGEX_POLYGONE))) {
+            verifierSommetsPolygone(m[1], m[2]);
     // We use "ref" instead of "resoudre" to find points mapped locally in the target
-    const pts = m[1].split('').map(lettre => ref(lettre)); // ✅ Utilise ref() !
+    const pts = m[2].split('').map(lettre => ref(lettre)); // ✅ Utilise ref() !
     const noms = creerBrut(`${prefixe}Polygon(${pts.join(',')})`).split(',');
     dernier = noms[0]; 
     ciblesAuxiliaires.push(...noms); 
@@ -728,6 +750,25 @@ function executerFigureTexte(texte) {
     });
 }
 
+// "tracer le triangle ABC", "tracer le quadrilatère ABCD"... : même tracé que
+// "tracer le polygone", mais le nombre de sommets doit correspondre au nom employé.
+const REGEX_POLYGONE = /^tracer le (polygone|triangle|quadrilat[èe]re|pentagone|hexagone|heptagone|octogone) ([A-Za-z]+)$/i;
+const SOMMETS_POLYGONES_NOMMES = {
+    triangle: 3, quadrilatere: 4, pentagone: 5, hexagone: 6, heptagone: 7, octogone: 8
+};
+const NOMS_POLYGONES_PAR_SOMMETS = {
+    3: 'triangle', 4: 'quadrilatère', 5: 'pentagone', 6: 'hexagone', 7: 'heptagone', 8: 'octogone'
+};
+function verifierSommetsPolygone(type, sommets) {
+    const cle = type.toLowerCase().replace('è', 'e');
+    const attendu = SOMMETS_POLYGONES_NOMMES[cle];
+    if (attendu && sommets.length !== attendu) {
+        const nomJuste = NOMS_POLYGONES_PAR_SOMMETS[sommets.length];
+        throw new Error(`un ${type.toLowerCase()} a ${attendu} sommets, pas ${sommets.length}` +
+            (nomJuste ? ` (${sommets} est un ${nomJuste})` : ''));
+    }
+}
+
 const FIGURES = [];
 // Cherche figure1.txt, figure2.txt, ... et s'arrête au premier fichier manquant (404)
 // ou à la première erreur réseau. Ajouter un fichier figureN.txt ne nécessite donc
@@ -767,6 +808,8 @@ function construireBoutonsFigures() {
         btn.textContent = i + 1;
         btn.title = `Figure ${i + 1}`;
         btn.onclick = () => {
+            // Nouvel exercice : on repart d'un programme vide (texte ET blocs).
+            if (i !== indexDerniereFigure) viderProgramme();
             nettoyerDessin();
             genererCible(i);
         };
@@ -868,15 +911,9 @@ async function runCode() {
         const fonction = new Function("attendre", "construire", `return (async function() { ${code} })();`);
         await fonction(attendre, construire);
 
-        let reussite = false;
-        for (const nom of objetsConstruits) {
-            ggbApplet.evalCommand(`verifRes=AreEqual(${nom},cible)`);
-            const ok = ggbApplet.getValue('verifRes') === 1;
-            if (ggbApplet.exists('verifRes')) ggbApplet.deleteObject('verifRes');
-            if (ok) { reussite = true; break; }
-        }
-        if (reussite) enregistrerReussite();
-        alerte(reussite ? "Réussi ! La construction correspond à la figure fantôme." : "Ce n'est pas encore la bonne construction, réessaie.");
+        const bilan = bilanVerification();
+        if (bilan.reussite) enregistrerReussite();
+        alerte(bilan.message || "Ce n'est pas encore la bonne construction, réessaie.");
     } catch (e) {
         alerte("Erreur dans le programme : " + e.message);
     } finally {
@@ -942,6 +979,18 @@ function nettoyerDessin() {
     mettreAJourBoutonExecuter();
     workspace.highlightBlock(null);
     surlignerLigneEditeur(-1);
+}
+
+// Vide le programme de l'élève : textarea de l'éditeur texte et espace Blockly
+// (on remet le seul bloc "Programme" de départ, comme au chargement).
+function viderProgramme() {
+    textarea.value = '';
+    colorerEditeur();
+    workspace.clear();
+    const bloc = workspace.newBlock('programme');
+    bloc.initSvg();
+    bloc.render();
+    bloc.moveBy(20, 20);
 }
 
 // Fonction de réinitialisation complète (Liée au bouton) : Ne vide plus le Textarea !

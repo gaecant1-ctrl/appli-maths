@@ -16,6 +16,18 @@ function resoudreArgumentEleve(texte) {
     return texte;
 }
 
+// Petits oublis fréquents (un mot de liaison manquant) : on les signale à l'élève
+// plutôt que de laisser un simple "instruction non reconnue".
+function indiceInstructionNonReconnue(ligne) {
+    const l = ligne.toLowerCase();
+    if (/\bpassant\b/.test(l) && !/\bpassant par\b/.test(l)) return 'il manque "par" après "passant"';
+    if (/\b(parall[èe]le|perpendiculaire)\b/.test(l) && !/\b(parall[èe]le|perpendiculaire) [àa]\s/.test(l)) return 'il manque "à" après "parallèle" ou "perpendiculaire"';
+    if (/\bcercle\b/.test(l) && !/\bcercle de centre\b/.test(l)) return 'on écrit "le cercle de centre ... passant par ..."';
+    if (/\bintersection\b/.test(l) && !/\bentre\b/.test(l)) return 'on écrit "le point d\'intersection visible entre ... et ..."';
+    if (/\bentre\b/.test(l) && !/\bentre \S+ et \S+$/.test(l)) return 'on écrit "entre ... et ..."';
+    return null;
+}
+
 // Exécute une ligne tapée par l'élève (async, comme le code généré par Blockly).
 // Lève une erreur explicite si la ligne n'est reconnue par aucun modèle.
 async function executerLigneEleve(ligneBrute) {
@@ -26,8 +38,9 @@ async function executerLigneEleve(ligneBrute) {
 
     if ((m = ligne.match(/^tracer la droite passant par (\S+) et (\S+)$/i))) {
         await construire.tracerDroite(ref(m[1]), ref(m[2]));
-    } else if ((m = ligne.match(/^tracer \(([A-Za-z])([A-Za-z])\)$/i))) {
-        // Raccourci : "tracer (AB)" équivaut à "tracer la droite passant par A et B".
+    } else if ((m = ligne.match(/^tracer (?:la droite\s*)?\(([A-Za-z])([A-Za-z])\)$/i))) {
+        // Raccourcis : "tracer (AB)" / "tracer la droite (AB)" équivalent à
+        // "tracer la droite passant par A et B".
         await construire.tracerDroite(m[1], m[2]);
     } else if ((m = ligne.match(/^tracer le segment(?:\s+d'extr[ée]mit[ée]s (\S+) et (\S+)|\s*\[([A-Za-z])([A-Za-z])\])$/i))) {
         await construire.tracerSegment(ref(m[1] || m[3]), ref(m[2] || m[4]));
@@ -36,8 +49,9 @@ async function executerLigneEleve(ligneBrute) {
         await construire.tracerSegment(m[1], m[2]);
     } else if ((m = ligne.match(/^tracer la demi-droite d'origine (\S+) passant par (\S+)$/i))) {
         await construire.tracerDemiDroite(ref(m[1]), ref(m[2]));
-    } else if ((m = ligne.match(/^tracer \[([A-Za-z])([A-Za-z])\)$/i))) {
-        // Raccourci : "tracer [AB)" équivaut à "tracer la demi-droite d'origine A passant par B".
+    } else if ((m = ligne.match(/^tracer (?:la demi-droite\s*)?\[([A-Za-z])([A-Za-z])\)$/i))) {
+        // Raccourcis : "tracer [AB)" / "tracer la demi-droite [AB)" équivalent à
+        // "tracer la demi-droite d'origine A passant par B".
         await construire.tracerDemiDroite(m[1], m[2]);
     } else if ((m = ligne.match(/^tracer le cercle de centre (\S+) passant par (\S+)$/i))) {
         await construire.tracerCercle(ref(m[1]), ref(m[2]));
@@ -58,8 +72,9 @@ async function executerLigneEleve(ligneBrute) {
     } else if ((m = ligne.match(/^placer le point d'intersection entre (\S+) et (\S+)$/i))) {
         const nom = creerIntersectionPremiere(`Intersect(${ref(m[1])},${ref(m[2])})`);
         afficherSansEtiquette(nom); dernierObjet = nom; objetsConstruits.push(nom); await attendre(400);
-    } else if ((m = ligne.match(/^tracer le polygone ([A-Za-z]+)$/i))) {
-        await construire.tracerPolygone(m[1].split(''));
+    } else if ((m = ligne.match(REGEX_POLYGONE))) {
+        verifierSommetsPolygone(m[1], m[2]);
+        await construire.tracerPolygone(m[2].split(''));
     } else if ((m = ligne.match(/^nommer\s+(.+)$/i))) {
         const texteComplet = m[1].trim();
         const nomInterne = texteComplet.replace(/^[\(\[]|[\)\]]$/g, '');
@@ -90,7 +105,8 @@ async function executerLigneEleve(ligneBrute) {
             marquerSegmentsEgaux(segments, compteurCodageEleve);
         }
     } else {
-        throw new Error(`instruction non reconnue : "${ligne}"`);
+        const indice = indiceInstructionNonReconnue(ligne);
+        throw new Error(`instruction non reconnue : "${ligne}"` + (indice ? ` (${indice})` : ''));
     }
 
     if (nomInline) {
@@ -107,10 +123,10 @@ let modePedagogique = 'apprentissage'; // 'apprentissage', 'evaluation', 'expert
 const GRAMMAIRE_PREDICTION = {
     "tracer": ["la", "le"], "placer": ["le"], "nommer": [], "coder": [],
     "la": ["droite", "demi-droite", "médiatrice"],
-    "le": ["segment", "cercle", "milieu", "point", "polygone"],
+    "le": ["segment", "cercle", "milieu", "point", "polygone", "triangle", "quadrilatère", "pentagone", "hexagone"],
     "droite": ["passant", "parallèle", "perpendiculaire"],
     "demi-droite": ["d'origine"], "segment": ["d'extrémités"],
-    "cercle": ["de"], "milieu": ["du", "de"], "médiatrice": ["de"], "polygone": [],
+    "cercle": ["de"], "milieu": ["du", "de"], "médiatrice": ["de"], "polygone": [], "triangle": [], "quadrilatère": [], "pentagone": [], "hexagone": [],
     "point": ["d'intersection"], "d'intersection": ["visible", "entre", "autre"],
     "visible": ["entre"], "autre": ["que"], "que": [],
     "passant": ["par"], "parallèle": ["à"], "perpendiculaire": ["à"],
@@ -456,11 +472,9 @@ async function executerToutLeCodeTexte() {
             await executerLigneEleve(ligne);
             await pauseEtape();
         }
-        if (verifierReussite()) {
-            enregistrerReussite();
-            alerte("Réussi ! La construction correspond à la figure fantôme.");
-        }
-        else alerte("Ce n'est pas encore la bonne construction, modifiez votre code et réessayez.");
+        const bilan = bilanVerification();
+        if (bilan.reussite) enregistrerReussite();
+        alerte(bilan.message || "Ce n'est pas encore la bonne construction, modifiez votre code et réessayez.");
     } catch (e) {
         alerte("Erreur : " + e.message);
     } finally {
