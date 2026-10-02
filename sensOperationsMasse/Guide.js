@@ -57,16 +57,29 @@ class GuideAppli {
     contenu.id = 'guideContenu';
     contenu.innerHTML = `
       <h3>Objectif</h3>
-      <p>Les disques sont des plaques de métal identiques. Trouve la masse M de la partie grisée.</p>
+      <p>Les disques sont des plaques de métal identiques. Trouve la masse cherchée <b>M</b>.</p>
 
       <h3>Répondre</h3>
-      <p>1) Écris l'expression avec les unités : <b>(2*180g)+(180g:4)</b><br>Mets des parenthèses : pas de priorités entre les opérations.<br>
+      <p>1) Écris l'expression avec les unités : <b>(2*180g)+(180g:4)</b><br>
+      Mets des parenthèses : pas de priorités entre les opérations.<br>
       2) Valide avec Entrée, puis calcule ligne par ligne jusqu'au résultat : <b>405g</b>.</p>
       <p><b>*</b> pour multiplier, <b>:</b> pour diviser.</p>
 
+      <h3>Niveaux</h3>
+      <p><b>Échauffement</b> : une seule opération.<br>
+      <b>Niveau 1</b> : on connaît 1 disque, 2 opérations.<br>
+      <b>Niveau 2</b> : on connaît 1 disque, 3 opérations.<br>
+      <b>Niveau 3</b> : on cherche la masse d'1 disque.<br>
+      <b>Mixte</b> : niveaux 1, 2 et 3 mélangés.</p>
+
       <h3>Atelier / Quiz</h3>
-      <p><b>Atelier</b> : entraînement libre.<br>
-      <b>Quiz</b> : 10 exercices, score à la fin.</p>
+      <p><b>Atelier</b> : entraînement libre. Si tu abandonnes, la correction s'affiche.<br>
+      <b>Quiz</b> : 10 exercices, sans correction. Le niveau ne change plus une fois lancé.</p>
+
+      <h3>🎓 Diplôme</h3>
+      <p>Avant le quiz, écris ton prénom et l'initiale de ton nom.<br>
+      À la fin, clique sur <b>Mon diplôme</b> : il porte ton nom, ton niveau, ta note et une mention.<br>
+      Tu peux l'imprimer ou l'enregistrer en PDF.</p>
     `;
 
     carte.append(btnFermer, h2, contenu);
