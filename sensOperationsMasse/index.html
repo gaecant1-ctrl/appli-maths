@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sens des opérations (masse)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="disque.css">
+
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['$$', '$$']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">Sens des opérations : <b>masse</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+    <main id="app"></main>
+  </div>
+
+  <script src="Utils.js"></script>
+  <script src="Nombre.js"></script>
+  <script src="Grandeur.js"></script>
+  <script src="Expression.js"></script>
+  <script src="Somme.js"></script>
+  <script src="Produit.js"></script>
+  <script src="ObjetString.js"></script>
+  <script src="Grader.js"></script>
+  <script src="Exercice.js"></script>
+  <script src="Enonce.js"></script>
+  <script src="EnonceDisque.js"></script>
+  <script src="Animation.js"></script>
+  <script src="AnimationFinale.js"></script>
+  <script src="Guide.js"></script>
+  <script src="Quiz.js"></script>
+  <script src="Diplome.js"></script>
+
+  <script>
+function setupBoutonNouvelOnglet() {
+  const conteneur = document.getElementById("topButtonsBar");
+  if (!conteneur) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-header';
+  btn.textContent = '↗ Nouvel onglet';
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
+  repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+  btn.onclick = () => {
+    const w = window.open(window.location.href, "_blank", "noopener");
+    if (!w) repli.style.display = 'inline';
+  };
+  conteneur.append(btn, repli);
+}
+
+window.addEventListener('load', () => {
+  // Niveau choisi + paquet de types mélangé, parcouru en boucle
+  // (pas deux fois le même type d'affilée)
+  let niveau = 1;
+  let quiz = null;
+  let paquet = [];
+  const melanger = (t) => {
+    for (let i = t.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [t[i], t[j]] = [t[j], t[i]];
+    }
+    return t;
+  };
+  function melangerPaquet() {
+    const def = DISQUE_NIVEAUX[niveau];
+    paquet = [];
+    for (let tour = 0; tour < 10; tour++) {
+      // Mixte : à chaque tour, un type tiré dans chacun des niveaux mélangés
+      const t = def.melange
+        ? melanger(def.melange.map(n => DISQUE_NIVEAUX[n].types[Math.floor(Math.random() * DISQUE_NIVEAUX[n].types.length)]))
+        : melanger(def.types.slice());
+      if (paquet.length && t.length > 1 && paquet[paquet.length - 1] === t[0]) t.push(t.shift());
+      paquet.push(...t);
+    }
+  }
+  melangerPaquet();
+
+  function buildDisque(zone, index, onRejet) {
+    const type = paquet[(index - 1) % paquet.length];
+    const enonce = new EnonceDisque({ sharedOptions: { niveau, typeForce: type } });
+    return enonce.buildExercise(zone, index, onRejet);
+  }
+
+  // Sélecteur de niveau, placé dans le panneau latéral (reconstruit à chaque start())
+  const selecteur = document.createElement('div');
+  selecteur.className = 'niveau-choix';
+  const boutonsNiveau = Object.entries(DISQUE_NIVEAUX).map(([cle, def]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'niveau-btn';
+    b.innerHTML = `<b>${def.nom}</b><span>${def.aide}</span>`;
+    b.addEventListener('click', () => choisirNiveau(Number(cle)));
+    selecteur.appendChild(b);
+    return { cle: Number(cle), b };
+  });
+  // En Quiz, une fois lancé : niveaux visibles mais figés jusqu'au prochain départ
+  function majBoutonsNiveau() {
+    const fige = !!(quiz && quiz.etatJeu === 'quiz' && quiz.quizDemarre);
+    boutonsNiveau.forEach(({ cle, b }) => {
+      b.classList.toggle('actif', cle === niveau);
+      b.disabled = fige;
+    });
+    selecteur.title = fige ? 'Niveau fixé pendant le quiz' : '';
+  }
+  majBoutonsNiveau();
+
+  const buildPanelOrigine = Quiz.prototype._buildPanel;
+  Quiz.prototype._buildPanel = function () {
+    buildPanelOrigine.call(this);
+    this.panneau.insertBefore(selecteur, this.nextButton);
+    majBoutonsNiveau();
+  };
+  const nouvelleQuestionOrigine = Quiz.prototype._nouvelleQuestion;
+  Quiz.prototype._nouvelleQuestion = function () {
+    nouvelleQuestionOrigine.call(this);
+    majBoutonsNiveau();
+  };
+
+  function choisirNiveau(n) {
+    if (n === niveau) return;
+    if (quiz.etatJeu === 'quiz' && quiz.quizDemarre) return;
+    niveau = n;
+    majBoutonsNiveau();
+    melangerPaquet();
+    // Quiz : on recommence ; Atelier : nouvel exercice tout de suite si on avait commencé
+    if (quiz.etatJeu === 'atelier' && quiz.hasStarted) quiz._nouvelleQuestion();
+    else quiz.start();
+  }
+
+  // ---------- Quiz : prénom + initiale du nom, pour le diplôme ----------
+  const eleve = { prenom: '', initiale: '' };
+  let champPrenom = null, champInitiale = null, erreurNom = null;
+
+  function lireEleve() {
+    const prenom = (champPrenom?.value || '').trim().replace(/\s+/g, ' ');
+    const initiale = (champInitiale?.value || '').trim();
+    if (prenom.length < 2 || !/^[A-Za-zÀ-ÖØ-öø-ÿ]$/.test(initiale)) {
+      if (erreurNom) erreurNom.textContent = "Écris ton prénom et l'initiale de ton nom.";
+      (prenom.length < 2 ? champPrenom : champInitiale)?.focus();
+      return false;
+    }
+    eleve.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
+    eleve.initiale = initiale.toUpperCase();
+    return true;
+  }
+
+  const readyOrigine = Quiz.prototype._showReadyScreen;
+  Quiz.prototype._showReadyScreen = function () {
+    readyOrigine.call(this);
+    if (this.etatJeu !== 'quiz') return;
+    const form = document.createElement('div');
+    form.className = 'eleve-form';
+    form.innerHTML = `
+      <p class="eleve-titre">🎓 Pour ton diplôme</p>
+      <div class="eleve-champs">
+        <label>Prénom <input id="champPrenom" type="text" maxlength="25" autocomplete="off"></label>
+        <label>Initiale du nom <input id="champInitiale" type="text" maxlength="1" autocomplete="off"></label>
+      </div>
+      <p class="eleve-erreur" aria-live="polite"></p>`;
+    this.zone.appendChild(form);
+    champPrenom = form.querySelector('#champPrenom');
+    champInitiale = form.querySelector('#champInitiale');
+    erreurNom = form.querySelector('.eleve-erreur');
+    champPrenom.value = eleve.prenom;
+    champInitiale.value = eleve.initiale;
+    for (const c of [champPrenom, champInitiale]) {
+      c.addEventListener('keydown', e => { if (e.key === 'Enter') this.nextButton.click(); });
+    }
+    champInitiale.addEventListener('input', () => { champInitiale.value = champInitiale.value.toUpperCase(); });
+    setTimeout(() => champPrenom.focus(), 0);
+  };
+
+  // Le quiz ne démarre pas sans prénom ni initiale
+  const nextOrigine = Quiz.prototype._onNextClick;
+  Quiz.prototype._onNextClick = function () {
+    if (!this.hasStarted && this.etatJeu === 'quiz' && !lireEleve()) return;
+    return nextOrigine.call(this);
+  };
+
+  // Bilan : bouton « Mon diplôme » à côté de « Recommencer »
+  const finOrigine = Quiz.prototype._finQuiz;
+  Quiz.prototype._finQuiz = function () {
+    const score = this.bonnes, total = this.total;
+    const erreurs = this.rejetsCumules / Math.max(total, 1);
+    finOrigine.call(this);
+    const restart = document.getElementById('restartButton');
+    if (!restart) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'diplomeButton';
+    b.textContent = '🎓 Mon diplôme';
+    b.style.cssText = restart.style.cssText;
+    b.style.marginLeft = '12px';
+    b.style.background = 'linear-gradient(90deg, #c9a227 60%, #f7e08a 100%)';
+    b.style.color = '#1f2430';
+    b.onclick = () => ouvrirDiplome({
+      nom: `${eleve.prenom} ${eleve.initiale}.`,
+      score, total,
+      niveau: DISQUE_NIVEAUX[niveau].nom,
+      erreurs
+    });
+    restart.after(b);
+    // Même apparition que « Recommencer » (caché pendant les confettis)
+    const sync = () => { b.style.display = restart.style.display; };
+    sync();
+    new MutationObserver(sync).observe(restart, { attributes: true, attributeFilter: ['style'] });
+  };
+
+  quiz = new Quiz({
+    mount: '#app',
+    nbQuestions: 10,
+    buildExercise: buildDisque,
+    texts: {
+      ready: "Sens des opérations : masse",
+      readyContent: `
+        <p style="font-size:1.2em; line-height:1.6; margin:20px 0; text-align:center;">
+          Écris d'abord l'expression, puis calcule.<br>
+          <em>ex : (2*180g)+(180g:4) puis 405g<br>Mets des parenthèses : pas de priorités !</em>
+        </p>`
+    }
+  });
+
+  setupBoutonNouvelOnglet();
+  new GuideAppli().installerBouton(document.getElementById('topButtonsBar'));
+});
+  </script>
+</body>
+</html>

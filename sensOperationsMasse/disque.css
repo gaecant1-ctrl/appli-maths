@@ -1,0 +1,162 @@
+/* Couleurs propres à l'appli « Sens des opérations (masse) » */
+:root {
+  --disque-couleur: #f59f00;      /* parts des plaques de métal */
+  --donnee-fond: #e7f1fb;
+  --donnee-trait: #1c6fb8;
+  --cherche-fond: #f4ecfb;        /* masse cherchée : violet */
+  --cherche-trait: #6f3fa0;
+}
+
+/* Tout l'exercice centré dans son panneau */
+.question {
+  text-align: center;
+}
+
+.disque-consigne {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: var(--accent, #2f9e44);
+  margin-bottom: 14px;
+}
+
+.disque-tableau {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 auto;
+  max-width: 640px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #c9d6cf;
+  font-weight: normal;
+}
+
+.disque-case {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 16px;
+}
+
+.disque-case:first-child  { background: var(--donnee-fond); }
+.disque-case:last-child   { background: var(--cherche-fond); }
+.disque-case + .disque-case { border-left: 2px solid #c9d6cf; }
+
+.disque-titre {
+  align-self: stretch;
+  text-align: center;
+  font-weight: bold;
+  padding: 8px 0;
+  color: #fff;
+  margin: 0 -12px;
+}
+.disque-case:first-child .disque-titre { background: var(--donnee-trait); }
+.disque-case:last-child  .disque-titre { background: var(--cherche-trait); }
+
+.disque-dessins {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  min-height: 76px;
+  align-items: center;
+}
+
+.disque-legende {
+  font-size: 1.15em;
+  font-weight: normal;
+}
+.disque-case:first-child .disque-legende { color: var(--donnee-trait); }
+.disque-case:last-child  .disque-legende { color: var(--cherche-trait); font-weight: bold; }
+
+/* Lignes de calcul et correction : bloc centré, signes = alignés à gauche */
+.reponse,
+.correction-content {
+  width: 100%;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 560px) {
+  .disque-case + .disque-case {
+    border-left: none;
+    border-top: 2px solid #c9d6cf;
+  }
+}
+
+/* Choix du niveau (panneau latéral) */
+.niveau-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 14px;
+}
+.niveau-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--grille, #d3ead9);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--encre, #23302a);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.niveau-btn span {
+  font-size: .82em;
+  color: var(--encre-douce, #5f7a68);
+}
+.niveau-btn:hover { border-color: var(--accent, #2f9e44); }
+.niveau-btn.actif {
+  border-color: var(--accent, #2f9e44);
+  background: var(--accent-clair, #e6f7e9);
+  box-shadow: inset 4px 0 0 var(--accent, #2f9e44);
+}
+.niveau-btn:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+.niveau-btn.actif:disabled { opacity: 1; }
+.niveau-btn:disabled:hover { border-color: var(--grille, #d3ead9); }
+.niveau-btn.actif:disabled:hover { border-color: var(--accent, #2f9e44); }
+
+/* Message après abandon, au-dessus du bouton « Suivant » */
+.message-abandon {
+  margin: 0 0 10px;
+  text-align: center;
+  color: var(--encre-douce, #5f7a68);
+  font-size: 1.05em;
+}
+.bouton-correction { flex-direction: column; align-items: center; }
+/* Zone de saisie vide (après abandon) : pas de grand blanc */
+.reponse:not(:has(.input-wrapper)) { min-height: 0; }
+
+/* Quiz : prénom + initiale du nom (diplôme) */
+.eleve-form {
+  margin: 4px auto 0;
+  padding: 14px 18px;
+  max-width: 460px;
+  border: 2px solid #c9a227;
+  border-radius: 12px;
+  background: #fffaf0;
+  text-align: center;
+}
+.eleve-titre { margin: 0 0 10px; font-weight: bold; color: #6b5a2e; }
+.eleve-champs { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.eleve-champs label { display: flex; flex-direction: column; gap: 4px; font-size: .95em; color: var(--encre, #23302a); }
+.eleve-champs input {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1.5px solid var(--grille, #d3ead9);
+  border-radius: 8px;
+  width: 190px;
+}
+.eleve-champs input#champInitiale { width: 60px; text-align: center; text-transform: uppercase; }
+.eleve-champs input:focus { outline: none; border-color: var(--accent, #2f9e44); }
+.eleve-erreur { margin: 8px 0 0; min-height: 1.2em; color: var(--erreur, #c0392b); font-size: .9em; }
