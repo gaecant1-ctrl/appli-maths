@@ -160,3 +160,48 @@
 .eleve-champs input#champInitiale { width: 60px; text-align: center; text-transform: uppercase; }
 .eleve-champs input:focus { outline: none; border-color: var(--accent, #2f9e44); }
 .eleve-erreur { margin: 8px 0 0; min-height: 1.2em; color: var(--erreur, #c0392b); font-size: .9em; }
+
+/* Appli intégrée dans une autre page : invitation à l'ouvrir dans un nouvel onglet */
+#voileOnglet {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(241, 248, 243, .96);
+}
+#voileOnglet .voile-carte {
+  background: #fff;
+  border: 2px solid var(--accent, #2f9e44);
+  border-radius: 14px;
+  padding: 24px 28px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(35, 48, 42, .15);
+  max-width: 420px;
+}
+#voileOnglet .voile-titre { font-size: 1.3em; margin: 0 0 18px; color: var(--header-texte, #1f5c33); }
+#voileOnglet .voile-ouvrir {
+  font: inherit;
+  font-size: 1.1em;
+  font-weight: 600;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent, #2f9e44);
+  color: #fff;
+  cursor: pointer;
+}
+#voileOnglet .voile-ouvrir:hover { background: var(--accent-hover, #237a35); }
+#voileOnglet .voile-bloque { margin: 12px 0 0; font-size: .9em; color: var(--erreur, #c0392b); }
+#voileOnglet .voile-rester {
+  margin-top: 14px;
+  font: inherit;
+  font-size: .85em;
+  border: none;
+  background: none;
+  color: var(--encre-douce, #5f7a68);
+  text-decoration: underline;
+  cursor: pointer;
+}

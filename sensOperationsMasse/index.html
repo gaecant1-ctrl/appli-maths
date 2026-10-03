@@ -65,6 +65,30 @@ function setupBoutonNouvelOnglet() {
   conteneur.append(btn, repli);
 }
 
+/** Appli intégrée dans une autre page (iframe) : écran qui invite à l'ouvrir dans
+ *  un nouvel onglet. Un navigateur n'ouvre pas d'onglet sans clic : il en faut un. */
+function proposerNouvelOnglet() {
+  let integree;
+  try { integree = window.self !== window.top; } catch (e) { integree = true; }
+  if (!integree) return;
+  const voile = document.createElement('div');
+  voile.id = 'voileOnglet';
+  voile.innerHTML = `
+    <div class="voile-carte">
+      <p class="voile-titre">Sens des opérations : <b>masse</b></p>
+      <button type="button" class="voile-ouvrir">↗ Ouvrir l'appli dans un nouvel onglet</button>
+      <p class="voile-bloque" hidden>Ouverture bloquée — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a></p>
+      <button type="button" class="voile-rester">rester ici</button>
+    </div>`;
+  document.body.appendChild(voile);
+  voile.querySelector('.voile-ouvrir').onclick = () => {
+    const w = window.open(window.location.href, '_blank', 'noopener');
+    if (!w) voile.querySelector('.voile-bloque').hidden = false;
+    else voile.remove();
+  };
+  voile.querySelector('.voile-rester').onclick = () => voile.remove();
+}
+
 window.addEventListener('load', () => {
   // Niveau choisi + paquet de types mélangé, parcouru en boucle
   // (pas deux fois le même type d'affilée)
@@ -238,6 +262,7 @@ window.addEventListener('load', () => {
   });
 
   setupBoutonNouvelOnglet();
+  proposerNouvelOnglet();
   new GuideAppli().installerBouton(document.getElementById('topButtonsBar'));
 });
   </script>

@@ -13,8 +13,8 @@
  *   1. On connaît 1 disque — 2 opérations :
  *      A. p/q (p ≥ 2)                 (m : q) × p   ou   m − (m : q) s'il manque une part
  *      B. 1 + 1/q                     m + (m : q)
+ *      C. 2 + 1/q (q ≤ 5)             (m : q) × (2q + 1)   (on compte les parts)
  *   2. On connaît 1 disque — 3 opérations :
- *      C. 2 + 1/q                     (2 × m) + (m : q)
  *      D. 1 + p/q (p ≥ 2)             m + ((m : q) × p)   ou   (2 × m) − (m : q)
  *      F. 2 ou 3 + (q−1)/q            (4 × m) − (m : q)
  *      G. 1/q1 + 1/q2                 (m : q1) + (m : q2)
@@ -25,8 +25,8 @@
 
 const DISQUE_NIVEAUX = {
   0: { nom: 'Échauffement', aide: 'une opération', types: ['E1', 'E2', 'E3', 'E4'] },
-  1: { nom: 'Niveau 1', aide: 'on connaît 1 disque · 2 opérations', types: ['A', 'B'] },
-  2: { nom: 'Niveau 2', aide: 'on connaît 1 disque · 3 opérations', types: ['C', 'D', 'F', 'G'] },
+  1: { nom: 'Niveau 1', aide: 'on connaît 1 disque · 2 opérations', types: ['A', 'B', 'C'] },
+  2: { nom: 'Niveau 2', aide: 'on connaît 1 disque · 3 opérations', types: ['D', 'F', 'G'] },
   3: { nom: 'Niveau 3', aide: 'on cherche 1 disque', types: [4, 5] },
   4: { nom: 'Mixte', aide: 'niveaux 1, 2 et 3 mélangés', melange: [1, 2, 3] }
 };
@@ -37,6 +37,8 @@ function typesDuNiveau(niveau) {
   return def.melange ? def.melange.flatMap(n => DISQUE_NIVEAUX[n].types) : def.types;
 }
 const DISQUE_DENOMS = [2, 3, 4, 5, 6, 8, 10];
+// Masses d'une part « rondes » : les calculs restent faciles
+const DISQUE_PARTS_RONDES = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 150];
 
 function disquePgcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
 function disquePpcm(a, b) { return a / disquePgcd(a, b) * b; }
@@ -104,12 +106,23 @@ class EnonceDisque extends Enonce {
     return { n: this.rng.pick(ps), d: q };
   }
 
-  /** Masse d'un disque : multiple de ppcm(dénominateurs, 10), entre 60 g et 360 g. */
+  /** Masse d'un disque, choisie pour des calculs simples (on travaille le sens, pas le calcul) :
+   *  - sans part : multiple de 10, de 60 g à 250 g ;
+   *  - une sorte de part (q) : la masse d'une part est un nombre rond (DISQUE_PARTS_RONDES) ;
+   *  - deux sortes de parts : chaque part est un multiple de 5.
+   *  Toujours entre 60 g et 300 g. */
   _masseDisque(denoms) {
-    const L = denoms.reduce((acc, q) => disquePpcm(acc, q), 10);
     const choix = [];
-    for (let m = L; m <= 360; m += L) if (m >= 60) choix.push(m);
-    return this.rng.pick(choix.length ? choix : [L]);
+    if (denoms.length === 0) {
+      for (let m = 60; m <= 250; m += 10) choix.push(m);
+    } else if (denoms.length === 1) {
+      const q = denoms[0];
+      for (const u of DISQUE_PARTS_RONDES) if (u * q >= 60 && u * q <= 300) choix.push(u * q);
+    } else {
+      const L = denoms.reduce((acc, q) => disquePpcm(acc, 5 * q), 1);
+      for (let m = L; m <= 300; m += L) if (m >= 60) choix.push(m);
+    }
+    return this.rng.pick(choix.length ? choix : [60]);
   }
 
   /** « (m g : q) × p » (ou « m g : q » si p = 1), en syntaxe du moteur.
@@ -171,7 +184,7 @@ class EnonceDisque extends Enonce {
         const grands = DISQUE_DENOMS.filter(q => q > 2);
         let k, f;
         if (type === 'B') { k = 1; f = { n: 1, d: this.rng.pick(DISQUE_DENOMS) }; }
-        else if (type === 'C') { k = 2; f = { n: 1, d: this.rng.pick(DISQUE_DENOMS) }; }
+        else if (type === 'C') { k = 2; f = { n: 1, d: this.rng.pick([2, 3, 4, 5]) }; } // × 5, 7, 9 ou 11
         else if (type === 'D') { k = 1; f = this._fractionIrreductible(grands, 2); }
         else { k = this.rng.int(2, 3); const d = this.rng.pick(grands); f = { n: d - 1, d }; }
         const m = this._masseDisque([f.d]);
@@ -179,7 +192,11 @@ class EnonceDisque extends Enonce {
         masseDonnee = m;
         const part = m / f.d * f.n;
         reponse = k * m + part;
-        if (f.d > 2 && f.n === f.d - 1) {
+        if (type === 'C') {
+          // 2 disques + 1 part : on compte les parts (2 opérations)
+          const nb = k * f.d + 1;
+          etapes = [`(${m}g:${f.d})*${nb}`, `${m / f.d}g*${nb}`, `${reponse}g`];
+        } else if (f.d > 2 && f.n === f.d - 1) {
           // Il manque une part : un disque de plus, moins une part (2 opérations)
           etapes = [`(${k + 1}*${m}g)-(${m}g:${f.d})`, `${(k + 1) * m}g-${m / f.d}g`, `${reponse}g`];
         } else {
