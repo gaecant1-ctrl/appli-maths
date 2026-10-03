@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Somme en nombre mixte</title>
+<style>
+:root{
+  --papier:#ffffff; --papier-panel:#f1f8f3;
+  --grille:#d3ead9; --grille-forte:#1f5c33;
+  --encre:#23302a; --encre-douce:#5f7a68;
+  --accent:#2f9e44; --accent-hover:#237a35; --accent-clair:#e6f7e9;
+  --header-fond:#f1f8f3; --header-bordure:#d3ead9; --header-texte:#1f5c33;
+  --erreur:#c0392b; --erreur-fond:#fbeceb;
+  --succes:#1e7e34; --succes-fond:#e6f6ea;
+  --attention:#8a6d1a; --attention-fond:#fbf3e0;
+  --jeton-entier:#f4b942; --jeton-entier-bord:#b9811a;
+  --jeton-frac:#8fb8ef; --jeton-frac-bord:#3f6fb5;
+  --rayon:10px; --rayon-petit:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;color:var(--encre);background:var(--papier-panel)}
+
+header{display:flex;align-items:center;gap:14px;padding:0 20px;min-height:54px;background:var(--header-fond);border-bottom:1px solid var(--header-bordure);flex-wrap:wrap}
+#titre_appli{font-size:1.2rem;padding:10px 0}
+#titre_appli b{color:var(--header-texte)}
+.header-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
+.btn-header{background:transparent;border:.5px solid var(--header-bordure);height:34px;padding:0 14px;font:inherit;font-size:.82rem;font-weight:500;border-radius:var(--rayon-petit);cursor:pointer;color:var(--header-texte)}
+.btn-header:hover{border-color:var(--header-texte)}
+.btn-header.active{border-color:var(--accent);color:var(--accent)}
+.filet-header{width:1px;height:22px;background:var(--header-bordure);flex-shrink:0}
+
+#appBody{display:flex;align-items:flex-start}
+#panneauLateral{flex:0 0 280px;min-height:calc(100vh - 54px);background:var(--papier);border-right:1px solid var(--grille);padding:20px 16px;display:flex;flex-direction:column;gap:10px}
+.panel-label,.panel-groupe-label{font-size:11.5px;font-weight:700;color:var(--encre-douce);text-transform:uppercase;letter-spacing:.04em}
+.panel-groupe{display:flex;flex-direction:column;gap:8px}
+.panel-type-list{display:flex;flex-direction:column;gap:8px}
+.panel-filet{height:1px;background:var(--grille);margin:4px 0}
+.panel-btn{width:100%;background-color:var(--papier-panel);border:2px solid var(--grille);border-radius:var(--rayon-petit);padding:10px 14px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--encre);cursor:pointer;text-align:left;transition:border-color .15s,color .15s,background-color .15s}
+.panel-btn .aide{display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px}
+.panel-btn:hover{border-color:var(--accent);color:var(--accent)}
+.panel-btn.active{background-color:var(--accent);border-color:var(--accent);color:var(--papier)}
+.panel-btn.active:hover{background-color:var(--accent-hover);border-color:var(--accent-hover);color:var(--papier)}
+.panel-btn:disabled{cursor:default;background-color:var(--papier-panel);border-color:var(--grille);color:#9a9a9a}
+.panel-btn.active:disabled{opacity:.55;background-color:var(--accent);border-color:var(--accent);color:#9a9a9a}
+#score-container{display:flex;flex-direction:column;gap:8px;width:100%}
+#question-progress,#score,#skipButton{width:100%;background-color:var(--papier-panel);padding:10px 14px;border-radius:var(--rayon-petit);font-weight:700;font-size:13.5px;border:2px solid var(--grille);text-align:left;font-family:inherit}
+#question-progress{color:var(--encre-douce)}
+#score{color:var(--succes);border-color:var(--succes)}
+#skipButton{border-color:var(--accent);color:var(--accent);cursor:pointer;transition:background-color .15s,color .15s}
+#skipButton:hover{background-color:var(--accent);color:var(--papier)}
+
+#ecranQuiz{text-align:center;margin-top:50px}
+#ecranQuiz[hidden],#jeu[hidden]{display:none}
+.restart-btn{margin-top:25px;padding:12px 30px;background:var(--accent);color:#fff;border:none;border-radius:12px;font:inherit;font-size:1.1rem;font-weight:600;cursor:pointer}
+.restart-btn:hover{background:var(--accent-hover)}
+
+main{flex:1 1 auto;min-width:0;padding:26px 20px 60px;display:flex;justify-content:center}
+.colonnes{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:1050px;flex-wrap:wrap}
+.col-gauche{flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.col-droite{flex:0 0 380px;display:flex;flex-direction:column;gap:14px}
+.carte{background:var(--papier);border:1px solid var(--grille);border-radius:var(--rayon);padding:16px 18px;box-shadow:0 4px 14px rgba(35,48,42,.08)}
+.consigne{font-size:1.15rem;font-weight:600;margin:0}
+.sous-consigne{font-size:.95rem;color:var(--encre-douce);margin:4px 0 0}
+
+/* Jetons */
+#zoneJetons{position:relative;margin:14px auto 16px;overflow:hidden;border-bottom:4px solid var(--grille-forte);border-radius:var(--rayon-petit) var(--rayon-petit) 0 0;
+  background-color:#f8fbf9;
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(var(--cell) - 1px),var(--grille) calc(var(--cell) - 1px),var(--grille) var(--cell))}
+.jeton{position:absolute;width:calc(var(--cell) - 12px);height:calc(var(--cell) - 12px);margin:6px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--cell) * .3);font-weight:700;cursor:pointer;user-select:none;border:3px solid;box-shadow:0 3px 0 rgba(0,0,0,.18);
+  transition:top .5s cubic-bezier(.55,0,1,.45), left .3s, transform .15s, box-shadow .15s, opacity .25s}
+.jeton.entier{background:var(--jeton-entier);border-color:var(--jeton-entier-bord)}
+.jeton.frac{background:var(--jeton-frac);border-color:var(--jeton-frac-bord)}
+.jeton:hover{transform:translateY(-2px)}
+.jeton.choisi{transform:translateY(-4px);box-shadow:0 0 0 4px var(--accent),0 8px 10px rgba(0,0,0,.18);z-index:2}
+.jeton.disparait{opacity:0;transform:scale(.6)}
+
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 2px}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 3px}
+.jeton .fr{font-size:calc(var(--cell) * .27)}
+
+.barre-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:1rem;font-weight:600;padding:9px 18px;border-radius:var(--rayon-petit);cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:#fff}
+.btn:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.secondaire{background:var(--papier);color:var(--accent)}
+.btn.secondaire:hover{background:var(--accent-clair)}
+
+#carteJetons{position:relative}
+#overlay{position:absolute;inset:0;background:rgba(241,248,243,.8);border-radius:var(--rayon);display:flex;align-items:flex-start;justify-content:center;padding-top:10px;z-index:5}
+.jeton.choisi.verrou{z-index:6}
+#overlay[hidden]{display:none}
+.overlay-boite{background:var(--papier);border:2px solid var(--accent);border-radius:var(--rayon);padding:18px 22px;box-shadow:0 10px 30px rgba(35,48,42,.2);max-width:92%}
+.egal-saisie{white-space:nowrap;display:inline-flex;align-items:center}
+.jeton.verrou{cursor:default}
+
+/* Réponse */
+.reponse{display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.3rem;flex-wrap:wrap}
+.reponse input{width:130px;height:46px;font:inherit;font-size:1.3rem;text-align:center;border:2px solid var(--grille);border-radius:var(--rayon-petit)}
+.reponse input:focus{outline:none;border-color:var(--accent)}
+#retour{min-height:48px;padding:10px 12px;border-radius:var(--rayon-petit);font-weight:600;font-size:1.05rem;display:flex;align-items:center;gap:6px}
+#retour:empty{background:transparent}
+#retour.ok{background:var(--succes-fond);color:var(--succes)}
+#retour.non{background:var(--erreur-fond);color:var(--erreur)}
+#retour.info{background:var(--attention-fond);color:var(--attention)}
+
+#voileOnglet{position:fixed;inset:0;background:rgba(35,48,42,.45);display:flex;align-items:center;justify-content:center;z-index:50}
+.voile-carte{background:#fff;border-radius:var(--rayon);padding:24px 28px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.voile-rester{background:none;border:none;color:var(--encre-douce);text-decoration:underline;cursor:pointer;font:inherit}
+
+@media (max-width:760px){
+  #appBody{flex-direction:column}
+  #panneauLateral{flex:none;width:100%;min-height:0;border-right:none;border-bottom:1px solid var(--grille)}
+  .col-droite{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span id="titre_appli">Fractions : <b>somme en nombre mixte</b></span>
+  <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="appBody">
+  <aside id="panneauLateral"></aside>
+
+  <main>
+    <div id="ecranQuiz" hidden></div>
+    <div class="colonnes" id="jeu">
+      <div class="col-gauche">
+        <div class="carte" id="carteJetons">
+          <p class="consigne">Calcule la somme de tous les jetons.</p>
+          <p class="sous-consigne">Tu peux regrouper des jetons pour t'aider.</p>
+          <div id="zoneJetons"></div>
+          <div class="barre-actions">
+            <button type="button" class="btn" id="btnRegrouper" disabled>Regrouper</button>
+            <button type="button" class="btn secondaire" id="btnRecommencer">↺ Jetons de départ</button>
+          </div>
+
+          <div id="overlay" hidden>
+            <div class="overlay-boite">
+              <div class="panel-label" style="margin-bottom:12px">Combien ça fait ?</div>
+              <div class="reponse">
+                <span id="calcul"></span>
+                <span class="egal-saisie">=&nbsp;<input id="repGroupe" autocomplete="off" spellcheck="false" placeholder="ex : 2+3/4" aria-label="somme des jetons choisis"></span>
+              </div>
+              <div class="barre-actions" style="margin-top:16px">
+                <button type="button" class="btn" id="btnValiderGroupe">Valider</button>
+                <button type="button" class="btn secondaire" id="btnAnnulerGroupe">Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-droite">
+        <div class="carte">
+          <div class="panel-label" style="margin-bottom:12px">Somme de tous les jetons</div>
+          <div class="reponse">
+            <span class="egal-saisie">Somme :&nbsp;<input id="repTotal" autocomplete="off" spellcheck="false" placeholder="ex : 2+3/4" aria-label="somme de tous les jetons"></span>
+          </div>
+          <div class="barre-actions" style="margin-top:14px">
+            <button type="button" class="btn" id="btnValider">Valider</button>
+          </div>
+        </div>
+        <div id="retour" aria-live="polite"></div>
+        <div class="barre-actions">
+          <button type="button" class="btn" id="btnSuivant" hidden>Suivant (Entrée)</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+<script src="Fiche.js?v=2"></script>
+<script src="Guide.js?v=1"></script>
+<script>
+// ================= Outils =================
+const alea = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const choisir = t => t[Math.floor(Math.random() * t.length)];
+const pgcd = (a, b) => (b === 0 ? a : pgcd(b, a % b));
+const melanger = t => {
+  for (let i = t.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [t[i], t[j]] = [t[j], t[i]];
+  }
+  return t;
+};
+const frHTML = (a, b) => `<span class="fr"><span>${a}</span><span>${b}</span></span>`;
+const jetonHTML = j => (j.b === 1 ? `${j.a}` : frHTML(j.a, j.b));
+
+// ================= Niveaux =================
+// groupes : nombre de paquets de fractions dont la somme est entière
+// taille : nombre de fractions par paquet ; k : valeur entière d'un paquet
+// familles : nombre de dénominateurs différents dans un tirage
+const NIVEAUX = {
+  1: { nom: 'Facile', aide: 'demis, tiers, quarts', dens: [2, 3, 4], familles: 1, entiers: [1, 2], groupes: [1, 2], taille: [2, 2], k: [1, 2] },
+  2: { nom: 'Moyen', aide: 'tous les dénominateurs', dens: [2, 3, 4, 5, 6, 7, 8, 9], familles: 1, entiers: [1, 2], groupes: [1, 2], taille: [2, 3], k: [1, 2] },
+  3: { nom: 'Difficile', aide: 'dénominateurs différents', dens: [2, 3, 4, 5, 6, 7, 8, 9], familles: 2, entiers: [1, 2], groupes: [1, 1], taille: [2, 2], k: [1, 2] }
+};
+
+// Un paquet de m numérateurs (de 1 à 9, premiers avec b), de somme k×b
+function paquet(b, m, k) {
+  const permis = [];
+  for (let a = 1; a <= 9; a++) if (pgcd(a, b) === 1) permis.push(a);
+  for (let essai = 0; essai < 400; essai++) {
+    const t = [];
+    for (let i = 0; i < m - 1; i++) t.push(choisir(permis));
+    const dernier = k * b - t.reduce((s, x) => s + x, 0);
+    if (permis.includes(dernier)) return [...t, dernier];
+  }
+  return null;
+}
+
+// Chaque dénominateur forme des paquets entiers ; seul le dernier laisse
+// une fraction plus petite que 1 : au final il ne reste qu'un dénominateur.
+function tirage(niv) {
+  const def = NIVEAUX[niv];
+  for (;;) {
+    const dens = melanger(def.dens.slice()).slice(0, def.familles);
+    const jetons = [];
+    let ok = true;
+    dens.forEach(b => {
+      const nbGroupes = alea(def.groupes[0], def.groupes[1]);
+      for (let g = 0; g < nbGroupes && ok; g++) {
+        const p = paquet(b, alea(def.taille[0], def.taille[1]), alea(def.k[0], def.k[1]));
+        if (!p) ok = false; else p.forEach(a => jetons.push({ a, b }));
+      }
+    });
+    if (!ok) continue;
+    const b = dens[dens.length - 1];
+    const restes = [];
+    for (let r = 1; r < b; r++) if (pgcd(r, b) === 1) restes.push(r);
+    jetons.push({ a: choisir(restes), b });
+    const nbEntiers = alea(def.entiers[0], def.entiers[1]);
+    for (let i = 0; i < nbEntiers; i++) jetons.push({ a: alea(1, 9), b: 1 });
+    return melanger(jetons).map((j, i) => ({ ...j, id: i }));
+  }
+}
+
+// ================= État =================
+let niveau = 1;
+let depart = [];      // jetons du tirage
+let jetons = [];      // jetons affichés
+let choisis = new Set();
+let enCours = null;   // jetons en train d'être regroupés
+let prochainId = 100;
+let termine = false;
+
+// Atelier : rien n'est compté, questions illimitées. Quiz : 10 questions.
+let etatJeu = 'atelier';     // 'atelier' | 'quiz'
+let quizDemarre = false;
+let questionCount = 0;
+let score = 0;
+const NB_QUESTIONS = 10;
+
+const $ = id => document.getElementById(id);
+
+// somme des jetons : t b-ièmes, b = plus petit dénominateur commun
+function somme(liste) {
+  const b = liste.reduce((m, j) => m * j.b / pgcd(m, j.b), 1);
+  const t = liste.reduce((s, j) => s + j.a * (b / j.b), 0);
+  return { t, b };
+}
+
+// ================= Affichage =================
+// ---------- Grille avec pesanteur ----------
+const COLS = 5, ROWS = 4;
+let pos = new Map();          // id → { c, r } (r = 0 en bas)
+const elements = new Map();   // id → élément affiché
+
+function hauteur(c) {
+  let h = 0;
+  pos.forEach(p => { if (p.c === c) h++; });
+  return h;
+}
+
+// pose un jeton en haut d'une colonne (la plus proche de cPref si elle est pleine)
+function poser(j, cPref) {
+  const libres = [...Array(COLS).keys()].filter(c => hauteur(c) < ROWS);
+  let c;
+  if (cPref === undefined) c = choisir(libres);
+  else c = libres.sort((x, y) => Math.abs(x - cPref) - Math.abs(y - cPref))[0];
+  pos.set(j.id, { c, r: hauteur(c) });
+}
+
+// pesanteur : dans chaque colonne, les jetons descendent sans trou
+function tasser() {
+  for (let c = 0; c < COLS; c++) {
+    [...pos.entries()].filter(([, p]) => p.c === c)
+      .sort((x, y) => x[1].r - y[1].r)
+      .forEach(([, p], i) => { p.r = i; });
+  }
+}
+
+function cellule() {
+  const largeur = $('zoneJetons').parentElement.clientWidth - 40;
+  return Math.max(52, Math.min(92, Math.floor(largeur / COLS)));
+}
+
+function afficherJetons() {
+  const zone = $('zoneJetons');
+  const t = cellule();
+  zone.style.setProperty('--cell', t + 'px');
+  zone.style.width = COLS * t + 'px';
+  zone.style.height = ROWS * t + 'px';
+
+  // jetons disparus
+  elements.forEach((el, id) => {
+    if (!jetons.some(j => j.id === id)) { el.remove(); elements.delete(id); }
+  });
+
+  let rang = 0;
+  jetons.forEach(j => {
+    const p = pos.get(j.id);
+    const top = (ROWS - 1 - p.r) * t;
+    let el = elements.get(j.id);
+    if (!el) {
+      // nouveau jeton : il part d'au-dessus de la grille et tombe
+      el = document.createElement('div');
+      el.innerHTML = jetonHTML(j);
+      el.style.left = p.c * t + 'px';
+      el.style.top = (top - ROWS * t) + 'px';
+      el.style.transitionDelay = (rang++ * 70) + 'ms';
+      el.onclick = () => {
+        if (termine || enCours) return;
+        choisis.has(j.id) ? choisis.delete(j.id) : choisis.add(j.id);
+        el.classList.toggle('choisi');
+        majBoutons();
+      };
+      zone.appendChild(el);
+      elements.set(j.id, el);
+      el.getBoundingClientRect();   // force la position de départ avant la chute
+    } else {
+      el.style.transitionDelay = '0ms';
+    }
+    el.className = 'jeton ' + (j.b === 1 ? 'entier' : 'frac');
+    if (choisis.has(j.id)) el.classList.add('choisi');
+    if (enCours || termine) el.classList.add('verrou');
+    el.style.left = p.c * t + 'px';
+    el.style.top = top + 'px';
+  });
+  majBoutons();
+}
+
+window.addEventListener('resize', () => afficherJetons());
+
+// un seul jeton : seulement une fraction plus grande que 1 (5/3 = 1 + 2/3)
+function selectionValable() {
+  if (choisis.size >= 2) return true;
+  if (choisis.size !== 1) return false;
+  const j = jetons.find(x => choisis.has(x.id));
+  return j.b > 1 && j.a > j.b;
+}
+
+function majBoutons() {
+  $('btnRegrouper').disabled = termine || !!enCours || !selectionValable();
+}
+
+function afficherQuestion() {
+  const ov = $('overlay');
+  if (enCours) {
+    $('calcul').innerHTML = enCours.map(jetonHTML).join(' + ');
+    $('repGroupe').value = '';
+    ov.hidden = false;
+    setTimeout(() => $('repGroupe').focus(), 0);
+  } else {
+    ov.hidden = true;
+  }
+}
+
+function retour(html, classe) {
+  const r = $('retour');
+  r.innerHTML = html;
+  r.className = html ? classe : '';
+}
+
+function updateScoreDisplay() {
+  const progression = $('question-progress');
+  if (progression) progression.textContent = `Question ${questionCount}/${NB_QUESTIONS}`;
+  const sc = $('score');
+  if (sc) sc.textContent = `Score : ${score}`;
+}
+
+// ================= Regrouper =================
+function regrouper() {
+  if (!selectionValable() || enCours || termine) return;
+  enCours = jetons.filter(j => choisis.has(j.id));
+  retour('', '');
+  afficherJetons();
+  afficherQuestion();
+}
+
+// « 2+3/4 », « 5 », « 3/4 » → { e, a, d } ; sinon null
+function lireMixte(id) {
+  const v = $(id).value.replace(/\s+/g, '');
+  let m;
+  if ((m = v.match(/^(\d+)\+(\d+)\/(\d+)$/))) return { e: +m[1], a: +m[2], d: +m[3] };
+  if ((m = v.match(/^(\d+)\/(\d+)$/))) return { e: 0, a: +m[1], d: +m[2] };
+  if ((m = v.match(/^(\d+)$/))) return { e: +m[1], a: 0, d: 1 };
+  return null;
+}
+
+// réponse juste : e + a/d vaut total b-ièmes, avec a/d plus petit que 1
+function estJuste(r, total, b) {
+  return r.a < r.d && (r.e * r.d + r.a) * b === total * r.d;
+}
+
+// ----- somme de tous les jetons (champ principal) -----
+function valider() {
+  if (termine || enCours) return;
+  const { t: total, b } = somme(depart);
+  const r = lireMixte('repTotal');
+  if (!r || r.d === 0) { retour('Écris par exemple : 2+3/4', 'info'); $('repTotal').focus(); return; }
+  if (r.a >= r.d) { retour('✘ Ce n\'est pas un nombre mixte.', 'non'); return; }
+  if (!estJuste(r, total, b)) { retour('✘ Ce n\'est pas la bonne somme.', 'non'); return; }
+  termine = true;
+  if (etatJeu === 'quiz') { score++; updateScoreDisplay(); }
+  $('skipButton') && ($('skipButton').style.display = 'none');
+  const g = pgcd(total % b, b);
+  retour(`✔ Bravo ! Somme : ${Math.floor(total / b)} + ${frHTML((total % b) / g, b / g)}`, 'ok');
+  choisis.clear();
+  afficherJetons();
+  $('btnSuivant').hidden = false;
+  $('btnSuivant').focus();
+}
+
+// ----- regroupement (overlay) -----
+function validerGroupe() {
+  if (!enCours) return;
+  const { t: total, b } = somme(enCours);              // total en b-ièmes
+  const bonEntier = Math.floor(total / b), bonReste = total % b;
+  const r = lireMixte('repGroupe');
+  if (!r || r.d === 0) {
+    retour('Écris par exemple : 2+3/4', 'info');
+    $('repGroupe').focus();
+    return;
+  }
+  const { e, a, d } = r;
+  const juste = estJuste(r, total, b);
+
+  if (!juste) {
+    const msg = a >= d ? 'Ce n\'est pas un nombre mixte.' : 'Ce n\'est pas ça.';
+    retour('✘ ' + msg + ' Choisis à nouveau.', 'non');
+    enCours = null;
+    choisis.clear();
+    afficherJetons();
+    afficherQuestion();
+    return;
+  }
+
+  // les jetons regroupés sont remplacés par l'entier et la fraction obtenus
+  const colonne = pos.get(enCours[0].id).c;
+  const nouveaux = [];
+  if (bonEntier > 0) nouveaux.push({ a: bonEntier, b: 1, id: prochainId++ });
+  if (bonReste > 0) {
+    // même dénominateur partout : on le garde (2/4) ; sinon fraction simplifiée
+    const unSeul = new Set(enCours.filter(j => j.b > 1).map(j => j.b)).size === 1;
+    const g = unSeul ? 1 : pgcd(bonReste, b);
+    nouveaux.push({ a: bonReste / g, b: b / g, id: prochainId++ });
+  }
+  const ids = new Set(enCours.map(j => j.id));
+  ids.forEach(id => elements.get(id)?.classList.add('disparait'));
+  enCours = null;
+  choisis.clear();
+  retour('✔ Oui !', 'ok');
+  afficherQuestion();
+  setTimeout(() => {
+    jetons = jetons.filter(j => !ids.has(j.id));
+    ids.forEach(id => pos.delete(id));
+    tasser();
+    nouveaux.forEach(j => { jetons.push(j); poser(j, colonne); });
+    afficherJetons();
+  }, 250);
+}
+
+function annulerGroupe() {
+  enCours = null;
+  choisis.clear();
+  afficherJetons();
+  afficherQuestion();
+}
+
+// ================= Nouvelle question =================
+function nouvelleQuestion() {
+  depart = tirage(niveau);
+  termine = false;
+  $('btnSuivant').hidden = true;
+  $('repTotal').value = '';
+  recommencer();
+}
+
+function recommencer() {
+  if (termine) return;
+  jetons = depart.map(j => ({ ...j, id: prochainId++ }));
+  choisis.clear();
+  enCours = null;
+  pos = new Map();
+  jetons.forEach(j => poser(j));
+  afficherJetons();
+  afficherQuestion();
+  retour('', '');
+}
+
+// ================= Atelier / Quiz =================
+/**
+ * Aiguillage central :
+ *   - quiz pas encore lancé → écran « Commencer le Quiz » ;
+ *   - quiz après 10 questions → écran de fin ;
+ *   - sinon → nouvelle question (comptée en quiz).
+ */
+function demarrerQuestion() {
+  if (etatJeu === 'quiz' && !quizDemarre) { afficherEcranQuiz('pret'); return; }
+  if (etatJeu === 'quiz' && questionCount >= NB_QUESTIONS) { afficherEcranQuiz('fin'); return; }
+  $('ecranQuiz').hidden = true;
+  $('jeu').hidden = false;
+  nouvelleQuestion();
+  if (etatJeu === 'quiz') { questionCount++; updateScoreDisplay(); }
+  const skip = $('skipButton');
+  if (skip) skip.style.display = 'block';
+}
+
+function afficherEcranQuiz(etape) {
+  const ecran = $('ecranQuiz');
+  $('jeu').hidden = true;
+  ecran.hidden = false;
+  if (etape === 'pret') {
+    ecran.innerHTML = `<h2>Quiz : ${NB_QUESTIONS} questions</h2>
+      <p style="font-size:1.1rem">Clique sur « Commencer le Quiz » à gauche.</p>`;
+    return;
+  }
+  const skip = $('skipButton');
+  if (skip) skip.style.display = 'none';
+  ecran.innerHTML = `<h2>🎯 Quiz terminé !</h2>
+    <p style="font-size:24px">Ton score final est de : <strong>${score} / ${questionCount}</strong></p>
+    <button type="button" class="restart-btn" id="restartButton">Recommencer</button>`;
+  $('restartButton').onclick = () => {
+    quizDemarre = false;
+    questionCount = 0;
+    score = 0;
+    renderPanneauLateral();
+    demarrerQuestion();
+  };
+  if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+}
+
+function renderPanneauLateral() {
+  const panneau = $('panneauLateral');
+  panneau.innerHTML = '';
+  const verrouille = etatJeu === 'quiz' && quizDemarre;
+
+  const groupe = (label) => {
+    const g = document.createElement('div');
+    g.className = 'panel-groupe';
+    const l = document.createElement('div');
+    l.className = 'panel-groupe-label';
+    l.textContent = label;
+    g.appendChild(l);
+    panneau.appendChild(g);
+    return g;
+  };
+  const filet = () => {
+    const f = document.createElement('div');
+    f.className = 'panel-filet';
+    panneau.appendChild(f);
+  };
+
+  // Niveau
+  const liste = document.createElement('div');
+  liste.className = 'panel-type-list';
+  Object.entries(NIVEAUX).forEach(([cle, def]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'panel-btn' + (Number(cle) === niveau ? ' active' : '');
+    b.innerHTML = `${def.nom}<span class="aide">${def.aide}</span>`;
+    b.disabled = verrouille;
+    b.onclick = () => {
+      if (verrouille || Number(cle) === niveau) return;
+      niveau = Number(cle);
+      renderPanneauLateral();
+      if (etatJeu === 'atelier') demarrerQuestion();
+    };
+    liste.appendChild(b);
+  });
+  groupe('Niveau').appendChild(liste);
+  filet();
+
+  if (etatJeu === 'atelier') {
+    const g = groupe('Question en cours :');
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.id = 'skipButton';
+    skip.textContent = 'Renoncer';
+    skip.onclick = () => demarrerQuestion();
+    g.appendChild(skip);
+  } else if (!quizDemarre) {
+    const g = groupe('Quiz');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn active';
+    btn.textContent = 'Commencer le Quiz';
+    btn.onclick = () => {
+      quizDemarre = true;
+      questionCount = 0;
+      score = 0;
+      renderPanneauLateral();
+      demarrerQuestion();
+    };
+    g.appendChild(btn);
+  } else {
+    const g = groupe('Quiz');
+    const cont = document.createElement('div');
+    cont.id = 'score-container';
+    cont.innerHTML = `<div id="question-progress">Question ${questionCount}/${NB_QUESTIONS}</div>
+      <div id="score">Score : ${score}</div>`;
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.id = 'skipButton';
+    skip.textContent = 'Renoncer';
+    skip.onclick = () => demarrerQuestion();   // question comptée, sans point
+    cont.appendChild(skip);
+    g.appendChild(cont);
+  }
+}
+
+function setupEtatToggle() {
+  const conteneur = $('topButtonsBar');
+  const btnAtelier = document.createElement('button');
+  btnAtelier.type = 'button';
+  btnAtelier.id = 'btnAtelier';
+  btnAtelier.textContent = 'Atelier';
+  const btnQuiz = document.createElement('button');
+  btnQuiz.type = 'button';
+  btnQuiz.id = 'btnQuiz';
+  btnQuiz.textContent = 'Quiz';
+  const majClasses = () => {
+    btnAtelier.className = 'btn-header' + (etatJeu === 'atelier' ? ' active' : '');
+    btnQuiz.className = 'btn-header' + (etatJeu === 'quiz' ? ' active' : '');
+  };
+  majClasses();
+  const basculer = (nouvelEtat) => {
+    if (etatJeu === nouvelEtat) return;
+    etatJeu = nouvelEtat;
+    quizDemarre = false;
+    questionCount = 0;
+    score = 0;
+    majClasses();
+    renderPanneauLateral();
+    demarrerQuestion();
+  };
+  btnAtelier.onclick = () => basculer('atelier');
+  btnQuiz.onclick = () => basculer('quiz');
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+  conteneur.append(btnAtelier, btnQuiz, filet);
+}
+
+// ================= Nouvel onglet =================
+function setupBoutonNouvelOnglet() {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-header';
+  btn.textContent = '↗ Nouvel onglet';
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none;font-size:.8em;margin-left:8px';
+  repli.innerHTML = `Bloqué — <a href="${location.href}" target="_blank" rel="noopener">clique ici</a>`;
+  btn.onclick = () => { if (!window.open(location.href, '_blank', 'noopener')) repli.style.display = 'inline'; };
+  $('topButtonsBar').append(btn, repli);
+}
+function proposerNouvelOnglet() {
+  let integree;
+  try { integree = window.self !== window.top; } catch (e) { integree = true; }
+  if (!integree) return;
+  const voile = document.createElement('div');
+  voile.id = 'voileOnglet';
+  voile.innerHTML = `
+    <div class="voile-carte">
+      <p>Fractions : <b>somme en nombre mixte</b></p>
+      <button type="button" class="btn voile-ouvrir">↗ Ouvrir l'appli dans un nouvel onglet</button>
+      <p class="voile-bloque" hidden>Ouverture bloquée — <a href="${location.href}" target="_blank" rel="noopener">clique ici</a></p>
+      <button type="button" class="voile-rester">rester ici</button>
+    </div>`;
+  document.body.appendChild(voile);
+  voile.querySelector('.voile-ouvrir').onclick = () => {
+    if (!window.open(location.href, '_blank', 'noopener')) voile.querySelector('.voile-bloque').hidden = false;
+    else voile.remove();
+  };
+  voile.querySelector('.voile-rester').onclick = () => voile.remove();
+}
+
+// ================= Démarrage =================
+$('btnRegrouper').onclick = regrouper;
+$('btnRecommencer').onclick = recommencer;
+$('btnValider').onclick = valider;
+$('btnSuivant').onclick = demarrerQuestion;
+$('btnValiderGroupe').onclick = validerGroupe;
+$('btnAnnulerGroupe').onclick = annulerGroupe;
+$('repTotal').addEventListener('keydown', e => { if (e.key === 'Enter') valider(); });
+$('repGroupe').addEventListener('keydown', e => {
+  if (e.key === 'Enter') validerGroupe();
+  if (e.key === 'Escape') annulerGroupe();
+});
+setupEtatToggle();
+renderPanneauLateral();
+setupBoutonNouvelOnglet();
+new FichePapier({
+  generer: () => tirage(niveau),
+  nomNiveau: () => NIVEAUX[niveau].nom
+}).installerBouton($('topButtonsBar'));
+new GuideAppli().installerBouton($('topButtonsBar'));
+proposerNouvelOnglet();
+demarrerQuestion();
+</script>
+</body>
+</html>

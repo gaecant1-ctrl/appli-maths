@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barre de remplissage</title>
+<style>
+:root{
+  --papier:#ffffff; --papier-panel:#f1f8f3;
+  --grille:#d3ead9; --grille-forte:#1f5c33;
+  --encre:#23302a; --encre-douce:#5f7a68;
+  --accent:#2f9e44; --accent-hover:#237a35; --accent-clair:#e6f7e9;
+  --header-fond:#f1f8f3; --header-bordure:#d3ead9; --header-texte:#1f5c33;
+  --erreur:#c0392b; --erreur-fond:#fbeceb;
+  --succes:#1e7e34; --succes-fond:#e6f6ea;
+  --attention:#8a6d1a; --attention-fond:#fbf3e0;
+  --type0:#f4b942; --type0-bord:#b9811a;
+  --type1:#8fb8ef; --type1-bord:#3f6fb5;
+  --cible:#c0392b;
+  --rayon:10px; --rayon-petit:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;color:var(--encre);background:var(--papier-panel)}
+
+header{display:flex;align-items:center;gap:14px;padding:0 20px;min-height:54px;background:var(--header-fond);border-bottom:1px solid var(--header-bordure);flex-wrap:wrap}
+#titre_appli{font-size:1.2rem;padding:10px 0}
+#titre_appli b{color:var(--header-texte)}
+.header-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
+.btn-header{background:transparent;border:.5px solid var(--header-bordure);height:34px;padding:0 14px;font:inherit;font-size:.82rem;font-weight:500;border-radius:var(--rayon-petit);cursor:pointer;color:var(--header-texte)}
+.btn-header:hover{border-color:var(--header-texte)}
+.btn-header.active{border-color:var(--accent);color:var(--accent)}
+.filet-header{width:1px;height:22px;background:var(--header-bordure);flex-shrink:0}
+
+#appBody{display:flex;align-items:flex-start}
+#panneauLateral{flex:0 0 280px;min-height:calc(100vh - 54px);background:var(--papier);border-right:1px solid var(--grille);padding:20px 16px;display:flex;flex-direction:column;gap:10px}
+.panel-label,.panel-groupe-label{font-size:11.5px;font-weight:700;color:var(--encre-douce);text-transform:uppercase;letter-spacing:.04em}
+.panel-groupe{display:flex;flex-direction:column;gap:8px}
+.panel-type-list{display:flex;flex-direction:column;gap:8px}
+.panel-filet{height:1px;background:var(--grille);margin:4px 0}
+.panel-btn{width:100%;background-color:var(--papier-panel);border:2px solid var(--grille);border-radius:var(--rayon-petit);padding:10px 14px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--encre);cursor:pointer;text-align:left;transition:border-color .15s,color .15s,background-color .15s}
+.panel-btn .aide{display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px}
+.panel-btn:hover{border-color:var(--accent);color:var(--accent)}
+.panel-btn.active{background-color:var(--accent);border-color:var(--accent);color:var(--papier)}
+.panel-btn.active:hover{background-color:var(--accent-hover);border-color:var(--accent-hover);color:var(--papier)}
+.panel-btn:disabled{cursor:default;background-color:var(--papier-panel);border-color:var(--grille);color:#9a9a9a}
+.panel-btn.active:disabled{opacity:.55;background-color:var(--accent);border-color:var(--accent);color:#9a9a9a}
+#score-container{display:flex;flex-direction:column;gap:8px;width:100%}
+#question-progress,#score,#skipButton{width:100%;background-color:var(--papier-panel);padding:10px 14px;border-radius:var(--rayon-petit);font-weight:700;font-size:13.5px;border:2px solid var(--grille);text-align:left;font-family:inherit}
+#question-progress{color:var(--encre-douce)}
+#score{color:var(--succes);border-color:var(--succes)}
+#skipButton{border-color:var(--accent);color:var(--accent);cursor:pointer;transition:background-color .15s,color .15s}
+#skipButton:hover{background-color:var(--accent);color:var(--papier)}
+
+#ecranQuiz{text-align:center;margin-top:50px}
+#ecranQuiz[hidden],#jeu[hidden]{display:none}
+.restart-btn{margin-top:25px;padding:12px 30px;background:var(--accent);color:#fff;border:none;border-radius:12px;font:inherit;font-size:1.1rem;font-weight:600;cursor:pointer}
+.restart-btn:hover{background:var(--accent-hover)}
+
+main{flex:1 1 auto;min-width:0;padding:26px 20px 60px;display:flex;justify-content:center}
+.colonnes{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:1050px;flex-wrap:wrap}
+.col-gauche{flex:1 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.col-droite{flex:0 0 260px;display:flex;flex-direction:column;gap:14px}
+.carte{background:var(--papier);border:1px solid var(--grille);border-radius:var(--rayon);padding:16px 18px;box-shadow:0 4px 14px rgba(35,48,42,.08)}
+.consigne{font-size:1.15rem;font-weight:600;margin:0}
+.sous-consigne{font-size:.95rem;color:var(--encre-douce);margin:4px 0 0}
+
+
+/* Barre de remplissage */
+#zoneBarre{position:relative;margin:58px auto 40px;--unite:200px;width:calc(3 * var(--unite))}
+#barre{position:relative;height:58px;border-radius:8px;background:#f8fbf9;overflow:hidden;box-shadow:0 0 0 3px var(--grille-forte)}
+#barre.survol{box-shadow:0 0 0 3px var(--accent),0 0 0 7px var(--accent-clair)}
+.graduation{position:absolute;top:58px;width:2px;height:12px;background:var(--grille-forte);transform:translateX(-1px)}
+.graduation span{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-weight:700;font-size:1.05rem}
+#repere{position:absolute;top:-14px;height:86px;width:3px;background:var(--cible);transform:translateX(-1.5px);z-index:3;pointer-events:none}
+#repere .etiquette{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;color:var(--cible);font-weight:700;font-size:1.15rem;white-space:nowrap;background:var(--papier);padding:0 4px;border-radius:4px}
+
+.piece{position:absolute;top:0;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 1px 0 0 rgba(0,0,0,.45),inset -1px 0 0 rgba(0,0,0,.45);user-select:none;touch-action:none;cursor:grab}
+.piece.t0,.stock-piece.t0{background:var(--type0)}
+.piece.t1,.stock-piece.t1{background:var(--type1)}
+.piece .fr,.stock-piece .fr{font-size:.95rem}
+
+#stock{display:flex;gap:40px;justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-top:8px}
+.stock-col{display:flex;flex-direction:column;align-items:center;gap:6px}
+.stock-col .legende{font-size:.85rem;color:var(--encre-douce)}
+.stock-piece{height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:grab;user-select:none;touch-action:none;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),0 3px 0 rgba(0,0,0,.15)}
+.stock-piece:hover{transform:translateY(-2px)}
+.piece,.stock-piece,.fantome{position:relative}
+.piece{position:absolute}
+.fantome{position:fixed}
+.partage{position:absolute;top:0;bottom:0;border-left:2px dashed rgba(0,0,0,.55);transform:translateX(-1px);pointer-events:none}
+.etiq{position:relative;z-index:1;background:inherit;padding:0 3px;border-radius:4px;line-height:1}
+.etiq .fr{font-size:.85rem}
+.piece.arrive{animation:arrive .35s ease-out}
+@keyframes arrive{0%{transform:translateY(-70px);opacity:0}100%{transform:translateY(0);opacity:1}}
+.stock-piece.verrou{opacity:.55;cursor:default}
+.stock-piece.verrou:hover{transform:none}
+.stock-col .reste{font-weight:700;color:var(--encre)}
+#carteAnnonce .ligne-annonce{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:1.1rem;margin:8px 0}
+.compteur{display:inline-flex;align-items:stretch;border:2px solid var(--grille);border-radius:var(--rayon-petit);overflow:hidden;background:var(--papier)}
+.compteur .valeur{min-width:46px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:700}
+.compteur .fleches{display:flex;flex-direction:column;border-left:2px solid var(--grille)}
+.compteur button{border:none;background:var(--papier-panel);color:var(--accent);font-size:.8rem;width:32px;height:22px;cursor:pointer;padding:0}
+.compteur button+button{border-top:1px solid var(--grille)}
+.compteur button:hover{background:var(--accent-clair)}
+.compteur.fige{background:var(--papier-panel)}
+.compteur.fige button{color:#b8c8bd;cursor:default;background:var(--papier-panel)}
+.fantome{position:fixed;z-index:100;pointer-events:none;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.25);opacity:.92}
+.fantome.t0{background:var(--type0)}
+.fantome.t1{background:var(--type1)}
+@keyframes secoue{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#barre.refus{animation:secoue .3s}
+
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 2px}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 3px}
+
+.barre-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:1rem;font-weight:600;padding:9px 18px;border-radius:var(--rayon-petit);cursor:pointer;border:2px solid var(--accent);background:var(--accent);color:#fff}
+.btn:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.secondaire{background:var(--papier);color:var(--accent)}
+.btn.secondaire:hover{background:var(--accent-clair)}
+
+/* Réponse */
+.reponse{display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.3rem;flex-wrap:wrap}
+.reponse input{width:130px;height:46px;font:inherit;font-size:1.3rem;text-align:center;border:2px solid var(--grille);border-radius:var(--rayon-petit)}
+.reponse input:focus{outline:none;border-color:var(--accent)}
+#retour{min-height:48px;padding:10px 12px;border-radius:var(--rayon-petit);font-weight:600;font-size:1.05rem;line-height:1.9}
+#retour:empty{background:transparent}
+#retour.ok{background:var(--succes-fond);color:var(--succes)}
+#retour.non{background:var(--erreur-fond);color:var(--erreur)}
+#retour.info{background:var(--attention-fond);color:var(--attention)}
+
+#voileOnglet{position:fixed;inset:0;background:rgba(35,48,42,.45);display:flex;align-items:center;justify-content:center;z-index:50}
+.voile-carte{background:#fff;border-radius:var(--rayon);padding:24px 28px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.voile-rester{background:none;border:none;color:var(--encre-douce);text-decoration:underline;cursor:pointer;font:inherit}
+
+@media (max-width:760px){
+  #appBody{flex-direction:column}
+  #panneauLateral{flex:none;width:100%;min-height:0;border-right:none;border-bottom:1px solid var(--grille)}
+  .col-droite{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span id="titre_appli">Fractions : <b>barre de remplissage</b></span>
+  <div class="header-actions" id="topButtonsBar"></div>
+</header>
+
+<div id="appBody">
+  <aside id="panneauLateral"></aside>
+
+  <main>
+    <div id="ecranQuiz" hidden></div>
+    <div class="colonnes" id="jeu">
+      <div class="col-gauche">
+        <div class="carte">
+          <p class="consigne">Remplis la barre jusqu'au niveau <span id="niveauCible"></span>.</p>
+          <p class="sous-consigne">Fais glisser des barres. Il ne doit rien rester.</p>
+          <div id="zoneBarre">
+            <div id="barre"></div>
+            <div id="repere"><span class="etiquette"></span></div>
+          </div>
+          <div id="stock"></div>
+          <div class="barre-actions" style="margin-top:18px">
+            <button type="button" class="btn secondaire" id="btnVider">↺ Vider la barre</button>
+          </div>
+        </div>
+        <div id="retour" aria-live="polite"></div>
+        <div class="barre-actions">
+          <button type="button" class="btn" id="btnSuivant" hidden>Suivant (Entrée)</button>
+        </div>
+      </div>
+
+      <div class="col-droite">
+        <div class="carte" id="carteValider">
+          <div class="barre-actions">
+            <button type="button" class="btn" id="btnValider">Valider</button>
+          </div>
+        </div>
+        <div class="carte" id="carteAnnonce" hidden>
+          <div class="panel-label" style="margin-bottom:6px">Combien de barres ?</div>
+          <div class="ligne-annonce"><span>Barres de <span id="annP"></span> :</span>
+            <span class="compteur" id="nbP" data-v="0"><span class="valeur">0</span><span class="fleches"><button type="button" class="haut" aria-label="plus">▲</button><button type="button" class="bas" aria-label="moins">▼</button></span></span></div>
+          <div class="ligne-annonce"><span>Barres de <span id="annQ"></span> :</span>
+            <span class="compteur" id="nbQ" data-v="0"><span class="valeur">0</span><span class="fleches"><button type="button" class="haut" aria-label="plus">▲</button><button type="button" class="bas" aria-label="moins">▼</button></span></span></div>
+          <div class="barre-actions" style="margin-top:12px">
+            <button type="button" class="btn" id="btnAnnoncer">J'ai choisi</button>
+            <button type="button" class="btn" id="btnRemplir" hidden>▶ Remplir</button>
+            <button type="button" class="btn secondaire" id="btnReannoncer" hidden>Nouveau choix</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+<script src="Fiche.js?v=2"></script>
+<script src="Guide.js?v=9"></script>
+<script>
+// ================= Outils =================
+const alea = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const choisir = t => t[Math.floor(Math.random() * t.length)];
+const pgcd = (a, b) => (b === 0 ? a : pgcd(b, a % b));
+const $ = id => document.getElementById(id);
+
+// Fractions exactes { n, d }
+const frac = (n, d) => { const g = pgcd(n, d); return { n: n / g, d: d / g }; };
+const plus = (x, y) => frac(x.n * y.d + y.n * x.d, x.d * y.d);
+const fois = (k, x) => frac(k * x.n, x.d);
+const compare = (x, y) => x.n * y.d - y.n * x.d;            // < 0, 0, > 0
+const valeur = x => x.n / x.d;
+const estEntier = x => x.d === 1;
+
+const frHTML = (a, b) => `<span class="fr"><span>${a}</span><span>${b}</span></span>`;
+const pieceHTML = x => (x.d === 1 ? `${x.n}` : frHTML(x.n, x.d));
+// écriture mixte : 1 + 2/3, 2/3 ou 2
+function mixteHTML(x) {
+  const e = Math.floor(x.n / x.d), r = x.n % x.d;
+  if (r === 0) return `${e}`;
+  return e === 0 ? frHTML(r, x.d) : `${e} + ${frHTML(r, x.d)}`;
+}
+
+// ================= Niveaux =================
+const UNITAIRES = d => frac(1, d);
+const NIVEAUX = {
+  1: { nom: 'Facile', aide: 'même dénominateur, ou multiple',
+       paires: [
+         // même dénominateur (1/3 et 2/3, 2/5 et 3/5…)
+         [[1, 3], [2, 3]], [[1, 4], [3, 4]], [[2, 5], [3, 5]], [[1, 5], [3, 5]], [[1, 6], [5, 6]],
+         // un dénominateur multiple de l'autre
+         [[1, 2], [1, 4]], [[1, 2], [1, 6]], [[1, 3], [1, 6]], [[1, 2], [1, 8]], [[1, 4], [1, 8]]
+       ].map(([[a, b], [c, d]]) => [frac(a, b), frac(c, d)]) },
+  2: { nom: 'Moyen', aide: 'demis, tiers, quarts, cinquièmes…',
+       paires: [[2, 3], [2, 5], [3, 4], [4, 6], [2, 3], [3, 4]].map(([a, b]) => [UNITAIRES(a), UNITAIRES(b)]) },
+  // minBarres : toute solution demande au moins minBarres − 1 barres, et l'une d'elles au moins minBarres
+  // (garde 2/5 et 2/3 pour faire 2 : 5 barres ou 3 barres)
+  // piege : une combinaison fausse tombe à moins de cet écart du trait (l'œil ne suffit pas)
+  3: { nom: 'Difficile', aide: 'beaucoup de barres, l\'œil ne suffit pas', minBarres: 4, piege: 1 / 7, plusieurs: .3,
+       valeurs: [[2, 3], [4, 3], [3, 4], [5, 4], [3, 2], [2, 5], [3, 5], [4, 5], [6, 5], [5, 6]].map(([n, d]) => frac(n, d)) }
+};
+
+// plus petit écart entre T et une combinaison FAUSSE (au plus 10 barres, sans dépasser 3)
+function ecartPiege(p, q, T) {
+  let min = Infinity;
+  for (let m = 0; m <= 10; m++)
+    for (let n = 0; m + n <= 10; n++) {
+      if (!m && !n) continue;
+      const v = valeur(plus(fois(m, p), fois(n, q)));
+      if (v > 3 + 1e-9) break;
+      const e = Math.abs(v - valeur(T));
+      if (e > 1e-9) min = Math.min(min, e);
+    }
+  return min;
+}
+
+// toutes les façons d'atteindre T : [[m, n], ...] avec m barres p et n barres q
+function solutions(p, q, T) {
+  const res = [];
+  for (let m = 0; m * valeur(p) <= 3 + 1e-9; m++)
+    for (let n = 0; n * valeur(q) <= 3 + 1e-9; n++)
+      if ((m || n) && m + n <= 10 && compare(plus(fois(m, p), fois(n, q)), T) === 0) res.push([m, n]);
+  return res;
+}
+
+function tirage(niv) {
+  const def = NIVEAUX[niv];
+  // une fois sur deux, on cherche un niveau qui a plusieurs façons d'être atteint
+  // (2/5 et 2/3 pour faire 2 : 5 × 2/5 ou 3 × 2/3)
+  const veutPlusieurs = Math.random() < (def.plusieurs ?? .5);
+  for (let essai = 0; essai < 5000; essai++) {
+    let p, q;
+    if (def.paires) [p, q] = choisir(def.paires);
+    else {
+      p = choisir(def.valeurs);
+      q = choisir(def.valeurs.filter(v => compare(v, p) !== 0));   // même dénominateur permis
+    }
+    if (Math.random() < .5) [p, q] = [q, p];
+    const m = alea(0, def.minBarres ? 7 : 5), n = alea(0, def.minBarres ? 7 : 5);
+    if (m + n === 0 || m + n > 8) continue;
+    const T = plus(fois(m, p), fois(n, q));
+    if (valeur(T) > 3 || valeur(T) < 1) continue;
+    if (T.d > 12) continue;                                // pas de 13/20 en 6e
+    const sols = solutions(p, q, T);
+    if (sols.some(([a, b]) => a + b < (def.minBarres ? def.minBarres - 1 : 2))) continue;   // trop peu de barres : trop simple
+    if (def.minBarres && !sols.some(([a, b]) => a + b >= def.minBarres)) continue;
+    if (def.piege && ecartPiege(p, q, T) > def.piege) continue;
+    if (veutPlusieurs && sols.length < 2 && essai < 4000) continue;
+    if (estEntier(T) && sols.length < 2 && Math.random() < .85) continue;
+    return { p, q, T };
+  }
+  return { p: frac(1, 2), q: frac(1, 3), T: frac(5, 3) };
+}
+
+// ================= État =================
+let niveau = 1;
+let question = null;     // { p, q, T }
+let remplissage = [];    // types (0 ou 1) des barres posées, de gauche à droite
+let termine = false;
+// mode 'manip' : on glisse puis on valide ; 'annonce' : on annonce les nombres, puis on vérifie
+let mode = 'manip';
+let annonce = null;          // { m, n } une fois annoncé
+let premiereAnnonce = true;  // en quiz, le point ne compte que si le 1er choix est juste
+let enAnimation = false;     // remplissage automatique en cours
+let animId = 0;              // change à chaque question : arrête une animation périmée
+
+let etatJeu = 'atelier';
+let quizDemarre = false;
+let questionCount = 0;
+let score = 0;
+const NB_QUESTIONS = 10;
+
+const typeVal = t => (t === 0 ? question.p : question.q);
+
+let partage = false;   // afficher les lignes de partage en pointillés
+// partage : 2/5 → deux parts de 1/5 séparées par des pointillés ; seule la valeur de la barre est écrite
+function contenuPiece(v) {
+  if (!partage || v.n < 2) return pieceHTML(v);
+  let html = `<span class="etiq">${pieceHTML(v)}</span>`;
+  for (let k = 1; k < v.n; k++) html += `<span class="partage" style="left:${(100 * k / v.n).toFixed(3)}%"></span>`;
+  return html;
+}
+const total = () => remplissage.reduce((s, t) => plus(s, typeVal(t)), frac(0, 1));
+
+// ================= Affichage =================
+function unite() {
+  const largeur = $('zoneBarre').parentElement.clientWidth - 50;
+  return Math.max(150, Math.min(240, Math.floor(largeur / 3)));
+}
+
+let derniereArrivee = -1;   // index de la barre à animer (remplissage automatique)
+
+function afficher() {
+  const u = unite();
+  const zone = $('zoneBarre');
+  zone.style.setProperty('--unite', u + 'px');
+
+  // graduations 0, 1, 2, 3
+  zone.querySelectorAll('.graduation').forEach(g => g.remove());
+  for (let i = 0; i <= 3; i++) {
+    const g = document.createElement('div');
+    g.className = 'graduation';
+    g.style.left = (i * u) + 'px';
+    g.innerHTML = `<span>${i}</span>`;
+    zone.appendChild(g);
+  }
+  // repère du niveau à atteindre
+  $('repere').style.left = (valeur(question.T) * u) + 'px';
+  $('repere').querySelector('.etiquette').innerHTML = mixteHTML(question.T);
+  $('niveauCible').innerHTML = mixteHTML(question.T);
+  document.querySelector('.sous-consigne').textContent = mode === 'manip'
+    ? 'Fais glisser des barres. Il ne doit rien rester.'
+    : 'Choisis combien de barres de chaque sorte, puis place-les.';
+
+  // barres posées
+  const barre = $('barre');
+  barre.innerHTML = '';
+  let x = 0;
+  remplissage.forEach((t, i) => {
+    const v = typeVal(t);
+    const el = document.createElement('div');
+    el.className = 'piece t' + t + (i === derniereArrivee ? ' arrive' : '');
+    el.style.left = (x * u) + 'px';
+    el.style.width = (valeur(v) * u) + 'px';
+    el.innerHTML = contenuPiece(v);
+    el.addEventListener('pointerdown', e => debutGlisser(e, t, i));
+    barre.appendChild(el);
+    x += valeur(v);
+  });
+
+  // réserve : une barre de chaque sorte, à la même échelle
+  const stock = $('stock');
+  stock.innerHTML = '';
+  [0, 1].forEach(t => {
+    const v = typeVal(t);
+    const col = document.createElement('div');
+    col.className = 'stock-col';
+    const el = document.createElement('div');
+    el.className = 'stock-piece t' + t;
+    el.style.width = valeur(v) * u + 'px';
+    el.innerHTML = contenuPiece(v);
+    const leg = document.createElement('div');
+    leg.className = 'legende';
+    if (mode === 'annonce') {
+      const r = resteAPoser(t);
+      if (r === null || r === 0 || termine) el.classList.add('verrou');
+      leg.innerHTML = r === null ? 'choisis d\'abord' : `reste <span class="reste">${r}</span>`;
+    } else {
+      leg.textContent = 'à glisser';
+    }
+    el.addEventListener('pointerdown', e => {
+      if (el.classList.contains('verrou')) return;
+      debutGlisser(e, t, -1);
+    });
+    col.append(el, leg);
+    stock.appendChild(col);
+  });
+}
+
+window.addEventListener('resize', () => question && afficher());
+
+// mode annonce : barres de la sorte t encore à poser (null tant que rien n'est annoncé)
+function resteAPoser(t) {
+  if (!annonce) return null;
+  const voulu = t === 0 ? annonce.m : annonce.n;
+  return voulu - remplissage.filter(x => x === t).length;
+}
+
+// ================= Glisser-déposer =================
+// origine = -1 : depuis la réserve ; sinon index de la barre posée qu'on déplace
+function debutGlisser(e, t, origine) {
+  if (termine || enAnimation) return;
+  e.preventDefault();
+  const u = unite();
+  const v = typeVal(t);
+  const fantome = document.createElement('div');
+  fantome.className = 'fantome t' + t;
+  fantome.style.width = valeur(v) * u + 'px';
+  fantome.innerHTML = contenuPiece(v);
+  document.body.appendChild(fantome);
+
+  if (origine >= 0) { remplissage.splice(origine, 1); afficher(); }
+
+  const barre = $('barre');
+  const dedans = (cx, cy) => {
+    const r = barre.getBoundingClientRect();
+    return cx >= r.left - 20 && cx <= r.right + 20 && cy >= r.top - 50 && cy <= r.bottom + 50;
+  };
+  const placer = (cx, cy) => {
+    fantome.style.left = (cx - fantome.offsetWidth / 2) + 'px';
+    fantome.style.top = (cy - 25) + 'px';
+    barre.classList.toggle('survol', dedans(cx, cy));
+  };
+  placer(e.clientX, e.clientY);
+
+  const bouge = ev => placer(ev.clientX, ev.clientY);
+  const lache = ev => {
+    document.removeEventListener('pointermove', bouge);
+    document.removeEventListener('pointerup', lache);
+    fantome.remove();
+    barre.classList.remove('survol');
+    if (dedans(ev.clientX, ev.clientY)) {
+      if (valeur(plus(total(), v)) > 3 + 1e-9) {
+        retour('La barre est pleine.', 'info');
+        barre.classList.remove('refus'); void barre.offsetWidth; barre.classList.add('refus');
+      } else {
+        remplissage.push(t);
+        retour('', '');
+      }
+    }
+    afficher();
+    if (mode === 'annonce') verifierAnnonce();
+  };
+  document.addEventListener('pointermove', bouge);
+  document.addEventListener('pointerup', lache);
+}
+
+// ================= Valider =================
+function retour(html, classe) {
+  const r = $('retour');
+  r.innerHTML = html;
+  r.className = html ? classe : '';
+}
+
+function updateScoreDisplay() {
+  const progression = $('question-progress');
+  if (progression) progression.textContent = `Question ${questionCount}/${NB_QUESTIONS}`;
+  const sc = $('score');
+  if (sc) sc.textContent = `Score : ${score}`;
+}
+
+function valider() {
+  if (termine) return;
+  if (!remplissage.length) { retour('Fais glisser des barres dans la barre.', 'info'); return; }
+  const c = compare(total(), question.T);
+  if (c !== 0) { retour(verdictLongueur(c), 'non'); return; }
+
+  reussir();
+}
+
+// « Longueur totale : (3 × 1/2) + 1/3 = 1 + 5/6 », puis il manque / ça dépasse
+function verdictLongueur(c) {
+  const m = remplissage.filter(x => x === 0).length, n = remplissage.filter(x => x === 1).length;
+  return `✘ Longueur totale : ${ecritureHTML(m, n)} = ${mixteHTML(total())}<br>`
+    + (c < 0 ? 'Il manque encore.' : 'Ça dépasse le niveau.');
+}
+
+// (2 × 1/2) + (2 × 1/3) ; un seul terme sans parenthèses inutiles
+function ecritureHTML(m, n) {
+  return [[m, question.p], [n, question.q]].filter(([k]) => k > 0)
+    .map(([k, v]) => (k === 1 ? pieceHTML(v) : `(${k} × ${pieceHTML(v)})`)).join(' + ');
+}
+
+function reussir() {
+  termine = true;
+  if (etatJeu === 'quiz' && (mode === 'manip' || premiereAnnonce)) { score++; updateScoreDisplay(); }
+  $('skipButton') && ($('skipButton').style.display = 'none');
+  const m = remplissage.filter(x => x === 0).length, n = remplissage.filter(x => x === 1).length;
+  const autres = solutions(question.p, question.q, question.T).filter(([a, b]) => a !== m || b !== n);
+  let html = `✔ Bravo !<br>${ecritureHTML(m, n)} = ${mixteHTML(question.T)}`;
+  if (autres.length) {
+    html += `<br><span style="font-weight:400">${autres.length > 1 ? 'Autres possibilités' : 'Autre possibilité'} : `
+      + autres.slice(0, 3).map(([a, b]) => ecritureHTML(a, b)).join(' ; ')
+      + (autres.length > 3 ? ' …' : '') + '</span>';
+  }
+  retour(html, 'ok');
+  $('btnSuivant').hidden = false;
+  $('btnSuivant').focus();
+}
+
+// ================= Mode annonce =================
+// compteurs à flèches ▲ ▼ (de 0 à 12)
+const lireNombre = id => Number($(id).dataset.v);
+function fixerNombre(id, v) {
+  v = Math.max(0, Math.min(12, v));
+  $(id).dataset.v = v;
+  $(id).querySelector('.valeur').textContent = v;
+}
+function figerCompteurs(fige) {
+  ['nbP', 'nbQ'].forEach(id => $(id).classList.toggle('fige', fige));
+}
+['nbP', 'nbQ'].forEach(id => {
+  $(id).querySelector('.haut').onclick = () => { if (!$(id).classList.contains('fige')) fixerNombre(id, lireNombre(id) + 1); };
+  $(id).querySelector('.bas').onclick = () => { if (!$(id).classList.contains('fige')) fixerNombre(id, lireNombre(id) - 1); };
+});
+
+function annoncer() {
+  if (termine || annonce) return;
+  const m = lireNombre('nbP'), n = lireNombre('nbQ');
+  if (m + n === 0) { retour('Choisis au moins une barre.', 'info'); return; }
+  annonce = { m, n };
+  figerCompteurs(true);
+  $('btnAnnoncer').hidden = true;
+  const prevu = plus(fois(m, question.p), fois(n, question.q));
+  if (valeur(prevu) > 3) {           // ça ne tient même pas dans la barre
+    echecAnnonce(`✘ Longueur choisie : ${ecritureHTML(m, n)} = ${mixteHTML(prevu)}<br>Trop de barres : ça dépasse 3.`);
+    return;
+  }
+  retour('Place tes barres pour vérifier, ou « Remplir ».', 'info');
+  $('btnRemplir').hidden = false;
+  afficher();
+}
+
+// le programme pose une à une les barres annoncées qui restent
+function remplirAuto() {
+  if (!annonce || termine || enAnimation) return;
+  enAnimation = true;
+  const id = ++animId;
+  $('btnRemplir').hidden = true;
+  const file = [];
+  [0, 1].forEach(t => { for (let k = resteAPoser(t); k > 0; k--) file.push(t); });
+  const suivante = () => {
+    if (id !== animId) return;
+    if (!file.length) {
+      enAnimation = false;
+      derniereArrivee = -1;
+      verifierAnnonce();
+      return;
+    }
+    remplissage.push(file.shift());
+    derniereArrivee = remplissage.length - 1;
+    afficher();
+    setTimeout(suivante, 450);
+  };
+  suivante();
+}
+
+// appelée après chaque dépôt : quand toutes les barres annoncées sont posées, verdict
+function verifierAnnonce() {
+  if (!annonce || termine) return;
+  if (resteAPoser(0) !== 0 || resteAPoser(1) !== 0) return;
+  const c = compare(total(), question.T);
+  $('btnRemplir').hidden = true;
+  if (c === 0) { reussir(); afficher(); return; }
+  echecAnnonce(verdictLongueur(c));
+}
+
+function echecAnnonce(message) {
+  premiereAnnonce = false;
+  $('btnRemplir').hidden = true;
+  retour(message, 'non');
+  $('btnReannoncer').hidden = false;
+  afficher();
+}
+
+function reannoncer() {
+  if (termine || enAnimation) return;
+  annonce = null;
+  remplissage = [];
+  figerCompteurs(false);
+  $('btnAnnoncer').hidden = false;
+  $('btnReannoncer').hidden = true;
+  retour('', '');
+  afficher();
+}
+
+function preparerMode() {
+  $('carteValider').hidden = mode !== 'manip';
+  $('carteAnnonce').hidden = mode !== 'annonce';
+  $('btnVider').hidden = mode !== 'manip';
+  $('annP').innerHTML = pieceHTML(question.p);
+  $('annQ').innerHTML = pieceHTML(question.q);
+  fixerNombre('nbP', 0);
+  fixerNombre('nbQ', 0);
+  figerCompteurs(false);
+  $('btnAnnoncer').hidden = false;
+  $('btnReannoncer').hidden = true;
+  $('btnRemplir').hidden = true;
+  enAnimation = false;
+  derniereArrivee = -1;
+  animId++;
+}
+
+// ================= Nouvelle question =================
+function nouvelleQuestion() {
+  question = tirage(niveau);
+  remplissage = [];
+  termine = false;
+  annonce = null;
+  premiereAnnonce = true;
+  preparerMode();
+  $('btnSuivant').hidden = true;
+  retour('', '');
+  afficher();
+}
+
+function vider() {
+  if (termine) return;
+  remplissage = [];
+  retour('', '');
+  afficher();
+}
+
+// ================= Atelier / Quiz =================
+/**
+ * Aiguillage central :
+ *   - quiz pas encore lancé → écran « Commencer le Quiz » ;
+ *   - quiz après 10 questions → écran de fin ;
+ *   - sinon → nouvelle question (comptée en quiz).
+ */
+function demarrerQuestion() {
+  if (etatJeu === 'quiz' && !quizDemarre) { afficherEcranQuiz('pret'); return; }
+  if (etatJeu === 'quiz' && questionCount >= NB_QUESTIONS) { afficherEcranQuiz('fin'); return; }
+  $('ecranQuiz').hidden = true;
+  $('jeu').hidden = false;
+  nouvelleQuestion();
+  if (etatJeu === 'quiz') { questionCount++; updateScoreDisplay(); }
+  const skip = $('skipButton');
+  if (skip) skip.style.display = 'block';
+}
+
+function afficherEcranQuiz(etape) {
+  const ecran = $('ecranQuiz');
+  $('jeu').hidden = true;
+  ecran.hidden = false;
+  if (etape === 'pret') {
+    ecran.innerHTML = `<h2>Quiz : ${NB_QUESTIONS} questions</h2>
+      <p style="font-size:1.1rem">Clique sur « Commencer le Quiz » à gauche.</p>`;
+    return;
+  }
+  const skip = $('skipButton');
+  if (skip) skip.style.display = 'none';
+  ecran.innerHTML = `<h2>🎯 Quiz terminé !</h2>
+    <p style="font-size:24px">Ton score final est de : <strong>${score} / ${questionCount}</strong></p>
+    <button type="button" class="restart-btn" id="restartButton">Recommencer</button>`;
+  $('restartButton').onclick = () => {
+    quizDemarre = false;
+    questionCount = 0;
+    score = 0;
+    renderPanneauLateral();
+    demarrerQuestion();
+  };
+  if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+}
+
+function renderPanneauLateral() {
+  const panneau = $('panneauLateral');
+  panneau.innerHTML = '';
+  const verrouille = etatJeu === 'quiz' && quizDemarre;
+
+  const groupe = (label) => {
+    const g = document.createElement('div');
+    g.className = 'panel-groupe';
+    const l = document.createElement('div');
+    l.className = 'panel-groupe-label';
+    l.textContent = label;
+    g.appendChild(l);
+    panneau.appendChild(g);
+    return g;
+  };
+  const filet = () => {
+    const f = document.createElement('div');
+    f.className = 'panel-filet';
+    panneau.appendChild(f);
+  };
+
+  // Niveau
+  const liste = document.createElement('div');
+  liste.className = 'panel-type-list';
+  Object.entries(NIVEAUX).forEach(([cle, def]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'panel-btn' + (Number(cle) === niveau ? ' active' : '');
+    b.innerHTML = `${def.nom}<span class="aide">${def.aide}</span>`;
+    b.disabled = verrouille;
+    b.onclick = () => {
+      if (verrouille || Number(cle) === niveau) return;
+      niveau = Number(cle);
+      renderPanneauLateral();
+      if (etatJeu === 'atelier') demarrerQuestion();
+    };
+    liste.appendChild(b);
+  });
+  groupe('Niveau').appendChild(liste);
+  filet();
+
+  // Mode
+  const modes = document.createElement('div');
+  modes.className = 'panel-type-list';
+  [['manip', 'Manipuler', 'on glisse, puis on valide'],
+   ['annonce', 'Choisir d\'abord', 'on choisit combien, puis on vérifie']].forEach(([cle, nom, aide]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'panel-btn' + (cle === mode ? ' active' : '');
+    b.innerHTML = `${nom}<span class="aide">${aide}</span>`;
+    b.disabled = verrouille;
+    b.onclick = () => {
+      if (verrouille || cle === mode) return;
+      mode = cle;
+      renderPanneauLateral();
+      if (etatJeu === 'atelier') demarrerQuestion();
+    };
+    modes.appendChild(b);
+  });
+  groupe('Mode').appendChild(modes);
+  filet();
+
+  // Affichage : lignes de partage en pointillés (bascule)
+  const bPartage = document.createElement('button');
+  bPartage.type = 'button';
+  bPartage.className = 'panel-btn' + (partage ? ' active' : '');
+  bPartage.setAttribute('aria-pressed', partage);
+  bPartage.innerHTML = `Lignes de partage<span class="aide">${partage ? 'affichées' : 'cachées'}</span>`;
+  bPartage.onclick = () => {
+    partage = !partage;
+    renderPanneauLateral();
+    if (question) afficher();
+  };
+  groupe('Affichage').appendChild(bPartage);
+  filet();
+
+  if (etatJeu === 'atelier') {
+    const g = groupe('Question en cours :');
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.id = 'skipButton';
+    skip.textContent = 'Renoncer';
+    skip.onclick = () => demarrerQuestion();
+    g.appendChild(skip);
+  } else if (!quizDemarre) {
+    const g = groupe('Quiz');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn active';
+    btn.textContent = 'Commencer le Quiz';
+    btn.onclick = () => {
+      quizDemarre = true;
+      questionCount = 0;
+      score = 0;
+      renderPanneauLateral();
+      demarrerQuestion();
+    };
+    g.appendChild(btn);
+  } else {
+    const g = groupe('Quiz');
+    const cont = document.createElement('div');
+    cont.id = 'score-container';
+    cont.innerHTML = `<div id="question-progress">Question ${questionCount}/${NB_QUESTIONS}</div>
+      <div id="score">Score : ${score}</div>`;
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.id = 'skipButton';
+    skip.textContent = 'Renoncer';
+    skip.onclick = () => demarrerQuestion();   // question comptée, sans point
+    cont.appendChild(skip);
+    g.appendChild(cont);
+  }
+}
+
+function setupEtatToggle() {
+  const conteneur = $('topButtonsBar');
+  const btnAtelier = document.createElement('button');
+  btnAtelier.type = 'button';
+  btnAtelier.id = 'btnAtelier';
+  btnAtelier.textContent = 'Atelier';
+  const btnQuiz = document.createElement('button');
+  btnQuiz.type = 'button';
+  btnQuiz.id = 'btnQuiz';
+  btnQuiz.textContent = 'Quiz';
+  const majClasses = () => {
+    btnAtelier.className = 'btn-header' + (etatJeu === 'atelier' ? ' active' : '');
+    btnQuiz.className = 'btn-header' + (etatJeu === 'quiz' ? ' active' : '');
+  };
+  majClasses();
+  const basculer = (nouvelEtat) => {
+    if (etatJeu === nouvelEtat) return;
+    etatJeu = nouvelEtat;
+    quizDemarre = false;
+    questionCount = 0;
+    score = 0;
+    majClasses();
+    renderPanneauLateral();
+    demarrerQuestion();
+  };
+  btnAtelier.onclick = () => basculer('atelier');
+  btnQuiz.onclick = () => basculer('quiz');
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+  conteneur.append(btnAtelier, btnQuiz, filet);
+}
+
+// ================= Nouvel onglet =================
+function setupBoutonNouvelOnglet() {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-header';
+  btn.textContent = '↗ Nouvel onglet';
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none;font-size:.8em;margin-left:8px';
+  repli.innerHTML = `Bloqué — <a href="${location.href}" target="_blank" rel="noopener">clique ici</a>`;
+  btn.onclick = () => { if (!window.open(location.href, '_blank', 'noopener')) repli.style.display = 'inline'; };
+  $('topButtonsBar').append(btn, repli);
+}
+function proposerNouvelOnglet() {
+  let integree;
+  try { integree = window.self !== window.top; } catch (e) { integree = true; }
+  if (!integree) return;
+  const voile = document.createElement('div');
+  voile.id = 'voileOnglet';
+  voile.innerHTML = `
+    <div class="voile-carte">
+      <p>Fractions : <b>barre de remplissage</b></p>
+      <button type="button" class="btn voile-ouvrir">↗ Ouvrir l'appli dans un nouvel onglet</button>
+      <p class="voile-bloque" hidden>Ouverture bloquée — <a href="${location.href}" target="_blank" rel="noopener">clique ici</a></p>
+      <button type="button" class="voile-rester">rester ici</button>
+    </div>`;
+  document.body.appendChild(voile);
+  voile.querySelector('.voile-ouvrir').onclick = () => {
+    if (!window.open(location.href, '_blank', 'noopener')) voile.querySelector('.voile-bloque').hidden = false;
+    else voile.remove();
+  };
+  voile.querySelector('.voile-rester').onclick = () => voile.remove();
+}
+
+
+// ================= Démarrage =================
+$('btnValider').onclick = valider;
+$('btnVider').onclick = vider;
+
+$('btnAnnoncer').onclick = annoncer;
+$('btnReannoncer').onclick = reannoncer;
+$('btnRemplir').onclick = remplirAuto;
+$('btnSuivant').onclick = demarrerQuestion;
+setupEtatToggle();
+renderPanneauLateral();
+setupBoutonNouvelOnglet();
+new FichePapier({
+  generer: () => tirage(niveau),
+  nomNiveau: () => NIVEAUX[niveau].nom
+}).installerBouton($('topButtonsBar'));
+new GuideAppli().installerBouton($('topButtonsBar'));
+proposerNouvelOnglet();
+demarrerQuestion();
+</script>
+</body>
+</html>
