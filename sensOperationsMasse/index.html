@@ -46,6 +46,7 @@
   <script src="Guide.js"></script>
   <script src="Quiz.js"></script>
   <script src="Diplome.js"></script>
+  <script src="FicheDisque.js"></script>
 
   <script>
 function setupBoutonNouvelOnglet() {
@@ -263,6 +264,7 @@ window.addEventListener('load', () => {
 
   setupBoutonNouvelOnglet();
   proposerNouvelOnglet();
+  new FicheDisque({ niveauCourant: () => niveau }).installerBouton(document.getElementById('topButtonsBar'));
   new GuideAppli().installerBouton(document.getElementById('topButtonsBar'));
 });
   </script>
