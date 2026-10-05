@@ -443,23 +443,48 @@ function formeCompteur(sens) {
   return { ncols, piles0: piles, prog: [{ t: "M", n: s }, { t: "R", n, corps: [aller("c"), { t: "P" }, aller(fixe), { t: "L" }, { t: "I" }] }] };
 }
 
-// Forme 3 : tri avec « si » : chaque sorte de caisse règle la colonne c où la lâcher
-function formeSi() {
-  const m = 3 + hasard(3), [c1, c2] = melangeTab(SORTES).slice(0, 2);
+// Une pile de m caisses numérotées (tous les numéros présents), à vider depuis la colonne 1
+function pileNumeros(m, nums) {
   let pile;
-  do { pile = Array.from({ length: m }, () => choisir([c1, c2])).join(""); } while (!pile.includes(c1) || !pile.includes(c2));
-  const [k1, k2] = melangeTab([2, 3]);
-  const si = (c, k) => ({ t: "S", c, corps: [{ t: "M", n: k }] });
-  return { ncols: 3, piles0: [pile, "", ""], prog: [{ t: "R", n: m, corps: [aller(1), { t: "P" }, si(c1, k1), si(c2, k2), aller("c"), { t: "L" }] }] };
+  do { pile = Array.from({ length: m }, () => choisir(nums)).join(""); } while (!nums.every(x => pile.includes(x)));
+  return pile;
+}
+const siMettre = (c, k) => ({ t: "S", c, corps: [{ t: "M", n: k }] });
+
+// Forme 3 : tri de caisses numérotées : chaque « si » met c au numéro lu, puis « aller en colonne c »
+function formeTriNum() {
+  const m = 3 + hasard(3), nums = melangeTab(["2", "3"]);
+  return { ncols: 3, piles0: [pileNumeros(m, nums), "", ""],
+    prog: [{ t: "R", n: m, corps: [aller(1), { t: "P" }, ...nums.map(x => siMettre(x, +x)), aller("c"), { t: "L" }] }] };
+}
+
+// Forme 4 : c « par défaut », puis un seul « si » qui la change
+function formeDefaut() {
+  const ncols = 3 + hasard(2), m = 3 + hasard(3);
+  const [d, autre] = melangeTab([...Array(ncols - 1).keys()].map(x => String(x + 2))).slice(0, 2);
+  return { ncols, piles0: [pileNumeros(m, [d, autre]), ...Array(ncols - 1).fill("")],
+    prog: [{ t: "R", n: m, corps: [aller(1), { t: "P" }, { t: "M", n: +d }, siMettre(autre, +autre), aller("c"), { t: "L" }] }] };
+}
+
+// Forme 5 : recherche avec « si la pince tient c » : la grue essaie c = 2, 3, 4…
+function formeSiC() {
+  const ncols = 4, m = 3 + hasard(2);
+  return { ncols, piles0: [pileNumeros(m, ["2", "3", "4"]), "", "", ""],
+    prog: [{ t: "R", n: m, corps: [aller(1), { t: "P" }, { t: "M", n: 2 }, { t: "R", n: 3, corps: [{ t: "S", c: "c", corps: [aller("c"), { t: "L" }] }, { t: "I" }] }] }] };
 }
 
 const FORMES = {
   suite: o => formeSuite(o.k || 2),
   suiteC: o => formeSuiteC(o.k || 2),
   compteur: o => formeCompteur(o.sens || choisir(["etaler", "ramasser"])),
-  si: formeSi
+  triNum: formeTriNum,
+  defaut: formeDefaut,
+  siC: formeSiC
 };
-const utiliseC = liste => liste.some(nd => nd.t === "M" || (nd.corps && utiliseC(nd.corps)));
+// Autres valeurs possibles dans un « si la pince tient … » (étiquettes, ou numéros et c)
+const autresSortes = (c, ncols) => SORTES.includes(c) ? SORTES.filter(x => x !== c)
+  : [...Array(ncols - 1).keys()].map(x => String(x + 2)).concat(["c"]).filter(x => x !== c);
+const utiliseC = liste => liste.some(nd => nd.t === "M" || (nd.t === "S" && nd.c === "c") || (nd.corps && utiliseC(nd.corps)));
 
 // Toutes les versions du programme avec UNE erreur (lecture ou écriture)
 function mutations(liste, ncols, avecC) {
@@ -476,7 +501,7 @@ function mutations(liste, ncols, avecC) {
       for (const c of mutations(nd.corps, ncols, avecC)) rempl({ ...nd, corps: c });
     }
     if (nd.t === "S") {
-      for (const x of SORTES) if (x !== nd.c) rempl({ ...nd, c: x });
+      for (const x of autresSortes(nd.c, ncols)) rempl({ ...nd, c: x });
       for (const c of mutations(nd.corps, ncols, avecC)) rempl({ ...nd, corps: c });
     }
   });
@@ -498,7 +523,7 @@ function trous(liste, ncols, avecC) {
       for (const s of trous(nd.corps, ncols, avecC)) res.push({ prog: avec({ ...nd, corps: s.prog }), alts: s.alts.map(c => avec({ ...nd, corps: c })) });
     }
     if (nd.t === "S") {
-      res.push({ prog: avec({ ...nd, trou: true }), alts: SORTES.filter(x => x !== nd.c).map(x => avec({ ...nd, c: x })) });
+      res.push({ prog: avec({ ...nd, trou: true }), alts: autresSortes(nd.c, ncols).map(x => avec({ ...nd, c: x })) });
       for (const s of trous(nd.corps, ncols, avecC)) res.push({ prog: avec({ ...nd, corps: s.prog }), alts: s.alts.map(c => avec({ ...nd, corps: c })) });
     }
   });
@@ -550,16 +575,16 @@ const NIVEAUX = [
     items: [
       { mode: "prevoir", genere: { forme: "suiteC", k: 2 } },
       { mode: "prevoir", genere: { forme: "compteur" } },
-      { mode: "prevoir", genere: { forme: "si" } }
+      { mode: "prevoir", genere: { forme: "siC" } }
     ]
   },
   {
     nom: "2. Compléter",
     consigne: "Choisis la valeur du « ? » pour obtenir le modèle.",
     items: [
-      { mode: "completer", genere: { forme: "suite", k: 2 } },
+      { mode: "completer", genere: { forme: "defaut" } },
       { mode: "completer", genere: { forme: "compteur" } },
-      { mode: "completer", genere: { forme: "si" } }
+      { mode: "completer", genere: { forme: "triNum" } }
     ]
   },
   {
@@ -568,16 +593,16 @@ const NIVEAUX = [
     items: [
       { mode: "ecrire", genere: { forme: "suite", k: 2 } },
       { mode: "ecrire", genere: { forme: "compteur", sens: "etaler" } },
-      { mode: "ecrire", genere: { forme: "compteur", sens: "ramasser" } }
+      { mode: "ecrire", genere: { forme: "triNum" } }
     ]
   },
   {
     nom: "4. Déboguer",
     consigne: "Le programme se trompe ! Trouve le bloc faux et corrige-le.",
     items: [
-      { mode: "deboguer", genere: { forme: "suite", k: 2 } },
+      { mode: "deboguer", genere: { forme: "defaut" } },
       { mode: "deboguer", genere: { forme: "compteur" } },
-      { mode: "deboguer", genere: { forme: "si" } }
+      { mode: "deboguer", genere: { forme: "triNum" } }
     ]
   },
   {
@@ -652,8 +677,9 @@ const itemCourant = () => NIVEAUX[ecran.n].items[ecran.i];
 // ---------- Blocs ----------
 const COULB = { evenement: "#ffbf00", controle: "#ffab19", mouvement: "#4c97ff", pince: "#9966ff", variable: "#ff8c1a" };
 // au niveau « Ranger », les « si » portent sur les numéros des caisses
-const CHOIX_COUL = () => ecran.type === "item" && itemCourant().mode === "trier"
-  ? [["?", "?"], ...itemCourant().couleurs.map(k => [COUL[k].emo, k]), ["c", "c"]]
+const numerote = it => it.mode === "trier" || (it.piles0 || []).some(p => /\d/.test(p));
+const CHOIX_COUL = () => ecran.type === "item" && numerote(itemCourant())
+  ? [["?", "?"], ...Array.from({ length: itemCourant().ncols - 1 }, (_, k) => [String(k + 2), String(k + 2)]), ["c", "c"]]
   : [["?", "?"], ...SORTES.map(k => [COUL[k].emo, k])];
 const CHOIX_N = [["?", "?"], ...[1, 2, 3, 4, 5, 6].map(n => [String(n), String(n)]), ["c", "c"]];
 // colonnes de la grille courante (+ la variable c pour « aller en colonne »)
@@ -760,9 +786,10 @@ const pret = () => problemes().length === 0;
 const compter = l => l.reduce((n, nd) => n + 1 + (nd.corps ? compter(nd.corps) : 0), 0);
 function record(item) {
   if (item.mode === "ecrire") return compter(item.solution);
-  // rangement : répéter { aller en colonne 1, attraper, mettre c à 2,
-  //   répéter { si la pince tient c alors { aller en colonne c, lâcher }, ajouter 1 à c } }
-  if (item.mode === "trier") return 9;
+  // rangement : répéter { aller en colonne 1, attraper, mettre c à 4 (par défaut),
+  //   si la pince tient 2 alors mettre c à 2, si la pince tient 3 alors mettre c à 3, aller en colonne c, lâcher }
+  // (le défi expert en 9 blocs, une recherche avec « si la pince tient c », ne compte pas pour la note)
+  if (item.mode === "trier") return 10;
   return null;
 }
 
@@ -1242,7 +1269,7 @@ function rendu() {
   const defauts = { repeter: { N: "2" }, aller_col: { COL: "1" }, mettre_c: { N: "1" } };
   const bloc = t => defauts[t] ? { kind: "block", type: t, fields: defauts[t] } : { kind: "block", type: t };
   const outils = {
-    ecrire: [...libre, "repeter"],
+    ecrire: [...libre, "repeter"].concat(JSON.stringify(item.solution || []).includes('"t":"S"') ? ["si_tient"] : []),
     deboguer: [...libre, "repeter", "si_tient"],
     trier: [...libre, "repeter", "si_tient"]
   }[item.mode] || [];
@@ -1360,6 +1387,7 @@ function renduColonne(col, item) {
         : item.mode === "trier" ? "✅ Cette pile est rangée !" : "✅ Bravo ! C’est le modèle.");
       if (rec) r.append(el("br"), nb > rec ? "Mais on peut le faire en " + rec + " blocs : essaie de réduire !"
         : nb < rec ? "🏆 Record battu : " + nb + " blocs !" : "🏆 Record égalé !");
+      if (item.mode === "trier" && nb === rec) r.append(el("br"), "🧠 Défi expert : on peut le faire en 9 blocs !");
       // points perdus à cause des essais ratés : comment les récupérer
       if (echecs && prevoir) r.append(el("br"), "Pas de point : ta première prévision était fausse. Prends une 🎲 nouvelle grille !");
       else if (echecs && item.mode !== "prevoir") r.append(el("br"), "½ point seulement : il y a eu des essais ratés. Réussis du premier coup sur une 🎲 nouvelle grille !");
