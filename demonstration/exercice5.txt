@@ -5,3 +5,4 @@ droite (d3) perpendiculaire à (d2) passant par (-1,0)
 donnée (d1) // (d2)
 codage (d3) ⊥ (d2)
 montrer (d3) ⊥ (d1)
+points 3

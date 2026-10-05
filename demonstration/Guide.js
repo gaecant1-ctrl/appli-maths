@@ -51,21 +51,25 @@ class GuideAppli {
         const contenu = document.createElement('div');
         contenu.innerHTML = `
             <h3>Objectif</h3>
-            <p>Chaque exercice donne une figure avec des droites, des <b>données</b> (ce que l'on sait) et une phrase <b>à démontrer</b>. Ton travail : écrire la démonstration en assemblant les blocs, en utilisant les propriétés du cours.</p>
+            <p>Chaque exercice donne une figure avec des droites et des codages : ce sont les <b>données</b> (ce que l'on sait).<br>
+            Ton travail : tenir un <b>raisonnement valide</b> à partir de ces données codées, en utilisant les propriétés du cours, afin d'obtenir un <b>nouveau renseignement</b> sur la figure.</p>
 
             <h3>Lire la figure</h3>
             <p>Les codages <b style="color:#2f9e44">verts</b> sont les données : un angle droit pour deux droites perpendiculaires, une double flèche avec <b>//</b> entouré pour deux droites parallèles.<br>
-            Certaines données ne sont écrites nulle part : il faut les lire sur les codages de la figure.<br>
-            Le codage <b style="color:#c0392b">rouge</b> apparaît quand tu as démontré ce qui était demandé.</p>
+            Le codage <b style="color:#c0392b">rouge</b> apparaît quand tu as obtenu le nouveau renseignement.</p>
 
             <h3>Écrire une étape</h3>
-            <p>Accroche un bloc <b>Étape</b> dans le bloc <b>Démonstration</b>, puis remplis-le :<br>
+            <p>Clique sur une case de l'étape pour la remplir :<br>
             <b>On a :</b> … <b>et</b> … : deux informations que tu connais (données, ou conclusions d'étapes précédentes) ;<br>
             <b>Or :</b> la propriété du cours que tu utilises ;<br>
-            <b>Donc :</b> ce que la propriété permet de conclure.</p>
+            <b>Donc :</b> ce que la propriété permet de conclure.<br>
+            Clique sur une case déjà remplie pour la changer ou la retirer.</p>
 
             <h3>Plusieurs étapes</h3>
-            <p>Parfois une seule étape ne suffit pas : ajoute une deuxième étape en dessous de la première. La conclusion d'une étape peut servir d'information dans les étapes suivantes.</p>
+            <p>Parfois une seule étape ne suffit pas : le bouton <b>+ Étape</b> en ajoute une en dessous. La conclusion d'une étape peut servir d'information dans les étapes suivantes. Clique sur le titre d'une étape pour la dupliquer ou la supprimer.</p>
+
+            <h3>Note et diplôme</h3>
+            <p>Chaque exercice rapporte des points : tous les points si ta démonstration est juste du premier coup, la moitié s'il y a eu une étape fausse avant. <b>Recommencer</b> te redonne une chance d'avoir tous les points. Le bouton <b>🎓 Diplôme</b> affiche ton diplôme à imprimer.</p>
 
             <h3>Vérifier</h3>
             <p>Le bouton <b>Vérifier</b> contrôle chaque étape. S'il y a une erreur, un message explique ce qui ne va pas et l'étape concernée est signalée. <b>Recommencer</b> efface ta démonstration et change le nom des droites.<br>

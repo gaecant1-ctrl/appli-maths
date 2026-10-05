@@ -3,7 +3,6 @@
    ============================================================ */
 
 let indexExercice = -1;
-const exercicesReussis = new Set();
 // Travail de l'élève gardé par exercice (on peut changer d'exercice et revenir).
 const travaux = {};
 // Noms des droites mélangés à la 1re ouverture de chaque exercice, puis gardés
@@ -11,11 +10,10 @@ const travaux = {};
 const permutations = {};
 let exerciceCourant = null;
 
-const CONSIGNE = "Démontre la propriété demandée en assemblant les blocs.";
 
 function afficherConsigne() {
     const c = document.getElementById('messageContainer');
-    document.getElementById('messageAlerte').innerText = CONSIGNE;
+    document.getElementById('messageAlerte').innerText = '';
     c.className = 'consigne';
 }
 
@@ -48,27 +46,39 @@ function construireBoutonsExercices() {
 function mettreAJourBoutonsExercices() {
     document.querySelectorAll('#choixExercices .btn-exercice').forEach((btn, i) => {
         btn.classList.toggle('actuel', i === indexExercice);
-        btn.classList.toggle('reussi', exercicesReussis.has(i));
+        btn.classList.toggle('reussi', exerciceReussi(i));
     });
 }
 
 /* ---------- Affichage d'un exercice ---------- */
 
-function afficherEnonce(ex) {
-    const liste = document.getElementById('listeDonnees');
-    liste.innerHTML = '';
-    ex.donnees.forEach(f => {
-        const li = document.createElement('li');
-        li.innerHTML = versHtml(texteFait(f));
-        liste.appendChild(li);
-    });
-    if (ex.codages.length) {
-        const li = document.createElement('li');
-        li.className = 'donnee-codage';
-        li.textContent = ex.donnees.length ? '+ les codages de la figure' : 'Lis les codages sur la figure';
-        liste.appendChild(li);
+// Nombre minimal d'étapes pour obtenir la conclusion à partir des informations de départ
+// (chaque étape ajoute tout ce qu'on peut conclure avec deux informations connues).
+function nbEtapesMin(ex) {
+    const cleBut = cleFait(ex.montrer);
+    const connus = new Map(ex.hypotheses.map(f => [cleFait(f), f]));
+    for (let n = 1; n <= 5; n++) {
+        const faits = [...connus.values()];
+        const nouveaux = [];
+        faits.forEach((f1, i) => faits.forEach((f2, j) => {
+            if (i === j) return;
+            Object.keys(PROPRIETES).forEach(p => {
+                const r = appliquerPropriete(p, f1, f2);
+                if (r.conclusion && r.conclusion.a !== r.conclusion.b) nouveaux.push(r.conclusion);
+            });
+        }));
+        if (nouveaux.some(f => cleFait(f) === cleBut)) return n;
+        nouveaux.forEach(f => connus.set(cleFait(f), f));
     }
-    document.getElementById('texteMontrer').innerHTML = versHtml(texteFait(ex.montrer));
+    return null;
+}
+
+// Exercices en plusieurs étapes : on annonce la conclusion finale attendue.
+function afficherButFinal(ex) {
+    const but = document.getElementById('butFinal');
+    const n = ex ? nbEtapesMin(ex) : null;
+    but.hidden = !n || n < 2;
+    if (!but.hidden) but.innerHTML = `À démontrer en ${n} étapes : ` + versHtml(texteFait(ex.montrer));
 }
 
 function afficherExercice(i) {
@@ -78,6 +88,7 @@ function afficherExercice(i) {
 
     if (EXERCICES[i].erreur) {
         exerciceCourant = null;
+        afficherButFinal(null);
         viderFigure();
         alerte(EXERCICES[i].erreur, 'erreur');
         return;
@@ -86,14 +97,14 @@ function afficherExercice(i) {
     const ex = exerciceCourant = renommerExercice(EXERCICES[i], permutations[i]);
 
     droitesCourantes = ex.droites;
-    rafraichirPalette();
+    afficherButFinal(ex);
     dessinerExercice(ex);
-    if (exercicesReussis.has(i)) coderConclusion(ex);
-    afficherEnonce(ex);
+    if (exerciceReussi(i)) coderConclusion(ex);
 
     if (travaux[i]) {
         workspace.clear();
         Blockly.serialization.workspaces.load(travaux[i], workspace);
+        workspace.getAllBlocks(false).forEach(figer); // le menu contextuel n'est pas sauvegardé
     } else {
         espaceDeTravailInitial();
     }
@@ -111,12 +122,17 @@ function verifier() {
     const resultat = verifierDemonstration(ex, etapes);
 
     if (resultat.ok) {
-        if (!exercicesReussis.has(indexExercice)) coderConclusion(ex);
-        exercicesReussis.add(indexExercice);
-        mettreAJourBoutonsExercices();
-        alerte(resultat.message, 'succes');
+        if (!exerciceReussi(indexExercice)) coderConclusion(ex);
+        const p = noterReussite(indexExercice), max = ptsMax(indexExercice);
+        let message = `${resultat.message} ⭐ ${fmt(p)} / ${fmt(max)}`;
+        if (p < max) message += ` (Recommencer pour viser ${fmt(max)})`;
+        alerte(message, 'succes');
         return;
     }
+    // Seule une étape remplie mais fausse coûte des points (pas une case vide,
+    // ni une démonstration juste qui n'est pas encore allée jusqu'au bout).
+    const e = resultat.etape !== null ? etapes[resultat.etape] : null;
+    if (e && e.f1 && e.f2 && e.prop && e.concl) noterEchec(indexExercice);
 
     const libres = workspace.getAllBlocks(false).filter(b => b.type === 'etape' && !etapes.some(e => e.bloc === b));
     let message = resultat.message;
@@ -134,12 +150,14 @@ function verifier() {
 function recommencer() {
     delete travaux[indexExercice];
     delete permutations[indexExercice];
+    oublierEchecs(indexExercice);
     const i = indexExercice;
     indexExercice = -1; // pas de sauvegarde du travail qu'on abandonne
     afficherExercice(i);
 }
 
 document.getElementById('btnVerifier').onclick = verifier;
+document.getElementById('btnAjouterEtape').onclick = ajouterEtape;
 document.getElementById('btnRecommencer').onclick = recommencer;
 document.getElementById('closeAlert').onclick = fermerAlerte;
 afficherConsigne();
@@ -157,14 +175,15 @@ function installerBoutonNouvelOnglet() {
     repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
     repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
 
+    // L'élève garde son nom dans le nouvel onglet (voir diplome.js).
     btn.onclick = () => {
-        const w = window.open(window.location.href, '_blank', 'noopener');
-        if (!w) repli.style.display = 'inline';
+        if (!ouvrirNouvelOnglet()) repli.style.display = 'inline';
     };
 
     conteneur.append(btn, repli);
 }
 
+installerEntete(document.getElementById('topButtonsBar'));
 installerBoutonNouvelOnglet();
 new GuideAppli().installerBouton(document.getElementById('topButtonsBar'));
 
@@ -173,10 +192,12 @@ new GuideAppli().installerBouton(document.getElementById('topButtonsBar'));
 async function demarrer() {
     await chargerExercices();
     construireBoutonsExercices();
-    if (EXERCICES.length) afficherExercice(0);
-    else alerte("Aucun fichier exercice1.txt trouvé.", 'erreur');
+    if (!EXERCICES.length) { alerte("Aucun fichier exercice1.txt trouvé.", 'erreur'); return; }
+    afficherExercice(0);
+    demanderNom(() => afficherExercice(indexExercice));
     document.getElementById('btnVerifier').disabled = false;
     document.getElementById('btnRecommencer').disabled = false;
+    document.getElementById('btnAjouterEtape').disabled = false;
 }
 
 new GGBApplet({
@@ -192,6 +213,9 @@ new GGBApplet({
     enableShiftDragZoom: false,
     enableRightClick: false,
     errorDialogsActive: false,
+    // Suit la taille du cadre (en rem), y compris en agrandissant.
+    scaleContainerClass: 'ggb-cadre',
+    allowUpscale: true,
     appletOnLoad: () => {
         ggbApplet = window.ggbApplet;
         demarrer();

@@ -5,9 +5,10 @@
      droite (d3) passant par (-3,-2) et (3,1)
      droite (d1) perpendiculaire à (d3) passant par (-1,1)
      droite (d2) parallèle à (d1) passant par (2,1)
-     donnée (d1) ⊥ (d3)      -> écrite dans « Données » et codée en vert
+     donnée (d1) ⊥ (d3)      -> codée en vert sur la figure (sert à la vérification)
      codage (d2) ⊥ (d3)      -> seulement codée en vert sur la figure
-     montrer (d1) // (d2)    -> écrite dans « À démontrer », codée en rouge une fois démontrée
+     montrer (d1) // (d2)    -> but de la démonstration, codé en rouge une fois démontré
+     points 3                -> barème de l'exercice (2 points si la ligne est absente)
    Codages : angle droit pour ⊥, connecteur  <--- // --->  entre les deux droites pour //.
    Symboles acceptés : ⊥ ou perp, // ou ∥ ou para.
    ============================================================ */
@@ -26,7 +27,7 @@ function parserFait(texte) {
 }
 
 function parserExercice(texte) {
-    const ex = { droites: [], constructions: [], hypotheses: [], donnees: [], codages: [], montrer: null };
+    const ex = { droites: [], constructions: [], hypotheses: [], donnees: [], codages: [], montrer: null, points: 2 };
     const lignes = texte.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('%'));
     const reDeux = new RegExp(`^droite \\((\\w+)\\) passant par ${RE_POINT} et ${RE_POINT}$`, 'i');
     const reRel = new RegExp(`^droite \\((\\w+)\\) (perpendiculaire|parall[èe]le) [àa] \\((\\w+)\\) passant par ${RE_POINT}$`, 'i');
@@ -44,6 +45,8 @@ function parserExercice(texte) {
                 : `Line((${m[4]},${m[5]}),${ref})`;
             ex.droites.push(m[1]);
             ex.constructions.push({ nom: m[1], cmd });
+        } else if ((m = ligne.match(/^points\s+(\d+(?:[.,]5)?)$/i))) {
+            ex.points = parseFloat(m[1].replace(',', '.'));
         } else if ((m = ligne.match(/^(donn[ée]e|codage|montrer)\s+(.+)$/i))) {
             const fait = parserFait(m[2]);
             if (!fait) throw new Error(`information illisible : "${ligne}"`);
@@ -109,7 +112,8 @@ function renommerExercice(ex, perm) {
         hypotheses: ex.hypotheses.map(f),
         donnees: ex.donnees.map(f),
         codages: ex.codages.map(f),
-        montrer: f(ex.montrer)
+        montrer: f(ex.montrer),
+        points: ex.points
     };
 }
 

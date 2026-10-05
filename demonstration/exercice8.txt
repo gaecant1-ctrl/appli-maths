@@ -7,3 +7,4 @@ codage (d1) ⊥ (d2)
 codage (d3) ⊥ (d2)
 donnée (d4) // (d3)
 montrer (d1) // (d4)
+points 3
