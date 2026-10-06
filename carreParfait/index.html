@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carré parfait ?</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#fff; --ink:#1d2433; --muted:#667085; --line:#d8dee9;
+  --accent:#2f6fde; --ok:#1f9d55; --ko:#d64545;
+  --shadow:0 2px 8px rgba(20,30,60,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:270px 1fr;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+/* Panneau latéral */
+.panneau{background:linear-gradient(180deg,#dfe8fb,#cfdcf8);border:1px solid #c3d2f3;border-radius:16px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.panneau h1{font-size:1.35rem;margin:0}
+.section{display:flex;flex-direction:column;gap:8px}
+.section h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#3a5ba8;margin:0}
+.ligne{display:flex;gap:6px}
+.ligne .btn{flex:1;padding:10px 8px;white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;min-height:44px;box-shadow:var(--shadow);font-weight:600}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#bParfait.on{background:var(--ok);border-color:var(--ok);color:#fff}
+#bPasParfait.on{background:var(--ko);border-color:var(--ko);color:#fff}
+#bHasard{flex:0 0 52px;font-size:1.2rem}
+#bHasard.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.consigne{min-height:1.3em;font-size:.95rem;font-weight:600;color:var(--accent)}
+.principal{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.principal #stage{flex:1}
+.bandeau{display:flex;align-items:center;gap:14px;background:#f3eefe;border:1px solid #d9ccfb;border-radius:16px;box-shadow:var(--shadow);padding:12px 16px}
+.btn.reflechir{background:#7c3aed;border-color:#7c3aed;color:#fff;font-size:1.1rem;padding:12px 22px;flex:none}
+.reflexion{flex:1;display:flex;flex-direction:column;gap:4px;font-size:1.05rem;min-width:0}
+.reflexion .etape{font-size:.8rem;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.04em}
+.reflexion .mesure{font-weight:700}
+.reflexion .question{font-weight:600;color:var(--accent)}
+.reflexion .question:empty{display:none}
+.reflexion .reponse{font-weight:600}
+.reflexion .reponse:empty{display:none}
+.reflexion .vrai{color:var(--ok)} .reflexion .faux{color:var(--ko)}
+.hidden{display:none!important}
+.aide{font-size:.85rem;color:#4a5f8f;margin:0}
+/* Téléphone : le panneau passe au-dessus de la figure, en compact */
+@media (max-width:700px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding:8px}
+  .panneau{flex-direction:row;flex-wrap:wrap;gap:8px 12px;padding:10px}
+  .panneau h1,.aide,.section h2{display:none}
+  .section{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .consigne{width:100%;min-height:0}
+  .bandeau{flex-direction:column;align-items:stretch;padding:10px}
+}
+#stage{min-height:300px;touch-action:none;cursor:grab;background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+#ggb{position:absolute;inset:0}
+#ggb .GeoGebraFrame{border:none!important;outline:none!important;box-shadow:none!important}
+#chargement{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+
+/* Intégrée dans une page : on force le nouvel onglet */
+#voileOnglet{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;z-index:50;text-align:center}
+#voileOnglet .titre{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:700;margin:0}
+#voileOnglet a{display:flex;align-items:center;justify-content:center;width:min(900px,100%);min-height:min(45vh,320px);padding:24px;border-radius:28px;background:var(--accent);color:#fff;text-decoration:none;font-size:clamp(2rem,7vw,4.5rem);font-weight:800;box-shadow:0 8px 24px rgba(47,111,222,.35)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panneau">
+    <h1>Carré parfait ?</h1>
+    <div class="section">
+      <h2>Figure</h2>
+      <div class="ligne">
+        <button class="btn" id="bParfait">Parfait</button>
+        <button class="btn" id="bPasParfait">Pas parfait</button>
+        <button class="btn" id="bHasard" title="Parfait ou pas, au hasard">?</button>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Révéler</h2>
+      <div class="ligne">
+        <button class="btn" id="bAngles" aria-pressed="false">Angles</button>
+        <button class="btn" id="bLongueurs" aria-pressed="false">Longueurs</button>
+      </div>
+      <div class="consigne" id="consigne"></div>
+    </div>
+    <div class="section">
+      <h2>Affichage</h2>
+      <button class="btn" id="bDroites" aria-pressed="false">Droites portantes</button>
+      <button class="btn" id="bTout">Tout révéler</button>
+    </div>
+    <div class="section">
+      <h2>Vue</h2>
+      <button class="btn" id="bRecentrer" title="Revenir au cadrage de départ">⟲ Recentrer</button>
+      <p class="aide">Glisser pour déplacer, molette ou pincer pour zoomer.</p>
+    </div>
+  </aside>
+  <main class="principal">
+    <div id="stage">
+      <div id="chargement">Chargement de GeoGebra…</div>
+      <div id="ggb"></div>
+    </div>
+    <div class="bandeau" id="bandeau">
+      <div class="reflexion" id="reflexion">
+        <div class="etape" id="rEtape">Réfléchir</div>
+        <div class="mesure" id="rMesure">Révélation pas à pas : à chaque donnée, quelle est la nature de ABCD ?</div>
+        <div class="question" id="rQuestion"></div>
+        <div class="reponse" id="rReponse"></div>
+      </div>
+      <button class="btn reflechir" id="bReflechir">Réfléchir</button>
+    </div>
+  </main>
+</div>
+
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const COTE = 5, DECALAGE = 0.05;   // 0,05 : imperceptible même au vidéoprojecteur
+const SOMMETS = { A: [0, 0], B: [COTE, 0], C: [COTE, COTE], D: [0, COTE] };
+const ANGLES = ['angA', 'angB', 'angC', 'angD'];
+const COTES = ['sAB', 'sBC', 'sCD', 'sDA'];
+const DROITES = ['dAB', 'dBC', 'dCD', 'dDA'];
+let api = null;
+// arme : outil en cours ('angle' : le prochain sommet cliqué révèle son angle ; 'longueur' : le prochain côté cliqué révèle sa longueur)
+// vus : ce qui a déjà été révélé (tout se masque à la figure suivante) ; mode : parfait, pasParfait, hasard
+const etat = { arme: null, vus: new Set(), droites: false, mode: 'parfait', reflexion: null };
+
+// Textes à nous (taille réglable), qui suivent les points : noms dehors, angles dans les coins, longueurs au milieu des côtés
+// (le carré est tourné : chaque texte est placé par rapport au centre M ; le décalage final recentre le texte sur son point)
+// distances en PIXELS d'écran (k = taille d'un pixel en unités, mise à jour à chaque zoom) : les textes restent bien placés
+const dehors = (P, d, sx, sy) => `${P}+${d}*k*UnitVector(${P}-M)+(${sx}*k,${sy}*k)`;
+const dedans = (P, d, sx, sy) => `${P}+${d}*k*UnitVector(M-${P})+(${sx}*k,${sy}*k)`;
+// étiquettes d'angle : distance (da) et recentrage (ax, ay) en pixels, recalculés selon la largeur du texte (majEtiquettes)
+const TEXTES = [
+  ...'ABCD'.split('').map(n => [`n${n}`, `"${n}"`, dehors(n, 30, -9, -11), 'nom']),
+  ...'ABCD'.split('').map(n => [`t${n}`, `ang${n}`, dedans(n, 'da', 'ax', 'ay'), 'angle']),
+  ...['AB', 'BC', 'CD', 'DA'].map(c => [`l${c}`, `s${c}`, dehors(`Midpoint(${c[0]},${c[1]})`, 'dl', 'lx', 'ly'), 'longueur']),
+];
+/* Écriture des mesures : une valeur exacte s'écrit simplement (5, 90°) ; sinon 2 décimales, ou plus si besoin
+   pour ne jamais ressembler à la valeur exacte (5,0002 et non 5 ; 89,997° et non 90°). Pas d'arrondi trompeur. */
+// nombre de décimales de chaque valeur : 0 si exacte, sinon 2 (ou plus pour ne pas ressembler à la valeur exacte)
+function decimales(x, ref) {
+  if (Math.abs(x - ref) < 1e-9) return 0;
+  let d = 2;
+  while (parseFloat(x.toFixed(d)) === ref && d < 8) d++;
+  return d;
+}
+const ecrire = (x, d) => (d ? x.toFixed(d) : String(Math.round(x))).replace('.', ',');
+function majTextes() {
+  if (!api) return;
+  const ang = 'ABCD'.split('').map(n => api.getValue(`ang${n}`) * 180 / Math.PI), lg = COTES.map(c => api.getValue(c));
+  const da = ang.map(x => decimales(x, 90)), dl = lg.map(x => decimales(x, COTE));
+  const lu = (x, d) => parseFloat(x.toFixed(d));
+  // rien de trompeur : deux angles consécutifs dont la somme n'est pas 180° ne doivent pas sembler faire 180°,
+  // deux côtés différents ne doivent pas sembler égaux → on ajoute des décimales tant qu'il le faut
+  for (let tour = 0; tour < 8; tour++) {
+    let ok = true;
+    for (let k = 0; k < 4; k++) {
+      const j = (k + 1) % 4;
+      if (Math.abs(ang[k] + ang[j] - 180) > 1e-9 && Math.abs(lu(ang[k], da[k]) + lu(ang[j], da[j]) - 180) < 1e-9) {
+        if (da[k]) da[k]++; if (da[j]) da[j]++; ok = false;
+      }
+    }
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++)
+      if (Math.abs(lg[a] - lg[b]) > 1e-9 && lu(lg[a], dl[a]) === lu(lg[b], dl[b])) {
+        if (dl[a]) dl[a]++; if (dl[b]) dl[b]++; ok = false;
+      }
+    if (ok) break;
+  }
+  'ABCD'.split('').forEach((n, k) => api.setTextValue(`cht${n}`, ecrire(ang[k], da[k]) + '°'));
+  COTES.forEach((c, k) => api.setTextValue(`chl${c.slice(1)}`, ecrire(lg[k], dl[k])));
+  majEtiquettes();
+}
+// le texte d'un angle (ex. « 90,57° ») doit tenir dans le coin : son centre est sur la bissectrice,
+// à une distance qui dépend de sa largeur (texte le plus long, taille de police)
+function majEtiquettes() {
+  if (!api || !etat.px) return;
+  const lg = noms => Math.max(...noms.map(n => (api.getValueString(n) || '').length), 3);
+  const car = lg('ABCD'.split('').map(n => `cht${n}`));
+  const fpx = Math.round(etat.px * 0.85), w = fpx * 0.6 * car, h = fpx;
+  api.setValue('da', 0.72 * Math.max(w, h) + 20);   // + 20 px : on dépasse le symbole d'angle droit
+  api.setValue('ax', -w / 2); api.setValue('ay', -h * 0.4);
+  // longueurs (« 5 », « 5,0002 ») : centrées sur leur point, assez loin du côté
+  const wl = etat.px * 0.6 * lg(COTES.map(c => `chl${c.slice(1)}`));
+  api.setValue('dl', 0.5 * wl + 10); api.setValue('lx', -wl / 2); api.setValue('ly', -etat.px * 0.4);
+}
+function majK() { if (api) api.setValue('k', JSON.parse(api.getViewProperties()).invXscale); }
+
+function construire() {
+  const cmd = c => api.evalCommand(c);
+  Object.entries(SOMMETS).forEach(([n, [x, y]]) => cmd(`${n}=(${x},${y})`));
+  cmd('M=Midpoint(A,C)'); api.setVisible('M', false);
+  cmd('k=0.014'); api.setVisible('k', false);
+  ['da=55', 'ax=-36', 'ay=-10', 'dl=30', 'lx=-20', 'ly=-10'].forEach(c => { cmd(c); api.setVisible(c.split('=')[0], false); });
+  // côtés, droites portantes, angles intérieurs (sens direct)
+  [['sAB', 'A', 'B'], ['sBC', 'B', 'C'], ['sCD', 'C', 'D'], ['sDA', 'D', 'A']].forEach(([n, p, q]) => cmd(`${n}=Segment(${p},${q})`));
+  [['dAB', 'A', 'B'], ['dBC', 'B', 'C'], ['dCD', 'C', 'D'], ['dDA', 'D', 'A']].forEach(([n, p, q]) => cmd(`${n}=Line(${p},${q})`));
+  [['angA', 'B', 'A', 'D'], ['angB', 'C', 'B', 'A'], ['angC', 'D', 'C', 'B'], ['angD', 'A', 'D', 'C']].forEach(([n, p, s, q]) => cmd(`${n}=Angle(${p},${s},${q})`));
+  // les mesures s'écrivent avec une virgule (91,15° et non 91.15°)
+  // symbole d'angle droit (petit carré de 16 px), utilisé quand l'angle AFFICHÉ vaut 90°
+  [['A', 'D', 'B'], ['B', 'A', 'C'], ['C', 'B', 'D'], ['D', 'C', 'A']].forEach(([n, p, q]) => {
+    const u = `16*k*UnitVector(${p}-${n})`, v = `16*k*UnitVector(${q}-${n})`;
+    cmd(`r${n}=Polyline(${n}+${u},${n}+${u}+${v},${n}+${v})`);
+    api.setColor(`r${n}`, 47, 158, 68); api.setLineThickness(`r${n}`, 5);
+    api.setLabelVisible(`r${n}`, false); api.setFixed(`r${n}`, true, false); api.setVisible(`r${n}`, false);
+  });
+  // mesures : le texte (ch…) est écrit par majTextes() — précision choisie par l'appli, jamais trompeuse
+  TEXTES.forEach(([n, contenu, pos, sorte]) => {
+    if (sorte === 'nom') { cmd(`${n}=Text(${contenu},${pos})`); return; }
+    cmd(`ch${n}=""`); api.setVisible(`ch${n}`, false);
+    cmd(`${n}=Text(ch${n},${pos})`);
+  });
+
+  Object.keys(SOMMETS).forEach(n => {
+    api.setFixed(n, true, true);            // non déplaçable, mais cliquable
+    api.setPointSize(n, 5); api.setColor(n, 29, 36, 51);
+    api.setLabelVisible(n, false);
+  });
+  COTES.forEach(n => { api.setColor(n, 29, 36, 51); api.setLineThickness(n, 7); api.setLabelVisible(n, false); });
+  DROITES.forEach(n => {
+    api.setColor(n, 47, 111, 222); api.setLineStyle(n, 1); api.setLineThickness(n, 4);
+    api.setLabelVisible(n, false); api.setLayer(n, 0);
+  });
+  ANGLES.forEach(n => {
+    api.setColor(n, 47, 158, 68); api.setLabelVisible(n, false);
+    // pas de petit carré automatique sur un angle exactement droit : il trahirait le carré parfait
+    const xml = api.getXML(n).replace(/<emphasizeRightAngle[^>]*\/>/, '');
+    api.evalXML(xml.replace('</element>', '<emphasizeRightAngle val="false"/></element>'));
+  });
+  TEXTES.forEach(([n, , , sorte]) => {
+    api.setFixed(n, true, false);
+    if (sorte === 'nom') api.setColor(n, 29, 36, 51); else api.setColor(n, 31, 130, 60);   // données révélées (angles, longueurs) en vert
+  });
+  api.setAxesVisible(false, false);
+  api.setGridVisible(false);
+  cadrer();
+}
+
+function cadrer() {
+  if (!api) return;
+  const st = $('stage'), w = st.clientWidth, h = st.clientHeight;
+  api.setSize(w, h);
+  // carré centré, avec de la marge pour les textes ; même échelle en x et en y
+  // vue dézoomée : la diagonale du carré occupe 60 % du cadre ; un décalage de 0,05 ne fait que 3 pixels (imperceptible)
+  const ech = 0.6 * Math.min(w, h) / (COTE * Math.SQRT2);
+  const cx = COTE / 2, cy = COTE / 2, dx = w / ech / 2, dy = h / ech / 2;
+  api.setCoordSystem(cx - dx, cx + dx, cy - dy, cy + dy);
+  majK();
+  // taille des textes proportionnelle au carré (lisible au vidéoprojecteur comme sur téléphone)
+  const px = Math.round(Math.max(15, Math.min(28, Math.min(w, h) / 26)));
+  const taille = { nom: Math.round(px * 1.15), angle: Math.round(px * 0.85), longueur: px };
+  TEXTES.forEach(([n, , , sorte]) => api.setFont(n, taille[sorte], true, false, false));
+  etat.px = px; majEtiquettes();
+}
+
+/* ================= Déductions (en rouge) =================
+   À partir des données révélées (en vert), tout ce qui se DÉDUIT par les propriétés du collège :
+   somme des angles = 360° ; deux angles consécutifs de somme 180° → côtés parallèles → les deux autres aussi 180° ;
+   rectangle → côtés opposés égaux ; carré → tous les côtés égaux ; losange → angles opposés égaux ;
+   cerf-volant → les deux angles hors de l'axe égaux. On recommence tant qu'on trouve du nouveau. */
+const lireAngle = n => valeurAffichee(`t${n}`), lireCote = c => valeurAffichee(`l${c.slice(1)}`);
+function deduire(vus = etat.vus) {
+  const A = {}, S = {}, D = new Set();
+  'ABCD'.split('').forEach(n => { if (vus.has(n)) A[n] = lireAngle(n); });
+  COTES.forEach(c => { if (vus.has(c)) S[c] = lireCote(c); });
+  const ajA = n => { if (!(n in A)) { A[n] = lireAngle(n); D.add(n); return true; } return false; };
+  const ajS = c => { if (!(c in S)) { S[c] = lireCote(c); D.add(c); return true; } return false; };
+  const egal = (x, y) => Math.abs(x - y) < 1e-9;
+  for (let neuf = true, tour = 0; neuf && tour < 10; tour++) {
+    neuf = false;
+    const connus = 'ABCD'.split('').filter(n => n in A);
+    if (connus.length === 3) neuf = ajA('ABCD'.split('').find(n => !(n in A))) || neuf;                 // somme 360°
+    [[['B', 'C'], ['A', 'D']], [['A', 'D'], ['B', 'C']], [['A', 'B'], ['C', 'D']], [['C', 'D'], ['A', 'B']]].forEach(([[p, q], [r, t]]) => {
+      if (p in A && q in A && egal(A[p] + A[q], 180) && ((r in A) !== (t in A))) neuf = ajA(r in A ? t : r) || neuf;   // parallèles
+    });
+    const rect = 'ABCD'.split('').every(n => n in A && A[n] === 90);
+    if (rect) [['sAB', 'sCD'], ['sBC', 'sDA']].forEach(([x, y]) => { if ((x in S) !== (y in S)) neuf = ajS(x in S ? y : x) || neuf; });
+    const consec = [0, 1, 2, 3].some(k => COTES[k] in S && COTES[(k + 1) % 4] in S && egal(S[COTES[k]], S[COTES[(k + 1) % 4]]));
+    if (rect && consec) COTES.forEach(c => { neuf = ajS(c) || neuf; });                                 // carré
+    if (COTES.every(c => c in S)) {
+      const v = COTES.map(c => S[c]);
+      if (v.every(x => egal(x, v[0]))) [['A', 'C'], ['B', 'D']].forEach(([x, y]) => { if ((x in A) !== (y in A)) neuf = ajA(x in A ? y : x) || neuf; });   // losange
+      else {
+        if (egal(v[0], v[1]) && egal(v[2], v[3]) && ((('A' in A) !== ('C' in A)))) neuf = ajA('A' in A ? 'C' : 'A') || neuf;   // cerf-volant d'axe (BD)
+        if (egal(v[3], v[0]) && egal(v[1], v[2]) && ((('B' in A) !== ('D' in A)))) neuf = ajA('B' in A ? 'D' : 'B') || neuf;   // cerf-volant d'axe (AC)
+      }
+    }
+  }
+  return D;
+}
+
+const VERT = [31, 130, 60], ROUGE = [214, 69, 69];
+function appliquer() {
+  // pendant une question de Réfléchir, on ne montre que les déductions des étapes précédentes :
+  // ce que permet la nouvelle donnée n'apparaît en rouge qu'au moment de la réponse
+  const r = etat.reflexion, enQuestion = r && r.phase === 'question';
+  const deduits = enQuestion ? deduire(new Set([...etat.vus].filter(x => x !== r.liste[r.i]))) : deduire();
+  'ABCD'.split('').forEach(n => {
+    const vu = etat.vus.has(n), ded = !vu && deduits.has(n), montre = vu || ded;
+    const droit = montre && api.getValueString(`t${n}`) === '90°';   // angle exactement droit : le symbole suffit
+    const [r, g, b] = ded ? ROUGE : VERT;
+    [`ang${n}`, `r${n}`, `t${n}`].forEach(o => api.setColor(o, r, g, b));
+    api.setVisible(`ang${n}`, montre && !droit); api.setVisible(`r${n}`, droit); api.setVisible(`t${n}`, montre && !droit);
+  });
+  COTES.forEach(c => {
+    const vu = etat.vus.has(c), ded = !vu && deduits.has(c), [r, g, b] = ded ? ROUGE : VERT;
+    api.setColor(`l${c.slice(1)}`, r, g, b);
+    api.setVisible(`l${c.slice(1)}`, vu || ded);
+  });
+  DROITES.forEach(n => api.setVisible(n, etat.droites));
+  [['bAngles', etat.arme === 'angle'], ['bLongueurs', etat.arme === 'longueur'], ['bDroites', etat.droites]].forEach(([b, on]) => {
+    $(b).classList.toggle('on', on); $(b).setAttribute('aria-pressed', on);
+  });
+  // pas de réflexion quand on SAIT que le carré est parfait (bouton Parfait) ; elle reste pour Pas parfait et ?
+  $('bandeau').classList.toggle('hidden', etat.mode === 'parfait');
+  if (typeof majReflexion === 'function') majReflexion();
+  const toutVu = TOUT.every(x => etat.vus.has(x));
+  $('bTout').textContent = toutVu ? 'Tout cacher' : 'Tout révéler';
+  $('consigne').textContent = etat.arme === 'angle' ? 'Clique sur un sommet' : etat.arme === 'longueur' ? 'Clique sur un côté' : '';
+  [['bParfait', 'parfait'], ['bPasParfait', 'pasParfait'], ['bHasard', 'hasard']].forEach(([b, m]) => $(b).classList.toggle('on', etat.mode === m));
+  api.refreshViews();
+}
+
+// Le carré est tourné au hasard (entre 15° et 75°, jamais « droit »), recalculé à chaque appui.
+// Pas parfait : UN SEUL sommet bouge d'environ 0,1, de l'une de trois façons (au hasard), pour garder un maximum de propriétés :
+//   - droite   : il glisse sur une de ses droites portantes → 2 angles droits consécutifs, 2 côtés à 5, un parallélisme ;
+//   - cercle   : il tourne autour d'un voisin (rayon 5)     → 3 côtés à 5, 1 angle droit ;
+//   - diagonale: il glisse sur sa diagonale                  → cerf-volant : 2 côtés à 5, les 2 autres égaux, 1 angle droit ;
+//   - rectangle: SEULE exception, DEUX sommets voisins glissent ensemble → 4 angles droits, 2 parallélismes, 2 côtés à 5.
+// ? : parfait ou pas, au hasard (on ne dit pas lequel).
+function poser(n, x, y) {               // un point fixé doit être libéré le temps de le déplacer
+  api.setFixed(n, false, true); api.setCoords(n, x, y); api.setFixed(n, true, true);
+}
+function placer() {
+  const th = (Math.random() < .5 ? R(15, 75) : R(105, 165)) * Math.PI / 180, r = COTE / Math.SQRT2, c = COTE / 2;
+  const pts = {};
+  'ABCD'.split('').forEach((n, k) => {
+    const a = th + (225 + 90 * k) * Math.PI / 180;
+    pts[n] = [c + r * Math.cos(a), c + r * Math.sin(a)];
+  });
+  const parfait = etat.mode === 'parfait' || (etat.mode === 'hasard' && Math.random() < .5);
+  if (!parfait) {
+    const k = Math.floor(Math.random() * 4), n = 'ABCD'[k], [px, py] = pts[n];
+    const voisin = pts['ABCD'[(k + (Math.random() < .5 ? 1 : 3)) % 4]], oppose = pts['ABCD'[(k + 2) % 4]];
+    const sg = Math.random() < .5 ? 1 : -1, facon = ['droite', 'cercle', 'diagonale', 'rectangle'][Math.floor(Math.random() * 4)];
+    if (facon === 'rectangle') {                 // n et son suivant glissent perpendiculairement au côté qui les relie
+      const m = 'ABCD'[(k + 1) % 4], avant = pts['ABCD'[(k + 3) % 4]];
+      const ux = px - avant[0], uy = py - avant[1], l = Math.hypot(ux, uy);
+      [n, m].forEach(q => { pts[q] = [pts[q][0] + sg * DECALAGE * ux / l, pts[q][1] + sg * DECALAGE * uy / l]; });
+    } else if (facon === 'cercle') {                    // rotation autour du voisin : l'arc parcouru vaut 0,1
+      const phi = sg * DECALAGE / COTE, vx = px - voisin[0], vy = py - voisin[1];
+      pts[n] = [voisin[0] + vx * Math.cos(phi) - vy * Math.sin(phi), voisin[1] + vx * Math.sin(phi) + vy * Math.cos(phi)];
+    } else {                                     // glissement sur la droite (voisin, n) ou sur la diagonale (opposé, n)
+      const o = facon === 'droite' ? voisin : oppose, ux = px - o[0], uy = py - o[1], l = Math.hypot(ux, uy);
+      pts[n] = [px + sg * DECALAGE * ux / l, py + sg * DECALAGE * uy / l];
+    }
+  }
+  Object.entries(pts).forEach(([n, [x, y]]) => poser(n, x, y));
+  majTextes();
+  etat.vus.clear(); etat.arme = null; etat.reflexion = null;   // nouvelle figure : on cache tout
+  api.refreshViews();
+}
+const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+$('bAngles').onclick = () => { etat.arme = etat.arme === 'angle' ? null : 'angle'; appliquer(); };
+$('bLongueurs').onclick = () => { etat.arme = etat.arme === 'longueur' ? null : 'longueur'; appliquer(); };
+// clic dans la figure : un sommet (ou son arc) révèle l'angle, un côté révèle la longueur ; l'outil se relâche
+function clic(nom) {
+  const sommet = /^[ABCD]$/.test(nom) ? nom : /^ang[ABCD]$/.test(nom) ? nom.slice(3) : null;
+  setTimeout(() => api.evalCommand('SelectObjects()'), 0);   // pas de surbrillance de sélection
+  if (etat.arme === 'angle' && sommet) etat.vus.add(sommet);
+  else if (etat.arme === 'longueur' && COTES.includes(nom)) etat.vus.add(nom);
+  else return;
+  etat.arme = null;
+  appliquer();
+}
+$('bDroites').onclick = () => { etat.droites = !etat.droites; appliquer(); };
+$('bRecentrer').onclick = cadrer;
+/* ================= Réfléchir =================
+   Révélation pas à pas : une mesure, la question « nature ? », puis ce qu'on peut affirmer (avec ce que l'on VOIT). L'ordre piège : d'abord ce qui est exact (angles droits, côtés à 5), le reste à la fin. */
+const valeurAffichee = nom => parseFloat(api.getValueString(nom).replace(',', '.'));   // ce que voient les élèves
+const exactDroit = n => Math.abs(api.getValue(`ang${n}`) * 180 / Math.PI - 90) < 1e-9;
+const exactCinq = c => Math.abs(api.getValue(c) - COTE) < 1e-9;
+const nomMesure = x => /^[ABCD]$/.test(x) ? `angle en ${x}` : `${x.slice(1)}`;
+function ordreReflexion() {
+  const angles = 'ABCD'.split(''), cotes = COTES.slice(), melange = a => a.sort(() => Math.random() - .5);
+  const exacts = melange(angles.filter(exactDroit)).concat(melange(cotes.filter(exactCinq)));
+  const autres = melange(angles.filter(n => !exactDroit(n))).concat(melange(cotes.filter(c => !exactCinq(c))));
+  return exacts.concat(autres);
+}
+// ce qu'on peut affirmer avec les mesures révélées (vocabulaire de 6e : carré, rectangle, losange)
+// ce qu'on peut affirmer avec les données révélées (ce que VOIENT les élèves)
+// natures : carré, rectangle, losange, trapèze (une paire de côtés parallèles), cerf-volant (deux paires de côtés consécutifs égaux), quelconque
+function affirmer() {
+  const A = {};                                           // angles affichés, par sommet
+  'ABCD'.split('').forEach(n => { if (etat.vus.has(n)) A[n] = valeurAffichee(`t${n}`); });
+  const ang = Object.values(A);
+  const cot = COTES.map(c => etat.vus.has(c) ? valeurAffichee(`l${c.slice(1)}`) : null);
+  const egaux = (a, b) => a !== null && b !== null && a === b;
+  const differents = (a, b) => a !== null && b !== null && a !== b;
+  const droits = ang.filter(x => x === 90).length, pasDroit = ang.some(x => x !== 90);
+  const connus = cot.filter(x => x !== null);
+  const inegaux = connus.some((a, i) => connus.some((b, j) => j > i && differents(a, b)));
+  const consecEgaux = [0, 1, 2, 3].some(k => egaux(cot[k], cot[(k + 1) % 4]));
+  const rect = droits >= 3, los = connus.length === 4 && connus.every(a => egaux(a, connus[0]));
+  const pasRect = pasDroit, pasLos = inegaux, carre = (rect && consecEgaux) || (los && droits >= 1), pasCarre = pasRect || pasLos;
+  // parallélisme : deux angles consécutifs (sur le côté commun) de somme 180° → les deux autres côtés sont parallèles
+  // somme calculée comme un élève avec les valeurs affichées (ex. 89,43 + 90,57 = 180 ; 89,997 + 90 = 179,997)
+  const somme180 = (x, y) => Math.abs(x + y - 180) < 1e-9;
+  const paires = [                                        // [sommets du côté commun, côtés alors parallèles]
+    [['B', 'C'], '(AB) // (CD)'], [['A', 'D'], '(AB) // (CD)'], [['A', 'B'], '(AD) // (BC)'], [['C', 'D'], '(AD) // (BC)'],
+  ];
+  let preuve = null; const nonPar = new Set();
+  paires.forEach(([[p, q], par]) => {
+    if (!(p in A) || !(q in A)) return;
+    if (somme180(A[p], A[q])) { if (!preuve) preuve = { p, q, par, droits: A[p] === 90 && A[q] === 90 }; }
+    else nonPar.add(par);
+  });
+  const trap = !!preuve, pasTrap = nonPar.size === 2;
+  // cerf-volant : axe (BD) → BA = BC et DA = DC ; axe (AC) → AB = AD et CB = CD   (côtés : 0 AB, 1 BC, 2 CD, 3 DA)
+  const N = ['AB', 'BC', 'CD', 'DA'];
+  const axes = [{ axe: 'BD', paires: [[0, 1], [2, 3]] }, { axe: 'AC', paires: [[3, 0], [1, 2]] }];
+  const egal = ([i, j]) => egaux(cot[i], cot[j]);
+  const diff = ([i, j]) => differents(cot[i], cot[j]);
+  const axeCV = axes.find(a => a.paires.every(egal));
+  const cv = !!axeCV, pasCV = axes.every(a => a.paires.some(diff));
+  const L = [];
+  if (carre) L.push(['vrai', rect ? '3 angles droits et deux côtés consécutifs égaux : ABCD est un carré.' : '4 côtés égaux et un angle droit : ABCD est un carré.']);
+  else {
+    if (rect) L.push(['vrai', '3 angles droits : ABCD est un rectangle.']);
+    if (los) L.push(['vrai', '4 côtés égaux : ABCD est un losange.']);
+    if (trap && !rect && !los) L.push(['vrai', preuve.droits
+      ? `Deux angles droits consécutifs (en ${preuve.p} et en ${preuve.q}) : ${preuve.par}, ABCD est un trapèze.`
+      : `Angles en ${preuve.p} et en ${preuve.q} : somme 180°, donc ${preuve.par} : ABCD est un trapèze.`]);
+    if (pasRect && !rect) L.push(['faux', 'Un angle n\'est pas droit : ce n\'est pas un rectangle.']);
+    if (pasLos && !los) L.push(['faux', 'Deux côtés sont différents : ce n\'est pas un losange.']);
+    if (cv && !los) {
+      const [[a, b], [c, d]] = axeCV.paires;
+      L.push(['vrai', `${N[a]} = ${N[b]} et ${N[c]} = ${N[d]} : deux paires de côtés consécutifs égaux, ABCD est un cerf-volant.`]);
+    }
+    if (pasTrap) L.push(['faux', 'Aucune paire de côtés parallèles : ce n\'est pas un trapèze.']);
+    if (pasCV) L.push(['faux', 'Pas deux paires de côtés consécutifs égaux : ce n\'est pas un cerf-volant.']);
+    if (pasRect && pasLos && pasTrap && pasCV) L.push(['faux', 'Ni carré, ni rectangle, ni losange, ni trapèze, ni cerf-volant : c\'est un quadrilatère quelconque.']);
+    else if (pasRect && pasLos && trap) L.push(['faux', 'Ni rectangle, ni losange : c\'est un trapèze, pas un carré.']);
+    else if (pasRect && pasLos && cv) L.push(['faux', 'Ni rectangle, ni losange : c\'est un cerf-volant, pas un carré.']);
+    else if (pasCarre) L.push(['faux', 'Donc ce n\'est pas un carré.']);
+    else if (rect || los) L.push(['', 'On ne sait pas encore si c\'est un carré.']);
+    if (!L.length) L.push(['', 'On ne peut encore rien affirmer.']);
+  }
+  // nature déterminée : carré, rectangle non carré, losange non carré, trapèze (ni rectangle ni losange), ou quelconque
+  // (un cerf-volant qui n'est pas un losange n'est jamais un trapèze, et inversement)
+  const nature = carre || (rect && pasLos) || (los && pasRect) || (pasRect && pasLos && (trap || cv || (pasTrap && pasCV)));
+  return { L, carre, rect, los, trap, cv, pasCarre, nature };
+}
+function natureReelle() {                // avec les valeurs exactes (pas les arrondis)
+  const deg = n => api.getValue(`ang${n}`) * 180 / Math.PI;
+  const d = 'ABCD'.split('').filter(exactDroit).length;
+  const lg = COTES.map(x => api.getValue(x)), los = lg.every(x => Math.abs(x - lg[0]) < 1e-9);
+  const rect = d === 4, carre = rect && los;
+  const trap = Math.abs(deg('B') + deg('C') - 180) < 1e-9 || Math.abs(deg('A') + deg('B') - 180) < 1e-9;
+  const eq = (i, j) => Math.abs(lg[i] - lg[j]) < 1e-9;
+  const cv = (eq(0, 1) && eq(2, 3)) || (eq(3, 0) && eq(1, 2));
+  const texte = carre ? 'un carré' : rect ? 'un rectangle (pas un carré)' : los ? 'un losange (pas un carré)'
+    : trap ? 'un trapèze (ni rectangle, ni losange)' : cv ? 'un cerf-volant (pas un losange)'
+    : 'un quadrilatère quelconque : ni carré, ni rectangle, ni losange, ni trapèze, ni cerf-volant';
+  return { texte, carre, rect, los, trap, cv };
+}
+function majReflexion() {
+  const r = etat.reflexion;
+  if (!r) {
+    $('bReflechir').textContent = 'Réfléchir';
+    $('rEtape').textContent = 'Réfléchir';
+    $('rMesure').textContent = 'Révélation pas à pas : à chaque donnée, quelle est la nature de ABCD ?';
+    $('rQuestion').textContent = ''; $('rReponse').innerHTML = '';
+    return;
+  }
+  // fin : dernière donnée, ou dès que la NATURE est entièrement déterminée (pas seulement « pas un carré »)
+  const tranche = r.phase === 'reponse' && affirmer().nature;
+  const fin = r.phase === 'reponse' && (r.i >= r.liste.length - 1 || tranche);
+  r.fini = fin;
+  const x = r.liste[r.i];
+  $('rEtape').textContent = `Étape ${r.i + 1} / ${r.liste.length}`;
+  const acquis = (r.acquis || []).map(nomMesure);
+  $('rMesure').innerHTML = (acquis.length ? `<div class="vrai">Conclusions précédentes, désormais acquises : ${acquis.join(', ')}</div>` : '')
+    + 'Nouvelle donnée : ' + nomMesure(x);
+  $('rQuestion').textContent = 'Quelle est la nature de ABCD ? Que peut-on affirmer ?';
+  if (r.phase === 'question') $('rReponse').innerHTML = '';
+  else {
+    const a = affirmer();
+    let h = a.L.map(([c, t]) => `<div class="${c}">${t}</div>`).join('');
+    if (fin) {
+      const v = natureReelle();
+      h += `<div class="etape" style="margin-top:6px">Nature réelle : ${v.texte}</div>`;
+    }
+    $('rReponse').innerHTML = h;
+  }
+  $('bReflechir').textContent = r.phase === 'question' ? 'Voir la réponse' : fin ? 'Recommencer' : 'Donnée supplémentaire';
+}
+$('bReflechir').onclick = () => {
+  const r = etat.reflexion;
+  if (!r || r.fini) {                                                       // démarrer (ou recommencer) : on cache tout
+    etat.vus.clear(); etat.arme = null;
+    etat.reflexion = { liste: ordreReflexion(), i: 0, phase: 'question', acquis: [] };
+    etat.vus.add(etat.reflexion.liste[0]);
+  } else if (r.phase === 'question') r.phase = 'reponse';
+  else {
+    // donnée supplémentaire : les conclusions (rouge) de l'étape précédente deviennent des données acquises (vert),
+    // puis on révèle la donnée suivante, en sautant celles qui sont déjà connues
+    const acquis = [...deduire()];
+    acquis.forEach(x => etat.vus.add(x));
+    r.acquis = acquis;
+    do { r.i++; } while (r.i < r.liste.length - 1 && etat.vus.has(r.liste[r.i]));
+    if (etat.vus.has(r.liste[r.i])) { r.phase = 'reponse'; r.fini = true; }   // tout était déjà connu
+    else { r.phase = 'question'; etat.vus.add(r.liste[r.i]); }
+  }
+  appliquer();
+};
+
+// tous les angles et toutes les longueurs d'un coup (ou tout recacher)
+const TOUT = ['A', 'B', 'C', 'D', ...COTES];
+$('bTout').onclick = () => {
+  const toutVu = TOUT.every(x => etat.vus.has(x));
+  TOUT.forEach(x => toutVu ? etat.vus.delete(x) : etat.vus.add(x));
+  etat.arme = null; appliquer();
+};
+
+/* Se déplacer dans le plan : glisser (souris ou un doigt) = déplacer la vue, pincer (deux doigts) = zoomer.
+   Molette = zoomer autour du curseur. Quand l'outil Angles / Longueurs est enfoncé, les clics vont à GeoGebra. */
+const doigts = new Map();
+const vueGgb = () => JSON.parse(api.getViewProperties());
+function poserVue(xmin, ymin, invX, invY, v) { api.setCoordSystem(xmin, xmin + v.width * invX, ymin, ymin + v.height * invY); majK(); }
+function deplacer(dx, dy) {
+  const v = vueGgb();
+  poserVue(v.xMin - dx * v.invXscale, v.yMin + dy * v.invYscale, v.invXscale, v.invYscale, v);
+}
+function zoomer(f, px, py) {             // f > 1 : on grossit, autour du point (px, py) du cadre
+  const v = vueGgb(), yMax = v.yMin + v.height * v.invYscale;
+  const wx = v.xMin + px * v.invXscale, wy = yMax - py * v.invYscale, ix = v.invXscale / f, iy = v.invYscale / f;
+  poserVue(wx - px * ix, (wy + py * iy) - v.height * iy, ix, iy, v);
+}
+const dansCadre = e => { const r = document.querySelector('#ggb canvas').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+const stage = $('stage');
+stage.addEventListener('pointerdown', e => {
+  if (!api || etat.arme) return;
+  doigts.set(e.pointerId, [e.clientX, e.clientY]);
+  try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+  stage.style.cursor = 'grabbing';
+  e.stopPropagation(); e.preventDefault();
+}, true);
+stage.addEventListener('pointermove', e => {
+  if (!doigts.has(e.pointerId)) return;
+  e.stopPropagation(); e.preventDefault();
+  const avant = [...doigts.values()].map(p => p.slice());
+  doigts.set(e.pointerId, [e.clientX, e.clientY]);
+  const apres = [...doigts.values()];
+  if (apres.length === 1) deplacer(apres[0][0] - avant[0][0], apres[0][1] - avant[0][1]);
+  else if (apres.length === 2) {
+    const d = q => Math.hypot(q[0][0] - q[1][0], q[0][1] - q[1][1]), m = q => [(q[0][0] + q[1][0]) / 2, (q[0][1] + q[1][1]) / 2];
+    const [mx, my] = m(apres), [ax, ay] = m(avant);
+    deplacer(mx - ax, my - ay);
+    const r = document.querySelector('#ggb canvas').getBoundingClientRect();
+    if (d(avant) > 0) zoomer(d(apres) / d(avant), mx - r.left, my - r.top);
+  }
+}, true);
+const lacher = e => { if (doigts.delete(e.pointerId) && !doigts.size) stage.style.cursor = ''; };
+stage.addEventListener('pointerup', lacher, true);
+stage.addEventListener('pointercancel', lacher, true);
+['mousedown', 'touchstart'].forEach(t => stage.addEventListener(t, e => { if (api && !etat.arme) e.stopPropagation(); }, true));
+// molette : zoom autour du curseur
+stage.addEventListener('wheel', e => {
+  if (!api) return;
+  e.preventDefault(); e.stopPropagation();
+  const [px, py] = dansCadre(e);
+  zoomer(Math.pow(1.0015, -e.deltaY), px, py);
+}, { capture: true, passive: false });
+[['bParfait', 'parfait'], ['bPasParfait', 'pasParfait'], ['bHasard', 'hasard']].forEach(([b, m]) =>
+  $(b).onclick = () => { etat.mode = m; placer(); appliquer(); requestAnimationFrame(cadrer); });   // nouvelle figure : vue recentrée
+
+const applet = new GGBApplet({
+  appName: 'classic', width: $('stage').clientWidth, height: $('stage').clientHeight, language: 'fr',
+  showToolBar: false, showAlgebraInput: false, showMenuBar: false, showResetIcon: false,
+  enableRightClick: false, enableShiftDragZoom: true,   // glisser le fond = déplacer la vue, molette / pincement = zoom enableLabelDrags: false, allowStyleBar: false,
+  showZoomButtons: false, showFullscreenButton: false, perspective: 'G',
+  appletOnLoad(a) {
+    api = a;
+    $('chargement').remove();
+    construire(); placer(); appliquer();
+    api.registerClickListener(clic);
+    // au cas où GeoGebra change la vue lui-même : on remet les textes à la bonne distance
+    api.registerClientListener(e => { if (e && e.type === 'viewChanged2D') majK(); });
+    setTimeout(cadrer, 100);
+    window.addEventListener('resize', cadrer);
+    // le bandeau Réfléchir change de hauteur : on ajuste la taille de l'applet sans toucher au zoom ni au déplacement
+    new ResizeObserver(() => {
+      const st = $('stage'), v = JSON.parse(api.getViewProperties());
+      const cx = v.xMin + v.width * v.invXscale / 2, cy = v.yMin + v.height * v.invYscale / 2;   // on garde le centre et l'échelle
+      const w = st.clientWidth, h = st.clientHeight;
+      if (w === v.width && h === v.height) return;
+      api.setSize(w, h);
+      api.setCoordSystem(cx - w * v.invXscale / 2, cx + w * v.invXscale / 2, cy - h * v.invYscale / 2, cy + h * v.invYscale / 2);
+      majK();
+    }).observe($('stage'));
+  },
+}, true);
+window.addEventListener('load', () => applet.inject('ggb'));
+
+/* Intégrée dans une page (iframe) : écran plein avec un énorme bouton. */
+(function () {
+  let integree;
+  try { integree = window.self !== window.top; } catch (e) { integree = true; }
+  if (!integree) return;
+  const voile = document.createElement('div');
+  voile.id = 'voileOnglet';
+  voile.innerHTML = `<p class="titre">Carré parfait ?</p><a href="${location.href}" target="_blank" rel="noopener">↗ Ouvrir l’appli</a>`;
+  document.body.appendChild(voile);
+})();
+</script>
+</body>
+</html>
