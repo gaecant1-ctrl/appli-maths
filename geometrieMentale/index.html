@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Géométrie mentale</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#fff; --ink:#1d2433; --muted:#667085; --line:#d8dee9;
+  --accent:#2f6fde; --accent-soft:#e6eefc; --ok:#1f9d55; --ok-bg:#e2f6e9; --ko:#d64545; --ko-bg:#fde7e7;
+  --code:#2f9e44; --fig:#d63a3a;
+  --shadow:0 2px 8px rgba(20,30,60,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+.app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:1100px;margin:0 auto;padding:10px 16px calc(16px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:8px;min-height:52px}
+header h1{font-size:1.3rem;margin:0}
+.grow{flex:1}
+.prog{font-weight:600;color:var(--muted)}
+.score{font-weight:700;color:var(--ok);margin-left:12px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 16px;min-height:44px;box-shadow:var(--shadow)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:36px;padding:6px 12px;font-size:.9rem}
+.hidden{display:none!important}
+main{flex:1;display:flex;flex-direction:column}
+.screen{flex:1;display:flex;flex-direction:column}
+
+/* Accueil */
+.start{margin:24px auto 0;width:min(560px,100%);min-height:120px;border-radius:20px;font-size:clamp(1.8rem,6vw,2.6rem);font-weight:800}
+.info{margin-top:18px;color:var(--muted);text-align:center}
+/* QR code de l'accueil (pour ouvrir l'appli sur un téléphone) ; inutile sur le téléphone lui-même */
+.qr{margin:20px auto 0;display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px 10px;box-shadow:var(--shadow)}
+.qr svg{display:block;width:170px;height:170px}
+.qr span{color:var(--muted);font-size:.95rem}
+#qrOv{cursor:zoom-out}
+#qrOv .qr-grand{background:#fff;border-radius:20px;padding:20px}
+#qrOv svg{display:block;width:min(80vmin,720px);height:min(80vmin,720px)}
+@media (max-width:640px),(pointer:coarse) and (max-height:500px){.qr{display:none}} /* téléphone, en portrait ou en paysage */
+.info.warn{color:var(--ko);font-weight:600}
+
+/* Figure */
+.fig{display:block;width:min(480px,100%);height:auto;background:var(--card);border-radius:16px;box-shadow:var(--shadow)}
+.fig .cadre{fill:none;stroke:var(--line);stroke-width:1.5}
+.fig .trait{fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fig .epais{stroke-width:4}
+.fig .tirets{stroke-width:1.6;stroke-dasharray:7 6}
+.fig .croix{stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.fig .rouge{fill:none;stroke:var(--fig);stroke-width:3;stroke-linecap:round}
+.fig .pointille{stroke-dasharray:8 7}
+.fig .code{fill:none;stroke:var(--code);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.fig text{font:700 18px system-ui,-apple-system,sans-serif;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.fig text.nom{font-weight:500}
+.fig text.mesure{font-weight:600;font-size:16px}
+.fig text.codetxt{fill:var(--code);font-size:11px;font-weight:800}
+
+/* QCM */
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
+.consigne{font-size:clamp(1.1rem,3.5vw,1.5rem);font-weight:600;text-align:center}
+.bar{width:min(480px,100%);height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar>div{height:100%;background:var(--accent);width:100%}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(560px,100%)}
+.choices.long{grid-template-columns:1fr}
+.choice{min-height:60px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-size:clamp(1.25rem,5vw,1.7rem);font-weight:700;box-shadow:var(--shadow);padding:6px 10px}
+.choice.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.choice.ko{background:var(--ko-bg);border-color:var(--ko);color:var(--ko)}
+.choice:disabled{cursor:default}
+.fb{min-height:1.5em;font-size:1.3rem;font-weight:700;text-align:center}
+.fb.ok{color:var(--ok)} .fb.ko{color:var(--ko)}
+.next-row{width:min(560px,100%);display:flex;justify-content:flex-end;min-height:48px}
+.hint{color:var(--muted);font-size:1.15rem;text-align:center}
+
+/* Résultats */
+.res{width:min(720px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:12px}
+.res h2{text-align:center;font-size:clamp(2rem,8vw,3rem);margin:8px 0}
+.err{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:1.3rem}
+.err .fig{width:170px;box-shadow:none;border-radius:8px}
+.err .juste{color:var(--ok);font-weight:800}
+.choice sub,.err sub{font-size:.6em}
+.ou{color:var(--muted);font-weight:400;font-size:.75em;margin:0 .3em}
+.err .y{color:var(--ko);font-size:1rem}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+
+/* Paramètres */
+.overlay{position:fixed;inset:0;background:rgba(15,20,35,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.sheet{background:var(--card);border-radius:18px;width:min(560px,100%);max-height:100%;overflow:auto;padding:16px 18px 20px}
+.sheet-head{display:flex;align-items:center;gap:8px;position:sticky;top:-16px;background:var(--card);padding:6px 0}
+.sheet h2{margin:0;flex:1}
+.sheet h3{margin:16px 0 8px;font-size:1rem;color:var(--muted)}
+.row-btns{display:flex;gap:8px;margin-top:10px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{min-width:64px}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* Intégrée dans une page : on force le nouvel onglet */
+#voileOnglet{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;z-index:50;text-align:center}
+#voileOnglet .titre{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:700;margin:0}
+#voileOnglet a{display:flex;align-items:center;justify-content:center;gap:.4em;width:min(900px,100%);min-height:min(45vh,320px);padding:24px;border-radius:28px;background:var(--accent);color:#fff;text-decoration:none;font-size:clamp(2rem,7vw,4.5rem);font-weight:800;line-height:1.15;box-shadow:0 8px 24px rgba(47,111,222,.35)}
+#voileOnglet a:hover{filter:brightness(1.08)}
+@media (max-width:640px){.overlay{padding:0}.sheet{border-radius:0;height:100%;width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 id="hTitle">Géométrie mentale</h1>
+    <span id="hProg" class="prog hidden"></span><span id="hScore" class="score hidden"></span>
+    <span class="grow"></span>
+    <button class="btn" id="bParams">⚙ Paramètres</button>
+    <button class="btn hidden" id="bHome">↩ Accueil</button>
+  </header>
+
+  <main>
+    <section class="screen" id="sHome">
+      <button class="btn primary start" id="bStart">Commencer</button>
+      <p class="info" id="homeInfo"></p>
+      <button type="button" class="qr hidden" id="qrBox" title="Agrandir"><div id="qrImg"></div><span>Sur ton téléphone : scanne-moi</span></button>
+    </section>
+
+    <section class="screen hidden" id="sQcm">
+      <div class="stage">
+        <div class="consigne" id="qConsigne"></div>
+        <div id="qFig"></div>
+        <div class="bar" id="qBarWrap"><div id="qBar"></div></div>
+        <div class="choices" id="qChoices"></div>
+        <div class="fb" id="qFb"></div>
+        <div class="next-row"><button class="btn primary hidden" id="qNext">Suivant →</button></div>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="sRes">
+      <div class="res">
+        <h2 id="rScore"></h2>
+        <div id="rList"></div>
+        <div class="actions"><button class="btn primary" id="rAgain">Rejouer</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay hidden" id="ov">
+  <div class="sheet">
+    <div class="sheet-head"><h2>Paramètres</h2><button class="btn primary" id="ovClose">OK</button></div>
+    <h3>Questions</h3>
+    <div class="seg" id="grpSeg"></div>
+    <h3>Durée par question</h3>
+    <div class="seg" id="durSeg"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="qrOv"><div class="qr-grand" id="qrBig"></div></div>
+
+<script>
+/* qrcode-generator 1.4.4 — Kazuhiko Arase — licence MIT (https://github.com/kazuhikoarase/qrcode-generator) */
+var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(l=4*u+17),e(0,0),e(l-7,0),e(0,l-7),i(),o(),v(t,r),7<=u&&h(t),null==n&&(n=w(u,f,c)),d(n,r)}var u=t,f=y[r],g=null,l=0,n=null,c=[],s={},e=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||l<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||l<=r+n||(g[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},o=function(){for(var t=8;t<l-8;t+=1)null==g[t][6]&&(g[t][6]=t%2==0);for(var r=8;r<l-8;r+=1)null==g[6][r]&&(g[6][r]=r%2==0)},i=function(){for(var t=B.getPatternPosition(u),r=0;r<t.length;r+=1)for(var e=0;e<t.length;e+=1){var n=t[r],o=t[e];if(null==g[n][o])for(var i=-2;i<=2;i+=1)for(var a=-2;a<=2;a+=1)g[n+i][o+a]=-2==i||2==i||-2==a||2==a||0==i&&0==a}},h=function(t){for(var r=B.getBCHTypeNumber(u),e=0;e<18;e+=1){var n=!t&&1==(r>>e&1);g[Math.floor(e/3)][e%3+l-8-3]=n}for(e=0;e<18;e+=1){n=!t&&1==(r>>e&1);g[e%3+l-8-3][Math.floor(e/3)]=n}},v=function(t,r){for(var e=f<<3|r,n=B.getBCHTypeInfo(e),o=0;o<15;o+=1){var i=!t&&1==(n>>o&1);o<6?g[o][8]=i:o<8?g[o+1][8]=i:g[l-15+o][8]=i}for(o=0;o<15;o+=1){i=!t&&1==(n>>o&1);o<8?g[8][l-o-1]=i:o<9?g[8][15-o-1+1]=i:g[8][15-o-1]=i}g[l-8][8]=!t},d=function(t,r){for(var e=-1,n=l-1,o=7,i=0,a=B.getMaskFunction(r),u=l-1;0<u;u-=2)for(6==u&&(u-=1);;){for(var f=0;f<2;f+=1)if(null==g[n][u-f]){var c=!1;i<t.length&&(c=1==(t[i]>>>o&1)),a(n,u-f)&&(c=!c),g[n][u-f]=c,-1==(o-=1)&&(i+=1,o=7)}if((n+=e)<0||l<=n){n-=e,e=-e;break}}},w=function(t,r,e){for(var n=b.getRSBlocks(t,r),o=M(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=C(i[u],l.getLength()-1).mod(l);a[u]=new Array(l.getLength()-1);for(g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=0<=s?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};s.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=x(t);break;case"Alphanumeric":e=m(t);break;case"Byte":e=L(t);break;case"Kanji":e=D(t);break;default:throw"mode:"+r}c.push(e),n=null},s.isDark=function(t,r){if(t<0||l<=t||r<0||l<=r)throw t+","+r;return g[t][r]},s.getModuleCount=function(){return l},s.make=function(){if(u<1){for(var t=1;t<40;t++){for(var r=b.getRSBlocks(t,f),e=M(),n=0;n<c.length;n++){var o=c[n];e.put(o.getMode(),4),e.put(o.getLength(),B.getLengthInBits(o.getMode(),t)),o.write(e)}var i=0;for(n=0;n<r.length;n++)i+=r[n].dataCount;if(e.getLengthInBits()<=8*i)break}u=t}a(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){a(!0,e);var n=B.getLostPoint(s);(0==e||n<t)&&(t=n,r=e)}return r}())},s.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<s.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<s.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=s.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},s.createSvgTag=function(t,r,e,n){var o={};"object"==typeof t&&(t=(o=t).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,f,c=s.getModuleCount()*t+2*r,g="";for(f="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",g+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',g+=o.scalable?"":' width="'+c+'px" height="'+c+'px"',g+=' viewBox="0 0 '+c+" "+c+'" ',g+=' preserveAspectRatio="xMinYMin meet"',g+=n.text||e.text?' role="img" aria-labelledby="'+p([n.id,e.id].join(" ").trim())+'"':"",g+=">",g+=n.text?'<title id="'+p(n.id)+'">'+p(n.text)+"</title>":"",g+=e.text?'<description id="'+p(e.id)+'">'+p(e.text)+"</description>":"",g+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',g+='<path d="',a=0;a<s.getModuleCount();a+=1)for(u=a*t+r,i=0;i<s.getModuleCount();i+=1)s.isDark(a,i)&&(g+="M"+(i*t+r)+","+u+f);return g+='" stroke="transparent" fill="black"/>',g+="</svg>"},s.createDataURL=function(o,t){o=o||2,t=void 0===t?4*o:t;var r=s.getModuleCount()*o+2*t,i=t,a=r-t;return I(r,r,function(t,r){if(i<=t&&t<a&&i<=r&&r<a){var e=Math.floor((t-i)/o),n=Math.floor((r-i)/o);return s.isDark(n,e)?0:1}return 1})},s.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=s.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=s.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=p(e),o+='"'),o+="/>"};var p=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return s.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*s.getModuleCount()+2*t,u=t,f=a-t,c={"██":"█","█ ":"▀"," █":"▄","  ":" "},g={"██":"▀","█ ":"▀"," █":" ","  ":" "},l="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<f&&u<=r&&r<f&&s.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<f&&u<=r+1&&r+1<f&&s.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",l+=t<1&&f<=r+1?g[i]:c[i];l+="\n"}return a%2&&0<t?l.substring(0,l.length-a-1)+Array(1+a).join("▀"):l.substring(0,l.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=s.getModuleCount()*t+2*r,u=r,f=a-r,c=Array(t+1).join("██"),g=Array(t+1).join("  "),l="",h="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),h="",n=0;n<a;n+=1)i=1,u<=n&&n<f&&u<=e&&e<f&&s.isDark(o,Math.floor((n-u)/t))&&(i=0),h+=i?c:g;for(o=0;o<t;o+=1)l+=h+"\n"}return l.substring(0,l.length-1)},s.renderTo2dContext=function(t,r){r=r||2;for(var e=s.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=s.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},s}i.stringToBytes=(i.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,i.createStringToBytes=function(u,f){var i=function(){function t(){var t=r.read();if(-1==t)throw"eof";return t}for(var r=S(u),e=0,n={};;){var o=r.read();if(-1==o)break;var i=t(),a=t()<<8|t();n[String.fromCharCode(o<<8|i)]=a,e+=1}if(e!=f)throw e+" != "+f;return n}(),a="?".charCodeAt(0);return function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);if(n<128)r.push(n);else{var o=i[t.charAt(e)];"number"==typeof o?(255&o)==o?r.push(o):(r.push(o>>>8),r.push(255&o)):r.push(a)}}return r}};var r,t,a=1,u=2,o=4,f=8,y={L:1,M:0,Q:3,H:2},e=0,n=1,c=2,g=3,l=4,h=5,s=6,v=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],(t={}).getBCHTypeInfo=function(t){for(var r=t<<10;0<=d(r)-d(1335);)r^=1335<<d(r)-d(1335);return 21522^(t<<10|r)},t.getBCHTypeNumber=function(t){for(var r=t<<12;0<=d(r)-d(7973);)r^=7973<<d(r)-d(7973);return t<<12|r},t.getPatternPosition=function(t){return r[t-1]},t.getMaskFunction=function(t){switch(t){case e:return function(t,r){return(t+r)%2==0};case n:return function(t,r){return t%2==0};case c:return function(t,r){return r%3==0};case g:return function(t,r){return(t+r)%3==0};case l:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case h:return function(t,r){return t*r%2+t*r%3==0};case s:return function(t,r){return(t*r%2+t*r%3)%2==0};case v:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},t.getErrorCorrectPolynomial=function(t){for(var r=C([1],0),e=0;e<t;e+=1)r=r.multiply(C([1,w.gexp(e)],0));return r},t.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case o:case f:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case o:return 16;case f:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case o:return 16;case f:return 12;default:throw"mode:"+t}}},t.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);5<i&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},t);function d(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r}var w=function(){for(var r=new Array(256),e=new Array(256),t=0;t<8;t+=1)r[t]=1<<t;for(t=8;t<256;t+=1)r[t]=r[t-4]^r[t-5]^r[t-6]^r[t-8];for(t=0;t<255;t+=1)e[r[t]]=t;var n={glog:function(t){if(t<1)throw"glog("+t+")";return e[t]},gexp:function(t){for(;t<0;)t+=255;for(;256<=t;)t-=255;return r[t]}};return n}();function C(n,o){if(void 0===n.length)throw n.length+"/"+o;var r=function(){for(var t=0;t<n.length&&0==n[t];)t+=1;for(var r=new Array(n.length-t+o),e=0;e<n.length-t;e+=1)r[e]=n[e+t];return r}(),i={getAt:function(t){return r[t]},getLength:function(){return r.length},multiply:function(t){for(var r=new Array(i.getLength()+t.getLength()-1),e=0;e<i.getLength();e+=1)for(var n=0;n<t.getLength();n+=1)r[e+n]^=w.gexp(w.glog(i.getAt(e))+w.glog(t.getAt(n)));return C(r,0)},mod:function(t){if(i.getLength()-t.getLength()<0)return i;for(var r=w.glog(i.getAt(0))-w.glog(t.getAt(0)),e=new Array(i.getLength()),n=0;n<i.getLength();n+=1)e[n]=i.getAt(n);for(n=0;n<t.getLength();n+=1)e[n]^=w.gexp(w.glog(t.getAt(n))+r);return C(e,0).mod(t)}};return i}function p(){var e=[],o={writeByte:function(t){e.push(255&t)},writeShort:function(t){o.writeByte(t),o.writeByte(t>>>8)},writeBytes:function(t,r,e){r=r||0,e=e||t.length;for(var n=0;n<e;n+=1)o.writeByte(t[n+r])},writeString:function(t){for(var r=0;r<t.length;r+=1)o.writeByte(t.charCodeAt(r))},toByteArray:function(){return e},toString:function(){var t="";t+="[";for(var r=0;r<e.length;r+=1)0<r&&(t+=","),t+=e[r];return t+="]"}};return o}var k,A,b=(k=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],(A={}).getRSBlocks=function(t,r){var e=function(t,r){switch(r){case y.L:return k[4*(t-1)+0];case y.M:return k[4*(t-1)+1];case y.Q:return k[4*(t-1)+2];case y.H:return k[4*(t-1)+3];default:return}}(t,r);if(void 0===e)throw"bad rs block @ typeNumber:"+t+"/errorCorrectionLevel:"+r;for(var n,o,i=e.length/3,a=[],u=0;u<i;u+=1)for(var f=e[3*u+0],c=e[3*u+1],g=e[3*u+2],l=0;l<f;l+=1)a.push((n=g,o=void 0,(o={}).totalCount=c,o.dataCount=n,o));return a},A),M=function(){var e=[],n=0,o={getBuffer:function(){return e},getAt:function(t){var r=Math.floor(t/8);return 1==(e[r]>>>7-t%8&1)},put:function(t,r){for(var e=0;e<r;e+=1)o.putBit(1==(t>>>r-e-1&1))},getLengthInBits:function(){return n},putBit:function(t){var r=Math.floor(n/8);e.length<=r&&e.push(0),t&&(e[r]|=128>>>n%8),n+=1}};return o},x=function(t){var r=a,n=t,e={getMode:function(){return r},getLength:function(t){return n.length},write:function(t){for(var r=n,e=0;e+2<r.length;)t.put(o(r.substring(e,e+3)),10),e+=3;e<r.length&&(r.length-e==1?t.put(o(r.substring(e,e+1)),4):r.length-e==2&&t.put(o(r.substring(e,e+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return e},m=function(t){var r=u,n=t,e={getMode:function(){return r},getLength:function(t){return n.length},write:function(t){for(var r=n,e=0;e+1<r.length;)t.put(45*o(r.charAt(e))+o(r.charAt(e+1)),11),e+=2;e<r.length&&t.put(o(r.charAt(e)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return e},L=function(t){var r=o,e=i.stringToBytes(t),n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=0;r<e.length;r+=1)t.put(e[r],8)}};return n},D=function(t){var r=f,e=i.stringToBytesFuncs.SJIS;if(!e)throw"sjis not supported.";!function(){var t=e("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=e(t),n={getMode:function(){return r},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return n},S=function(t){var e=t,n=0,o=0,i=0,r={read:function(){for(;i<8;){if(n>=e.length){if(0==i)return-1;throw"unexpected end of file./"+i}var t=e.charAt(n);if(n+=1,"="==t)return i=0,-1;t.match(/^\s$/)||(o=o<<6|a(t.charCodeAt(0)),i+=6)}var r=o>>>i-8&255;return i-=8,r}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return r},I=function(t,r,e){for(var n=function(t,r){var n=t,o=r,l=new Array(t*r),e={setPixel:function(t,r,e){l[r*n+t]=e},write:function(t){t.writeString("GIF87a"),t.writeShort(n),t.writeShort(o),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(n),t.writeShort(o),t.writeByte(0);var r=i(2);t.writeByte(2);for(var e=0;255<r.length-e;)t.writeByte(255),t.writeBytes(r,e,255),e+=255;t.writeByte(r.length-e),t.writeBytes(r,e,r.length-e),t.writeByte(0),t.writeString(";")}},i=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,o=h(),i=0;i<r;i+=1)o.add(String.fromCharCode(i));o.add(String.fromCharCode(r)),o.add(String.fromCharCode(e));var a=p(),u=function(t){var e=t,n=0,o=0,r={write:function(t,r){if(t>>>r!=0)throw"length over";for(;8<=n+r;)e.writeByte(255&(t<<n|o)),r-=8-n,t>>>=8-n,n=o=0;o|=t<<n,n+=r},flush:function(){0<n&&e.writeByte(o)}};return r}(a);u.write(r,n);var f=0,c=String.fromCharCode(l[f]);for(f+=1;f<l.length;){var g=String.fromCharCode(l[f]);f+=1,o.contains(c+g)?c+=g:(u.write(o.indexOf(c),n),o.size()<4095&&(o.size()==1<<n&&(n+=1),o.add(c+g)),c=g)}return u.write(o.indexOf(c),n),u.write(e,n),u.flush(),a.toByteArray()},h=function(){var r={},e=0,n={add:function(t){if(n.contains(t))throw"dup key:"+t;r[t]=e,e+=1},size:function(){return e},indexOf:function(t){return r[t]},contains:function(t){return void 0!==r[t]}};return n};return e}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=p();n.write(a);for(var u=function(){function e(t){a+=String.fromCharCode(r(63&t))}var n=0,o=0,i=0,a="",t={},r=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return t.writeByte=function(t){for(n=n<<8|255&t,o+=8,i+=1;6<=o;)e(n>>>o-6),o-=6},t.flush=function(){if(0<o&&(e(n<<6-o),o=n=0),i%3!=0)for(var t=3-i%3,r=0;r<t;r+=1)a+="="},t.toString=function(){return a},t}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return i}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||57344<=n?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});
+</script>
+<script>
+/* ================= Outils ================= */
+const N = 20;
+const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const coin = () => Math.random() < .5;
+const $ = id => document.getElementById(id);
+
+// Lettres des points (on évite I, O, Q, W)
+const LETTRES = 'ABCDEFGHJKLMNPRSTUVXYZ'.split('');
+const lettres = n => shuffle(LETTRES.slice()).slice(0, n);
+
+/* ================= Écriture des phrases ================= */
+const nomH = s => `(<i>${s}</i>)`;                       // (d) dans une phrase
+const deux = (a, b) => coin() ? a + b : b + a;          // AB ou BA (ordre libre)
+const eg = (...t) => shuffle(t).join(' = ');            // OP = OQ ou OQ = OP
+// Phrase : chaque morceau reste sur une ligne ; on coupe seulement autour de « et »
+const ph = (...parts) => parts.map(p => p.replace(/ /g, ' ')).join(' et ');
+const texte = h => h.replace(/<[^>]+>/g, '');
+
+/* ================= Géométrie / SVG ================= */
+const W = 300, H = 200, rad = d => d * Math.PI / 180;
+const V = (x, y) => ({ x, y });
+const add = (a, b) => V(a.x + b.x, a.y + b.y), sub = (a, b) => V(a.x - b.x, a.y - b.y), mul = (a, k) => V(a.x * k, a.y * k);
+const dir = a => V(Math.cos(a), Math.sin(a)), nrm = u => V(-u.y, u.x), len = a => Math.hypot(a.x, a.y), unit = a => mul(a, 1 / len(a));
+const mid = (a, b) => mul(add(a, b), .5);
+const inside = (p, m = 24) => p.x >= m && p.x <= W - m && p.y >= m && p.y <= H - m;
+const f = n => n.toFixed(1);
+let uid = 0;
+
+class Fig {
+  constructor() { this.g = []; this.id = 'm' + (++uid); this.lignes = []; this.etiq = []; }
+  seg(a, b, cls = 'trait') { this.g.push(`<line class="${cls}" x1="${f(a.x)}" y1="${f(a.y)}" x2="${f(b.x)}" y2="${f(b.y)}"/>`); return this; }
+  droite(p, u, cls) { this.lignes.push({ p, u }); return this.seg(add(p, mul(u, -900)), add(p, mul(u, 900)), cls); }
+  demi(p, u, cls) { return this.seg(p, add(p, mul(u, 900)), cls); }
+  cercle(c, r, cls = 'trait') { this.g.push(`<circle class="${cls}" cx="${f(c.x)}" cy="${f(c.y)}" r="${f(r)}"/>`); return this; }
+  txt(p, t, cls = '') {
+    const q = V(Math.min(W - 12, Math.max(12, p.x)), Math.min(H - 12, Math.max(12, p.y)));
+    this.etiq.push(q);
+    this.g.push(`<text class="${cls}" x="${f(q.x)}" y="${f(q.y)}">${t}</text>`); return this;
+  }
+  // point marqué d'une croix + nom décalé de off
+  point(p, nom, off) {
+    this.g.push(`<path class="croix" d="M${f(p.x - 5)},${f(p.y - 5)}L${f(p.x + 5)},${f(p.y + 5)}M${f(p.x - 5)},${f(p.y + 5)}L${f(p.x + 5)},${f(p.y - 5)}"/>`);
+    return this.txt(add(p, off), nom);
+  }
+  // nom d'une droite : à côté d'elle, près du bord du cadre, mais loin des autres droites et des autres étiquettes
+  nomDroite(p, u, s, cote = 1) {
+    const autres = this.lignes.filter(L => Math.abs(L.u.x * u.y - L.u.y * u.x) > 1e-6 || Math.abs((p.x - L.p.x) * L.u.y - (p.y - L.p.y) * L.u.x) > 1);
+    const distLigne = (q, L) => Math.abs((q.x - L.p.x) * L.u.y - (q.y - L.p.y) * L.u.x);
+    let best = null, bestScore = -Infinity;
+    for (const c of [cote, -cote]) for (let t = -170; t <= 170; t += 5) {
+      const q = add(add(p, mul(u, t)), mul(nrm(u), 16 * c));
+      if (!inside(q, 18)) continue;
+      const dL = Math.min(99, ...autres.map(L => distLigne(q, L)));
+      const dE = Math.min(99, ...this.etiq.map(e => len(sub(q, e))));
+      // d'abord la lisibilité (loin des autres droites et étiquettes), puis le bord du cadre, puis le côté demandé
+      const score = Math.min(dL, 22) * 10 + Math.min(dE, 34) * 10 + Math.abs(t) / 10 + (c === cote ? 3 : 0);
+      if (score > bestScore) { bestScore = score; best = q; }
+    }
+    return best ? this.txt(best, `(<tspan font-style="italic">${s}</tspan>)`, 'nom') : this;
+  }
+  // nom du cercle : autour du cercle, à l'endroit le plus éloigné des points et étiquettes (obstacles)
+  nomCercle(o, r, s, obstacles) {
+    let best = null, bestD = -1;
+    for (let a = 0; a < 360; a += 5) {
+      const q = add(o, mul(dir(rad(a)), r + 16));
+      if (!inside(q, 16)) continue;
+      const dd = Math.min(...obstacles.map(p => len(sub(q, p))));
+      if (dd > bestD) { bestD = dd; best = q; }
+    }
+    return best ? this.txt(best, `(<tspan font-style="italic">${s}</tspan>)`, 'nom') : this;
+  }
+  angleDroit(v, u1, u2) {
+    const a = add(v, mul(u1, 13)), b = add(a, mul(u2, 13)), c = add(v, mul(u2, 13));
+    this.g.push(`<path class="code" d="M${f(a.x)},${f(a.y)}L${f(b.x)},${f(b.y)}L${f(c.x)},${f(c.y)}"/>`); return this;
+  }
+  // k petits traits verts au milieu de [ab]
+  marques(a, b, k) {
+    const m = mid(a, b), u = unit(sub(b, a)), s = add(mul(nrm(u), 7), mul(u, 3));
+    for (let i = 0; i < k; i++) {
+      const c = add(m, mul(u, (i - (k - 1) / 2) * 6));
+      this.seg(sub(c, s), add(c, s), 'code');
+    }
+    return this;
+  }
+  // codage « parallèles » de la fiche : rond // et deux flèches vers les droites
+  paralleles(p1, p2) {
+    const m = mid(p1, p2), u = unit(sub(p2, p1));
+    this.g.push(`<circle class="code" cx="${f(m.x)}" cy="${f(m.y)}" r="11"/>`);
+    this.txt(m, '//', 'codetxt');
+    this.g.push(`<line class="code" x1="${f(m.x + 11 * u.x)}" y1="${f(m.y + 11 * u.y)}" x2="${f(p2.x)}" y2="${f(p2.y)}" marker-end="url(#${this.id})"/>`);
+    this.g.push(`<line class="code" x1="${f(m.x - 11 * u.x)}" y1="${f(m.y - 11 * u.y)}" x2="${f(p1.x)}" y2="${f(p1.y)}" marker-end="url(#${this.id})"/>`);
+    return this;
+  }
+  // longueur : flèche double rouge en pointillés, décalée de off
+  fleche(a, b, off) {
+    const u = unit(sub(b, a)), p = add(add(a, off), mul(u, 9)), q = sub(add(b, off), mul(u, 9));
+    this.g.push(`<line class="rouge pointille" x1="${f(p.x)}" y1="${f(p.y)}" x2="${f(q.x)}" y2="${f(q.y)}" marker-start="url(#${this.id}r)" marker-end="url(#${this.id}r)"/>`);
+    return this;
+  }
+  toString() {
+    return `<svg class="fig" viewBox="0 0 ${W} ${H}" role="img" aria-label="figure">
+      <defs><marker id="${this.id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--code)"/></marker><marker id="${this.id}r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--fig)"/></marker></defs>
+      <rect class="cadre" x="1" y="1" width="${W - 2}" height="${H - 2}" rx="10"/>${this.g.join('')}</svg>`;
+  }
+}
+// Relance un générateur tant que la figure sort du cadre
+function essai(g) { for (let i = 0; i < 5000; i++) { const r = g(); if (r) return r; } throw new Error('figure'); }
+
+/* ================= Types =================
+   Chaque générateur renvoie { svg, juste, faux: [...] } : une seule phrase juste, toutes les autres fausses. */
+/* ---------- Groupe 1 : notations (II du cours) ---------- */
+const NOTA = {
+  droite:   (P, Q) => `(${P}${Q})`,
+  segment:  (P, Q) => `[${P}${Q}]`,
+  ddPQ:     (P, Q) => `[${P}${Q})`,
+  ddQP:     (P, Q) => `[${Q}${P})`,
+  longueur: (P, Q) => `${P}${Q}`,
+};
+const SYMETRIQUE = { droite: true, segment: true, longueur: true };
+// (AB) = (BA), [AB] = [BA], AB = BA : ordre tiré au hasard ; la correction donne les deux
+const ecrire = (k, P, Q) => SYMETRIQUE[k] && coin() ? NOTA[k](Q, P) : NOTA[k](P, Q);
+const ecrireTout = (k, P, Q) => SYMETRIQUE[k] ? `${NOTA[k](P, Q)}<span class="ou">ou</span>${NOTA[k](Q, P)}` : NOTA[k](P, Q);
+
+// forme : tracé rouge ; k : bonne notation ; force : leurre toujours proposé ; leurres : autres objets
+function genNotation(forme, k, force, leurres) {
+  const [P, Q] = lettres(2);
+  let a, b;
+  do { a = V(R(45, 255), R(40, 160)); b = V(R(45, 255), R(40, 160)); } while (len(sub(b, a)) < 110);
+  const u = unit(sub(b, a)), n = nrm(u), s = pick([1, -1]), fig = new Fig();
+  if (forme === 'droite') fig.droite(a, u, 'rouge');
+  if (forme === 'segment') fig.seg(a, b, 'rouge');
+  if (forme === 'demi') fig.demi(a, u, 'rouge');
+  if (forme === 'longueur') fig.fleche(a, b, mul(n, 10 * s)).txt(add(mid(a, b), mul(n, 26 * s)), 'distance', 'mesure');
+  const o = mul(n, 17 * (forme === 'longueur' ? -s : s));
+  fig.point(a, P, o).point(b, Q, o);
+  return {
+    svg: fig, consigne: 'Quelle est la bonne notation du tracé rouge ?',
+    juste: ecrire(k, P, Q), correction: ecrireTout(k, P, Q),
+    faux: force.concat(shuffle(leurres.slice())).map(x => ecrire(x, P, Q)),
+  };
+}
+
+/* ---------- Groupe 2 : phrases mathématiques (fiche) ---------- */
+// Noms des droites et des cercles, eux aussi tirés au hasard
+// (toujours en minuscules)
+const LIGNE = ['d', 'd′', 'd₁', 'd₂', 'd₃', 'e', 'f'];
+const PAIRES = [['d', 'd′'], ['d₁', 'd₂'], ['d₂', 'd₃'], ['d₁', 'd₃'], ['e', 'f']];
+const CERCLE = ['c', 'c′', 'c₁', 'c₂', 'c₃'];
+const TRIPLES = [['d₁', 'd₂', 'd₃'], ['d', 'd′', 'e'], ['d', 'e', 'f']];
+
+function genDroite() { // A ∈ (d), M ∉ (d) : 3 points, sur ou hors de la droite
+  return essai(() => {
+    const noms = lettres(3), d = pick(LIGNE), D = nomH(d);
+    const c = V(R(120, 180), R(85, 115)), u = dir(rad(R(-35, 35))), n = nrm(u), s = pick([1, -1]);
+    const sur = shuffle([true, false, coin()]);                 // au moins un point sur, un hors
+    const ts = shuffle([-85, -15, 55]).map(t => t + R(0, 25));  // abscisses bien séparées
+    const pts = ts.map((t, k) => add(add(c, mul(u, t)), mul(n, sur[k] ? 0 : s * R(35, 55))));
+    if (!pts.every(p => inside(p))) return null;
+    const fig = new Fig().droite(c, u).nomDroite(c, u, d, -s);
+    pts.forEach((p, k) => fig.point(p, noms[k], mul(n, (sur[k] ? -16 : 16) * s)));
+    const vrai = noms.map((x, k) => ph(`${x} ${sur[k] ? '∈' : '∉'} ${D}`));
+    const faux = noms.map((x, k) => ph(`${x} ${sur[k] ? '∉' : '∈'} ${D}`));
+    return { svg: fig, juste: pick(vrai), faux };
+  });
+}
+function genSegment() { // B milieu de [AC], codé une fois sur deux : sans codage on ne peut affirmer que B ∈ [AC]
+  return essai(() => {
+    const [A, B, C] = lettres(3), code = coin();
+    const u = dir(rad(R(-30, 30))), n = nrm(u), a = V(R(40, 80), R(55, 145)), c = add(a, mul(u, R(180, 210)));
+    // B est toujours au milieu (un écart serait invérifiable) : seul le codage permet d'affirmer BA = BC
+    const k = 0.5, b = add(a, mul(sub(c, a), k)), s = pick([1, -1]);
+    if (!inside(a) || !inside(c)) return null;
+    const fig = new Fig().seg(a, c);
+    if (code) fig.marques(a, b, 2).marques(b, c, 2);
+    fig.point(a, A, mul(n, 16 * s)).point(b, B, mul(n, 16 * s)).point(c, C, mul(n, 16 * s));
+    const BA = deux(B, A), BC = deux(B, C), AC = deux(A, C);
+    const vrai = [`${B} ∈ [${AC}]`].concat(code ? [eg(BA, BC), eg(BA, BC)] : []);
+    const faux = [`${B} ∉ [${AC}]`, `${A} ∈ [${BC}]`, `${C} ∈ [${deux(A, B)}]`, eg(deux(A, B), AC)];
+    if (!code) faux.push(eg(BA, BC), eg(BA, BC));   // le leurre clé quand il n'y a pas de codage
+    return { svg: fig, juste: ph(pick(vrai)), faux: [...new Set(shuffle(faux))].map(x => ph(x)) };
+  });
+}
+function genDemi() { // V ∉ [OT), V ∈ (OT), V ∈ [TO)…
+  return essai(() => {
+    const [O, T, Vn] = lettres(3);
+    const u = dir(rad(R(-25, 25) + (coin() ? 0 : 180))), n = nrm(u), s = pick([1, -1]);
+    const o = V(R(120, 180), R(85, 115)), t = add(o, mul(u, R(60, 85))), v = add(o, mul(u, -R(55, 80)));
+    if (!inside(t) || !inside(v)) return null;
+    const fig = new Fig().droite(o, u, 'trait tirets').demi(o, u, 'trait epais')
+      .point(o, O, mul(n, 16 * s)).point(t, T, mul(n, 16 * s)).point(v, Vn, mul(n, 16 * s));
+    const OT = deux(O, T);
+    return {
+      svg: fig, juste: ph(pick([`${Vn} ∉ [${O}${T})`, `${Vn} ∉ [${O}${T})`, `${Vn} ∈ (${OT})`, `${Vn} ∈ [${T}${O})`])),
+      faux: shuffle([ph(`${Vn} ∈ [${O}${T})`), ph(`${Vn} ∉ (${OT})`), ph(`${Vn} ∉ [${T}${O})`), ph(`${T} ∉ [${O}${T})`)]),
+    };
+  });
+}
+function genCercle() { // E ∉ (c), F ∈ (c)
+  return essai(() => {
+    const [O, E, F] = lettres(3), c = pick(CERCLE), C = nomH(c);
+    const o = V(R(130, 170), R(95, 105)), r = R(48, 58);
+    const aF = Math.random() * 2 * Math.PI, aE = aF + rad(R(100, 260)), dE = r + R(28, 40);
+    const pf = add(o, mul(dir(aF), r)), pe = add(o, mul(dir(aE), dE));
+    if (!inside(pe)) return null;
+    const lf = add(pf, mul(dir(aF), 16)), le = add(pe, mul(dir(aE), 16));
+    const fig = new Fig().cercle(o, r).point(o, O, V(0, 16)).point(pf, F, mul(dir(aF), 16)).point(pe, E, mul(dir(aE), 16))
+      .nomCercle(o, r, c, [pf, pe, lf, le]);
+    return { svg: fig, juste: ph(pick([`${E} ∉ ${C}`, `${F} ∈ ${C}`])), faux: [ph(`${E} ∈ ${C}`), ph(`${F} ∉ ${C}`), ph(`${O} ∈ ${C}`)] };
+  });
+}
+/* Angle droit commun à Intersection et Perpendiculaires (toujours exactement 90° : seul le codage compte) :
+   codé → la phrase ⊥ est la bonne réponse ;
+   non codé → on ne peut pas affirmer ⊥ : c'est le leurre clé, et une appartenance est la bonne réponse.
+   Les 4 réponses ont toujours la même forme : une ⊥, une //, deux appartenances. */
+function reponsesAngle(code, perp, para, appVraies, appFausses) {
+  if (code) return { juste: ph(perp), faux: shuffle(appFausses.slice()).slice(0, 2).concat([para]).map(x => ph(x)) };
+  return { juste: ph(pick(appVraies)), faux: [perp, para, pick(appFausses)].map(x => ph(x)) };
+}
+function genInter() { // (d) et (d′) perpendiculaires en I, angle droit codé ou non
+  return essai(() => {
+    const [In] = lettres(1), [d1, d2] = pick(PAIRES), code = coin();
+    const i = V(R(120, 180), R(85, 115)), a1 = rad(R(-60, 60)), u1 = dir(a1);
+    const u2 = dir(a1 + rad(90) * pick([1, -1]));
+    const off = mul(unit(sub(u1, u2)), 18);
+    const fig = new Fig().droite(i, u1).droite(i, u2);
+    if (code) fig.angleDroit(i, u1, u2);
+    fig.point(i, In, off).nomDroite(i, u1, d1, 1).nomDroite(i, u2, d2, -1);
+    const A = nomH(d1), B = nomH(d2), [x, y] = shuffle([A, B]);
+    return {
+      svg: fig, ...reponsesAngle(code, `${x} ⊥ ${y}`, `${x} // ${y}`,
+        [`${In} ∈ ${A}`, `${In} ∈ ${B}`], [`${In} ∉ ${A}`, `${In} ∉ ${B}`]),
+    };
+  });
+}
+function genPerp() { // (EF) et (FG), angle droit en F codé ou non (droites ou triangle)
+  return essai(() => {
+    const [E, F, G] = lettres(3), code = coin();
+    const a = Math.random() * 2 * Math.PI, sg = pick([1, -1]);
+    const u = dir(a), v = dir(a + sg * rad(90));
+    const fp = V(R(90, 210), R(70, 130)), e = add(fp, mul(u, R(55, 75))), g = add(fp, mul(v, R(95, 125)));
+    if (!inside(e) || !inside(g)) return null;
+    const fig = new Fig(), tri = coin();
+    if (tri) fig.seg(fp, e).seg(e, g).seg(g, fp); else fig.droite(fp, u).droite(fp, v);
+    if (code) fig.angleDroit(fp, u, v);
+    fig.point(e, E, mul(v, -16)).point(g, G, mul(u, -16)).point(fp, F, mul(unit(add(u, v)), -17));
+    const EF = deux(E, F), FG = deux(F, G), [x, y] = shuffle([`(${EF})`, `(${FG})`]);
+    return {
+      svg: fig, ...reponsesAngle(code, `${x} ⊥ ${y}`, `${x} // ${y}`,
+        [`${G} ∉ (${EF})`, `${E} ∉ (${FG})`], [`${G} ∈ (${EF})`, `${E} ∈ (${FG})`]),
+    };
+  });
+}
+function genPara() { // (d₁) // (d₂) codées, coupées par une troisième droite (d₃) nettement oblique
+  return essai(() => {
+    const [d1, d2, d3] = shuffle(pick(TRIPLES).slice());
+    const c = V(R(130, 170), R(90, 110)), u = dir(rad(R(-30, 30))), n = nrm(u), gap = R(70, 90);
+    const c1 = add(c, mul(n, -gap / 2)), c2 = add(c, mul(n, gap / 2));
+    const w = dir(Math.atan2(u.y, u.x) + rad(R(40, 65)) * pick([1, -1]));   // (d₃) : ni parallèle, ni perpendiculaire
+    const p3 = add(c, mul(u, R(45, 70))), t = -R(55, 75);                   // codage // loin de (d₃)
+    const fig = new Fig().droite(c1, u).droite(c2, u).droite(p3, w)
+      .paralleles(add(c1, mul(u, t)), add(c2, mul(u, t)))
+      .nomDroite(c1, u, d1, -1).nomDroite(c2, u, d2, 1).nomDroite(p3, w, d3, pick([1, -1]));
+    const A = nomH(d1), B = nomH(d2), C = nomH(d3);
+    const par = (x, y) => coin() ? `${x} // ${y}` : `${y} // ${x}`;
+    return {
+      svg: fig, juste: ph(par(A, B)),
+      faux: shuffle([ph(par(A, C)), ph(par(B, C)), ph(`${pick([A, B])} ⊥ ${C}`), ph(`${A} = ${B}`)]),
+    };
+  });
+}
+function genRayons() { // cercle de centre O : une seule égalité (OP = OQ) ou une appartenance (P ∈ (c))
+  return essai(() => {
+    const trois = coin(), [O, P, Q, Rn] = lettres(4), c = pick(CERCLE), C = nomH(c);
+    const o = V(R(135, 165), R(95, 105)), r = R(55, 62), a0 = Math.random() * 2 * Math.PI;
+    const angs = [a0, a0 + rad(R(85, 150))];
+    if (trois) angs.push(angs[1] + rad(R(85, 120)));
+    const pts = angs.map(a => add(o, mul(dir(a), r)));
+    const fig = new Fig().cercle(o, r);
+    const moy = unit(pts.reduce((s, p) => add(s, sub(p, o)), V(0, 0.001)));
+    fig.point(o, O, mul(moy, -16));
+    const noms = [P, Q, Rn].slice(0, pts.length);
+    noms.forEach((nm, k) => fig.point(pts[k], nm, mul(dir(angs[k]), 16)));
+    fig.nomCercle(o, r, c, pts.concat(pts.map((p, k) => add(p, mul(dir(angs[k]), 16)))));
+    // vrai : deux rayons égaux, ou un point du cercle ; faux : corde = rayon, points confondus, centre sur le cercle…
+    const paires = noms.flatMap((x, k) => noms.slice(k + 1).map(y => [x, y]));
+    const [x, y] = pick(paires);
+    const vrai = coin() || coin() ? eg(deux(O, x), deux(O, y)) : `${pick(noms)} ∈ ${C}`;
+    const faux = [eg(deux(O, x), deux(x, y)), eg(deux(O, y), deux(x, y)), eg(x, y), `${O} ∈ ${C}`, `${pick(noms)} ∉ ${C}`, `${O} ∈ [${deux(x, y)}]`];
+    return { svg: fig, juste: ph(vrai), faux: shuffle(faux).map(x => ph(x)) };
+  });
+}
+function genCodage() { // triangle équilatéral parfait ; deux côtés codés (NQ = NR) ou aucun codage
+  return essai(() => {
+    const [Nn, Q, Rn] = lettres(3), code = coin(), L = R(122, 136);
+    // triangle équilatéral parfait (un écart serait invérifiable) : seul le codage compte
+    const nq = L, nr = L, qr = L;
+    // Q et R sur une base tournée au hasard, N par intersection de cercles
+    const th = Math.random() * 2 * Math.PI, u = dir(th), x = (nq ** 2 - nr ** 2 + qr ** 2) / (2 * qr), h2 = nq ** 2 - x ** 2;
+    if (h2 <= 0) return null;
+    const c0 = V(R(130, 170), R(95, 110));
+    let q = V(0, 0), r = mul(u, qr), nn = add(mul(u, x), mul(nrm(u), -Math.sqrt(h2)));
+    const g0 = mul(add(add(q, r), nn), 1 / 3);
+    [q, r, nn] = [q, r, nn].map(p => add(sub(p, g0), c0));
+    if (!inside(nn) || !inside(q) || !inside(r)) return null;
+    const g = mul(add(add(nn, q), r), 1 / 3), k = pick([1, 2]);
+    const fig = new Fig().seg(nn, q).seg(q, r).seg(r, nn);
+    if (code) fig.marques(nn, q, k).marques(nn, r, k);
+    fig.point(nn, Nn, mul(unit(sub(nn, g)), 16)).point(q, Q, mul(unit(sub(q, g)), 16)).point(r, Rn, mul(unit(sub(r, g)), 16));
+    const NQ = deux(Nn, Q), NR = deux(Nn, Rn), QR = deux(Q, Rn);
+    // une phrase d'appartenance : un sommet et le côté (ou la droite) opposé
+    const [X, Y, Z] = pick([[Nn, Q, Rn], [Q, Nn, Rn], [Rn, Nn, Q]]), YZ = deux(Y, Z), forme = pick(['[]', '()']);
+    const objet = forme === '[]' ? `[${YZ}]` : `(${YZ})`;
+    const egalites = [eg(NQ, NR), eg(NQ, QR), eg(NR, QR)];
+    if (code) return { svg: fig, juste: ph(egalites[0]), faux: [egalites[1], egalites[2], `${X} ∈ ${objet}`].map(t => ph(t)) };
+    return { svg: fig, juste: ph(`${X} ∉ ${objet}`), faux: egalites.map(t => ph(t)) };
+  });
+}
+/* Quadrilatère : toujours un carré parfait (les écarts seraient de toute façon invérifiables).
+   Seul le codage compte : une phrase codée est la bonne réponse, les phrases non codées sont les leurres. */
+function genCarre() {
+  return essai(() => {
+    const noms = lettres(4), L = R(100, 115), th = Math.random() * 2 * Math.PI;
+    const nCotes = pick([0, 2, 2, 3]), nAngles = pick([0, 1, 1, 2]);
+    if (!nCotes && !nAngles) return null;
+    const cotesCodes = shuffle([0, 1, 2, 3]).slice(0, nCotes), angles = shuffle([0, 1, 2, 3]).slice(0, nAngles);
+    const u = dir(th), v = nrm(u), c0 = V(R(135, 165), R(95, 105));
+    const centre = mul(add(u, v), 0.5), Q = [V(0, 0), u, add(u, v), v].map(p => add(c0, mul(sub(p, centre), L)));
+    if (!Q.every(p => inside(p))) return null;
+    const g = mul(Q.reduce(add, V(0, 0)), 1 / 4), fig = new Fig(), nb = pick([1, 2]);
+    for (let k = 0; k < 4; k++) fig.seg(Q[k], Q[(k + 1) % 4]);
+    cotesCodes.forEach(k => fig.marques(Q[k], Q[(k + 1) % 4], nb));
+    angles.forEach(k => fig.angleDroit(Q[k], unit(sub(Q[(k + 3) % 4], Q[k])), unit(sub(Q[(k + 1) % 4], Q[k]))));
+    Q.forEach((p, k) => fig.point(p, noms[k], mul(unit(sub(p, g)), 17)));
+    // phrases : égalités de côtés (côté k = [Pk Pk+1]) et perpendicularités de côtés consécutifs (au sommet k)
+    const cote = k => deux(noms[k], noms[(k + 1) % 4]);
+    const perpAu = k => { const [x, y] = shuffle([`(${cote((k + 3) % 4)})`, `(${cote(k)})`]); return `${x} ⊥ ${y}`; };
+    const egVrai = [], egFaux = [];
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++)
+      (cotesCodes.includes(a) && cotesCodes.includes(b) ? egVrai : egFaux).push(eg(cote(a), cote(b)));
+    const perpVrai = angles.map(perpAu), perpFaux = [0, 1, 2, 3].filter(k => !angles.includes(k)).map(perpAu);
+    const juste = pick(egVrai.concat(perpVrai));
+    // toujours au moins une égalité et une perpendicularité parmi les 4 réponses
+    const autre = juste.includes('⊥') ? egFaux : perpFaux, meme = juste.includes('⊥') ? perpFaux : egFaux;
+    if (!autre.length) return null;
+    const faux = [...new Set([pick(autre)].concat(shuffle(autre.concat(meme))))];
+    if (faux.length < 3) return null;
+    return { svg: fig, juste: ph(juste), faux: faux.map(x => ph(x)) };
+  });
+}
+function genMesure() { // HJ = 4 cm
+  return essai(() => {
+    const [Hn, J] = lettres(2);
+    const u = dir(rad(R(-25, 25))), n = nrm(u), h = V(R(50, 90), R(60, 140)), j = add(h, mul(u, R(150, 190))), s = pick([1, -1]);
+    if (!inside(h) || !inside(j)) return null;
+    const x = pick([3, 4, 5, 6, 7, 8, 4.5, 5.5, 6.5]), cm = v => `${String(v).replace('.', ',')} cm`;
+    const fig = new Fig().seg(h, j).txt(add(mid(h, j), mul(n, -18 * s)), cm(x), 'mesure')
+      .point(h, Hn, mul(n, 16 * s)).point(j, J, mul(n, 16 * s));
+    const HJ = deux(Hn, J);
+    return { svg: fig, juste: ph(`${HJ} = ${cm(x)}`), faux: shuffle([x + 1, x - 1, x + 2, 2 * x]).map(y => ph(`${HJ} = ${cm(y)}`)) };
+  });
+}
+
+const TYPES = [
+  { id: 'nDroite',   groupe: 1, label: 'Droite',      ex: '(AB)', gen: () => genNotation('droite', 'droite', [], ['segment', 'ddPQ', 'ddQP', 'longueur']) },
+  { id: 'nSegment',  groupe: 1, label: 'Segment',     ex: '[AB]', gen: () => genNotation('segment', 'segment', [], ['droite', 'ddPQ', 'ddQP', 'longueur']) },
+  { id: 'nDemi',     groupe: 1, label: 'Demi-droite', ex: '[AB)', gen: () => genNotation('demi', 'ddPQ', ['ddQP'], ['droite', 'segment', 'longueur']) },
+  { id: 'nLongueur', groupe: 1, label: 'Longueur',    ex: 'AB',   gen: () => genNotation('longueur', 'longueur', [], ['segment', 'droite', 'ddPQ']) },
+  { id: 'droite',  groupe: 2, label: 'Point et droite',       ex: 'A ∈ (d)',           gen: genDroite },
+  { id: 'segment', groupe: 2, label: 'Point et segment, milieu', ex: 'B ∈ [AC], BA = BC',          gen: genSegment },
+  { id: 'demi',    groupe: 2, label: 'Droite et demi-droite', ex: 'V ∉ [OT)',          gen: genDemi },
+  { id: 'cercle',  groupe: 2, label: 'Point et cercle',       ex: 'E ∉ (c)',           gen: genCercle },
+  { id: 'inter',   groupe: 2, label: 'Intersection',          ex: 'I ∈ (d)', gen: genInter },
+  { id: 'perp',    groupe: 2, label: 'Perpendiculaires',      ex: '(EF) ⊥ (FG)',       gen: genPerp },
+  { id: 'para',    groupe: 2, label: 'Parallèles',            ex: '(d₁) // (d₂)',      gen: genPara },
+  { id: 'rayons',  groupe: 2, label: 'Rayons d’un cercle',    ex: 'OP = OQ',           gen: genRayons },
+  { id: 'codage',  groupe: 2, label: 'Longueurs codées',      ex: 'NQ = NR',           gen: genCodage },
+  { id: 'carre',   groupe: 2, label: 'Quadrilatère codé', ex: 'AB = BC, (AB) ⊥ (BC)',       gen: genCarre },
+  { id: 'mesure',  groupe: 2, label: 'Longueur mesurée',      ex: 'HJ = 4 cm',         gen: genMesure },
+];
+
+/* ================= Paramètres ================= */
+const KEY = 'geometrieMentale6e-v2';
+const DUREES = [0, 10, 15, 20, 30];
+// questions : 1 = notations, 2 = phrases mathématiques, 3 = les deux
+const QUESTIONS = [[1, 'Notations'], [2, 'Phrases mathématiques'], [3, 'Les deux']];
+const settings = { questions: 3, duree: 0 };
+try {
+  const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (s) {
+    if ([1, 2, 3].includes(s.questions)) settings.questions = s.questions;
+    if (DUREES.includes(s.duree)) settings.duree = s.duree;
+  }
+} catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} };
+const activeTypes = () => TYPES.filter(t => settings.questions === 3 || t.groupe === settings.questions);
+
+function renderSettings() {
+  $('grpSeg').innerHTML = QUESTIONS.map(([g, l]) =>
+    `<button class="btn ${g === settings.questions ? 'on' : ''}" data-g="${g}">${l}</button>`).join('');
+  $('durSeg').innerHTML = DUREES.map(d =>
+    `<button class="btn ${d === settings.duree ? 'on' : ''}" data-d="${d}">${d ? d + ' s' : 'Sans'}</button>`).join('');
+}
+const majParams = () => { save(); renderSettings(); renderHome(); };
+$('grpSeg').addEventListener('click', e => { const g = +e.target.dataset.g; if (g) { settings.questions = g; majParams(); } });
+$('durSeg').addEventListener('click', e => { const d = e.target.dataset.d; if (d != null) { settings.duree = +d; majParams(); } });
+$('bParams').onclick = () => { renderSettings(); $('ov').classList.remove('hidden'); };
+$('ovClose').onclick = () => $('ov').classList.add('hidden');
+$('ov').addEventListener('click', e => { if (e.target.id === 'ov') $('ov').classList.add('hidden'); });
+
+/* ================= Série ================= */
+function makeSeries() {
+  const types = activeTypes(), out = [];
+  let bag = [], prev = null;
+  while (out.length < N) {
+    if (!bag.length) bag = shuffle(types.slice());
+    let t = bag.pop();
+    if (t === prev && bag.length) { bag.unshift(t); t = bag.pop(); } // pas deux fois le même type de suite
+    let q;
+    try { q = t.gen(); } catch (e) { bag.unshift(t); continue; }   // figure introuvable (très rare) : autre tirage
+    q.svg = String(q.svg);
+    q.choix = shuffle([{ h: q.juste, ok: true }, ...q.faux.slice(0, 3).map(h => ({ h, ok: false }))]);
+    out.push(q); prev = t;
+  }
+  return out;
+}
+
+/* ================= Navigation ================= */
+const SCREENS = ['sHome', 'sQcm', 'sRes'];
+let series = [], idx = 0, score = 0, errors = [], answered = false, nextTO = null;
+
+function show(id) {
+  SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
+  const home = id === 'sHome';
+  $('hTitle').classList.toggle('hidden', id === 'sQcm');
+  $('bParams').classList.toggle('hidden', !home);
+  $('bHome').classList.toggle('hidden', home);
+  $('hProg').classList.toggle('hidden', id !== 'sQcm');
+  $('hScore').classList.toggle('hidden', id !== 'sQcm');
+}
+function renderHome() {
+  const quoi = { 1: 'notations', 2: 'phrases mathématiques', 3: 'notations et phrases' }[settings.questions];
+  $('homeInfo').textContent = `${N} questions · ${quoi} · ${settings.duree ? settings.duree + ' s par question' : 'sans temps'}`;
+}
+function goHome() { stopTimer(); clearTimeout(nextTO); show('sHome'); renderHome(); }
+$('bHome').onclick = goHome;
+$('bStart').onclick = start;
+function start() { series = makeSeries(); idx = 0; score = 0; errors = []; show('sQcm'); qcmShow(); }
+function setProg() { $('hProg').textContent = `Question ${idx + 1} / ${N}`; $('hScore').textContent = `✓ ${score}`; }
+
+/* Minuteur */
+let timer = null, remain = 0, total = 0, last = 0;
+function runTimer(sec, onEnd) {
+  stopTimer();
+  total = remain = sec * 1000; last = performance.now();
+  $('qBar').style.width = '100%';
+  timer = setInterval(() => {
+    const now = performance.now(); remain -= now - last; last = now;
+    $('qBar').style.width = Math.max(0, remain / total * 100) + '%';
+    if (remain <= 0) { stopTimer(); onEnd(); }
+  }, 50);
+}
+function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+
+/* ================= QCM ================= */
+function qcmShow() {
+  const q = series[idx];
+  answered = false; setProg();
+  $('qFig').innerHTML = q.svg;
+  $('qConsigne').textContent = q.consigne || 'Laquelle de ces phrases mathématiques est vraie ?';
+  $('qFb').textContent = ''; $('qFb').className = 'fb';
+  $('qNext').classList.add('hidden');
+  const long = q.choix.some(c => texte(c.h).length > 12);
+  $('qChoices').classList.toggle('long', long);
+  $('qChoices').innerHTML = q.choix.map((c, i) => `<button class="choice" data-i="${i}">${c.h}</button>`).join('');
+  $('qBarWrap').classList.toggle('hidden', !settings.duree);
+  if (settings.duree) runTimer(settings.duree, () => qcmAnswer(null));
+}
+// b : bouton choisi, ou null si le temps est écoulé
+function qcmAnswer(b) {
+  if (answered) return;
+  answered = true; stopTimer();
+  const q = series[idx], ok = b && q.choix[b.dataset.i].ok;
+  $('qChoices').querySelectorAll('.choice').forEach(x => {
+    x.disabled = true;
+    if (q.choix[x.dataset.i].ok) x.classList.add('ok');
+  });
+  if (ok) { score++; $('qFb').textContent = 'Bravo !'; $('qFb').className = 'fb ok'; setProg(); nextTO = setTimeout(next, 1000); }
+  else {
+    if (b) b.classList.add('ko');
+    errors.push({ q, y: b ? q.choix[b.dataset.i].h : null });
+    $('qFb').textContent = b ? 'Non.' : 'Temps écoulé !'; $('qFb').className = 'fb ko';
+    $('qNext').classList.remove('hidden'); $('qNext').focus();
+  }
+}
+$('qChoices').addEventListener('click', e => { const b = e.target.closest('.choice'); if (b) qcmAnswer(b); });
+$('qNext').onclick = next;
+
+function next() {
+  clearTimeout(nextTO);
+  if (++idx < N) { qcmShow(); return; }
+  show('sRes');
+  $('rScore').textContent = `${score} / ${N}`;
+  $('rList').innerHTML = errors.length
+    ? errors.map(({ q, y }) => `<div class="err">${q.svg}<span class="juste">${q.correction || q.juste}</span>
+        <span class="y">${y == null ? 'Temps écoulé' : 'Ta réponse : ' + y}</span></div>`).join('')
+    : '<p class="hint">Aucune erreur !</p>';
+}
+$('rAgain').onclick = start;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('ov').classList.add('hidden'); $('qrOv').classList.add('hidden'); } });
+
+/* ================= Nouvel onglet =================
+   Intégrée dans une page (iframe) : écran plein avec un énorme bouton.
+   Un vrai lien target="_blank" n'est pas bloqué par les anti-popups. */
+function forcerNouvelOnglet() {
+  let integree;
+  try { integree = window.self !== window.top; } catch (e) { integree = true; }
+  if (!integree) return;
+  const voile = document.createElement('div');
+  voile.id = 'voileOnglet';
+  voile.innerHTML = `<p class="titre">Géométrie mentale</p>
+    <a href="${location.href}" target="_blank" rel="noopener">↗ Ouvrir l’appli</a>`;
+  document.body.appendChild(voile);
+}
+
+/* ================= QR code de l'accueil =================
+   Adresse de la page (sans paramètres), dessinée en SVG ; clic = plein écran pour la projection. */
+function installerQr() {
+  // déjà sur un téléphone (portrait ou paysage) : pas de QR code
+  const telephone = (navigator.userAgentData && navigator.userAgentData.mobile) || /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent);
+  if (telephone || !/^https?:$/.test(location.protocol) || typeof qrcode !== 'function') return;
+  const qr = qrcode(0, 'M');
+  qr.addData(location.origin + location.pathname);
+  qr.make();
+  const n = qr.getModuleCount(), m = 2;
+  let d = '';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.isDark(y, x)) d += `M${x + m},${y + m}h1v1h-1z`;
+  const svg = `<svg viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" shape-rendering="crispEdges" role="img" aria-label="QR code de l'appli"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  $('qrImg').innerHTML = svg; $('qrBig').innerHTML = svg;
+  $('qrBox').classList.remove('hidden');
+  $('qrBox').onclick = () => $('qrOv').classList.remove('hidden');
+  $('qrOv').onclick = () => $('qrOv').classList.add('hidden');
+}
+
+installerQr();
+goHome();
+forcerNouvelOnglet();
+</script>
+</body>
+</html>
