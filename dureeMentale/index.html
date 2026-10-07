@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Calcul mental</title>
+<title>Durée mentale</title>
 <style>
 :root{
   --bg:#f5f7fb; --card:#fff; --ink:#1d2433; --muted:#667085; --line:#d8dee9;
@@ -23,18 +23,19 @@ header h1{font-size:1.3rem;margin:0}
 .btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 16px;min-height:44px;box-shadow:var(--shadow)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .btn:disabled{opacity:.4;cursor:default}
-.btn.small{min-height:36px;padding:6px 12px;font-size:.9rem}
 .hidden{display:none!important}
 main{flex:1;display:flex;flex-direction:column}
 .screen{flex:1;display:flex;flex-direction:column}
 
 /* Accueil */
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:24px}
 .mode{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:22px 18px;text-align:left;box-shadow:var(--shadow)}
 .mode:not(:disabled):hover{border-color:var(--accent)}
 .mode b{display:block;font-size:1.5rem;margin-bottom:6px}
 .mode span{color:var(--muted)}
 .info{margin-top:18px;color:var(--muted);text-align:center}
+.info.warn{color:var(--ko);font-weight:600}
+@media (max-width:640px){.modes{grid-template-columns:1fr;gap:12px;margin-top:12px}.mode{padding:16px}}
 /* QR code de l'accueil (pour ouvrir l'appli sur un téléphone) ; inutile sur le téléphone lui-même */
 .qr{margin:20px auto 0;display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px 10px;box-shadow:var(--shadow)}
 .qr svg{display:block;width:170px;height:170px}
@@ -43,41 +44,33 @@ main{flex:1;display:flex;flex-direction:column}
 #qrOv .qr-grand{background:#fff;border-radius:20px;padding:20px}
 #qrOv svg{display:block;width:min(80vmin,720px);height:min(80vmin,720px)}
 @media (max-width:640px),(pointer:coarse) and (max-height:500px){.qr{display:none}} /* téléphone, en portrait ou en paysage */
-.info.warn{color:var(--ko);font-weight:600}
-@media (max-width:640px){.modes{grid-template-columns:1fr;gap:12px;margin-top:12px}.mode{padding:16px}}
 
-/* Calcul */
-.calc{font-weight:700;text-align:center;line-height:1.2;font-variant-numeric:tabular-nums}
+/* Question */
+.calc{font-weight:700;text-align:center;line-height:1.3;font-variant-numeric:tabular-nums}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.8em;line-height:1.05;margin:0 .08em}
+.frac>span:first-child{border-bottom:.08em solid currentColor;padding:0 .12em}
 .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:12px 0}
-.big{font-size:clamp(2.6rem,11vw,8rem)}
+.big{font-size:clamp(2.4rem,10vw,7rem)}
 .mid{font-size:clamp(2.2rem,9vw,4.5rem)}
 .num{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:700;border-radius:999px;padding:6px 18px;font-size:clamp(1.2rem,3vw,2rem)}
 .bar{width:min(700px,100%);height:14px;background:var(--line);border-radius:99px;overflow:hidden}
 .bar>div{height:100%;background:var(--accent);width:100%}
 .hint{color:var(--muted);font-size:1.15rem;text-align:center}
+.inc{color:var(--accent)}
 
-/* Correction flash 2 x 5 */
-.corr{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;gap:12px 20px;margin-top:12px}
-.cell{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 16px;font-size:clamp(1rem,3.4vw,2.2rem);box-shadow:var(--shadow)}
+/* Correction flash : 2 colonnes */
+.corr{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;gap:10px 20px;margin-top:12px}
+.cell{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 16px;font-size:clamp(1rem,2.6vw,1.8rem);box-shadow:var(--shadow)}
 .cell .n{flex:none;width:1.8em;height:1.8em;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:.75em}
 .cell .r{color:var(--accent);font-weight:800}
-@media (max-width:640px){.corr{gap:8px}.cell{padding:8px;gap:6px}}
+@media (max-width:640px){.corr{gap:8px}.cell{padding:6px;gap:6px}}
 
 /* QCM */
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(640px,100%)}
-.choice{min-height:76px;border-radius:16px;border:2px solid var(--line);background:var(--card);font-size:clamp(1.5rem,6.5vw,2.3rem);font-weight:700;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.choice{min-height:72px;border-radius:16px;border:2px solid var(--line);background:var(--card);font-size:clamp(1.25rem,5vw,1.9rem);font-weight:700;box-shadow:var(--shadow);font-variant-numeric:tabular-nums;padding:6px 8px}
 .choice.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
 .choice.ko{background:var(--ko-bg);border-color:var(--ko);color:var(--ko)}
 .choice:disabled{cursor:default}
-
-/* Saisie */
-.answer{display:flex;gap:10px;width:min(560px,100%)}
-.answer input{flex:1;min-width:0;font:inherit;font-size:clamp(1.6rem,6vw,2.4rem);font-weight:700;text-align:center;padding:8px 12px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink)}
-.answer input:focus{outline:none;border-color:var(--accent)}
-.answer input.ok{border-color:var(--ok);background:var(--ok-bg)}
-.answer input.ko{border-color:var(--ko);background:var(--ko-bg)}
-.answer .btn{font-size:1.15rem;padding:10px 22px}
-
 .fb{min-height:1.6em;font-size:1.3rem;font-weight:700;text-align:center}
 .fb.ok{color:var(--ok)} .fb.ko{color:var(--ko)}
 .next-row{width:min(640px,100%);display:flex;justify-content:flex-end;min-height:48px}
@@ -89,7 +82,7 @@ main{flex:1;display:flex;flex-direction:column}
 .res .err .fig{background:rgba(255,255,255,.6)}
 .res>*:not(.filigrane){position:relative;z-index:1}
 .res h2{text-align:center;font-size:clamp(2rem,8vw,3rem);margin:8px 0}
-.err{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:1.2rem}
+.err{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:1.25rem}
 .err.bon{border-left:6px solid var(--ok)}
 .err.rate{border-left:6px solid var(--ko);background:rgba(255,240,240,.6)}
 .err .marque{font-weight:900;font-size:1.3em;width:1.2em;text-align:center}
@@ -105,25 +98,25 @@ main{flex:1;display:flex;flex-direction:column}
 .sheet h2{margin:0;flex:1}
 .sheet h3{margin:16px 0 8px;font-size:1rem;color:var(--muted)}
 .type{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line);cursor:pointer}
+.type.off{opacity:.4}
 .type input{width:24px;height:24px;accent-color:var(--accent);flex:none}
 .type .l{flex:1}
 .type .ex{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.row-btns{display:flex;gap:8px;margin-top:10px}
 .seg{display:flex;gap:8px;flex-wrap:wrap}
 .seg button{min-width:64px}
 .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
 /* Intégrée dans une page : on force le nouvel onglet */
 #voileOnglet{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;z-index:50;text-align:center}
 #voileOnglet .titre{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:700;margin:0}
 #voileOnglet a{display:flex;align-items:center;justify-content:center;gap:.4em;width:min(900px,100%);min-height:min(45vh,320px);padding:24px;border-radius:28px;background:var(--accent);color:#fff;text-decoration:none;font-size:clamp(2rem,7vw,4.5rem);font-weight:800;line-height:1.15;box-shadow:0 8px 24px rgba(47,111,222,.35)}
-#voileOnglet a:hover{filter:brightness(1.08)}
 @media (max-width:640px){.overlay{padding:0}.sheet{border-radius:0;height:100%;width:100%}}
 </style>
 </head>
 <body>
 <div class="app">
-  <header id="hdr">
-    <h1 id="hTitle">Calcul mental</h1>
+  <header>
+    <h1 id="hTitle">Durée mentale</h1>
     <span id="hProg" class="prog hidden"></span><span id="hScore" class="score hidden"></span>
     <span class="grow"></span>
     <button class="btn hidden" id="bPause">⏸ Pause</button>
@@ -132,21 +125,19 @@ main{flex:1;display:flex;flex-direction:column}
   </header>
 
   <main>
-    <!-- Accueil -->
     <section class="screen" id="sHome">
       <div class="modes">
-        <button class="mode" data-mode="flash"><b>Flash</b><span>10 calculs minutés, correction à la fin</span></button>
+        <button class="mode" data-mode="flash"><b>Flash</b><span>Durées projetées, correction à la fin</span></button>
         <button class="mode" data-mode="qcm"><b>QCM</b><span>Choisis parmi 4 réponses</span></button>
-        <button class="mode" data-mode="saisie"><b>Saisie</b><span>Tape la réponse</span></button>
       </div>
       <p class="info" id="homeInfo"></p>
       <button type="button" class="qr hidden" id="qrBox" title="Agrandir"><div id="qrImg"></div><span>Sur ton téléphone : scanne-moi</span></button>
     </section>
 
-    <!-- Flash -->
     <section class="screen hidden" id="sFlash">
       <div class="stage" id="flIntro">
         <div class="mid calc" id="flIntroTxt"></div>
+        <p class="hint">Écris la réponse sur ta feuille.</p>
         <button class="btn primary" id="flStart" style="font-size:1.4rem;padding:14px 32px">Démarrer</button>
       </div>
       <div class="stage hidden" id="flRun">
@@ -164,7 +155,6 @@ main{flex:1;display:flex;flex-direction:column}
       </div>
     </section>
 
-    <!-- QCM -->
     <section class="screen hidden" id="sQcm">
       <div class="stage">
         <div class="big calc" id="qCalc"></div>
@@ -175,55 +165,32 @@ main{flex:1;display:flex;flex-direction:column}
       </div>
     </section>
 
-    <!-- Saisie -->
-    <section class="screen hidden" id="sSaisie">
-      <div class="stage">
-        <div class="big calc" id="sCalc"></div>
-        <div class="bar" id="sBarWrap"><div id="sBar"></div></div>
-        <div class="answer">
-          <input id="sInput" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Réponse">
-          <button class="btn primary" id="sValid">Valider</button>
-        </div>
-        <div class="fb" id="sFb"></div>
-        <div class="next-row"><button class="btn primary hidden" id="sNext">Suivant →</button></div>
-      </div>
-    </section>
-
-    <!-- Résultats QCM / Saisie -->
     <section class="screen hidden" id="sRes">
       <div class="res">
         <div class="filigrane" id="rEmoji" aria-hidden="true"></div>
         <h2 id="rScore"></h2>
         <div id="rList"></div>
-        <div class="actions">
-          <button class="btn primary" id="rAgain">Rejouer</button>
-        </div>
+        <div class="actions"><button class="btn primary" id="rAgain">Rejouer</button></div>
       </div>
     </section>
   </main>
 </div>
 
-<!-- Paramètres -->
 <div class="overlay hidden" id="ov">
   <div class="sheet">
     <div class="sheet-head"><h2>Paramètres</h2><button class="btn primary" id="ovClose">OK</button></div>
-    <h3>Types de calculs</h3>
+    <h3>Écritures décimales (0,25 h ; 1,5 h…)</h3>
+    <div class="seg" id="decSeg"></div>
+    <h3>Types de questions</h3>
     <div id="typeList"></div>
-    <div class="row-btns">
-      <button class="btn small" id="allOn">Tout cocher</button>
-      <button class="btn small" id="allOff">Tout décocher</button>
-    </div>
-    <h3>Nombre de calculs</h3>
+    <h3>Nombre de questions</h3>
     <div class="seg" id="nbSeg"></div>
-    <h3>Flash : durée par calcul</h3>
+    <h3>Flash : durée par question</h3>
     <div class="seg" id="durSeg"></div>
-    <h3>QCM : durée par calcul</h3>
+    <h3>QCM : durée par question</h3>
     <div class="seg" id="qDurSeg"></div>
-    <h3>Saisie : durée par calcul</h3>
-    <div class="seg" id="sDurSeg"></div>
   </div>
 </div>
-
 <div class="overlay hidden" id="qrOv"><div class="qr-grand" id="qrBig"></div></div>
 
 <script>
@@ -235,203 +202,138 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const rnd = x => Math.round(x * 1e6) / 1e6;
+const pgcd = (a, b) => b ? pgcd(b, a % b) : a;
 const $ = id => document.getElementById(id);
+const texte = h => h.replace(/<[^>]+>/g, '');
 
-// Nombre → écriture française : 1 234,5
-function fmt(x) {
-  if (typeof x === 'string') return x;
-  const r = rnd(x);
-  let [i, d] = Math.abs(r).toString().split('.');
-  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return (r < 0 ? '−' : '') + i + (d ? ',' + d : '');
+/* ================= Écriture des durées =================
+   Toujours « 1 h + 45 min » (jamais « 1h45 ») ; fractions avec une vraie barre. */
+const frac = (n, d) => `<span class="frac"><span>${n}</span><span>${d}</span></span>`;
+const fh = (n, d) => `${frac(n, d)} h`;                                   // ¾ h
+const dec = x => String(Math.round(x * 100) / 100).replace('.', ',');      // 1,5
+const hm = t => {                                                          // minutes → « 1 h + 45 min »
+  const h = Math.floor(t / 60), m = t % 60;
+  if (!h) return `${m} min`;
+  return m ? `${h} h + ${m} min` : `${h} h`;
+};
+// une fraction irréductible n/d d'heure qui tombe juste en minutes (d diviseur de 60)
+function fractionHeure(dens, impropre) {
+  const d = pick(dens);
+  let n;
+  do { n = impropre ? R(1, 3) * d + R(1, d - 1) : R(1, d - 1); } while (pgcd(n, d) !== 1);
+  return { n, d, min: n * 60 / d };
 }
-// Saisie élève → nombre (ou null)
-function parseNum(s) {
-  s = String(s).replace(/[\s  ]/g, '');
-  if (!/^(\d+([.,]\d*)?|[.,]\d+)$/.test(s)) return null;
-  return parseFloat(s.replace(',', '.'));
-}
-const op = (a, o, b) => `${fmt(a)} ${o} ${fmt(b)}`;
 
 /* ================= Générateurs =================
-   Chaque générateur renvoie { q: html du calcul, a: réponse, w: erreurs typiques (QCM) } */
-function genTables() {
-  const a = R(2, 9), b = R(2, 9);
-  return { q: op(a, '×', b), a: a * b, w: [a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b, a + b] };
+   { q : question (html), a : réponse (html), w : erreurs typiques (html), à valeurs différentes de la réponse } */
+function genFracSimple() {               // ¾ h = 45 min
+  const { n, d, min } = fractionHeure([2, 3, 4, 5, 6, 10, 12], false);
+  return { q: fh(n, d), a: hm(min), w: [...(d < 10 ? [`${n}${d} min`] : []), `${60 / d} min`, `${Math.round(n * 100 / d)} min`, `${n * 10} min`, hm(min + 5), hm(min - 5)] };
 }
-function genEntiers() {
-  switch (R(1, 4)) {
-    case 1: { // complément
-      const t = pick([100, 100, 1000]), x = t === 100 ? R(11, 89) : R(110, 890), a = t - x;
-      return { q: op(t, '−', x), a, w: [a + 10, a - 10, a + 1, a - 1] };
-    }
-    case 2: { // addition avec retenue
-      const au = R(1, 9), bu = R(10 - au, 9), a = R(1, 7) * 10 + au, b = R(1, 7) * 10 + bu, s = a + b;
-      return { q: op(a, '+', b), a: s, w: [s - 10, s + 10, s + 1, s - 1] };
-    }
-    case 3: { // soustraction
-      const a = R(41, 99), b = R(12, a - 11), d = a - b;
-      const naive = Math.abs(Math.floor(a / 10) - Math.floor(b / 10)) * 10 + Math.abs(a % 10 - b % 10);
-      return { q: op(a, '−', b), a: d, w: [naive, d + 10, d - 10, d + 1] };
-    }
-    default: { // + dizaines / centaines
-      const a = R(101, 899), b = R(1, 9) * pick([10, 100]), s = a + b;
-      return { q: op(a, '+', b), a: s, w: [s + 10, s - 10, s + 100, s - 100, a + b / 10] };
-    }
-  }
+function genFracImpropre() {             // 7/4 h = 1 h + 45 min
+  const { n, d, min } = fractionHeure([2, 3, 4, 5, 6, 10], true), q = Math.floor(n / d), r = n % d;
+  return { q: fh(n, d), a: hm(min), w: [`${n} h + ${d} min`, `${q} h + ${r} min`, `${q} h + ${Math.round(r * 100 / d)} min`, hm(min + 60), `${q} h + ${r * 10} min`] };
 }
-function genMult10() {
-  const p = pick([10, 100, 1000]);
-  const x = Math.random() < .5 ? R(2, 99) : rnd(R(11, 999) / pick([10, 100]));
-  const a = x * p, w = [a / 10, a * 10, x + p];
-  if (!Number.isInteger(x)) w.push(fmt(x) + '0'.repeat(String(p).length - 1)); // 3,5 × 10 → « 3,50 »
-  else w.push(a / 100);
-  return { q: op(x, '×', p), a, w };
+function genDecimal() {                  // 0,25 h = 15 min ; 1,5 h = 1 h + 30 min
+  const d = pick([2, 4, 5, 10]);
+  let n; do { n = R(1, d - 1); } while (pgcd(n, d) !== 1);
+  const k = R(0, 2), x = k + n / d, min = k * 60 + n * 60 / d;
+  const chiffres = dec(n / d).split(',')[1];                               // « 25 » pour 0,25
+  return {
+    q: `${dec(x)} h`, a: hm(min),
+    w: [k ? `${k} h + ${chiffres} min` : `${chiffres} min`, k ? `${k} h + ${chiffres.padEnd(2, '0')} min` : `${chiffres.padEnd(2, '0')} min`,
+        hm(min + 10), hm(Math.round(k * 60 + n * 100 / d)), hm(min - 5), hm(min + 20), hm(min * 2)],
+  };
 }
-function genDiv10() {
-  const entier = Math.random() < .6;
-  const p = pick(entier ? [10, 100, 1000] : [10, 100]);
-  const x = entier ? R(2, 9999) : rnd(R(11, 999) / 10);
-  const a = x / p;
-  return { q: op(x, ':', p), a, w: [a / 10, a * 10, x * p, a / 100] };
+function genVersFraction() {             // 45 min = ¾ h
+  const { n, d, min } = fractionHeure([2, 3, 4, 5, 6, 10, 12], false);
+  return { q: `${min} min`, a: fh(n, d), w: [`0,${min} h`, fh(min, 100), fh(d, n), `${dec(min / 10)} h`, fh(n, d + 1)] };
 }
-function genDec() {
-  switch (R(1, 4)) {
-    case 1: { // 2,5 + 1,7
-      const ai = R(11, 89), bi = R(11, 89), a = ai / 10, b = bi / 10, s = a + b;
-      const mis = `${Math.floor(ai / 10) + Math.floor(bi / 10)},${ai % 10 + bi % 10}`; // 3,12
-      return { q: op(a, '+', b), a: s, w: [mis, s + 1, s - 1, s + 0.1, s - 0.1] };
-    }
-    case 2: { // 6,3 − 2,8
-      const ai = R(30, 99), bi = R(11, ai - 11), a = ai / 10, b = bi / 10, d = a - b;
-      const naive = Math.abs(Math.floor(ai / 10) - Math.floor(bi / 10)) + Math.abs(ai % 10 - bi % 10) / 10;
-      return { q: op(a, '−', b), a: d, w: [naive, d + 1, d - 1, d + 0.1] };
-    }
-    case 3: { // 3 − 0,4
-      const n = R(2, 9), d = R(1, 9) / 10, a = n - d;
-      return { q: op(n, '−', d), a, w: [n + d, n - 1 + d, a - 1, a + 1] };
-    }
-    default: { // 4,25 + 0,8
-      const a = R(101, 999) / 100, b = R(1, 9) / 10, s = a + b;
-      return { q: op(a, '+', b), a: s, w: [a + b / 10, s + 1, s - 0.1, s + 0.1] };
-    }
-  }
-}
-function genDouble() {
-  if (Math.random() < .5) { const x = R(13, 99), a = 2 * x; return { q: `Double de ${fmt(x)}`, a, w: [a - 10, a + 10, x + 2, a + 1, x / 2] }; }
-  const x = Math.random() < .75 ? 2 * R(7, 49) : 2 * R(5, 49) + 1, a = x / 2;
-  return { q: `Moitié de ${fmt(x)}`, a, w: [2 * x, a + 1, a - 1, a + 5, a - 5] };
-}
-function genQuad() {
-  if (Math.random() < .5) { const x = R(6, 30), a = 4 * x; return { q: `Quadruple de ${fmt(x)}`, a, w: [2 * x, 3 * x, a + 10, a - 10, x + 4] }; }
-  const x = 4 * R(3, 25), a = x / 4;
-  return { q: `Quart de ${fmt(x)}`, a, w: [x / 2, a + 1, a - 1, 4 * x, a + 2] };
-}
-function genDiv() {
-  const a = R(2, 9), b = R(2, 9);
-  return { q: op(a * b, ':', a), a: b, w: [b + 1, b - 1, a, b + 2] };
-}
-function genParen() {
-  const a = R(2, 9), b = R(2, 9), c = R(2, 9);
-  switch (R(1, 6)) {
-    case 1: { const x = R(2, 30), r = a * b + x; return { q: `(${a} × ${b}) + ${x}`, a: r, w: [a * (b + x), r + 10, r - 1, a + b + x] }; }
-    case 2: { const p = a * b, x = R(1, p - 1), r = p - x; return { q: `(${a} × ${b}) − ${x}`, a: r, w: [a * (b - x), p + x, r + 1, r - 10] }; }
-    case 3: { const x = R(2, 30), r = x + b * c; return { q: `${x} + (${b} × ${c})`, a: r, w: [(x + b) * c, x + b + c, r + 10, r - 1] }; }
-    case 4: { const r = (a + b) * c; return { q: `(${a} + ${b}) × ${c}`, a: r, w: [a + b * c, a * c + b, r + c, r - c] }; }
-    case 5: { const x = R(5, 15), y = R(1, x - 2), r = (x - y) * c; return { q: `(${x} − ${y}) × ${c}`, a: r, w: [x - y * c, x * c - y, r + c, r - c] }; }
-    default: { const x = a * b, r = b + c; return { q: `(${x} : ${a}) + ${c}`, a: r, w: [x / (a + c), r + 1, r - 1, b * c] }; }
-  }
+function genVersHMin() {                 // 105 min = 1 h + 45 min
+  const t = R(13, 46) * 5, h = Math.floor(t / 60), m = t % 60;
+  if (!m) return genVersHMin();
+  return { q: `${t} min`, a: hm(t), w: [...(t >= 100 ? [`${Math.floor(t / 100)} h + ${t % 100} min`] : []), `${h + 1} h + ${m} min`, hm(t + 10), hm(t - 10), `${h} h + ${60 - m} min`] };
 }
 
-function genTablesZeros() {             // 3 × 50, 40 × 70, 300 × 6 : une table et des zéros
-  const a = R(2, 9), b = R(2, 9);
-  let pa, pb;
-  do { pa = R(0, 2); pb = R(0, 2); } while (pa + pb < 1 || pa + pb > 3);
-  const x = a * 10 ** pa, y = b * 10 ** pb, z = 10 ** (pa + pb), p = a * b * z;
-  return { q: op(x, '×', y), a: p, w: [p / 10, p * 10, a * (b + 1) * z, a * (b - 1) * z, (a + 1) * b * z] };
+function genVersDecimal() {             // 1 h + 15 min = 1,25 h
+  const d = pick([2, 4, 5, 10]);
+  let n; do { n = R(1, d - 1); } while (pgcd(n, d) !== 1);
+  const k = R(0, 2), x = k + n / d, t = k * 60 + n * 60 / d, m = t % 60;
+  return { q: hm(t), a: `${dec(x)} h`, w: [`${k},${String(m).padStart(2, '0')} h`, `${dec(t / 100)} h`, `${dec(x + 0.25)} h`, `${dec(k + n / 10)} h`, `${dec(x + 1)} h`] };
 }
+
 const TYPES = [
-  { id: 'entiers', label: 'Additions, soustractions', ex: '100 − 37',     on: true,  gen: genEntiers },
-  { id: 'tables',  label: 'Tables de multiplication', ex: '7 × 8',        on: true,  gen: genTables },
-  { id: 'tablesZ', label: 'Tables avec des zéros',    ex: '40 × 70',      on: true,  gen: genTablesZeros },
-  { id: 'div',     label: 'Divisions exactes',        ex: '56 : 7',       on: true,  gen: genDiv },
-  { id: 'double',  label: 'Double, moitié',           ex: 'Moitié de 78', on: true,  gen: genDouble },
-  { id: 'quad',    label: 'Quadruple, quart',         ex: 'Quart de 60',  on: true,  gen: genQuad },
-  { id: 'paren',   label: 'Calculs avec parenthèses', ex: '(3 × 4) + 5',  on: true,  gen: genParen },
-  { id: 'mult10',  label: '× 10, × 100, × 1 000',     ex: '3,5 × 100',    on: false,  gen: genMult10 },
-  { id: 'div10',   label: ': 10, : 100, : 1 000',     ex: '42 : 100',     on: false,  gen: genDiv10 },
-  { id: 'dec',     label: 'Décimaux : + et −',        ex: '2,5 + 1,7',    on: false, gen: genDec },
+  { id: 'fracSimple',   label: 'Fraction d’heure → minutes',   ex: fh(3, 4) + ' = 45 min',         on: true,  gen: genFracSimple },
+  { id: 'fracImpropre', label: 'Fraction d’heure → h + min',   ex: fh(7, 4) + ' = 1 h + 45 min',   on: true,  gen: genFracImpropre },
+  { id: 'decimal',      label: 'Heure décimale → h + min',     ex: '1,5 h = 1 h + 30 min',         on: false, gen: genDecimal, decimal: true },
+  { id: 'versFraction', label: 'Minutes → fraction d’heure',   ex: '45 min = ' + fh(3, 4),         on: true,  gen: genVersFraction },
+  { id: 'versHMin',     label: 'Minutes → h + min',            ex: '105 min = 1 h + 45 min',       on: true,  gen: genVersHMin },
+  { id: 'versDecimal',  label: 'h + min → heure décimale',     ex: '1 h + 15 min = 1,25 h',        on: false, gen: genVersDecimal, decimal: true },
 ];
 
 /* ================= Paramètres ================= */
-const KEY = 'calculMental6e';
-const settings = { types: Object.fromEntries(TYPES.map(t => [t.id, t.on])), duree: 10, qcmDuree: 10, saisieDuree: 15, nb: 10 };
-const NOMBRES = [5, 10, 15, 20];
+const KEY = 'dureeMentale6e';
+const NOMBRES = [5, 10, 15, 20], DUREES_FLASH = [10, 15, 20, 30], DUREES_QCM = [0, 10, 15, 20, 30];
+const settings = { types: Object.fromEntries(TYPES.map(t => [t.id, t.on])), nb: 10, duree: 15, qcmDuree: 0, decimal: 0 };
 try {
   const s = JSON.parse(localStorage.getItem(KEY) || 'null');
-  if (s) { Object.assign(settings.types, s.types || {}); if ([5, 10, 15, 20].includes(s.duree)) settings.duree = s.duree;
-    if ([0, 5, 10, 15, 20].includes(s.qcmDuree)) settings.qcmDuree = s.qcmDuree;
-    if ([0, 10, 15, 20, 30].includes(s.saisieDuree)) settings.saisieDuree = s.saisieDuree;
-    if (NOMBRES.includes(s.nb)) settings.nb = s.nb; }
+  if (s) {
+    Object.assign(settings.types, s.types || {});
+    if (NOMBRES.includes(s.nb)) settings.nb = s.nb;
+    if (DUREES_FLASH.includes(s.duree)) settings.duree = s.duree;
+    if (DUREES_QCM.includes(s.qcmDuree)) settings.qcmDuree = s.qcmDuree;
+    if ([0, 1].includes(s.decimal)) settings.decimal = s.decimal;
+  }
 } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} };
-const activeTypes = () => TYPES.filter(t => settings.types[t.id]);
-
+// sans écritures décimales : les types décimaux sont exclus (et les leurres décimaux aussi, voir choices)
+const activeTypes = () => TYPES.filter(t => settings.types[t.id] && (settings.decimal || !t.decimal));
+const seg = (id, valeurs, cle, txt) => {
+  $(id).innerHTML = valeurs.map(v => `<button class="btn ${v === settings[cle] ? 'on' : ''}" data-v="${v}">${txt(v)}</button>`).join('');
+};
 function renderSettings() {
   $('typeList').innerHTML = TYPES.map(t =>
-    `<label class="type"><input type="checkbox" data-id="${t.id}" ${settings.types[t.id] ? 'checked' : ''}>
+    `<label class="type ${t.decimal && !settings.decimal ? 'off' : ''}"><input type="checkbox" data-id="${t.id}" ${settings.types[t.id] ? 'checked' : ''} ${t.decimal && !settings.decimal ? 'disabled' : ''}>
      <span class="l">${t.label}</span><span class="ex">${t.ex}</span></label>`).join('');
-  $('nbSeg').innerHTML = NOMBRES.map(v => `<button class="btn ${v === settings.nb ? 'on' : ''}" data-v="${v}">${v}</button>`).join('');
-  $('durSeg').innerHTML = [5, 10, 15, 20].map(d =>
-    `<button class="btn ${d === settings.duree ? 'on' : ''}" data-d="${d}">${d} s</button>`).join('');
-  $('qDurSeg').innerHTML = [0, 5, 10, 15, 20].map(d =>
-    `<button class="btn ${d === settings.qcmDuree ? 'on' : ''}" data-d="${d}">${d ? d + ' s' : 'Sans'}</button>`).join('');
-  $('sDurSeg').innerHTML = [0, 10, 15, 20, 30].map(d =>
-    `<button class="btn ${d === settings.saisieDuree ? 'on' : ''}" data-d="${d}">${d ? d + ' s' : 'Sans'}</button>`).join('');
+  seg('decSeg', [1, 0], 'decimal', v => v ? 'Oui' : 'Non');
+  seg('nbSeg', NOMBRES, 'nb', v => v);
+  seg('durSeg', DUREES_FLASH, 'duree', v => v + ' s');
+  seg('qDurSeg', DUREES_QCM, 'qcmDuree', v => v ? v + ' s' : 'Sans');
 }
+const majParams = () => { save(); renderSettings(); renderHome(); };
 $('typeList').addEventListener('change', e => { settings.types[e.target.dataset.id] = e.target.checked; save(); renderHome(); });
-$('qDurSeg').addEventListener('click', e => { const d = e.target.dataset.d; if (d != null) { settings.qcmDuree = +d; save(); renderSettings(); renderHome(); } });
-$('sDurSeg').addEventListener('click', e => { const d = e.target.dataset.d; if (d != null) { settings.saisieDuree = +d; save(); renderSettings(); renderHome(); } });
-$('nbSeg').addEventListener('click', e => { const v = +e.target.dataset.v; if (v) { settings.nb = v; save(); renderSettings(); renderHome(); } });
-$('durSeg').addEventListener('click', e => { const d = +e.target.dataset.d; if (d) { settings.duree = d; save(); renderSettings(); renderHome(); } });
-$('allOn').onclick = () => { TYPES.forEach(t => settings.types[t.id] = true); save(); renderSettings(); renderHome(); };
-$('allOff').onclick = () => { TYPES.forEach(t => settings.types[t.id] = false); save(); renderSettings(); renderHome(); };
+[['decSeg', 'decimal'], ['nbSeg', 'nb'], ['durSeg', 'duree'], ['qDurSeg', 'qcmDuree']].forEach(([id, cle]) =>
+  $(id).addEventListener('click', e => { const v = e.target.dataset.v; if (v != null) { settings[cle] = +v; majParams(); } }));
 $('bParams').onclick = () => { renderSettings(); $('ov').classList.remove('hidden'); };
 $('ovClose').onclick = () => $('ov').classList.add('hidden');
 $('ov').addEventListener('click', e => { if (e.target.id === 'ov') $('ov').classList.add('hidden'); });
 
 /* ================= Série ================= */
 function makeSeries() {
-  const types = activeTypes(), out = [], seen = new Set();
-  let bag = [], guard = 0;
-  while (out.length < settings.nb && guard++ < 1000) {
+  const types = activeTypes(), out = [], vus = new Set();
+  let bag = [], garde = 0;
+  while (out.length < settings.nb && garde++ < 2000) {
     if (!bag.length) bag = shuffle(types.slice());
     const c = bag.pop().gen();
-    c.a = rnd(c.a);
-    if (seen.has(c.q)) continue;
-    seen.add(c.q); out.push(c);
+    if (vus.has(c.q)) continue;
+    vus.add(c.q); out.push(c);
   }
   return out;
 }
-// 4 réponses : la bonne + 3 erreurs typiques (complétées si besoin)
+// 4 réponses : la bonne + 3 erreurs typiques distinctes (jamais égales à la bonne réponse)
 function choices(c) {
-  const ansS = fmt(c.a), seen = new Set([ansS]), out = [];
-  const add = x => {
-    if (out.length >= 3) return;
-    const v = typeof x === 'string' ? parseNum(x) : rnd(x), s = fmt(x);
-    if (v == null || !(v > 0) || Math.abs(v - c.a) < 1e-9 || seen.has(s)) return;
-    seen.add(s); out.push(s);
-  };
-  shuffle(c.w.slice()).forEach(add);
-  [c.a + 1, c.a - 1, c.a + 10, c.a - 10, c.a * 10, c.a / 10, c.a + 2, c.a + 100].forEach(add);
-  return shuffle([ansS, ...out]);
+  const vus = new Set([texte(c.a)]), faux = [];
+  shuffle(c.w.slice()).forEach(x => {
+    const t = texte(x);
+    if (faux.length < 3 && !vus.has(t) && !/-|NaN|Infinity/.test(t) && (settings.decimal || !t.includes(','))) { vus.add(t); faux.push(x); }
+  });
+  return shuffle([{ h: c.a, ok: true }, ...faux.map(h => ({ h, ok: false }))]);
 }
 
 /* ================= Navigation ================= */
-const SCREENS = ['sHome', 'sFlash', 'sQcm', 'sSaisie', 'sRes'];
+const SCREENS = ['sHome', 'sFlash', 'sQcm', 'sRes'];
 let mode = null, series = [], idx = 0, score = 0, errors = [];
-
+const N = () => series.length;
 function show(id) {
   SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
   const home = id === 'sHome';
@@ -439,63 +341,55 @@ function show(id) {
   $('bParams').classList.toggle('hidden', !home);
   $('bHome').classList.toggle('hidden', home);
   $('hProg').classList.toggle('hidden', home || id === 'sRes');
-  $('hScore').classList.toggle('hidden', !(id === 'sQcm' || id === 'sSaisie'));
+  $('hScore').classList.toggle('hidden', id !== 'sQcm');
   $('bPause').classList.add('hidden');
 }
-const N = () => series.length;
 function renderHome() {
   const n = activeTypes().length;
   document.querySelectorAll('.mode').forEach(b => b.disabled = n === 0);
   const info = $('homeInfo');
   info.classList.toggle('warn', n === 0);
-  info.textContent = n === 0 ? 'Coche au moins un type de calcul dans ⚙ Paramètres.'
-    : `${settings.nb} calculs · ${n} type${n > 1 ? 's' : ''} · Flash : ${settings.duree} s · QCM : ${settings.qcmDuree ? settings.qcmDuree + ' s' : 'sans temps'} · Saisie : ${settings.saisieDuree ? settings.saisieDuree + ' s' : 'sans temps'}`;
+  info.textContent = n === 0 ? 'Coche au moins un type de question dans ⚙ Paramètres.'
+    : `${settings.nb} questions · ${settings.decimal ? 'avec' : 'sans'} décimaux · Flash : ${settings.duree} s · QCM : ${settings.qcmDuree ? settings.qcmDuree + ' s' : 'sans temps'}`;
 }
 function goHome() { stopTimer(); clearTimeout(nextTO); show('sHome'); renderHome(); }
 $('bHome').onclick = goHome;
 document.querySelectorAll('.mode').forEach(b => b.onclick = () => start(b.dataset.mode));
-
 function start(m) {
   mode = m; series = makeSeries(); idx = 0; score = 0; errors = [];
-  if (m === 'flash') flashIntro();
-  else { show(m === 'qcm' ? 'sQcm' : 'sSaisie'); m === 'qcm' ? qcmShow() : saisieShow(); }
+  if (m === 'flash') flashIntro(); else { show('sQcm'); qcmShow(); }
 }
-function setProg() {
-  $('hProg').textContent = `Calcul ${idx + 1} / ${N()}`;
-  $('hScore').textContent = `✓ ${score}`;
-}
+function setProg() { $('hProg').textContent = `Question ${idx + 1} / ${N()}`; $('hScore').textContent = `✓ ${score}`; }
+const question = c => `${c.q} = <span class="inc">?</span>`;
 
-/* ================= Flash ================= */
-/* Minuteur commun : barre qui se vide en sec secondes, puis onEnd() */
+/* Minuteur commun */
 let timer = null, remain = 0, total = 0, last = 0, paused = false, timerBar = null, timerEnd = null;
 function runTimer(sec, barId, onEnd) {
   stopTimer();
   total = remain = sec * 1000; paused = false; timerBar = $(barId); timerEnd = onEnd;
-  timerBar.style.width = '100%';
-  last = performance.now();
-  timer = setInterval(tick, 50);
-}
-function tick() {
-  const now = performance.now();
-  if (!paused) remain -= now - last;
-  last = now;
-  timerBar.style.width = Math.max(0, remain / total * 100) + '%';
-  if (remain <= 0) { stopTimer(); timerEnd(); }
+  timerBar.style.width = '100%'; last = performance.now();
+  timer = setInterval(() => {
+    const now = performance.now();
+    if (!paused) remain -= now - last;
+    last = now;
+    timerBar.style.width = Math.max(0, remain / total * 100) + '%';
+    if (remain <= 0) { stopTimer(); timerEnd(); }
+  }, 50);
 }
 function stopTimer() { if (timer) clearInterval(timer); timer = null; }
 
+/* ================= Flash (vidéoprojeté) ================= */
 function flashPart(p) { ['flIntro', 'flRun', 'flEnd', 'flCorr'].forEach(id => $(id).classList.toggle('hidden', id !== p)); }
 function flashIntro() {
   show('sFlash'); flashPart('flIntro');
   $('hProg').textContent = 'Flash';
-  $('flIntroTxt').textContent = `${N()} calculs · ${settings.duree} s`;
+  $('flIntroTxt').textContent = `${N()} questions · ${settings.duree} s`;
 }
 $('flStart').onclick = () => { idx = 0; flashPart('flRun'); $('bPause').classList.remove('hidden'); flashShow(); };
 function flashShow() {
-  const c = series[idx];
   setProg();
   $('flNum').textContent = `n° ${idx + 1}`;
-  $('flCalc').innerHTML = c.q;
+  $('flCalc').innerHTML = question(series[idx]);
   $('bPause').textContent = '⏸ Pause';
   runTimer(settings.duree, 'flBar', () => {
     if (++idx < N()) flashShow();
@@ -504,9 +398,10 @@ function flashShow() {
 }
 $('bPause').onclick = () => { paused = !paused; $('bPause').textContent = paused ? '▶ Reprendre' : '⏸ Pause'; };
 $('flShow').onclick = () => {
-  $('flGrid').style.gridTemplateRows = `repeat(${Math.ceil(N() / 2)}, auto)`;
+  const lignes = Math.ceil(N() / 2);
+  $('flGrid').style.gridTemplateRows = `repeat(${lignes}, auto)`;
   $('flGrid').innerHTML = series.map((c, i) =>
-    `<div class="cell"><span class="n">${i + 1}</span><span class="calc">${c.q} = <span class="r">${fmt(c.a)}</span></span></div>`).join('');
+    `<div class="cell"><span class="n">${i + 1}</span><span class="calc">${c.q} = <span class="r">${c.a}</span></span></div>`).join('');
   $('hProg').textContent = 'Correction';
   flashPart('flCorr');
 };
@@ -516,77 +411,33 @@ $('flAgain').onclick = () => start('flash');
 let answered = false, nextTO = null;
 function qcmShow() {
   const c = series[idx];
+  c.choix = c.choix || choices(c);
   answered = false; setProg();
-  $('qCalc').innerHTML = c.q;
+  $('qCalc').innerHTML = question(c);
   $('qFb').textContent = ''; $('qFb').className = 'fb';
   $('qNext').classList.add('hidden');
-  $('qChoices').innerHTML = choices(c).map(s => `<button class="choice">${s}</button>`).join('');
+  $('qChoices').innerHTML = c.choix.map((x, i) => `<button class="choice" data-i="${i}">${x.h}</button>`).join('');
   $('qBarWrap').classList.toggle('hidden', !settings.qcmDuree);
   if (settings.qcmDuree) runTimer(settings.qcmDuree, 'qBar', () => qcmAnswer(null));
 }
-// b : bouton choisi, ou null si le temps est écoulé
 function qcmAnswer(b) {
   if (answered) return;
   answered = true; stopTimer();
-  const c = series[idx], ok = b && Math.abs(parseNum(b.textContent) - c.a) < 1e-9;
-  $('qChoices').querySelectorAll('.choice').forEach(x => {
-    x.disabled = true;
-    if (x.textContent === fmt(c.a)) x.classList.add('ok');
-  });
+  const c = series[idx], ok = b && c.choix[b.dataset.i].ok;
+  $('qChoices').querySelectorAll('.choice').forEach(x => { x.disabled = true; if (c.choix[x.dataset.i].ok) x.classList.add('ok'); });
   if (ok) { score++; $('qFb').textContent = 'Bravo !'; $('qFb').className = 'fb ok'; setProg(); nextTO = setTimeout(next, 900); }
   else {
     if (b) b.classList.add('ko');
-    errors.push({ c, y: b ? b.textContent : null });
+    errors.push({ c, y: b ? c.choix[b.dataset.i].h : null });
     $('qFb').textContent = b ? 'Non.' : 'Temps écoulé !'; $('qFb').className = 'fb ko';
     $('qNext').classList.remove('hidden'); $('qNext').focus();
   }
 }
-$('qChoices').addEventListener('click', e => {
-  const b = e.target.closest('.choice');
-  if (b) qcmAnswer(b);
-});
+$('qChoices').addEventListener('click', e => { const b = e.target.closest('.choice'); if (b) qcmAnswer(b); });
 $('qNext').onclick = next;
-
-/* ================= Saisie ================= */
-function saisieShow() {
-  const c = series[idx];
-  answered = false; setProg();
-  $('sCalc').innerHTML = c.q;
-  const inp = $('sInput');
-  inp.value = ''; inp.className = ''; inp.readOnly = false;
-  $('sFb').textContent = ''; $('sFb').className = 'fb';
-  $('sValid').disabled = false;
-  $('sNext').classList.add('hidden');
-  $('sBarWrap').classList.toggle('hidden', !settings.saisieDuree);
-  if (settings.saisieDuree) runTimer(settings.saisieDuree, 'sBar', () => saisieValid(true));
-  inp.focus();
-}
-// fin : true quand le temps est écoulé (un nombre déjà tapé est quand même corrigé)
-function saisieValid(fin) {
-  if (answered) return;
-  const c = series[idx], inp = $('sInput'), v = parseNum(inp.value);
-  if (fin === true && v == null) {
-    answered = true; inp.readOnly = true; $('sValid').disabled = true; inp.className = 'ko';
-    errors.push({ c, y: null });
-    $('sFb').textContent = `Temps écoulé ! Réponse : ${fmt(c.a)}`; $('sFb').className = 'fb ko';
-    $('sNext').classList.remove('hidden');
-    return;
-  }
-  if (v == null) { $('sFb').textContent = inp.value.trim() ? 'Écris un nombre.' : ''; $('sFb').className = 'fb ko'; inp.focus(); return; }
-  answered = true; stopTimer(); inp.readOnly = true; $('sValid').disabled = true;
-  if (Math.abs(v - c.a) < 1e-9) { score++; inp.className = 'ok'; $('sFb').textContent = 'Bravo !'; $('sFb').className = 'fb ok'; }
-  else { inp.className = 'ko'; errors.push({ c, y: inp.value.trim() }); $('sFb').textContent = `Non. Réponse : ${fmt(c.a)}`; $('sFb').className = 'fb ko'; }
-  setProg();
-  $('sNext').classList.remove('hidden');
-}
-$('sValid').onclick = () => saisieValid();
-$('sInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); answered ? next() : saisieValid(); } });
-$('sNext').onclick = next;
-
-/* ================= Suite / résultats ================= */
 function next() {
   clearTimeout(nextTO);
-  if (++idx < N()) { mode === 'qcm' ? qcmShow() : saisieShow(); return; }
+  if (++idx < N()) { qcmShow(); return; }
   show('sRes');
   $('rScore').textContent = `${score} / ${N()}`;
   // gros emoji en filigrane selon le score
@@ -595,30 +446,23 @@ function next() {
   // toute la série : ✓ pour les réussites, ✗ avec la réponse donnée pour les erreurs
   $('rList').innerHTML = series.map(c => {
     const e = errors.find(x => x.c === c);
-    return `<div class="err ${e ? 'rate' : 'bon'}"><span class="marque">${e ? '✗' : '✓'}</span><span class="calc">${c.q} = <span class="r">${fmt(c.a)}</span></span>`
+    return `<div class="err ${e ? 'rate' : 'bon'}"><span class="marque">${e ? '✗' : '✓'}</span><span class="calc">${c.q} = <span class="r">${c.a}</span></span>`
       + (e ? `<span class="y">${e.y == null ? 'Temps écoulé' : 'Ta réponse : ' + e.y}</span>` : '') + '</div>';
   }).join('');
 }
 $('rAgain').onclick = () => start(mode);
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { $('ov').classList.add('hidden'); $('qrOv').classList.add('hidden'); }
-  if (e.key === 'Enter' && mode === 'qcm' && answered && !$('sQcm').classList.contains('hidden') && document.activeElement !== $('qNext')) next();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('ov').classList.add('hidden'); $('qrOv').classList.add('hidden'); } });
 
-/* ================= Nouvel onglet =================
-   Intégrée dans une page (iframe) : écran plein avec un énorme bouton.
-   Un vrai lien target="_blank" n'est pas bloqué par les anti-popups. */
+/* ================= Nouvel onglet ================= */
 function forcerNouvelOnglet() {
   let integree;
   try { integree = window.self !== window.top; } catch (e) { integree = true; }
   if (!integree) return;
   const voile = document.createElement('div');
   voile.id = 'voileOnglet';
-  voile.innerHTML = `<p class="titre">Calcul mental</p>
-    <a href="${location.href}" target="_blank" rel="noopener">↗ Ouvrir l’appli</a>`;
+  voile.innerHTML = `<p class="titre">Durée mentale</p><a href="${location.href}" target="_blank" rel="noopener">↗ Ouvrir l’appli</a>`;
   document.body.appendChild(voile);
 }
-
 /* ================= QR code de l'accueil =================
    Adresse de la page (sans paramètres), dessinée en SVG ; clic = plein écran pour la projection. */
 function installerQr() {

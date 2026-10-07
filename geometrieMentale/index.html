@@ -30,7 +30,27 @@ main{flex:1;display:flex;flex-direction:column}
 .screen{flex:1;display:flex;flex-direction:column}
 
 /* Accueil */
-.start{margin:24px auto 0;width:min(560px,100%);min-height:120px;border-radius:20px;font-size:clamp(1.8rem,6vw,2.6rem);font-weight:800}
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:24px}
+.mode{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:22px 18px;text-align:left;box-shadow:var(--shadow)}
+.mode:hover{border-color:var(--accent)}
+.mode b{display:block;font-size:1.5rem;margin-bottom:6px}
+.mode span{color:var(--muted)}
+@media (max-width:640px){.modes{grid-template-columns:1fr;gap:12px;margin-top:12px}.mode{padding:16px}}
+/* Flash (vidéoprojeté) */
+.num{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:700;border-radius:999px;padding:6px 18px;font-size:clamp(1.1rem,2.6vw,1.6rem)}
+.mid{font-size:clamp(2rem,7vw,3.6rem);font-weight:700;text-align:center}
+#flFig{width:100%;display:flex;justify-content:center}
+#flRun .fig{width:min(640px,100%);max-height:50vh}
+.flchoix{display:grid;grid-template-columns:1fr 1fr;gap:10px 28px;width:min(900px,100%);font-size:clamp(1.3rem,3.2vw,2rem);font-weight:700}
+.flchoix.long{grid-template-columns:1fr}
+.flchoix div{display:flex;align-items:center;gap:12px}
+.flchoix b{flex:none;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:.8em}
+.corr{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;gap:10px 20px;margin-top:12px}
+.cell{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:clamp(1rem,2.4vw,1.6rem);box-shadow:var(--shadow);font-weight:700}
+.cell .n{flex:none;width:1.8em;height:1.8em;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:.75em}
+.cell .fig{width:clamp(80px,16vw,150px);flex:none;box-shadow:none;border-radius:8px}
+.cell .r{color:var(--accent)}
+@media (max-width:640px){.cell{flex-wrap:wrap;justify-content:center}}
 .info{margin-top:18px;color:var(--muted);text-align:center}
 /* QR code de l'accueil (pour ouvrir l'appli sur un téléphone) ; inutile sur le téléphone lui-même */
 .qr{margin:20px auto 0;display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px 10px;box-shadow:var(--shadow)}
@@ -75,8 +95,16 @@ main{flex:1;display:flex;flex-direction:column}
 
 /* Résultats */
 .res{width:min(720px,100%);margin:12px auto 0;display:flex;flex-direction:column;gap:12px}
+.filigrane{position:fixed;inset:0;display:grid;place-items:center;font-size:min(70vw,70vh);line-height:1;opacity:.22;pointer-events:none;z-index:0}
+.res .err{background:rgba(255,255,255,.55)}
+.res .err .fig{background:rgba(255,255,255,.6)}
+.res>*:not(.filigrane){position:relative;z-index:1}
 .res h2{text-align:center;font-size:clamp(2rem,8vw,3rem);margin:8px 0}
 .err{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:1.3rem}
+.err.bon{border-left:6px solid var(--ok)}
+.err.rate{border-left:6px solid var(--ko);background:rgba(255,240,240,.6)}
+.err .marque{font-weight:900;font-size:1.3em;width:1.2em;text-align:center}
+.err.bon .marque{color:var(--ok)} .err.rate .marque{color:var(--ko)}
 .err .fig{width:170px;box-shadow:none;border-radius:8px}
 .err .juste{color:var(--ok);font-weight:800}
 .choice sub,.err sub{font-size:.6em}
@@ -109,15 +137,42 @@ main{flex:1;display:flex;flex-direction:column}
     <h1 id="hTitle">Géométrie mentale</h1>
     <span id="hProg" class="prog hidden"></span><span id="hScore" class="score hidden"></span>
     <span class="grow"></span>
+    <button class="btn hidden" id="bPause">⏸ Pause</button>
     <button class="btn" id="bParams">⚙ Paramètres</button>
     <button class="btn hidden" id="bHome">↩ Accueil</button>
   </header>
 
   <main>
     <section class="screen" id="sHome">
-      <button class="btn primary start" id="bStart">Commencer</button>
+      <div class="modes">
+        <button class="mode" data-mode="flash"><b>Flash</b><span>Figures projetées, correction à la fin</span></button>
+        <button class="mode" data-mode="qcm"><b>QCM</b><span>Choisis la bonne réponse</span></button>
+      </div>
       <p class="info" id="homeInfo"></p>
       <button type="button" class="qr hidden" id="qrBox" title="Agrandir"><div id="qrImg"></div><span>Sur ton téléphone : scanne-moi</span></button>
+    </section>
+
+    <section class="screen hidden" id="sFlash">
+      <div class="stage" id="flIntro" style="justify-content:center">
+        <div class="mid" id="flIntroTxt"></div>
+        <p class="hint">Écris ta réponse sur ta feuille.</p>
+        <button class="btn primary" id="flStart" style="font-size:1.4rem;padding:14px 32px">Démarrer</button>
+      </div>
+      <div class="stage hidden" id="flRun">
+        <span class="num" id="flNum"></span>
+        <div class="consigne" id="flConsigne"></div>
+        <div id="flFig"></div>
+        <div class="flchoix" id="flChoix"></div>
+        <div class="bar"><div id="flBar"></div></div>
+      </div>
+      <div class="stage hidden" id="flEnd" style="justify-content:center">
+        <div class="mid">Terminé !</div>
+        <button class="btn primary" id="flShow" style="font-size:1.3rem;padding:14px 28px">Voir la correction</button>
+      </div>
+      <div class="hidden" id="flCorr">
+        <div class="corr" id="flGrid"></div>
+        <div class="actions"><button class="btn primary" id="flAgain">Nouvelle série</button></div>
+      </div>
     </section>
 
     <section class="screen hidden" id="sQcm">
@@ -133,6 +188,7 @@ main{flex:1;display:flex;flex-direction:column}
 
     <section class="screen hidden" id="sRes">
       <div class="res">
+        <div class="filigrane" id="rEmoji" aria-hidden="true"></div>
         <h2 id="rScore"></h2>
         <div id="rList"></div>
         <div class="actions"><button class="btn primary" id="rAgain">Rejouer</button></div>
@@ -146,7 +202,11 @@ main{flex:1;display:flex;flex-direction:column}
     <div class="sheet-head"><h2>Paramètres</h2><button class="btn primary" id="ovClose">OK</button></div>
     <h3>Questions</h3>
     <div class="seg" id="grpSeg"></div>
-    <h3>Durée par question</h3>
+    <h3>Nombre de questions</h3>
+    <div class="seg" id="nbSeg"></div>
+    <h3>Flash : durée par question</h3>
+    <div class="seg" id="flDurSeg"></div>
+    <h3>QCM : durée par question</h3>
     <div class="seg" id="durSeg"></div>
   </div>
 </div>
@@ -159,7 +219,6 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
 </script>
 <script>
 /* ================= Outils ================= */
-const N = 20;
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -545,12 +604,15 @@ const KEY = 'geometrieMentale6e-v2';
 const DUREES = [0, 10, 15, 20, 30];
 // questions : 1 = notations, 2 = phrases mathématiques, 3 = les deux
 const QUESTIONS = [[1, 'Notations'], [2, 'Phrases mathématiques'], [3, 'Les deux']];
-const settings = { questions: 3, duree: 0 };
+const NOMBRES = [5, 10, 15, 20], DUREES_FLASH = [10, 15, 20, 30];
+const settings = { questions: 3, duree: 0, nb: 10, flDuree: 15 };
 try {
   const s = JSON.parse(localStorage.getItem(KEY) || 'null');
   if (s) {
     if ([1, 2, 3].includes(s.questions)) settings.questions = s.questions;
     if (DUREES.includes(s.duree)) settings.duree = s.duree;
+    if (NOMBRES.includes(s.nb)) settings.nb = s.nb;
+    if (DUREES_FLASH.includes(s.flDuree)) settings.flDuree = s.flDuree;
   }
 } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} };
@@ -559,11 +621,15 @@ const activeTypes = () => TYPES.filter(t => settings.questions === 3 || t.groupe
 function renderSettings() {
   $('grpSeg').innerHTML = QUESTIONS.map(([g, l]) =>
     `<button class="btn ${g === settings.questions ? 'on' : ''}" data-g="${g}">${l}</button>`).join('');
+  $('nbSeg').innerHTML = NOMBRES.map(v => `<button class="btn ${v === settings.nb ? 'on' : ''}" data-v="${v}">${v}</button>`).join('');
+  $('flDurSeg').innerHTML = DUREES_FLASH.map(v => `<button class="btn ${v === settings.flDuree ? 'on' : ''}" data-v="${v}">${v} s</button>`).join('');
   $('durSeg').innerHTML = DUREES.map(d =>
     `<button class="btn ${d === settings.duree ? 'on' : ''}" data-d="${d}">${d ? d + ' s' : 'Sans'}</button>`).join('');
 }
 const majParams = () => { save(); renderSettings(); renderHome(); };
 $('grpSeg').addEventListener('click', e => { const g = +e.target.dataset.g; if (g) { settings.questions = g; majParams(); } });
+$('nbSeg').addEventListener('click', e => { const v = e.target.dataset.v; if (v != null) { settings.nb = +v; majParams(); } });
+$('flDurSeg').addEventListener('click', e => { const v = e.target.dataset.v; if (v != null) { settings.flDuree = +v; majParams(); } });
 $('durSeg').addEventListener('click', e => { const d = e.target.dataset.d; if (d != null) { settings.duree = +d; majParams(); } });
 $('bParams').onclick = () => { renderSettings(); $('ov').classList.remove('hidden'); };
 $('ovClose').onclick = () => $('ov').classList.add('hidden');
@@ -573,7 +639,7 @@ $('ov').addEventListener('click', e => { if (e.target.id === 'ov') $('ov').class
 function makeSeries() {
   const types = activeTypes(), out = [];
   let bag = [], prev = null;
-  while (out.length < N) {
+  while (out.length < settings.nb) {
     if (!bag.length) bag = shuffle(types.slice());
     let t = bag.pop();
     if (t === prev && bag.length) { bag.unshift(t); t = bag.pop(); } // pas deux fois le même type de suite
@@ -587,41 +653,87 @@ function makeSeries() {
 }
 
 /* ================= Navigation ================= */
-const SCREENS = ['sHome', 'sQcm', 'sRes'];
-let series = [], idx = 0, score = 0, errors = [], answered = false, nextTO = null;
+const SCREENS = ['sHome', 'sFlash', 'sQcm', 'sRes'];
+let mode = 'qcm', series = [], idx = 0, score = 0, errors = [], answered = false, nextTO = null;
+const N = () => series.length;
 
 function show(id) {
   SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
   const home = id === 'sHome';
-  $('hTitle').classList.toggle('hidden', id === 'sQcm');
+  $('hTitle').classList.toggle('hidden', id === 'sQcm' || id === 'sFlash');
   $('bParams').classList.toggle('hidden', !home);
   $('bHome').classList.toggle('hidden', home);
-  $('hProg').classList.toggle('hidden', id !== 'sQcm');
+  $('hProg').classList.toggle('hidden', id !== 'sQcm' && id !== 'sFlash');
   $('hScore').classList.toggle('hidden', id !== 'sQcm');
+  $('bPause').classList.add('hidden');
 }
 function renderHome() {
   const quoi = { 1: 'notations', 2: 'phrases mathématiques', 3: 'notations et phrases' }[settings.questions];
-  $('homeInfo').textContent = `${N} questions · ${quoi} · ${settings.duree ? settings.duree + ' s par question' : 'sans temps'}`;
+  $('homeInfo').textContent = `${settings.nb} questions · ${quoi} · Flash : ${settings.flDuree} s · QCM : ${settings.duree ? settings.duree + ' s' : 'sans temps'}`;
 }
 function goHome() { stopTimer(); clearTimeout(nextTO); show('sHome'); renderHome(); }
 $('bHome').onclick = goHome;
-$('bStart').onclick = start;
-function start() { series = makeSeries(); idx = 0; score = 0; errors = []; show('sQcm'); qcmShow(); }
-function setProg() { $('hProg').textContent = `Question ${idx + 1} / ${N}`; $('hScore').textContent = `✓ ${score}`; }
+document.querySelectorAll('.mode').forEach(b => b.onclick = () => start(b.dataset.mode));
+function start(m = mode) {
+  mode = m; series = makeSeries(); idx = 0; score = 0; errors = [];
+  if (m === 'flash') flashIntro(); else { show('sQcm'); qcmShow(); }
+}
+function setProg() { $('hProg').textContent = `Question ${idx + 1} / ${N()}`; $('hScore').textContent = `✓ ${score}`; }
 
 /* Minuteur */
-let timer = null, remain = 0, total = 0, last = 0;
-function runTimer(sec, onEnd) {
+let timer = null, remain = 0, total = 0, last = 0, paused = false;
+function runTimer(sec, onEnd, barId = 'qBar') {
   stopTimer();
-  total = remain = sec * 1000; last = performance.now();
-  $('qBar').style.width = '100%';
+  total = remain = sec * 1000; last = performance.now(); paused = false;
+  const bar = $(barId); bar.style.width = '100%';
   timer = setInterval(() => {
-    const now = performance.now(); remain -= now - last; last = now;
-    $('qBar').style.width = Math.max(0, remain / total * 100) + '%';
+    const now = performance.now(); if (!paused) remain -= now - last; last = now;
+    bar.style.width = Math.max(0, remain / total * 100) + '%';
     if (remain <= 0) { stopTimer(); onEnd(); }
   }, 50);
 }
 function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+
+/* ================= Flash (vidéoprojeté) =================
+   Notations : la figure seule, on écrit la notation. Phrases : la figure et les 4 phrases numérotées, on écrit le numéro. */
+function flashPart(p) { ['flIntro', 'flRun', 'flEnd', 'flCorr'].forEach(id => $(id).classList.toggle('hidden', id !== p)); }
+function flashIntro() {
+  show('sFlash'); flashPart('flIntro');
+  $('hProg').textContent = 'Flash';
+  $('flIntroTxt').textContent = `${N()} questions · ${settings.flDuree} s`;
+}
+$('flStart').onclick = () => { idx = 0; flashPart('flRun'); $('bPause').classList.remove('hidden'); flashShow(); };
+function flashShow() {
+  const q = series[idx];
+  setProg();
+  $('flNum').textContent = `n° ${idx + 1}`;
+  $('flFig').innerHTML = q.svg;
+  if (q.consigne) {
+    $('flConsigne').textContent = 'Écris la notation du tracé rouge.';
+    $('flChoix').innerHTML = '';
+  } else {
+    $('flConsigne').textContent = 'Quelle phrase est vraie ? Écris son numéro.';
+    $('flChoix').classList.toggle('long', q.choix.some(c => texte(c.h).length > 14));
+    $('flChoix').innerHTML = q.choix.map((c, i) => `<div><b>${i + 1}</b><span>${c.h}</span></div>`).join('');
+  }
+  $('bPause').textContent = '⏸ Pause';
+  runTimer(settings.flDuree, () => {
+    if (++idx < N()) flashShow();
+    else { flashPart('flEnd'); $('bPause').classList.add('hidden'); $('hProg').textContent = 'Flash'; }
+  }, 'flBar');
+}
+$('bPause').onclick = () => { paused = !paused; $('bPause').textContent = paused ? '▶ Reprendre' : '⏸ Pause'; };
+$('flShow').onclick = () => {
+  $('flGrid').style.gridTemplateRows = `repeat(${Math.ceil(N() / 2)}, auto)`;
+  $('flGrid').innerHTML = series.map((q, i) => {
+    const rep = q.consigne ? `<span class="r">${q.correction || q.juste}</span>`
+      : `<span><span class="r">n° ${q.choix.findIndex(c => c.ok) + 1}</span> : ${q.juste}</span>`;
+    return `<div class="cell"><span class="n">${i + 1}</span>${q.svg}${rep}</div>`;
+  }).join('');
+  $('hProg').textContent = 'Correction';
+  flashPart('flCorr');
+};
+$('flAgain').onclick = () => start('flash');
 
 /* ================= QCM ================= */
 function qcmShow() {
@@ -659,15 +771,20 @@ $('qNext').onclick = next;
 
 function next() {
   clearTimeout(nextTO);
-  if (++idx < N) { qcmShow(); return; }
+  if (++idx < N()) { qcmShow(); return; }
   show('sRes');
-  $('rScore').textContent = `${score} / ${N}`;
-  $('rList').innerHTML = errors.length
-    ? errors.map(({ q, y }) => `<div class="err">${q.svg}<span class="juste">${q.correction || q.juste}</span>
-        <span class="y">${y == null ? 'Temps écoulé' : 'Ta réponse : ' + y}</span></div>`).join('')
-    : '<p class="hint">Aucune erreur !</p>';
+  $('rScore').textContent = `${score} / ${N()}`;
+  // gros emoji en filigrane selon le score
+  const taux = score / N();
+  $('rEmoji').textContent = taux === 1 ? '🏆' : taux >= .8 ? '😃' : taux >= .5 ? '🙂' : '💪';
+  // toute la série : ✓ pour les réussites, ✗ avec la réponse donnée pour les erreurs
+  $('rList').innerHTML = series.map(q => {
+    const e = errors.find(x => x.q === q);
+    return `<div class="err ${e ? 'rate' : 'bon'}"><span class="marque">${e ? '✗' : '✓'}</span>${q.svg}<span class="juste">${q.correction || q.juste}</span>`
+      + (e ? `<span class="y">${e.y == null ? 'Temps écoulé' : 'Ta réponse : ' + e.y}</span>` : '') + '</div>';
+  }).join('');
 }
-$('rAgain').onclick = start;
+$('rAgain').onclick = () => start(mode);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('ov').classList.add('hidden'); $('qrOv').classList.add('hidden'); } });
 
 /* ================= Nouvel onglet =================
