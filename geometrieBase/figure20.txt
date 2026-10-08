@@ -1,0 +1,9 @@
+% A(0.5,1.4) B(2.5,-0.75) C(-2,-1.2)
+% donné le triangle ABC
+placer D le milieu de [AC]
+% coder AD=DC
+tracer (c) le cercle de centre D passant par A
+placer I le point d'intersection autre que C entre (c) et [BC]
+tracer [AI]
+tracer [BD)
+placer X le point d'intersection entre [BD) et [AI]

@@ -64,6 +64,39 @@ function parseEnteteFigureTexte(texte) {
     return Object.keys(points).length ? points : null;
 }
 
+// Objets donnés de départ ("% donné le triangle ABC", "% donné [AB]") : tracés en dur,
+// comme les points de base, dès l'affichage de la figure. Ils ne font pas partie de
+// la figure fantôme : l'élève n'a pas à les construire et ils survivent à Réinitialiser.
+let objetsDonnes = [];
+function appliquerObjetsDonnes(texte) {
+    objetsDonnes.forEach(nom => { if (ggbApplet.exists(nom)) ggbApplet.deleteObject(nom); });
+    objetsDonnes = [];
+    const paires = [];
+    texte.split('\n').map(l => l.trim()).filter(l => /^%\s*donn[ée]e?\s/i.test(l)).forEach(ligne => {
+        let m;
+        const re = /(?:le (?:triangle|polygone|quadrilat[èe]re) ([A-Za-z]{3,}))|\[([A-Za-z])([A-Za-z])\]/gi;
+        while ((m = re.exec(ligne))) {
+            if (m[1]) {
+                const s = m[1].split('');
+                s.forEach((p, i) => paires.push([p, s[(i + 1) % s.length]]));
+            } else {
+                paires.push([m[2], m[3]]);
+            }
+        }
+    });
+    paires.forEach(([p, q]) => {
+        const nom = `donne${p}${q}`;
+        ggbApplet.evalCommand(`${nom}=Segment(${p},${q})`);
+        if (!ggbApplet.exists(nom)) return;
+        ggbApplet.setColor(nom, 60, 60, 60);
+        ggbApplet.setLineStyle(nom, 0);
+        ggbApplet.setLineThickness(nom, 3);
+        ggbApplet.setLabelVisible(nom, false);
+        ggbApplet.setFixed(nom, true, false);
+        objetsDonnes.push(nom);
+    });
+}
+
 // Un nom n'est valable pour l'élève (ou pour la figure fantôme) que s'il a été créé/nommé
 // dans CE contexte-là — jamais un objet interne d'un autre contexte (ex: un nom
 // auto-généré par GeoGebra pour la figure fantôme, qui existe globalement mais ne doit
@@ -845,6 +878,7 @@ function genererCible(indexVoulu) {
     const texte = FIGURES[index];
     texteFigureActuelle = texte;
     appliquerPointsBase(parseEnteteFigureTexte(texte) || POINTS_BASE_DEFAUT);
+    appliquerObjetsDonnes(texte);
     try {
         executerFigureTexte(texte);
     } catch (e) {
@@ -864,6 +898,7 @@ async function afficherFigureTemporairement(texte) {
     etiquettesCible = {};
     contexteMarquage = 'cible';
     appliquerPointsBase(parseEnteteFigureTexte(texte) || POINTS_BASE_DEFAUT);
+    appliquerObjetsDonnes(texte);
     try {
         executerFigureTexte(texte);
     } catch (e) {
