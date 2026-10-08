@@ -351,6 +351,18 @@ sub {
 
 .carte-choix { max-width: 38.75rem; }
 
+/* Overlay de choix limité au workspace (#prog) : la figure reste visible à côté. */
+.overlay-fond.overlay-workspace {
+    position: absolute;
+    border-radius: var(--rayon);
+    padding: 0.75rem;
+    z-index: 100;
+}
+.overlay-workspace .overlay-carte {
+    max-height: 100%;
+    padding: 1.25rem 1.25rem;
+}
+
 .choix-faits {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -378,7 +390,14 @@ sub {
 .btn-choix.on-a { background: #2f9e44; }   /* vert : ce qu'on a */
 .btn-choix.donc { background: #c0392b; }   /* rouge : ce qu'on conclut */
 .btn-choix.propriete { background: #9a5ba5; text-align: left; font-size: 0.95rem; }
-.btn-choix.on-a:hover, .btn-choix.donc:hover, .btn-choix.propriete:hover { filter: brightness(0.9); }
+/* Au survol, le texte reste lisible (le survol général des boutons le met en vert). */
+.btn-choix.on-a:hover, .btn-choix.donc:hover, .btn-choix.propriete:hover {
+    color: #fff;
+    filter: brightness(0.88);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15);
+}
+.btn-choix.dupliquer:hover { color: var(--header-texte); border-color: var(--accent); filter: brightness(0.95); }
+.btn-choix.retirer:hover { color: var(--erreur); border-color: var(--erreur); filter: brightness(0.95); }
 
 .btn-choix.dupliquer {
     margin-top: 1rem;

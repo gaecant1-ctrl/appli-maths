@@ -273,14 +273,15 @@ function espaceDeTravailInitial() {
 /* ---------- Overlay de choix ---------- */
 
 const overlayChoix = document.createElement('div');
-overlayChoix.className = 'overlay-fond';
+overlayChoix.className = 'overlay-fond overlay-workspace';
 overlayChoix.innerHTML = `
     <div class="overlay-carte carte-choix">
         <button type="button" class="overlay-fermer" aria-label="Fermer">×</button>
         <h2></h2>
         <div class="choix-contenu"></div>
     </div>`;
-document.body.appendChild(overlayChoix);
+// Posé sur le workspace seulement : la figure reste visible pendant le choix.
+document.getElementById('prog').appendChild(overlayChoix);
 overlayChoix.querySelector('.overlay-fermer').onclick = fermerChoix;
 overlayChoix.addEventListener('click', e => { if (e.target === overlayChoix) fermerChoix(); });
 document.addEventListener('keydown', e => {
