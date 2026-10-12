@@ -1,0 +1,251 @@
+/* Couleurs propres à l'appli « Sens des opérations (masse) » */
+:root {
+  --disque-couleur: #f59f00;      /* parts des plaques de métal */
+  --donnee-fond: #e7f1fb;
+  --donnee-trait: #1c6fb8;
+  --cherche-fond: #f4ecfb;        /* masse cherchée : violet */
+  --cherche-trait: #6f3fa0;
+}
+
+/* Tout l'exercice centré dans son panneau */
+.question {
+  text-align: center;
+}
+
+.disque-consigne {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: var(--accent, #2f9e44);
+  margin-bottom: 14px;
+}
+
+.disque-tableau {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 auto;
+  max-width: 640px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #c9d6cf;
+  font-weight: normal;
+}
+
+.disque-case {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 16px;
+}
+
+.disque-case:first-child  { background: var(--donnee-fond); }
+.disque-case:last-child   { background: var(--cherche-fond); }
+.disque-case + .disque-case { border-left: 2px solid #c9d6cf; }
+
+.disque-titre {
+  align-self: stretch;
+  text-align: center;
+  font-weight: bold;
+  padding: 8px 0;
+  color: #fff;
+  margin: 0 -12px;
+}
+.disque-case:first-child .disque-titre { background: var(--donnee-trait); }
+.disque-case:last-child  .disque-titre { background: var(--cherche-trait); }
+
+.disque-dessins {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  min-height: 76px;
+  align-items: center;
+}
+
+.disque-legende {
+  font-size: 1.15em;
+  font-weight: normal;
+}
+.disque-case:first-child .disque-legende { color: var(--donnee-trait); }
+.disque-case:last-child  .disque-legende { color: var(--cherche-trait); font-weight: bold; }
+
+/* Lignes de calcul et correction : bloc centré, signes = alignés à gauche */
+.reponse,
+.correction-content {
+  width: 100%;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 560px) {
+  .disque-case + .disque-case {
+    border-left: none;
+    border-top: 2px solid #c9d6cf;
+  }
+}
+
+/* Choix du niveau (panneau latéral) */
+.niveau-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 14px;
+}
+.niveau-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--grille, #d3ead9);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--encre, #23302a);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.niveau-btn span {
+  font-size: .82em;
+  color: var(--encre-douce, #5f7a68);
+}
+.niveau-btn:hover { border-color: var(--accent, #2f9e44); }
+.niveau-btn.actif {
+  border-color: var(--accent, #2f9e44);
+  background: var(--accent-clair, #e6f7e9);
+  box-shadow: inset 4px 0 0 var(--accent, #2f9e44);
+}
+.niveau-btn:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+.niveau-btn.actif:disabled { opacity: 1; }
+.niveau-btn:disabled:hover { border-color: var(--grille, #d3ead9); }
+.niveau-btn.actif:disabled:hover { border-color: var(--accent, #2f9e44); }
+
+/* Message après abandon, au-dessus du bouton « Suivant » */
+.message-abandon {
+  margin: 0 0 10px;
+  text-align: center;
+  color: var(--encre-douce, #5f7a68);
+  font-size: 1.05em;
+}
+.bouton-correction { flex-direction: column; align-items: center; }
+/* Zone de saisie vide (après abandon) : pas de grand blanc */
+.reponse:not(:has(.input-wrapper)) { min-height: 0; }
+
+/* Quiz : prénom + initiale du nom (diplôme) */
+.eleve-form {
+  margin: 4px auto 0;
+  padding: 14px 18px;
+  max-width: 460px;
+  border: 2px solid #c9a227;
+  border-radius: 12px;
+  background: #fffaf0;
+  text-align: center;
+}
+.eleve-titre { margin: 0 0 10px; font-weight: bold; color: #6b5a2e; }
+.eleve-champs { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.eleve-champs label { display: flex; flex-direction: column; gap: 4px; font-size: .95em; color: var(--encre, #23302a); }
+.eleve-champs input {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1.5px solid var(--grille, #d3ead9);
+  border-radius: 8px;
+  width: 190px;
+}
+.eleve-champs input#champInitiale { width: 60px; text-align: center; text-transform: uppercase; }
+.eleve-champs input:focus { outline: none; border-color: var(--accent, #2f9e44); }
+.eleve-erreur { margin: 8px 0 0; min-height: 1.2em; color: var(--erreur, #c0392b); font-size: .9em; }
+
+/* Appli intégrée dans une autre page : invitation à l'ouvrir dans un nouvel onglet */
+#voileOnglet {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(241, 248, 243, .96);
+}
+#voileOnglet .voile-carte {
+  background: #fff;
+  border: 2px solid var(--accent, #2f9e44);
+  border-radius: 14px;
+  padding: 24px 28px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(35, 48, 42, .15);
+  max-width: 420px;
+}
+#voileOnglet .voile-titre { font-size: 1.3em; margin: 0 0 18px; color: var(--header-texte, #1f5c33); }
+#voileOnglet .voile-ouvrir {
+  font: inherit;
+  font-size: 1.1em;
+  font-weight: 600;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent, #2f9e44);
+  color: #fff;
+  cursor: pointer;
+}
+#voileOnglet .voile-ouvrir:hover { background: var(--accent-hover, #237a35); }
+#voileOnglet .voile-bloque { margin: 12px 0 0; font-size: .9em; color: var(--erreur, #c0392b); }
+#voileOnglet .voile-rester {
+  margin-top: 14px;
+  font: inherit;
+  font-size: .85em;
+  border: none;
+  background: none;
+  color: var(--encre-douce, #5f7a68);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Saisie et lignes de calcul en grand (fractions lisibles) */
+:root { --wrapper-h: 76px; }
+.input-wrapper { font-size: 24px; }
+.input-wrapper .comment { font-size: 15px; }
+.input-wrapper input,
+.input-wrapper input:focus {
+  font-size: 24px;
+  height: auto;
+  padding: 8px 14px;
+  margin-top: 0;
+}
+.input-wrapper .prefix,
+.input-wrapper .prefix *,
+.correction-content .etape-egal { font-size: 24px !important; }
+/* Rendu LaTeX : un peu plus petit, avec de l'air au-dessus et au-dessous des fractions */
+.input-wrapper .latex-formula,
+.correction-content .etape-expr { font-size: 19px; padding: 8px 0; }
+.correction-content .etape { padding: 6px 0; }
+
+/* Correction : écritures possibles de Q (propositions, pas des étapes) */
+.propositions-titre { margin: 0 0 6px; font-weight: 600; color: var(--encre-douce, #5f7a68); }
+.correction-content .proposition { border-top: 1px dashed #c9d6cf; }
+.correction-content .proposition:first-of-type { border-top: none; }
+.proposition-note { margin-left: auto; font-size: 14px; color: var(--encre-douce, #5f7a68); font-style: italic; }
+
+/* Bouton « Forme » (panneau latéral) */
+.forme-choix { margin: 0 0 14px; }
+.forme-titre { display: block; font-size: .82em; font-weight: 600; color: var(--encre-douce, #5f7a68); margin: 0 0 4px; }
+.forme-boutons { display: flex; border: 1.5px solid var(--grille, #d3ead9); border-radius: 8px; overflow: hidden; }
+.forme-btn {
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 5px 2px;
+  border: none; background: #fff; color: var(--encre, #23302a);
+  font: inherit; font-size: .8em; cursor: pointer;
+}
+.forme-btn + .forme-btn { border-left: 1.5px solid var(--grille, #d3ead9); }
+.forme-icone { font-size: 1.35em; line-height: 1; }
+.forme-btn:hover { background: var(--accent-clair, #e6f7e9); }
+.forme-btn.actif { background: var(--accent, #2f9e44); color: #fff; }
+.forme-btn:disabled { cursor: not-allowed; opacity: .5; }
+.forme-btn.actif:disabled { opacity: 1; }
