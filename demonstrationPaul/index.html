@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paul et les règles</title>
+<style>
+  :root{
+    --bg:#f5f1e8; --panel:#fffdf8; --ink:#1f2430; --muted:#6b6f7a; --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --sais:#e6eefc;   --sais-b:#9db6ec;
+    --regle:#fdf0d8;  --regle-b:#e5b865;
+    --contra:#f1e6fb; --contra-b:#b48ad8;
+    --donc:#e3f4e8;   --donc-b:#86c79a;
+    --ok:#1f8a4c; --ok-bg:#e3f4e8; --ko:#c0392b; --ko-bg:#fbe6e3;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.45;}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:14px 24px;
+    background:var(--panel);border-bottom:1px solid var(--border);}
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;}
+  nav{display:flex;gap:6px;flex-wrap:wrap;}
+  button{font:inherit;cursor:pointer;color:var(--ink);}
+  .point{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);background:var(--bg);
+    font-size:.75rem;color:var(--muted);padding:0;}
+  .point.fait{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .point.courant{border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .point.fait.courant{color:#fff;box-shadow:0 0 0 3px #b9cdf5;}
+  .point.de{width:auto;padding:0 10px;border-radius:999px;}
+  .onglet{border:1px solid var(--border);background:var(--bg);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+
+  main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;max-width:1240px;margin:0 auto;padding:24px;}
+  @media (max-width:900px){ main{grid-template-columns:1fr;padding:16px;gap:16px;} }
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 24px;}
+  .question{margin:0 0 12px;font-size:1.3rem;font-weight:700;}
+  .question .num{color:var(--muted);font-weight:600;font-size:1rem;margin-right:8px;}
+  svg#image{width:100%;max-width:620px;margin:0 auto;height:auto;display:block;border-radius:12px;border:1px solid var(--border);background:#fbf8f1;}
+
+  h3{margin:20px 0 10px;font-size:1rem;}
+  .demo{display:flex;flex-direction:column;gap:10px;}
+  .etape{border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:#fff;}
+  .ligne{display:flex;gap:10px;align-items:baseline;padding:2px 0;}
+  .ligne .mot{font-weight:700;min-width:6.5em;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;}
+  .l-sais .mot{color:#2a4f9e;} .l-or .mot{color:#8a5a00;} .l-or.c .mot{color:#6b3fa0;} .l-donc .mot{color:#1d6b3c;}
+  .l-donc .txt{font-weight:600;}
+  .vide-demo{color:var(--muted);font-style:italic;margin:0;}
+
+  .etape .num-etape{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+  .etape.encours{border:2px solid var(--accent);background:#fbfcff;}
+  .case{flex:1;text-align:left;border:2px dashed var(--border);background:#fff;border-radius:10px;padding:8px 12px;font-size:1rem;min-height:2.6em;}
+  .case:hover{border-color:var(--accent);}
+  .case.vide{color:var(--muted);font-style:italic;}
+  .case.pleine{border-style:solid;}
+  .case.c-sais.pleine{border-color:var(--sais-b);background:var(--sais);}
+  .case.c-or.pleine{border-color:var(--regle-b);background:var(--regle);}
+  .case.c-or.pleine.contra{border-color:var(--contra-b);background:var(--contra);}
+  .case.c-donc.pleine{border-color:var(--donc-b);background:var(--donc);}
+  .case.erreur{border-color:var(--ko)!important;background:var(--ko-bg)!important;}
+  .etape.encours .ligne{align-items:center;padding:4px 0;}
+  .ref{font-size:.8rem;font-weight:700;color:#8a5a00;display:block;}
+  .contra .ref,.l-or.c .ref{color:#6b3fa0;}
+
+  #panneau-choix[hidden]{display:none;}
+  #panneau-choix{border:2px solid var(--accent);}
+  #panneau-choix h3{display:flex;align-items:center;gap:8px;}
+  #panneau-choix .fermer{margin-left:auto;background:none;border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:.85rem;}
+  #ch-contenu{max-height:calc(100vh - 260px);overflow-y:auto;padding:2px;}
+  .case.active{border-color:var(--accent)!important;border-style:solid;box-shadow:0 0 0 3px #c9d7f7;}
+  .paire{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+  .bascule{flex:none;align-self:center;border:2px solid var(--contra-b);background:#fff;color:#6b3fa0;border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700;}
+  .bascule:hover{background:var(--contra);}
+  .bascule.on{background:#6b3fa0;border-color:#6b3fa0;color:#fff;}
+  .grille{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:stretch;}
+  .grille .ico{font-size:1.3rem;align-self:center;}
+  .grille .entete{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .choix{text-align:left;border:2px solid var(--border);background:#fff;border-radius:10px;padding:6px 10px;font-size:.88rem;}
+  .choix:hover{border-color:var(--accent);background:#eef3ff;}
+  .choix.ch-regle{border-color:var(--regle-b);background:var(--regle);}
+  .choix.ch-contra{border-color:var(--contra-b);background:var(--contra);}
+  .choix.ch-regle:hover,.choix.ch-contra:hover{border-color:var(--accent);}
+  .choix.actuel{box-shadow:0 0 0 3px #b9cdf5;}
+
+  .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  aside h3{margin:0 0 10px;}
+  .gros{width:100%;border:none;border-radius:10px;padding:12px 18px;font-size:1.05rem;font-weight:600;background:var(--accent);color:#fff;}
+  .gros:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .secondaire{width:100%;margin-top:8px;background:#fff;border:2px solid var(--border);border-radius:10px;padding:10px;font-weight:600;}
+  .secondaire:hover:not(:disabled){border-color:var(--accent);}
+  .secondaire:disabled{opacity:.5;cursor:default;}
+  .retour{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:1rem;}
+  .retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+  .retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  .retour.info{background:var(--sais);border-left:5px solid var(--sais-b);}
+  .retour .rep{margin-top:6px;font-weight:600;}
+  .petit{font-size:.85rem;color:var(--muted);margin-top:6px;}
+
+  dialog{border:none;border-radius:14px;padding:24px;max-width:680px;width:calc(100% - 32px);background:var(--panel);color:var(--ink);}
+  dialog::backdrop{background:rgba(0,0,0,.4);}
+  dialog h2{margin-top:0;}
+  .liste-regles{list-style:none;padding:0;margin:12px 0;display:flex;flex-direction:column;gap:8px;}
+  .liste-regles li{background:var(--regle);border:1px solid var(--regle-b);border-radius:10px;padding:8px 14px;}
+  .liste-regles li .n{font-weight:700;color:#8a5a00;margin-right:8px;}
+  .encadre{background:var(--contra);border:1px solid var(--contra-b);border-radius:10px;padding:10px 14px;}
+  .actions{margin-top:16px;display:flex;justify-content:flex-end;}
+  .actions .gros{width:auto;}
+  .rempli{animation:pop .35s ease;}
+  @keyframes pop{0%{transform:scale(.97);}60%{transform:scale(1.02);}100%{transform:scale(1);}}
+  .cache-deduit{animation:pop .5s ease;transform-box:fill-box;transform-origin:center;}
+</style>
+</head>
+<body>
+<header>
+  <h1>☀️ Paul et les règles</h1>
+  <nav id="nav"></nav>
+  <button class="onglet" id="voir-regles">📜 Règles</button>
+  <button class="onglet" id="onglet" title="Ouvrir l’appli dans un nouvel onglet">↗ Nouvel onglet</button>
+</header>
+
+<main>
+  <section class="scene">
+    <p class="question" id="question"></p>
+    <svg id="image" viewBox="0 0 640 340" aria-label="Image de Paul"></svg>
+
+    <h3 id="titre-demo">📝 Ma démonstration</h3>
+    <div class="demo" id="demo"></div>
+
+  </section>
+
+  <div class="colonne">
+    <aside id="panneau-choix" hidden>
+      <h3><span id="ch-titre"></span><button class="fermer" id="ch-fermer">✖</button></h3>
+      <div id="ch-contenu"></div>
+    </aside>
+    <aside>
+      <button class="gros" id="valider" disabled>Valider</button>
+      <button class="secondaire" id="impossible">🤷 On ne peut pas savoir</button>
+      <div id="retour"></div>
+      <div id="suite"></div>
+    </aside>
+  </div>
+</main>
+
+<dialog id="fenetre-regles">
+  <h2>📜 Les règles</h2>
+  <ul class="liste-regles" id="liste-regles"></ul>
+  <div class="encadre">
+    <b>La contraposée</b> de « Si A, alors B » est « Si non B, alors non A ».<br>
+    Elle dit la même chose que la règle.<br>
+    <span class="petit">Exemple : la contraposée de la règle 1 est « <span id="ex-contra"></span> »</span>
+  </div>
+  <div class="actions"><button class="gros" id="fermer-regles">C’est parti !</button></div>
+</dialog>
+
+<script>
+// ===== Les faits (attributs du monde) =====
+// Chaque attribut vaut true / false. Phrases positive et négative.
+const PHRASES = {
+  L: ["Paul porte ses lunettes", "Paul ne porte pas ses lunettes"],
+  S: ["il y a du soleil", "il n’y a pas de soleil"],
+  B: ["Paul porte un bermuda", "Paul ne porte pas de bermuda"],
+  C: ["il fait chaud", "il ne fait pas chaud"],
+  T: ["Paul porte un T-shirt", "Paul ne porte pas de T-shirt"],
+  H: ["Paul porte une casquette", "Paul ne porte pas de casquette"],
+  J: ["on est lundi", "on n’est pas lundi"],
+  P: ["Paul porte un pantalon", "Paul ne porte pas de pantalon"]
+};
+const COURT = {
+  L: ["lunettes", "pas de lunettes"], S: ["soleil", "pas de soleil"],
+  B: ["bermuda", "pas de bermuda"], C: ["chaud", "pas chaud"],
+  T: ["T-shirt", "pas de T-shirt"], H: ["casquette", "pas de casquette"], J: ["lundi", "pas lundi"], P: ["pantalon", "pas de pantalon"]
+};
+const ICONES = { L: "🕶️", S: "☀️", B: "🩳", C: "🌡️", T: "👕", H: "🧢", J: "📅", P: "👖" };
+const QUESTIONS = {
+  L: "Paul porte-t-il ses lunettes ?", S: "Y a-t-il du soleil ?", B: "Paul porte-t-il un bermuda ?",
+  C: "Fait-il chaud ?", T: "Paul porte-t-il un T-shirt ?", H: "Paul porte-t-il une casquette ?", J: "Est-on lundi ?", P: "Paul porte-t-il un pantalon ?"
+};
+// Zones de l'image et attributs qu'elles montrent
+const ZONES = { tete: ["H"], visage: ["L"], ciel: ["S"], haut: ["T"], jambes: ["B", "P"], thermo: ["C"], jour: ["J"] };
+const ZONE_DE = {}; for (const z in ZONES) for (const a of ZONES[z]) ZONE_DE[a] = z;
+
+// ===== Les règles : si (a = v) alors (a2 = v2) =====
+const REGLES = [
+  { n: 1, h: ["L", true], c: ["S", true] },
+  { n: 2, h: ["S", true], c: ["L", true] },     // réciproque de la règle 1
+  { n: 3, h: ["B", true], c: ["C", true] },
+  { n: 4, h: ["C", true], c: ["T", true] },
+  { n: 5, h: ["S", true], c: ["H", true] },     // même hypothèse que la règle 2
+  { n: 6, h: ["J", true], c: ["P", true] }
+];
+function forme(r, contra) {
+  return contra ? { h: [r.c[0], !r.c[1]], c: [r.h[0], !r.h[1]] } : { h: r.h, c: r.c };
+}
+const phrase = ([a, v]) => PHRASES[a][v ? 0 : 1];
+const maj = s => s.charAt(0).toUpperCase() + s.slice(1);
+const si = s => (/^il/.test(s) ? "S’" : "Si ") + s;          // « S’il fait chaud »
+const siMin = s => (/^il/.test(s) ? "s’" : "si ") + s;
+// « Si Paul ne porte pas de T-shirt, alors il… » : pas de « Paul » répété
+const enonce = f => {
+  const h = phrase(f.h), c = phrase(f.c);
+  return si(h) + ", alors " + (/^Paul/.test(h) ? c.replace(/^Paul/, "il") : c) + ".";
+};
+
+// ===== Les exercices =====
+// monde : valeurs réelles ; caches : zones masquées ; cible : attribut demandé
+const MONDE_BASE = { L: false, S: false, B: false, C: false, T: false, H: false, J: false };
+const EXOS = [
+  { cible: "S", caches: ["ciel"],           monde: { L: true,  S: true,  B: false, C: false, T: false, H: true,  J: false } },
+  { cible: "C", caches: ["thermo"],         monde: { L: true,  S: true,  B: true,  C: true,  T: true,  H: true,  J: false } },
+  { cible: "P", caches: ["jambes"],         monde: { L: false, S: false, B: false, C: true,  T: true,  H: true,  J: true  } },
+  { cible: "C", caches: ["thermo"],         monde: { L: false, S: false, B: false, C: false, T: true,  H: false, J: false } },   // ne peut pas savoir
+  { cible: "L", caches: ["visage"],         monde: { L: false, S: false, B: false, C: true,  T: true,  H: false, J: false } },
+  { cible: "C", caches: ["thermo"],         monde: { L: true,  S: true,  B: false, C: false, T: false, H: true,  J: false } },
+  { cible: "S", caches: ["ciel", "visage"], monde: { L: false, S: false, B: false, C: true,  T: true,  H: false, J: false } },   // contraposée de la règle 5
+  { cible: "J", caches: ["jour"],           monde: { L: true,  S: true,  B: true,  C: true,  T: true,  H: true,  J: false } },
+  { cible: "P", caches: ["jambes"],         monde: { L: true,  S: true,  B: true,  C: true,  T: true,  H: true,  J: false } },   // ne peut pas savoir
+  { cible: "L", caches: ["visage"],         monde: { L: true,  S: true,  B: false, C: false, T: false, H: true,  J: true  } },
+  { cible: "S", caches: ["ciel"],           monde: { L: false, S: false, B: true,  C: true,  T: true,  H: true,  J: false } },
+  { cible: "B", caches: ["jambes"],         monde: { L: false, S: false, B: false, C: true,  T: true,  H: false, J: false } },   // ne peut pas savoir
+  { cible: "T", caches: ["thermo", "haut"], monde: { L: true,  S: true,  B: true,  C: true,  T: true,  H: true,  J: false } },
+  { cible: "H", caches: ["tete", "ciel"],   monde: { L: true,  S: true,  B: false, C: false, T: false, H: true,  J: false } },   // règle 1 puis règle 5
+  { cible: "S", caches: ["ciel", "visage"], monde: { L: false, S: false, B: false, C: false, T: false, H: true,  J: false } },   // ne peut pas savoir
+  { cible: "B", caches: ["thermo", "jambes"], monde: { L: false, S: false, B: false, C: false, T: false, H: false, J: false } },
+  { cible: "C", caches: ["ciel", "thermo", "haut"], monde: { L: true,  S: true,  B: false, C: false, T: false, H: true, J: false } },   // ne peut pas savoir
+  { cible: "J", caches: ["jour"],           monde: { L: false, S: false, B: false, C: false, T: false, H: false, J: false } },   // ne peut pas savoir
+  { cible: "B", caches: ["haut", "jambes", "thermo"], monde: { L: true, S: true, B: false, C: true, T: true, H: true, J: false } }   // ne peut pas savoir
+];
+function complet(m) { return { ...m, P: !m.B }; }
+function coherent(m) {
+  return REGLES.every(r => m[r.h[0]] !== r.h[1] || m[r.c[0]] === r.c[1]);
+}
+EXOS.forEach((e, i) => { if (!coherent(complet(e.monde))) console.warn("Exercice incohérent", i + 1); });
+
+// ===== État =====
+let exo, monde, connus, etapes, brouillon, erreurs, fini, sansReponse;
+const reussis = new Set();
+let indexExo = 0;
+const $ = id => document.getElementById(id);
+
+// Faits visibles sur l'image
+function faitsVisibles() {
+  const f = {};
+  for (const z in ZONES) if (!exo.caches.includes(z)) for (const a of ZONES[z]) f[a] = monde[a];
+  return f;
+}
+// Tout ce qu'on peut déduire (règles + contraposées)
+function cloture(depart) {
+  const k = { ...depart };
+  let change = true;
+  while (change) {
+    change = false;
+    for (const r of REGLES) for (const contra of [false, true]) {
+      const f = forme(r, contra);
+      if (k[f.h[0]] === f.h[1] && k[f.c[0]] === undefined) { k[f.c[0]] = f.c[1]; change = true; }
+    }
+  }
+  return k;
+}
+
+function charger(i) {
+  indexExo = i;
+  exo = i < EXOS.length ? EXOS[i] : aleatoire();
+  monde = complet(exo.monde);
+  connus = {};                 // attribut -> {v, source: "vu" | "montré"}
+  const vis = faitsVisibles();
+  for (const a in vis) connus[a] = { v: vis[a], source: "vu" };
+  etapes = []; nouveauBrouillon(); fini = false; sansReponse = false;
+  $("retour").innerHTML = ""; $("suite").innerHTML = "";
+  dessinerTout();
+}
+
+function aleatoire() {
+  for (let essai = 0; essai < 500; essai++) {
+    const m = {}; for (const a in MONDE_BASE) m[a] = Math.random() < .5;
+    if (!coherent(complet(m))) continue;
+    const toutes = Object.keys(ZONES);
+    const zc = toutes[Math.floor(Math.random() * toutes.length)];
+    const cible = ZONES[zc][Math.floor(Math.random() * ZONES[zc].length)];
+    const autres = toutes.filter(z => z !== zc).sort(() => Math.random() - .5);
+    const caches = [zc, ...autres.slice(0, Math.floor(Math.random() * 3))];
+    const e = { cible, caches, monde: m };
+    // solvable ~70 % du temps
+    const vis = {}; for (const z in ZONES) if (!caches.includes(z)) for (const a of ZONES[z]) vis[a] = complet(m)[a];
+    const solvable = cloture(vis)[cible] !== undefined;
+    if (solvable === (Math.random() < .7)) return e;
+  }
+  return EXOS[0];
+}
+
+// ===== Dessin de l'image =====
+function dessinerImage() {
+  const m = monde;
+  const montre = z => fini || !exo.caches.includes(z);
+  let s = "";
+  // sol
+  s += `<rect x="0" y="300" width="640" height="40" fill="#cfe3b5"/>`;
+  // --- ciel ---
+  if (montre("ciel")) {
+    if (m.S) {
+      s += `<g transform="translate(85,80)">` +
+        Array.from({ length: 12 }, (_, i) => `<line x1="0" y1="-40" x2="0" y2="-54" stroke="#f5b400" stroke-width="5" stroke-linecap="round" transform="rotate(${i * 30})"/>`).join("") +
+        `<circle r="32" fill="#ffc928" stroke="#f5b400" stroke-width="3"/></g>`;
+    } else {
+      s += `<g transform="translate(85,80)" fill="#b7c1cf">
+        <circle cx="-28" cy="8" r="22"/><circle cx="0" cy="-8" r="30"/><circle cx="30" cy="6" r="22"/>
+        <rect x="-50" y="6" width="100" height="24" rx="12"/></g>`;
+    }
+  }
+  // --- Paul ---
+  const peau = "#f2c7a0";
+  const haut = m.T ? "#e8663d" : "#3f8f6b";
+  // jambes
+  if (montre("jambes")) {
+    if (m.B) {
+      s += `<line x1="250" y1="230" x2="246" y2="300" stroke="${peau}" stroke-width="18" stroke-linecap="round"/>
+            <line x1="290" y1="230" x2="294" y2="300" stroke="${peau}" stroke-width="18" stroke-linecap="round"/>
+            <path d="M232 214 H308 L314 268 H276 L270 240 L264 268 H226 Z" fill="#c9a96b" stroke="#a88a4f" stroke-width="2"/>`;
+    } else {
+      s += `<path d="M232 214 H308 L310 302 H278 L270 246 L262 302 H230 Z" fill="#3b5b92" stroke="#2c4573" stroke-width="2"/>`;
+    }
+    s += `<ellipse cx="244" cy="306" rx="18" ry="8" fill="#333"/><ellipse cx="296" cy="306" rx="18" ry="8" fill="#333"/>`;
+  }
+  // bras + torse
+  if (montre("haut")) {
+    const tronc = `M228 126 Q270 118 312 126 L310 218 H230 Z`;
+    if (m.T) {
+      s += `<line x1="226" y1="140" x2="206" y2="208" stroke="${peau}" stroke-width="16" stroke-linecap="round"/>
+            <line x1="314" y1="140" x2="334" y2="208" stroke="${peau}" stroke-width="16" stroke-linecap="round"/>
+            <line x1="228" y1="136" x2="218" y2="166" stroke="${haut}" stroke-width="24" stroke-linecap="round"/>
+            <line x1="312" y1="136" x2="322" y2="166" stroke="${haut}" stroke-width="24" stroke-linecap="round"/>
+            <path d="${tronc}" fill="${haut}"/>
+            <path d="M256 124 Q270 138 284 124" fill="none" stroke="#c4502b" stroke-width="3"/>`;
+    } else {
+      s += `<line x1="226" y1="140" x2="204" y2="204" stroke="${haut}" stroke-width="22" stroke-linecap="round"/>
+            <line x1="314" y1="140" x2="336" y2="204" stroke="${haut}" stroke-width="22" stroke-linecap="round"/>
+            <path d="${tronc}" fill="${haut}"/>
+            <path d="M232 208 H308" stroke="#2f6e52" stroke-width="8"/>
+            <path d="M254 124 Q270 142 286 124" fill="none" stroke="#2f6e52" stroke-width="6"/>`;
+    }
+    s += `<circle cx="205" cy="212" r="9" fill="${peau}"/><circle cx="335" cy="212" r="9" fill="${peau}"/>`;
+  }
+  // tête
+  s += `<rect x="262" y="104" width="16" height="18" fill="${peau}"/>
+        <circle cx="270" cy="80" r="34" fill="${peau}"/>
+        <path d="M236 76 Q238 40 270 42 Q304 40 305 74 Q296 58 270 58 Q248 58 236 76 Z" fill="#6b4226"/>
+        <path d="M256 96 Q270 106 284 96" fill="none" stroke="#8a4b2a" stroke-width="3" stroke-linecap="round"/>`;
+  if (montre("tete") && m.H) {
+    s += `<path d="M238 62 Q238 34 270 34 Q302 34 302 62 Z" fill="#d9412b"/>
+          <circle cx="270" cy="35" r="3" fill="#b5321f"/>
+          <path d="M238 62 Q270 56 302 62 Q318 64 320 70 Q290 66 238 66 Z" fill="#b5321f"/>`;
+  }
+  if (montre("visage")) {
+    if (m.L) {
+      s += `<rect x="244" y="74" width="22" height="14" rx="5" fill="#1d1d24"/>
+            <rect x="274" y="74" width="22" height="14" rx="5" fill="#1d1d24"/>
+            <line x1="266" y1="79" x2="274" y2="79" stroke="#1d1d24" stroke-width="3"/>
+            <line x1="244" y1="78" x2="237" y2="76" stroke="#1d1d24" stroke-width="3"/>
+            <line x1="296" y1="78" x2="303" y2="76" stroke="#1d1d24" stroke-width="3"/>`;
+    } else {
+      s += `<circle cx="257" cy="81" r="4" fill="#2a2a2a"/><circle cx="283" cy="81" r="4" fill="#2a2a2a"/>`;
+    }
+  }
+  s += `<text x="270" y="334" text-anchor="middle" font-size="16" font-weight="700" fill="#4b5a3a">Paul</text>`;
+
+  // --- thermomètre ---
+  s += `<rect x="410" y="24" width="100" height="160" rx="12" fill="#fff" stroke="#d9d2c3" stroke-width="2"/>`;
+  if (montre("thermo")) {
+    const col = m.C ? "#d9412b" : "#2f7fd0";
+    const haute = m.C ? 92 : 40;
+    s += `<rect x="440" y="40" width="16" height="104" rx="8" fill="#eee" stroke="#bbb"/>
+          <rect x="444" y="${140 - haute}" width="8" height="${haute}" fill="${col}"/>
+          <circle cx="448" cy="150" r="14" fill="${col}"/>
+          <text x="488" y="96" text-anchor="middle" font-size="22" font-weight="700" fill="${col}">${m.C ? "32" : "11"}</text>
+          <text x="488" y="118" text-anchor="middle" font-size="14" fill="${col}">°C</text>`;
+  }
+  // --- calendrier ---
+  s += `<rect x="525" y="24" width="100" height="110" rx="10" fill="#fff" stroke="#d9d2c3" stroke-width="2"/>
+        <rect x="525" y="24" width="100" height="30" rx="10" fill="#d9412b"/><rect x="525" y="44" width="100" height="10" fill="#d9412b"/>
+        <circle cx="550" cy="24" r="4" fill="#555"/><circle cx="600" cy="24" r="4" fill="#555"/>`;
+  if (montre("jour")) {
+    const jour = m.J ? "Lundi" : ["Mardi", "Mercredi", "Jeudi", "Samedi"][indexExo % 4];
+    s += `<text x="575" y="45" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">AUJOURD’HUI</text>
+          <text x="575" y="100" text-anchor="middle" font-size="${jour.length > 6 ? 18 : 22}" font-weight="700" fill="#333">${jour}</text>`;
+  }
+
+  // --- caches ---
+  const RECTS = {
+    ciel: [25, 15, 120, 130], tete: [228, 28, 96, 38], visage: [228, 66, 84, 30], haut: [188, 116, 164, 108],
+    jambes: [218, 214, 104, 104], thermo: [410, 24, 100, 160], jour: [525, 54, 100, 80]
+  };
+  if (!fini) for (const z of exo.caches) {
+    const [x, y, w, h] = RECTS[z];
+    const deduits = ZONES[z].filter(a => connus[a]);
+    if (deduits.length) {
+      const lignes = deduits.map(a => COURT[a][connus[a].v ? 0 : 1]);
+      s += `<g class="cache-deduit"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="#e3f4e8" stroke="#1f8a4c" stroke-width="2"/>` +
+        lignes.map((t, i) => `<text x="${x + w / 2}" y="${y + h / 2 + 6 + (i - (lignes.length - 1) / 2) * 20}" text-anchor="middle" font-size="${h < 40 ? 14 : 16}" font-weight="700" fill="#1d6b3c">${t}</text>`).join("") +
+        `</g>`;
+    } else {
+      const cible = ZONES[z].includes(exo.cible);
+      s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${cible ? "#5b6c8f" : "#8a8f99"}" stroke="${cible ? "#2f5fd0" : "#6b6f7a"}" stroke-width="${cible ? 3 : 2}"/>
+            <text x="${x + w / 2}" y="${y + h / 2 + (h < 40 ? 8 : 12)}" text-anchor="middle" font-size="${h < 40 ? 22 : 36}" font-weight="700" fill="#fff">?</text>`;
+    }
+  }
+  $("image").innerHTML = s;
+}
+
+// ===== Rendu de l'interface =====
+function dessinerNav() {
+  const n = $("nav"); n.innerHTML = "";
+  EXOS.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.className = "point" + (reussis.has(i) ? " fait" : "") + (i === indexExo ? " courant" : "");
+    b.textContent = i + 1; b.onclick = () => charger(i);
+    n.appendChild(b);
+  });
+  const d = document.createElement("button");
+  d.className = "point de" + (indexExo >= EXOS.length ? " courant" : "");
+  d.textContent = "🎲"; d.title = "Exercice au hasard";
+  d.onclick = () => charger(EXOS.length);
+  n.appendChild(d);
+}
+
+function dessinerQuestion() {
+  const num = indexExo < EXOS.length ? `Exercice ${indexExo + 1}` : "Au hasard";
+  $("question").innerHTML = `<span class="num">${num}</span>${QUESTIONS[exo.cible]}`;
+}
+
+function texteOr(r, contra) {
+  return `<span class="ref">${contra ? "Contraposée de la règle " : "Règle "}${r + 1}</span>${enonce(forme(REGLES[r], contra))}`;
+}
+
+function htmlEtape(e, i, nouvelle) {
+  const f = forme(REGLES[e.r], e.contra);
+  return `<div class="etape${nouvelle ? " rempli" : ""}">
+    <div class="num-etape">Étape ${i + 1}</div>
+    <div class="ligne l-sais"><span class="mot">Je sais que</span><span class="txt">${phrase(f.h)}.</span></div>
+    <div class="ligne l-or${e.contra ? " c" : ""}"><span class="mot">Or</span><span class="txt">${texteOr(e.r, e.contra)}</span></div>
+    <div class="ligne l-donc"><span class="mot">Donc</span><span class="txt">${maj(phrase(f.c))}.</span></div>
+  </div>`;
+}
+
+function nouveauBrouillon() { brouillon = { sais: null, or: null, donc: null }; erreurs = {}; }
+
+function htmlEnCours() {
+  const b = brouillon;
+  const caseHtml = (cle, cls, contenu, extra = "") =>
+    `<button class="case c-${cls} ${contenu ? "pleine" : "vide"}${extra}${erreurs[cle] ? " erreur" : ""}" data-case="${cle}">${contenu || "Cliquer pour choisir…"}</button>`;
+  return `<div class="etape encours">
+    <div class="num-etape">Étape ${etapes.length + 1}</div>
+    <div class="ligne l-sais"><span class="mot">Je sais que</span>${caseHtml("sais", "sais", b.sais && maj(phrase(b.sais)) + ".")}</div>
+    <div class="ligne l-or${b.or && b.or.contra ? " c" : ""}"><span class="mot">Or</span>${caseHtml("or", "or", b.or && texteOr(b.or.r, b.or.contra), b.or && b.or.contra ? " contra" : "")}${b.or ? `<button class="bascule${b.or.contra ? " on" : ""}" id="bascule" title="Remplacer par la contraposée (ou revenir à la règle)">⇄ Contraposée</button>` : ""}</div>
+    <div class="ligne l-donc"><span class="mot">Donc</span>${caseHtml("donc", "donc", b.donc && maj(phrase(b.donc)) + ".")}</div>
+  </div>`;
+}
+
+function dessinerDemo(nouvelle) {
+  // soit une démonstration, soit « on ne peut pas savoir » : jamais les deux
+  $("titre-demo").textContent = sansReponse ? "🤷 Ma réponse" : "📝 Ma démonstration";
+  if (sansReponse) {
+    $("demo").innerHTML = `<div class="etape rempli"><b>On ne peut pas savoir ${siMin(PHRASES[exo.cible][0])}.</b></div>`;
+    return;
+  }
+  $("demo").innerHTML = etapes.map((e, i) => htmlEtape(e, i, nouvelle && i === etapes.length - 1)).join("")
+    + (fini ? "" : htmlEnCours());
+  document.querySelectorAll("[data-case]").forEach(btn => btn.onclick = () => ouvrir(btn.dataset.case));
+  if ($("bascule")) $("bascule").onclick = () => {
+    brouillon.or.contra = !brouillon.or.contra;
+    delete erreurs.or;
+    $("retour").innerHTML = "";
+    const actif = caseActive;
+    dessinerDemo();
+    if (actif) document.querySelectorAll("[data-case]").forEach(c => c.classList.toggle("active", c.dataset.case === actif));
+  };
+}
+
+function dessinerBoutons() {
+  const b = brouillon;
+  $("valider").disabled = fini || !b.sais || !b.or || !b.donc;
+  $("impossible").disabled = fini;
+}
+
+function dessinerTout(nouvelle) {
+  fermerChoix();
+  dessinerNav(); dessinerQuestion(); dessinerImage(); dessinerDemo(nouvelle); dessinerBoutons();
+}
+
+function retour(cls, html) { $("retour").innerHTML = `<div class="retour ${cls} rempli">${html}</div>`; }
+
+// ===== Validation d'une étape =====
+const memeFait = (x, y) => x[0] === y[0] && x[1] === y[1];
+
+$("valider").onclick = () => {
+  const { sais, or, donc } = brouillon;
+  const f = forme(REGLES[or.r], or.contra);
+  const k = connus[sais[0]];
+  erreurs = {};
+  let msg = null;
+  if (!k) { erreurs.sais = true; msg = `Je sais que : on ne sait pas ${siMin(PHRASES[sais[0]][0])}.`; }
+  else if (k.v !== sais[1]) { erreurs.sais = true; msg = `Je sais que : faux, ${k.source === "vu" ? "on voit que" : "on a montré que"} ${phrase([sais[0], k.v])}.`; }
+  else if (!memeFait(f.h, sais)) { erreurs.or = true; msg = `Or : la règle ne s’applique pas.`; }
+  else if (!memeFait(f.c, donc)) { erreurs.donc = true; msg = `Donc : ce n’est pas la conséquence de la règle.`; }
+  // on valide le raisonnement, pas la conclusion : une conclusion déjà connue reste juste
+  if (msg) { dessinerDemo(); retour("ko", msg); return; }
+
+  if (!connus[donc[0]]) connus[donc[0]] = { v: donc[1], source: "montré" };
+  etapes.push({ r: or.r, contra: or.contra });
+  nouveauBrouillon();
+  if (connus[exo.cible]) {
+    terminer(`✅ Bravo ! Réponse : <b>${phrase([exo.cible, connus[exo.cible].v])}</b>.`);
+  } else {
+    dessinerTout(true);
+    retour("ok", `Juste ! Étape suivante.`);
+  }
+};
+
+// ===== Overlay de choix =====
+const ORDRE = ["L", "S", "B", "P", "C", "T", "H", "J"];
+let caseActive = null;
+function fermerChoix() {
+  caseActive = null;
+  $("panneau-choix").hidden = true;
+  document.querySelectorAll(".case.active").forEach(c => c.classList.remove("active"));
+}
+function ouvrir(cle) {
+  caseActive = cle;
+  const titres = { sais: "Je sais que…", or: "Or…", donc: "Donc…" };
+  $("ch-titre").textContent = titres[cle];
+  let h = "";
+  if (cle === "or") {
+    // seules les règles directes ; la contraposée s'obtient ensuite avec le bouton ⇄
+    REGLES.forEach((r, i) => {
+      const actuel = brouillon.or && brouillon.or.r === i;
+      h += `<div class="paire"><button class="choix ch-regle${actuel ? " actuel" : ""}" data-r="${i}">${texteOr(i, false)}</button></div>`;
+    });
+  } else {
+    h += `<div class="grille">`;
+    for (const a of ORDRE) {
+      h += `<span class="ico">${ICONES[a]}</span>`;
+      for (const v of [true, false]) {
+        const actuel = brouillon[cle] && memeFait(brouillon[cle], [a, v]);
+        h += `<button class="choix${actuel ? " actuel" : ""}" data-a="${a}" data-v="${v}">${maj(phrase([a, v]))}.</button>`;
+      }
+    }
+    h += `</div>`;
+  }
+  $("ch-contenu").innerHTML = h;
+  $("ch-contenu").scrollTop = 0;
+  $("ch-contenu").querySelectorAll(".choix").forEach(btn => btn.onclick = () => {
+    brouillon[cle] = cle === "or"
+      ? { r: +btn.dataset.r, contra: false }
+      : [btn.dataset.a, btn.dataset.v === "true"];
+    delete erreurs[cle];
+    $("retour").innerHTML = "";
+    dessinerDemo(); dessinerBoutons();
+    // case suivante encore vide, sinon on ferme
+    const suivante = ["sais", "or", "donc"].find(c => !brouillon[c]);
+    suivante ? ouvrir(suivante) : fermerChoix();
+  });
+  $("panneau-choix").hidden = false;
+  document.querySelectorAll("[data-case]").forEach(c => c.classList.toggle("active", c.dataset.case === cle));
+}
+$("ch-fermer").onclick = fermerChoix;
+
+$("impossible").onclick = () => {
+  const vis = {}; for (const a in connus) vis[a] = connus[a].v;
+  if (cloture(vis)[exo.cible] !== undefined) {
+    retour("ko", `Si, on peut le savoir. Cherche une règle.`);
+  } else {
+    // on efface les étapes : la réponse remplace la démonstration
+    etapes = [];
+    for (const a in connus) if (connus[a].source === "montré") delete connus[a];
+    sansReponse = true;
+    terminer(`✅ Bien vu : aucune règle ne permet de conclure.<div class="petit">Sur l’image cachée : ${phrase([exo.cible, monde[exo.cible]])}.</div>`);
+  }
+};
+
+function terminer(html) {
+  fini = true;
+  reussis.add(indexExo);
+  dessinerTout(true);
+  retour("ok", html);
+  const b = document.createElement("button");
+  b.className = "gros"; b.style.marginTop = "12px";
+  b.textContent = indexExo + 1 < EXOS.length ? "Exercice suivant →" : "🎲 Un autre au hasard";
+  b.onclick = () => charger(Math.min(indexExo + 1, EXOS.length));
+  $("suite").innerHTML = "";
+  $("suite").appendChild(b);
+  const r = document.createElement("button");
+  r.className = "secondaire"; r.textContent = "↺ Recommencer";
+  r.onclick = recommencer;
+  $("suite").appendChild(r);
+}
+// recommencer le même exercice (même tirage s'il est au hasard)
+function recommencer() {
+  connus = {}; const vis = faitsVisibles();
+  for (const a in vis) connus[a] = { v: vis[a], source: "vu" };
+  etapes = []; nouveauBrouillon(); fini = false; sansReponse = false;
+  $("retour").innerHTML = ""; $("suite").innerHTML = "";
+  dessinerTout();
+}
+
+
+// ===== Fenêtre des règles =====
+$("liste-regles").innerHTML = REGLES.map(r => `<li><span class="n">Règle ${r.n}</span>${enonce(r)}</li>`).join("");
+$("ex-contra").textContent = enonce(forme(REGLES[0], true));
+$("voir-regles").onclick = () => $("fenetre-regles").showModal();
+$("fermer-regles").onclick = () => $("fenetre-regles").close();
+$("onglet").onclick = () => window.open(location.href, "_blank");
+
+charger(0);
+$("fenetre-regles").showModal();
+</script>
+</body>
+</html>
