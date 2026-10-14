@@ -332,6 +332,17 @@ function genDiv() {
   const a = R(2, 9), b = R(2, 9);
   return { q: op(a * b, ':', a), a: b, w: [b + 1, b - 1, a, b + 2] };
 }
+function genTablesEt() {                // 7 × 13 : tables de 3 à 9 par 11 à 15
+  const a = R(3, 9), b = R(11, 15), p = a * b;
+  const q = Math.random() < .5 ? op(a, '×', b) : op(b, '×', a);
+  return { q, a: p, w: [a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b, a * 10 + (b - 10)] }; // 7 × 13 → « 73 »
+}
+const DIV60 = [2, 3, 4, 5, 6, 10, 12, 15];   // 60 : 2 … 60 : 15
+function genDiv60() {
+  const i = R(0, DIV60.length - 1), d = DIV60[i], a = 60 / d;
+  const Q = DIV60.map(x => 60 / x);            // les autres quotients de 60 : erreurs typiques
+  return { q: op(60, ':', d), a, w: [Q[i - 1], Q[i + 1], Q[i - 2], Q[i + 2], a + 1, a - 1].filter(x => x != null) };
+}
 function genParen() {
   const a = R(2, 9), b = R(2, 9), c = R(2, 9);
   switch (R(1, 6)) {
@@ -354,10 +365,12 @@ function genTablesZeros() {             // 3 × 50, 40 × 70, 300 × 6 : une tab
 const TYPES = [
   { id: 'entiers', label: 'Additions, soustractions', ex: '100 − 37',     on: true,  gen: genEntiers },
   { id: 'tables',  label: 'Tables de multiplication', ex: '7 × 8',        on: true,  gen: genTables },
+  { id: 'tablesE', label: 'Tables étendues (11 à 15)', ex: '7 × 13',      on: true,  gen: genTablesEt },
   { id: 'tablesZ', label: 'Tables avec des zéros',    ex: '40 × 70',      on: true,  gen: genTablesZeros },
   { id: 'div',     label: 'Divisions exactes',        ex: '56 : 7',       on: true,  gen: genDiv },
   { id: 'double',  label: 'Double, moitié',           ex: 'Moitié de 78', on: true,  gen: genDouble },
   { id: 'quad',    label: 'Quadruple, quart',         ex: 'Quart de 60',  on: true,  gen: genQuad },
+  { id: 'div60',   label: 'Divisions de 60',          ex: '60 : 12',      on: true,  gen: genDiv60 },
   { id: 'paren',   label: 'Calculs avec parenthèses', ex: '(3 × 4) + 5',  on: true,  gen: genParen },
   { id: 'mult10',  label: '× 10, × 100, × 1 000',     ex: '3,5 × 100',    on: false,  gen: genMult10 },
   { id: 'div10',   label: ': 10, : 100, : 1 000',     ex: '42 : 100',     on: false,  gen: genDiv10 },
