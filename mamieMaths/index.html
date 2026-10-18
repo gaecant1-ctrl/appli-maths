@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L'épicerie de Mamie Maths</title>
+<style>
+  :root{
+    --bg:#f5f1e8; --panel:#fffdf8; --ink:#1f2430; --muted:#6b6f7a; --border:#d9d2c3;
+    --accent:#2f5fd0; --tiers:#8a4fc7;
+    --ok:#1f8a4c; --ok-bg:#e3f4e8; --ko:#c0392b; --ko-bg:#fbe6e3; --info:#e6eefc; --info-b:#9db6ec;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.45;}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--border);}
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;}
+  nav{display:flex;gap:6px;flex-wrap:wrap;}
+  button{font:inherit;cursor:pointer;color:var(--ink);}
+  .point{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);background:var(--bg);font-size:.75rem;color:var(--muted);padding:0;cursor:default;}
+  .point.ok{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .point.ko{background:var(--ko);border-color:var(--ko);color:#fff;}
+  .point.courant{border-color:var(--accent);color:var(--accent);font-weight:700;box-shadow:0 0 0 3px #c9d7f7;}
+  .point.ok.courant,.point.ko.courant{color:#fff;}
+  .onglet{border:1px solid var(--border);background:var(--bg);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+  .onglet.actif{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .niveaux{display:flex;gap:6px;flex-wrap:wrap;width:100%;}
+
+  main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;max-width:1240px;margin:0 auto;padding:20px 24px;}
+  /* Grand écran : image + énoncé à gauche, expression + pièces à droite, boutons tout à droite :
+     tout tient dans la hauteur de la fenêtre, sans défiler */
+  @media (min-width:901px){
+    header{padding:6px 20px;gap:6px 14px;}
+    header h1{white-space:nowrap;}
+    nav{gap:4px;flex-wrap:nowrap;}
+    .point{width:26px;height:26px;font-size:.7rem;flex:none;}
+  }
+  @media (min-width:901px){
+    html{font-size:clamp(16px, calc(.6vw + 10px), 22px);}   /* plus grand sur grand écran / vidéoprojecteur */
+    main{max-width:none;grid-template-columns:minmax(0,1fr) clamp(240px,22vw,360px);padding:12px 20px;gap:16px;}
+    .scene{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:18px;padding:14px 18px;}
+    .scene h3{margin:10px 0 6px;}
+    .droite h3:first-child,.droite>div:first-child>h3{margin-top:0;}
+    /* La page occupe la hauteur de la fenêtre ; l'image prend la place qui reste (elle rétrécit si l'énoncé est long) */
+    body{height:100vh;height:100dvh;display:flex;flex-direction:column;}
+    main{flex:1;min-height:0;width:100%;}
+    .scene{min-height:0;overflow:auto;}
+    .gauche{display:flex;flex-direction:column;min-height:0;}
+    .scene svg#image{flex:1 1 0;min-height:110px;max-height:46vh;max-width:100%;width:100%;}
+    .scene .enonce{font-size:1.1rem;}
+    /* pièces sur une seule ligne, compactes */
+    .manip{padding:6px 10px;}
+    .manip .rangee{flex-wrap:nowrap;gap:10px;}
+    .manip .source{gap:8px;padding:2px;}
+    .zone{min-height:74px;padding-top:22px;}
+    .echange{min-height:74px;width:96px;}
+    .piece.p6{width:46px;height:46px;} .piece.p3{width:44px;height:44px;} .piece.p1{width:44px;height:44px;}
+    .scene .enonce{padding:8px 14px;}
+  }
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;padding:12px;gap:14px;}
+    .scene .colonne{position:static;margin-top:14px;}
+  }
+  @media (max-width:600px){
+    html{font-size:16px;}
+    header{padding:8px 12px;gap:6px 10px;}
+    header h1{font-size:1.05rem;}
+    .point{width:26px;height:26px;}
+    main{padding:8px;}
+    .scene{padding:12px;}
+    .enonce{font-size:1.05rem;padding:10px 12px;}
+    .lig input{min-width:0;}
+    .zone{min-width:0;}
+    .echange{width:88px;min-height:90px;}
+    .piece.p6{width:48px;height:48px;} .piece.p3{width:46px;height:46px;} .piece.p1{width:46px;height:46px;}
+    dialog{padding:16px;}
+    .bl{padding:6px 8px;font-size:.92rem;}
+  }
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 22px;}
+  .enonce{background:#fff;border:2px solid #e5b865;border-radius:12px;padding:12px 16px;font-size:1.2rem;font-weight:600;line-height:1.6;}
+  .enonce .num{display:block;color:var(--muted);font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;}
+  svg#image{width:100%;max-width:680px;max-height:38vh;margin:0 auto;height:auto;display:block;border-radius:12px;border:1px solid var(--border);background:#fbf3e4;}
+  h3{margin:18px 0 8px;font-size:1rem;}
+
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.82em;line-height:1.05;margin:0 .06em}
+  .frac>span:first-child{border-bottom:.08em solid currentColor;padding:0 .12em}
+
+  /* Pièces */
+  .manip{border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 12px;}
+  .manip .lab{font-size:.85rem;color:var(--muted);}
+  .rangee{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;}
+  .source{display:flex;gap:12px;align-items:center;padding:6px 4px;}
+  .piece{flex:none;display:grid;place-items:center;border-radius:50%;font-weight:800;user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab;box-shadow:0 2px 4px rgba(0,0,0,.25);}
+  .piece.p6{width:54px;height:54px;background:radial-gradient(circle,#e8c45a 0 55%,#c9ccd3 56%);color:#5a4500;font-size:1rem}
+  .piece.p3{width:50px;height:50px;background:radial-gradient(circle,#c9ccd3 0 55%,#e8c45a 56%);color:#333;font-size:.95rem}
+  .piece.p1{width:50px;height:50px;background:radial-gradient(circle,#b98ce6 0 62%,#7d43b8 63%);color:#fff;font-size:.95rem}
+  .piece .frac{font-size:.8em}
+  .piece.p1>span{display:flex;align-items:center;font-size:.85rem}
+  .piece.fantome{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,-50%) scale(1.08);box-shadow:0 8px 18px rgba(0,0,0,.3)}
+  .zone{flex:1;min-width:150px;min-height:110px;border:3px dashed var(--border);border-radius:16px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;background:#fbfcff;position:relative;padding-top:26px;}
+  .zone .titre{position:absolute;top:4px;left:10px;font-size:.8rem;font-weight:700;color:var(--muted);}
+  .zone.survol{border-color:var(--accent);background:#eef3ff;}
+  .zone.table{background:#fbf3e4;}
+  .echange{flex:none;width:120px;min-height:110px;border:3px dashed #b48ad8;border-radius:16px;background:#f6effc;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:.8rem;color:#6b3fa0;font-weight:700;padding:6px;}
+  .echange.survol{background:#e9d8fb;border-color:var(--tiers);}
+  .mini{display:inline-flex;gap:2px;vertical-align:middle;flex-wrap:wrap}
+  .mini .piece{cursor:default;box-shadow:none;transform:scale(.7);margin:-7px -6px}
+  .reinit{border:1px solid var(--border);background:var(--bg);border-radius:8px;padding:2px 10px;font-size:.8rem;margin-left:8px;font-weight:400;}
+
+  /* Calcul */
+  .calcul{border:1px solid var(--border);border-radius:12px;background:#fff;padding:8px 14px;display:flex;flex-direction:column;gap:4px;}
+  .lig{display:flex;align-items:center;gap:10px;min-height:44px;flex-wrap:wrap;}
+  .lig .pre{font-weight:700;min-width:2.6em;text-align:right;font-size:1.15rem;}
+  .lig .pre.ok{color:var(--ok);}
+  .lig input{font:inherit;font-size:1.1rem;flex:1;min-width:200px;max-width:420px;padding:6px 10px;border:2px solid var(--border);border-radius:10px;}
+  .lig input:focus{outline:none;border-color:var(--accent);}
+  .lig input.faux{border-color:var(--ko);background:var(--ko-bg);}
+  .lig .rendu{font-size:1.25rem;font-weight:600;}
+  .lig .msg{font-size:.9rem;font-weight:600;}
+  .lig .msg.ko{color:var(--ko);} .lig .msg.ok{color:var(--ok);} .lig .msg.info{color:var(--accent);}
+  .aide-saisie{font-size:.85rem;color:var(--muted);margin:4px 0 0;}
+
+  .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  .gros{width:100%;border:none;border-radius:10px;padding:12px 18px;font-size:1.05rem;font-weight:600;background:var(--accent);color:#fff;}
+  .gros:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .secondaire{width:100%;margin-top:8px;background:#fff;border:2px solid var(--border);border-radius:10px;padding:10px;font-weight:600;}
+  .secondaire:hover:not(:disabled){border-color:var(--accent);}
+  .retour{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:1rem;}
+  .retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+  .retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  .retour.info{background:var(--info);border-left:5px solid var(--info-b);}
+  .corr{line-height:1.9;margin-top:6px;}
+  .aide{background:#fdf0d8;border-left:5px solid #e5b865;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:.95rem;line-height:1.6;}
+  .aide ul{margin:6px 0 0;padding-left:1.1em;}
+  .corr .fin{font-weight:800;color:var(--ok);}
+  [hidden]{display:none!important;}
+
+  dialog{border:none;border-radius:14px;padding:24px;max-width:680px;width:calc(100% - 32px);background:var(--panel);color:var(--ink);}
+  dialog::backdrop{background:rgba(0,0,0,.4);}
+  dialog h2{margin-top:0;}
+  .exemple{background:#fdf0d8;border:1px solid #e5b865;border-radius:10px;padding:8px 14px;margin:8px 0;}
+  .actions{margin-top:16px;display:flex;justify-content:flex-end;gap:10px;}
+  .actions .gros{width:auto;}
+  .bilan{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto;}
+  .bl{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;border:1px solid var(--border);border-radius:10px;padding:6px 12px;background:#fff;}
+  .bl.ok{border-left:6px solid var(--ok);} .bl.ko{border-left:6px solid var(--ko);}
+  .bl .m{font-weight:900;width:1.2em;} .bl.ok .m{color:var(--ok);} .bl.ko .m{color:var(--ko);}
+  .bl .q{flex:1;min-width:10em;} .bl .q b{color:var(--ok);}
+  .bl .y{font-size:.9rem;color:var(--muted);} .bl.ko .y{color:var(--ko);}
+  .bl .mini .piece{transform:scale(.55);margin:-11px -10px;}
+  .eleve-nom{font-weight:700;color:var(--accent);}
+  .eleve{margin-top:14px;border:1px solid #e5b865;background:#fdf0d8;border-radius:12px;padding:10px 14px;}
+  .eleve-titre{margin:0 0 6px;font-weight:700;}
+  .eleve-champs{display:flex;gap:14px;flex-wrap:wrap;}
+  .eleve-champs label{display:flex;flex-direction:column;font-size:.85rem;color:var(--muted);gap:2px;}
+  .eleve-champs input{font:inherit;font-size:1rem;padding:6px 10px;border:2px solid var(--border);border-radius:8px;}
+  #champInitiale{width:4em;text-transform:uppercase;}
+  .eleve-erreur{color:var(--ko);font-size:.9rem;margin:6px 0 0;min-height:1em;}
+  .score{font-size:2.4rem;font-weight:800;text-align:center;margin:0 0 10px;}
+  .pop{animation:pop .35s ease;}
+  @keyframes pop{0%{transform:scale(.97);}60%{transform:scale(1.02);}100%{transform:scale(1);}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛒 L'épicerie de Mamie Maths</h1>
+  <nav id="nav"></nav>
+  <span class="eleve-nom" id="eleve-nom"></span>
+  <button class="onglet" id="onglet">↗ Nouvel onglet</button>
+  <div class="niveaux" id="niveaux"></div>
+</header>
+
+<main>
+  <section class="scene">
+   <div class="gauche">
+    <svg id="image" viewBox="0 0 680 340" aria-label="L'épicerie de Mamie Maths"></svg>
+
+    <h3>📋 Énoncé</h3>
+    <div class="enonce" id="question"></div>
+
+    <div id="bloc-pieces">
+      <h3 id="titre-pieces">👛 Les pièces</h3>
+      <div class="manip" id="manip"></div>
+    </div>
+   </div>
+
+   <div class="droite">
+    <div id="bloc-calcul">
+      <h3>📝 Mon expression</h3>
+      <div class="calcul" id="calcul"></div>
+    </div>
+
+   </div>
+  </section>
+
+  <div class="colonne">
+    <aside>
+      <button class="gros" id="valider">Valider</button>
+      <button class="secondaire" id="voir-aide">🙋 Aide</button>
+      <div id="aide"></div>
+      <button class="secondaire" id="voir-corr">💡 Voir la correction</button>
+      <div id="retour"></div>
+      <button class="gros" id="suivant" style="margin-top:12px" hidden>Exercice suivant →</button>
+    </aside>
+  </div>
+</main>
+
+<dialog id="dlg-nom">
+  <h2>🎓 Mélange avec diplôme</h2>
+  <p>Ton nom sera écrit sur ton diplôme.</p>
+  <div class="eleve">
+    <p class="eleve-titre">Qui es-tu ?</p>
+    <div class="eleve-champs">
+      <label>Prénom <input id="champPrenom" type="text" maxlength="25" autocomplete="off"></label>
+      <label>Initiale du nom <input id="champInitiale" type="text" maxlength="1" autocomplete="off"></label>
+    </div>
+    <p class="eleve-erreur" id="eleveErreur"></p>
+  </div>
+  <div class="actions"><button class="gros" id="entrer">C'est parti !</button></div>
+</dialog>
+
+<dialog id="dlg-bilan">
+  <p class="score" id="bilan-score"></p>
+  <div class="bilan" id="bilan-liste"></div>
+  <div class="actions"><button class="secondaire" style="width:auto;margin:0" id="rejouer">↻ Nouvelle série</button><button class="gros" id="diplome" style="background:linear-gradient(90deg,#c9a227 60%,#f7e08a 100%);color:#1f2430">🎓 Mon diplôme</button></div>
+</dialog>
+
+<script>
+/* ==============================================
+   Diplôme de fin de série (A4 paysage, imprimable)
+   Repris de sensOperationsFraction/Diplome.js.
+
+   API :
+     ouvrirDiplome({ nom, score, total, niveau })
+       nom    : « Prénom I. »
+       niveau : nom du niveau joué (ex. « Niveau 2 »)
+================================================== */
+
+const DIPLOME_CSS = `
+#overlayDiplome{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:3000;padding:24px;}
+#overlayDiplome.ouverte{display:flex;}
+#diplomeCarte{position:relative;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:18px 20px 24px;width:min(297mm,100%);}
+#btnFermerDiplome{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;line-height:1;cursor:pointer;color:#555;}
+#overlayDiplome .d-actions{display:flex;gap:10px;margin-bottom:6px;}
+#overlayDiplome .d-actions button{border:1px solid #2f9e44;background:#2f9e44;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayDiplome .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 6mm;}
+#overlayDiplome .diplome{width:277mm;height:190mm;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1f5c33;font-family:Georgia,"Times New Roman",serif;box-sizing:border-box;}
+#overlayDiplome .d-cadre{position:relative;height:100%;box-sizing:border-box;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayDiplome .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayDiplome .d-c svg{width:100%;height:100%;display:block;}
+#overlayDiplome .d-c.hg{top:3mm;left:3mm;}
+#overlayDiplome .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayDiplome .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayDiplome .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayDiplome .d-titre{font-size:34pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1f5c33;line-height:1.05;}
+#overlayDiplome .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;text-align:center;}
+#overlayDiplome .d-sous b{color:#1f5c33;}
+#overlayDiplome .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayDiplome .d-texte{text-align:center;flex:1;}
+#overlayDiplome .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayDiplome .d-nom{font-family:"Brush Script MT","Segoe Script",cursive;font-size:34pt;font-weight:700;color:#1f5c33;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayDiplome .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayDiplome .d-niveau{display:inline-block;margin-top:3mm;padding:1.5mm 6mm;border-radius:999px;background:#6f3fa0;color:#fff;font-size:12pt;letter-spacing:.03em;}
+#overlayDiplome .d-mention{font-size:16pt;font-weight:700;color:#1f8a4c;margin-top:1mm;letter-spacing:.03em;}
+#overlayDiplome .d-sceau{width:34mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayDiplome .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1f5c33;}
+#overlayDiplome .d-sceau-sur{font-family:Georgia,serif;font-size:9px;fill:#6b5a2e;}
+#overlayDiplome .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;box-sizing:border-box;}
+#overlayDiplome .d-erreurs{font-size:8.5pt;color:#9a927f;font-style:italic;margin-top:1mm;}
+#overlayDiplome .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:6mm;color:#4a4a4a;}
+#overlayDiplome .d-table{border-collapse:collapse;font-size:11pt;margin:2mm 0;}
+#overlayDiplome .d-table th{background:#1f5c33;color:#fff;font-weight:600;padding:1.5mm 3mm;font-size:9.5pt;}
+#overlayDiplome .d-table td{border-bottom:.3mm solid #e2d6b0;padding:1.4mm 4mm;text-align:center;}
+#overlayDiplome .d-table td:first-child{text-align:left;font-weight:700;color:#1f5c33;}
+#overlayDiplome .d-table .d-ok{color:#1f8a4c;font-weight:900;}
+#overlayDiplome .d-table .d-ko{color:#c0392b;font-weight:900;}
+#overlayDiplome .d-table tr.d-vide td{color:#a39a85;font-style:italic;font-weight:400;}
+#overlayDiplome .d-table tr.d-vide td:first-child{color:#a39a85;}
+#overlayDiplome .d-frise{display:flex;gap:2.5mm;margin-top:1mm;}
+#overlayDiplome .d-frise svg{width:8mm;height:8mm;}
+body.diplome-ouvert{overflow:hidden;}
+@media print{
+  @page{size:A4 landscape;margin:.6cm;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.diplome-ouvert > :not(#overlayDiplome){display:none !important;}
+  body.diplome-ouvert{background:#fff !important;}
+  #overlayDiplome{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #diplomeCarte{box-shadow:none;width:auto;padding:0;border-radius:0;}
+  #btnFermerDiplome,#overlayDiplome .d-actions,#overlayDiplome .note-impression{display:none !important;}
+  #overlayDiplome .diplome{transform:none !important;margin:0 auto !important;}
+}`;
+
+function diplomeEchapper(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function diplomeMention(score, total) {
+  const x = total ? score / total * 20 : 0;
+  return x >= 20 ? 'Félicitations !' : x >= 16 ? 'Très bien' : x >= 14 ? 'Bien'
+    : x >= 12 ? 'Assez bien' : x >= 10 ? 'Réussi' : 'Continue tes efforts';
+}
+
+function diplomeContenu({ nom, serie, familles }) {
+  const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const score = serie.filter(x => x.reussi).length, total = serie.length;
+  // Tout le travail de la série, famille par famille
+  const lignes = familles.map((f, k) => {
+    const l = serie.filter(x => x.famille === k), e = l.reduce((a, x) => a + (x.erreurs || 0), 0), ai = l.reduce((a, x) => a + (x.aides || 0), 0);
+    const marques = l.map(x => `<span class="${x.reussi ? 'd-ok' : 'd-ko'}">${x.reussi ? '✓' : '✗'}</span>`).join(' ');
+    return `<tr><td>${f.nom}</td><td>${marques}</td><td>${l.filter(x => x.reussi).length} / ${l.length}</td><td>${e}</td><td>${ai}</td></tr>`;
+  }).join('');
+  const tableau = `<table class="d-table"><thead><tr><th>Famille d'exercices</th><th>Exercices</th><th>Réussis</th><th>Erreurs</th><th>Aides</th></tr></thead><tbody>${lignes}</tbody></table>`;
+  // Sceau doré : cercle festonné, rubans, note au centre
+  const festons = Array.from({ length: 48 }, (_, k) => {
+    const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+    return (k ? 'L' : 'M') + (50 + r * Math.cos(a)).toFixed(2) + ' ' + (50 + r * Math.sin(a)).toFixed(2);
+  }).join(' ') + 'Z';
+  const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="dOr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1f5c33"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1f5c33"/>
+    <path d="${festons}" fill="url(#dOr)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${score}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">sur ${total}</text>
+  </svg>`;
+  const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1f5c33" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+  // Frise : les pièces de l'épicerie (2 €, 1 €, 1/3 €)
+  const piece = v => v === 1
+    ? `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#7d43b8"/><circle cx="20" cy="20" r="13" fill="#b98ce6"/><text x="20" y="18" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">1</text><line x1="15" y1="20" x2="25" y2="20" stroke="#fff" stroke-width="1.4"/><text x="20" y="29" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">3</text></svg>`
+    : `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${v === 6 ? '#c9ccd3' : '#e8c45a'}"/><circle cx="20" cy="20" r="12" fill="${v === 6 ? '#e8c45a' : '#c9ccd3'}"/><text x="20" y="24" text-anchor="middle" font-size="10" font-weight="800" fill="#333">${v / 3} €</text></svg>`;
+  const frise = [1, 3, 1, 6, 1, 3, 1, 6, 1, 3, 1, 6, 1, 3, 1].map(piece).join('');
+  return `<div class="diplome">
+  <div class="d-cadre">
+    ${['hg', 'hd', 'bg', 'bd'].map(p => `<div class="d-c ${p}">${coin}</div>`).join('')}
+    <div style="text-align:center">
+      <div class="d-titre">Diplôme</div>
+      <div class="d-sous">🛒 L'épicerie de <b>Mamie Maths</b></div>
+    </div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${diplomeEchapper(nom || '……………………')}</div>
+        <div class="d-pour">pour avoir calculé des prix avec des tiers d'euro, en nombres mixtes.</div>
+        <div class="d-mention">${total ? diplomeMention(score, total) : ''}</div>
+      </div>
+      ${sceau}
+    </div>
+    ${tableau}
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`;
+}
+
+function fermerDiplome() {
+  const ov = document.getElementById('overlayDiplome');
+  if (!ov || !ov.classList.contains('ouverte')) return;
+  ov.classList.remove('ouverte');
+  document.body.classList.remove('diplome-ouvert');
+  if (diplomeDepuisBilan) document.getElementById('dlg-bilan').showModal();   // retour au bilan
+}
+
+function ouvrirDiplome(infos) {
+  let ov = document.getElementById('overlayDiplome');
+  if (!ov) {
+    const st = document.createElement('style');
+    st.textContent = DIPLOME_CSS;
+    document.head.append(st);
+    ov = document.createElement('div');
+    ov.id = 'overlayDiplome';
+    ov.addEventListener('click', e => { if (e.target === ov) fermerDiplome(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerDiplome(); });
+    document.body.append(ov);
+  }
+  ov.innerHTML = `<div id="diplomeCarte">
+    <button id="btnFermerDiplome" type="button" aria-label="Fermer">×</button>
+    <div class="d-actions"><button type="button" id="btnImprimerDiplome">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d'impression, choisis <strong>Paysage</strong>, décoche <strong>« En-têtes et pieds de page »</strong> et coche <strong>« Graphiques d'arrière-plan »</strong>.</p>
+    ${diplomeContenu(infos)}
+  </div>`;
+  document.getElementById('btnFermerDiplome').onclick = fermerDiplome;
+  document.getElementById('btnImprimerDiplome').onclick = () => window.print();
+  ov.classList.add('ouverte');
+  document.body.classList.add('diplome-ouvert');
+
+  ajusterDiplome();
+}
+/* Le diplôme garde sa taille A4 ; à l'écran, il est réduit pour tenir dans la fenêtre (recalculé si on la redimensionne) */
+function ajusterDiplome() {
+  const ov = document.getElementById('overlayDiplome');
+  if (!ov || !ov.classList.contains('ouverte')) return;
+  const d = ov.querySelector('.diplome');
+  d.style.transform = ''; d.style.marginBottom = ''; d.style.marginRight = '';
+  const carte = d.parentElement;
+  const cs = getComputedStyle(carte);
+  const place = carte.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const r = d.getBoundingClientRect();
+  const e = Math.min(1, place / r.width);
+  d.style.transform = `scale(${e})`;
+  d.style.marginBottom = -(1 - e) * r.height + 'px';
+  d.style.marginRight = -(1 - e) * r.width + 'px';
+}
+window.addEventListener('resize', ajusterDiplome);
+
+</script>
+<script>
+const $ = id => document.getElementById(id);
+/* 5 exercices par série ; 20 pour le Mélange */
+const nbQ = (n = niveau) => NIVEAUX[n].nb || 5;
+
+/* ================= Outils =================
+   Les sommes d'argent sont comptées en tiers d'euro (= nombre de pièces de 1/3 €). */
+const alea = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const choix = t => t[Math.floor(Math.random() * t.length)];
+const nonMult3 = (a, b) => { let n; do n = alea(a, b); while (n % 3 === 0); return n; };
+const fr = (a, b) => `<span class="frac"><span>${a}</span><span>${b}</span></span>`;
+const T13 = fr(1, 3);
+const pgcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
+/* t tiers d'euro en nombre mixte (HTML) : « 2 € + 1/3 € » */
+function eur(t) {
+  const q = Math.floor(t / 3), r = t % 3, p = [];
+  if (q > 0 || r === 0) p.push(`${q} €`);
+  if (r > 0) p.push(`${fr(r, 3)} €`);
+  return p.join(' + ');
+}
+/* même chose pour l'image (glyphes ⅓ ⅔) et pour le texte simple */
+function eurSVG(t) {
+  const q = Math.floor(t / 3), r = t % 3, p = [];
+  if (q > 0 || r === 0) p.push(`${q} €`);
+  if (r > 0) p.push(`${r === 1 ? '⅓' : '⅔'} €`);
+  return p.join(' + ');
+}
+function eurTxt(t) {
+  const q = Math.floor(t / 3), r = t % 3, p = [];
+  if (q > 0 || r === 0) p.push(`${q} €`);
+  if (r > 0) p.push(`${r}/3 €`);
+  return p.join(' + ');
+}
+/* Lignes « P = n € : 3 », « P = (3q € + r €) : 3 » (la dernière, « P = q € + r/3 €», est ajoutée à part) */
+function div3(n, L = 'P') {
+  const q = Math.floor(n / 3), r = n % 3, l = [`${L} = ${n} € : 3`];
+  if (q > 0 && r > 0) l.push(`${L} = (${3 * q} € + ${r} €) : 3`);
+  return l;
+}
+const pieces = n => n === 1 ? '1 pièce' : `${n} pièces`;
+
+/* ================= Image de l'épicerie (SVG) ================= */
+/* Vieille épicerie : lambris, tableau noir des prix, Mamie derrière le comptoir,
+   produits sur le comptoir, caisse enregistreuse, enfants clients. */
+const CRAIE = `font-family="Chalkboard SE, Comic Sans MS, cursive" fill="#f5f5f0"`;
+function mamie() {
+  return `<g transform="translate(30,10)">
+    <path d="M18 228 Q20 150 80 146 Q140 150 142 228 Z" fill="#2f6fde"/>
+    <path d="M52 152 L80 228 L108 152 Q80 160 52 152 Z" fill="#fff" opacity=".9"/>
+    <rect x="72" y="126" width="16" height="22" fill="#f2c7a0"/>
+    <circle cx="80" cy="100" r="34" fill="#f2c7a0"/>
+    <circle cx="80" cy="58" r="15" fill="#d6d6d6"/>
+    <path d="M46 98 Q44 64 80 62 Q116 64 114 98 Q108 76 80 76 Q54 76 46 98 Z" fill="#d6d6d6"/>
+    <circle cx="67" cy="101" r="9" fill="none" stroke="#5a3d8a" stroke-width="3"/><circle cx="93" cy="101" r="9" fill="none" stroke="#5a3d8a" stroke-width="3"/>
+    <line x1="76" y1="101" x2="84" y2="101" stroke="#5a3d8a" stroke-width="3"/>
+    <circle cx="67" cy="101" r="2.5" fill="#2a2a2a"/><circle cx="93" cy="101" r="2.5" fill="#2a2a2a"/>
+    <path d="M68 118 Q80 127 92 118" fill="none" stroke="#a0522d" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="58" cy="114" r="5" fill="#f4a6a6" opacity=".6"/><circle cx="102" cy="114" r="5" fill="#f4a6a6" opacity=".6"/>
+  </g>`;
+}
+function fond() {
+  let s = `<rect width="680" height="340" fill="#f3dfc1"/><g fill="#ead2ad">`;
+  for (let x = 0; x < 680; x += 68) s += `<rect x="${x}" y="0" width="34" height="240"/>`;
+  return s + '</g>';
+}
+/* tableau noir : lignes [produit, prix] */
+function tableau(lignes) {
+  let s = `<rect x="190" y="10" width="300" height="132" rx="6" fill="#2f3b34" stroke="#8b5a2b" stroke-width="8"/>
+    <text x="340" y="36" text-anchor="middle" font-size="18" font-weight="700" ${CRAIE}>~ Les prix du jour ~</text>`;
+  lignes.forEach(([g, d], i) => {
+    const y = 68 + i * 24;
+    s += `<text x="210" y="${y}" font-size="17" ${CRAIE}>${g}</text><text x="470" y="${y}" font-size="17" text-anchor="end" ${CRAIE}>${d}</text>`;
+  });
+  if (lignes.length < 3) s += `<text x="340" y="130" text-anchor="middle" font-size="14" ${CRAIE} fill-opacity=".8" style="fill:#c9e3c4">On accepte les pièces de ⅓ €</text>`;
+  return s;
+}
+function comptoir() {
+  let s = `<rect x="0" y="236" width="680" height="12" fill="#6e4423"/><rect x="0" y="248" width="680" height="92" fill="#8b5a2b"/><g fill="none" stroke="#6e4423" stroke-width="3">`;
+  for (let x = 20; x < 680; x += 165) s += `<rect x="${x}" y="262" width="140" height="64" rx="6"/>`;
+  return s + '</g>';
+}
+function caisse(txt) {
+  const touches = [34, 54, 74, 94, 114].map(x => `<circle cx="${x}" cy="50" r="6"/><circle cx="${x - 4}" cy="70" r="6"/>`).join('');
+  return `<g transform="translate(375,140)">
+    <path d="M0 96 L10 30 H130 L140 96 Z" fill="#c9a227" stroke="#8a6d1a" stroke-width="3"/>
+    <rect x="12" y="0" width="116" height="34" rx="4" fill="#8a6d1a"/>
+    <rect x="18" y="6" width="104" height="22" rx="3" fill="#1f2430"/>
+    <text x="70" y="23" text-anchor="middle" font-size="15" font-weight="800" fill="#7CFC9A" font-family="Menlo, monospace">${txt}</text>
+    <g fill="#fff8e1" stroke="#8a6d1a">${touches}</g></g>`;
+}
+/* objets sur le comptoir : n emoji côte à côte, centrés en x */
+function objets(x, emo, n, taille = 46) {
+  const pas = taille * 0.95, x0 = x - (n - 1) * pas / 2;
+  return Array.from({ length: n }, (_, i) => `<text x="${x0 + i * pas}" y="232" font-size="${taille}" text-anchor="middle">${emo}</text>`).join('');
+}
+function bocal(x, n) {
+  let s = `<g><rect x="${x - 50}" y="160" width="100" height="76" rx="14" fill="#e8f4fb" fill-opacity=".85" stroke="#8fb6c9" stroke-width="3"/>
+    <rect x="${x - 40}" y="151" width="80" height="12" rx="4" fill="#c0392b"/>`;
+  if (n <= 30) {
+    for (let i = 0; i < n; i++) s += `<text x="${x - 36 + (i % 6) * 14.5}" y="${230 - Math.floor(i / 6) * 14}" font-size="14" text-anchor="middle">🍬</text>`;
+  } else {
+    s += `<text x="${x - 14}" y="214" font-size="32" text-anchor="middle">🍬</text><text x="${x + 22}" y="208" font-size="20" font-weight="800" text-anchor="middle" fill="#333">× ${n}</text>`;
+  }
+  return s + '</g>';
+}
+function tarte(x) {
+  const cx = x, cy = 200, r = 34, pt = k => [cx + r * Math.cos(-Math.PI / 2 + 2 * Math.PI * k / 3), cy + r * Math.sin(-Math.PI / 2 + 2 * Math.PI * k / 3)];
+  const [a, b] = [pt(0), pt(1)];
+  return `<ellipse cx="${cx}" cy="${cy + 32}" rx="48" ry="6" fill="#ddd"/>
+    <circle cx="${cx}" cy="${cy}" r="${r + 5}" fill="#d9a05b"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="#f0c86a"/>
+    <path d="M${cx} ${cy} L${a[0]} ${a[1]} A${r} ${r} 0 0 1 ${b[0]} ${b[1]} Z" fill="#e8663d" stroke="#fff" stroke-width="3"/>
+    ${[0, 1, 2].map(k => { const p = pt(k); return `<line x1="${cx}" y1="${cy}" x2="${p[0]}" y2="${p[1]}" stroke="#a86b2d" stroke-width="2.5"/>`; }).join('')}`;
+}
+function enfant(x, couleur, cheveux = '#6b4226') {
+  return `<g><rect x="${x - 20}" y="190" width="40" height="46" rx="10" fill="${couleur}"/>
+    <circle cx="${x}" cy="168" r="22" fill="#f2c7a0"/>
+    <path d="M${x - 22} 166 Q${x - 20} 142 ${x} 144 Q${x + 22} 142 ${x + 22} 166 Q${x + 12} 154 ${x} 154 Q${x - 12} 154 ${x - 22} 166 Z" fill="${cheveux}"/>
+    <circle cx="${x - 8}" cy="170" r="3" fill="#2a2a2a"/><circle cx="${x + 8}" cy="170" r="3" fill="#2a2a2a"/>
+    <path d="M${x - 8} 180 Q${x} 186 ${x + 8} 180" fill="none" stroke="#8a4b2a" stroke-width="2.5" stroke-linecap="round"/></g>`;
+}
+function billet(x, y, B) {
+  return `<g transform="rotate(-8 ${x} ${y})"><rect x="${x - 38}" y="${y - 20}" width="76" height="40" rx="5" fill="#9fd39b" stroke="#3f8f4b" stroke-width="2"/>
+    <circle cx="${x}" cy="${y}" r="13" fill="#c9eac6" stroke="#3f8f4b"/>
+    <text x="${x}" y="${y + 7}" text-anchor="middle" font-size="19" font-weight="800" fill="#1f5c2a">${B} €</text></g>`;
+}
+function piecesComptoir(x, n) {
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const cx = x - 52 + (i % 8) * 15, cy = 228 - Math.floor(i / 8) * 15;
+    s += `<circle cx="${cx}" cy="${cy}" r="7" fill="#b98ce6" stroke="#7d43b8" stroke-width="2"/>`;
+  }
+  return s;
+}
+/* scène : { prix:[[produit, prix]], caisse, objets: SVG posé sur le comptoir, enfants:[couleurs], billet } */
+function dessinerImage(sc) {
+  let s = fond() + tableau(sc.prix || []) + mamie();
+  (sc.enfants || []).forEach((c, i) => s += enfant(640 - i * 46, c, ['#6b4226', '#e0b04a', '#2a2a2a'][i % 3]));
+  s += comptoir() + caisse(sc.caisse || '? €') + (sc.objets || '');
+  if (sc.billet) s += billet(610, 290, sc.billet);
+  $('image').innerHTML = s;
+}
+const COUL = ['#3b7dd8', '#e8663d', '#2f9e44'];
+
+/* ================= Exercices =================
+   { texte, rep (tiers d'euro, ou nombre), sorte 'euro'|'pieces'|'porte', lettre, scene, manip, corr, court } */
+const OBJETS = [['une glace', '🍦', 'Glace'], ['un cahier', '📓', 'Cahier'], ['un paquet de biscuits', '🍪', 'Biscuits'], ['une sucette géante', '🍭', 'Sucette géante'], ['un ballon', '⚽', 'Ballon'], ['un livre', '📕', 'Livre'], ['un yo-yo', '🪀', 'Yo-yo']];
+const GEN = {
+  /* --- Échauffement : on paie avec des pièces --- */
+  payerBonbons() {
+    // bonbon à 1/3 € ou à 2/3 € (k tiers d'euro)
+    const k = choix([1, 2]);
+    let n; do n = alea(4, k === 1 ? 14 : 8); while ((k * n) % 3 === 0);
+    const t = k * n, g = k === 1 ? '⅓' : '⅔';
+    return { sorte: 'porte', rep: t, court: `Payer ${n} bonbons à ${k}/3 €`, expr: `${n} × ${fr(k, 3)} €`,
+      texte: `Un bonbon coûte ${fr(k, 3)} €.<br>Paie ${n} bonbons.`,
+      scene: { prix: [['Bonbons', `1 bonbon : ${g} €`]], objets: bocal(280, n), enfants: [COUL[0]] },
+      manip: { mode: 'payer' },
+      aide: k === 1 ? `3 pièces de ${T13} € font 1 €.` : `Un bonbon : 2 pièces de ${T13} €.<br>3 pièces de ${T13} € font 1 €.`,
+      corr: [`P = ${n} × ${fr(k, 3)} €`, `P = ${fr(t, 3)} €`, ...div3(t), `<span class="fin">P = ${eur(t)}</span>`] };
+  },
+
+  payerPrix() {
+    const t = nonMult3(4, 20), [nom, emo, court] = choix(OBJETS);
+    return { sorte: 'porte', rep: t, court: `Payer ${nom} à ${eurTxt(t)}`, expr: null,
+      texte: `Paie ${nom} à ${eur(t)}.`,
+      scene: { prix: [[court, eurSVG(t)]], objets: objets(280, emo, 1, 70), enfants: [COUL[1]] },
+      manip: { mode: 'payer' },
+      aide: `Regarde l'étiquette : des euros, puis des pièces de ${T13} €.`,
+      corr: [`<span class="fin">À payer : ${eur(t)}</span>`] };
+  },
+  payerPartage() {
+    const T = nonMult3(4, 14);
+    return { sorte: 'porte', rep: T, court: `Partager ${T} € entre 3`, expr: `${T} € : 3`,
+      texte: `Trois enfants achètent ensemble un gâteau à ${T} €.<br>Ils paient chacun autant. Paie la part d'un enfant.`,
+      scene: { prix: [['Gâteau', `${T} €`]], objets: objets(280, '🎂', 1, 76), enfants: COUL },
+      manip: { mode: 'payer' },
+      aide: `Partage ${T} € en 3 parts égales.<br>Pose une pièce de 1 € sur 🔁 : elle devient 3 pièces de ${T13} €.`,
+      corr: [...div3(T), `<span class="fin">P = ${eur(T)}</span>`] };
+  },
+
+  /* --- Niveau 1 : bonbons à 1/3 € --- */
+  prixBonbons() {
+    const k = choix([1, 2]);
+    let n;
+    if (k === 1 && Math.random() < .15) n = choix([30, 45, 60, 100, 200]);
+    else do n = alea(4, k === 1 ? 30 : 20); while ((k * n) % 3 === 0);
+    const t = k * n, g = k === 1 ? '⅓' : '⅔';
+    return { sorte: 'euro', lettre: 'P', rep: t, court: `${n} bonbons à ${k}/3 €`, expr: `${n} × ${fr(k, 3)} €`,
+      texte: `Un bonbon coûte ${fr(k, 3)} €.<br>Combien paie-t-on pour ${n} bonbons ?`,
+      scene: { prix: [['Bonbons', `1 bonbon : ${g} €`]], objets: bocal(280, n), enfants: [COUL[0]] },
+      manip: { mode: 'payer' },
+      aide: `Commence par : P = ${n} × ${k}/3 €.<br>3 pièces de ${T13} € font 1 €.`,
+      corr: [`P = ${n} × ${fr(k, 3)} €`, `P = ${fr(t, 3)} €`, ...div3(t), `<span class="fin">P = ${eur(t)}</span>`] };
+  },
+
+  payeAvecPieces() {
+    const n = nonMult3(4, 30), [nom, emo, court] = choix(OBJETS);
+    return { sorte: 'euro', lettre: 'P', rep: n, court: `${nom} payé avec ${n} pièces`, expr: `${n} × ${T13} €`,
+      texte: `Un enfant paie ${nom} avec ${n} pièces de ${T13} €.<br>Quel est le prix ?`,
+      scene: { prix: [[court, '? €']], objets: objets(205, emo, 1, 60) + piecesComptoir(310, n), enfants: [COUL[2]] },
+      manip: { mode: 'payer' },
+      aide: `Commence par : P = ${n} × 1/3 €.<br>3 pièces de ${T13} € font 1 €.`,
+      corr: [`P = ${n} × ${T13} €`, `P = ${fr(n, 3)} €`, ...div3(n), `<span class="fin">P = ${eur(n)}</span>`] };
+  },
+  combienPieces() {
+    const q = alea(1, 9), r = alea(1, 2), n = 3 * q + r, [nom, emo, court] = choix(OBJETS);
+    return { sorte: 'pieces', lettre: 'N', rep: n, unite: 'pièces', court: `Pièces pour ${eurTxt(n)}`, expr: `(${q} × 3) + ${r}`,
+      texte: `Un enfant veut acheter ${nom} à ${eur(n)}.<br>Il n'a que des pièces de ${T13} €. Combien lui en faut-il ?`,
+      scene: { prix: [[court, eurSVG(n)]], objets: objets(280, emo, 1, 70), enfants: [COUL[1]] },
+      manip: { mode: 'payer' },
+      aide: `1 € fait 3 pièces de ${T13} €.`,
+      corr: [`1 € fait 3 pièces.`, `${q} € font ${q} × 3 = ${3 * q} pièces.`, `${fr(r, 3)} € fait ${pieces(r)}.`,
+        `<span class="fin">N = ${3 * q} + ${r} = ${n} pièces</span>`] };
+  },
+
+  /* --- Niveau 2 : partager un prix --- */
+  partage() {
+    const T = nonMult3(4, 20);
+    const c = choix([
+      { t: `3 tablettes de chocolat identiques coûtent ${T} €.<br>Quel est le prix d'une tablette ?`, c: '3 tablettes',
+        prix: [['Chocolat', `3 tablettes : ${T} €`]], o: objets(280, '🍫', 3, 54) },
+      { t: `Un enfant achète le tiers d'une tarte.<br>La tarte entière coûte ${T} €. Combien paie-t-il ?`, c: 'Tiers de tarte',
+        prix: [['Tarte entière', `${T} €`]], o: tarte(280) },
+      { t: `3 L de jus d'orange coûtent ${T} €.<br>Quel est le prix d'un litre ?`, c: '3 L de jus',
+        prix: [["Jus d'orange", `3 L : ${T} €`]], o: objets(280, '🧃', 3, 54) },
+      { t: `Trois amis achètent un gâteau à ${T} €.<br>Ils partagent le prix. Combien paie chacun ?`, c: 'Gâteau à 3', e: COUL,
+        prix: [['Gâteau', `${T} €`]], o: objets(280, '🎂', 1, 76) },
+    ]);
+    return { sorte: 'euro', lettre: 'P', rep: T, court: `${c.c} pour ${T} €`, expr: `${T} € : 3`, texte: c.t,
+      scene: { prix: c.prix, objets: c.o, enfants: c.e || [COUL[0]] },
+      manip: { mode: 'payer' },
+      aide: `Commence par : P = ${T} € : 3.<br>Puis écris ${T} comme une somme : (… + …) : 3.<br>Pièces : pose une pièce de 1 € sur 🔁 pour l'échanger.`,
+      corr: [...div3(T), `<span class="fin">P = ${eur(T)}</span>`] };
+  },
+
+  /* --- Niveau 3 : deux étapes --- */
+  objetPlusDeux() {
+    let p, u;
+    do { p = choix([4, 5, 7, 8]); u = choix([4, 5, 7, 8, 10, 11]); } while ((p + 2 * u) % 3 !== 0);
+    const T = (p + 2 * u) / 3;
+    const [A, eA, cA] = choix([['une barre de chocolat', '🍫', 'Barre de chocolat'], ['un paquet de biscuits', '🍪', 'Biscuits'], ['une glace', '🍦', 'Glace']]);
+    const [B, b1, eB, cB] = choix([['canettes de soda', 'canette', '🥤', 'Canette de soda'], ['briques de jus', 'brique', '🧃', 'Brique de jus'], ['bouteilles de lait', 'bouteille', '🥛', 'Bouteille de lait']]);
+    return { sorte: 'euro', lettre: 'P', rep: u, court: `${A} + 2 ${B} pour ${T} €`, expr: `(${T} € − (${eur(p)})) : 2`,
+      texte: `Un enfant achète ${A} à ${eur(p)} et deux ${B} identiques.<br>Il paie ${T} € en tout. Quel est le prix d'une ${b1} ?`,
+      scene: { prix: [[cA, eurSVG(p)], [cB, '? €']], caisse: `TOTAL ${T} €`, objets: objets(225, eA, 1, 56) + objets(330, eB, 2, 50), enfants: [COUL[2]] },
+      manip: { mode: 'payer' },
+      aide: `Calcule d'abord le prix des deux ${B}.`,
+      corr: [`Deux ${b1}s : ${T} € − (${eur(p)}) = ${eur(2 * u)}`, `${eur(2 * u)}, soit ${2 * u} pièces de ${T13} €.`,
+        `${2 * u} : 2 = ${u} pièces, soit ${fr(u, 3)} €.`, `<span class="fin">P = ${eur(u)}</span>`] };
+  },
+  monnaie() {
+    let u, n;
+    do { u = choix([4, 5, 7, 8, 10, 11]); n = alea(2, 4); } while ((n * u) % 3 === 0);
+    const tot = n * u, B = [5, 10, 20, 50].find(b => 3 * b > tot), rendu = 3 * B - tot, a = Math.floor(u / 3), b = u % 3;
+    const [obj, emo] = choix([['cahiers', '📓'], ['stylos', '🖊️'], ['classeurs', '📁']]);
+    const l1 = n * b >= 3 ? `${n} × (${eur(u)}) = ${n * a} € + ${fr(n * b, 3)} € = ${eur(tot)}` : `${n} × (${eur(u)}) = ${eur(tot)}`;
+    return { sorte: 'euro', lettre: 'M', rep: rendu, court: `${n} ${obj} à ${eurTxt(u)}, billet de ${B} €`, expr: `${B} € − (${n} × (${eur(u)}))`,
+      texte: `Un enfant achète ${n} ${obj} à ${eur(u)} chacun.<br>Il donne un billet de ${B} €. Combien Mamie Maths lui rend-elle ?`,
+      scene: { prix: [[obj.charAt(0).toUpperCase() + obj.slice(1, -1), `${eurSVG(u)} pièce`]], objets: objets(280, emo, n, 48), enfants: [COUL[1]], billet: B },
+      manip: { mode: 'payer' },
+      aide: `Calcule d'abord le prix des ${n} ${obj}.`,
+      corr: [`Prix des ${n} ${obj} : ${l1}`, `<span class="fin">M = ${B} € − (${eur(tot)}) = ${eur(rendu)}</span>`] };
+  },
+  resteBonbons() {
+    const k = choix([1, 2]), [nom, emo, court] = choix(OBJETS);
+    let B, n, p;
+    do { B = choix([5, 10]); n = alea(2, Math.floor((3 * B - 4) / k)); p = 3 * B - k * n; } while (p < 4 || p % 3 === 0);
+    const t = k * n, g = k === 1 ? '⅓' : '⅔';
+    const corr = [`Reste : ${B} € − (${eur(p)}) = ${eur(t)}`, `${eur(t)} font ${t} pièces de ${T13} €.`];
+    if (k === 2) corr.push(`Un bonbon coûte 2 pièces, donc ${t} : 2 = ${n} bonbons.`);
+    corr.push(`<span class="fin">N = ${n} bonbons</span>`);
+    return { sorte: 'pieces', lettre: 'N', rep: n, unite: 'bonbons', court: `Bonbons à ${k}/3 € avec le reste de ${B} €`, expr: `(${B} € − (${eur(p)})) : ${fr(k, 3)} €`,
+      texte: `Un enfant a ${B} €. Il achète ${nom} à ${eur(p)}.<br>Avec le reste, il achète des bonbons à ${fr(k, 3)} €. Combien de bonbons ?`,
+      scene: { prix: [[court, eurSVG(p)], ['Bonbons', `1 bonbon : ${g} €`]], objets: objets(220, emo, 1, 56) + bocal(330, 40), enfants: [COUL[0]], billet: B },
+      manip: { mode: 'payer' },
+      aide: `Calcule d'abord l'argent qui reste.<br>1 € fait 3 pièces de ${T13} €.` + (k === 2 ? `<br>Un bonbon : 2 pièces de ${T13} €.` : ''),
+      corr };
+  },
+
+};
+const NIVEAUX = [
+  { nom: 'Échauffement', types: ['payerBonbons', 'payerPrix', 'payerPartage'] },
+  { nom: 'Niveau 1', types: ['prixBonbons', 'payeAvecPieces', 'combienPieces'] },
+  { nom: 'Niveau 2', types: ['partage'] },
+  { nom: 'Niveau 3', types: ['objetPlusDeux', 'monnaie', 'resteBonbons'] },
+  { nom: 'Mélange', nb: 20, diplome: true, familles: [   // 4 exercices de chaque famille
+    { nom: 'Prix de bonbons', types: ['prixBonbons'] },
+    { nom: 'Prix payé en pièces de 1/3 €', types: ['payeAvecPieces'] },
+    { nom: 'Nombre de pièces', types: ['combienPieces'] },
+    { nom: 'Partage par 3', types: ['partage'] },
+    { nom: 'Problèmes en deux étapes', types: ['objetPlusDeux', 'monnaie', 'resteBonbons'] },
+  ] },
+];
+
+/* ================= Lecture d'une ligne de calcul =================
+   Nombres entiers, fractions a/b, « € » après un nombre ou une parenthèse, + − × :, parenthèses.
+   Programme de 6e : pas de priorités. Dans une parenthèse, une seule opération, ou une suite de + (ou de ×). */
+class Erreur { constructor(m) { this.m = m; } }
+const V = (n, d = 1, u = 0) => { if (d < 0) { n = -n; d = -d; } const g = pgcd(n, d); return { n: n / g, d: d / g, u }; };
+function operer(op, a, b) {
+  if (op === '+' || op === '-') {
+    if (a.u !== b.u) throw new Erreur('Mets € après chaque prix.');
+    return V(op === '+' ? a.n * b.d + b.n * a.d : a.n * b.d - b.n * a.d, a.d * b.d, a.u);
+  }
+  if (op === '*') {
+    if (a.u + b.u > 1) throw new Erreur('On ne multiplie pas des € par des €.');
+    return V(a.n * b.n, a.d * b.d, a.u + b.u);
+  }
+  if (b.n === 0) throw new Erreur('Division par 0 !');
+  if (a.u - b.u < 0) throw new Erreur('Écriture impossible.');
+  return V(a.n * b.d, a.d * b.n, a.u - b.u);
+}
+function decouper(s) {
+  s = s.replace(/[×xX*·]/g, '*').replace(/÷/g, ':').replace(/[−–]/g, '-').replace(/\s+/g, '');
+  const t = [];
+  for (let i = 0; i < s.length;) {
+    const c = s[i];
+    if (/\d/.test(c)) { let j = i; while (j < s.length && /\d/.test(s[j])) j++; t.push({ t: 'n', v: +s.slice(i, j) }); i = j; }
+    else if ('/€+-*:()'.includes(c)) { t.push({ t: c }); i++; }
+    else if (c === ',' || c === '.') throw new Erreur('Pas de virgule : écris des fractions.');
+    else throw new Erreur('Écriture non reconnue.');
+  }
+  return t;
+}
+function analyser(s) {
+  const t = decouper(s);
+  if (!t.length) throw new Erreur('Ligne vide.');
+  let i = 0;
+  const voir = () => t[i] && t[i].t;
+  function expr() {
+    const termes = [terme()], ops = [];
+    while (['+', '-', '*', ':'].includes(voir())) { ops.push(t[i++].t); termes.push(terme()); }
+    if (ops.length > 1 && !(ops.every(o => o === ops[0]) && (ops[0] === '+' || ops[0] === '*'))) throw new Erreur('Mets des parenthèses.');
+    let v = termes[0].v;
+    for (let k = 0; k < ops.length; k++) v = operer(ops[k], v, termes[k + 1].v);
+    return ops.length ? { k: 'op', op: ops[0], kids: termes, v } : termes[0];
+  }
+  function terme() {
+    let nd;
+    if (voir() === '(') {
+      i++; const e = expr();
+      if (voir() !== ')') throw new Erreur('Parenthèse non fermée.');
+      i++; nd = { k: 'par', v: e.v };
+    } else if (voir() === 'n') {
+      const a = t[i++].v; let b = 1;
+      if (voir() === '/') {
+        i++;
+        if (voir() !== 'n') throw new Erreur('Écriture non reconnue.');
+        b = t[i++].v;
+        if (b === 0) throw new Erreur('Division par 0 !');
+      }
+      nd = { k: 'num', a, b, v: V(a, b) };
+    } else throw new Erreur('Écriture non reconnue.');
+    if (voir() === '€') {
+      i++;
+      if (nd.v.u) throw new Erreur('Un seul € à la fois.');
+      nd.v = { ...nd.v, u: 1 }; nd.euro = true;
+    }
+    return nd;
+  }
+  const r = expr();
+  if (i < t.length) throw new Erreur(voir() === ')' ? 'Parenthèse en trop.' : 'Écriture non reconnue.');
+  return { arbre: r, jetons: t };
+}
+/* écriture finale : « 2 € + 1/3 € », « 4 € », « 2/3 € » (ou un entier pour un nombre) */
+function estMixte(a, sorte) {
+  const entier = n => n.k === 'num' && n.b === 1;
+  const fracPropre = n => n.k === 'num' && n.b > 1 && n.a > 0 && n.a < n.b;
+  if (sorte === 'pieces') return entier(a) && !a.euro;
+  if (a.k === 'num') return !!a.euro && (entier(a) || fracPropre(a));
+  return a.k === 'op' && a.op === '+' && a.kids.length === 2 && a.kids.every(k => k.euro) && entier(a.kids[0]) && fracPropre(a.kids[1]);
+}
+const echapper = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function rendre(jetons) {
+  let s = '';
+  for (let i = 0; i < jetons.length; i++) {
+    const j = jetons[i];
+    if (j.t === 'n' && jetons[i + 1]?.t === '/' && jetons[i + 2]?.t === 'n') { s += fr(j.v, jetons[i + 2].v); i += 2; }
+    else if (j.t === 'n') s += j.v;
+    else if (j.t === '€') s += '&nbsp;€';
+    else if (j.t === '(' || j.t === ')') s += j.t;
+    else s += ` ${{ '+': '+', '-': '−', '*': '×', ':': ':' }[j.t]} `;
+  }
+  return s;
+}
+
+/* ================= Pièces : glisser-déposer =================
+   Porte-monnaie (pièces à volonté) → comptoir : ce qu'on paie.
+   🔁 échange 1 € → 3 pièces de 1/3 € (et 2 € → 2 pièces de 1 €). */
+const PIECE = { 6: '2 €', 3: '1 €', 1: `<span>${fr(1, 3)}&#8239;€</span>` };
+function elPiece(v) {
+  const d = document.createElement('div');
+  d.className = 'piece p' + v; d.dataset.v = v; d.innerHTML = PIECE[v];
+  return d;
+}
+let zones = {}, manip = null;
+const ECHANGE = `<div class="echange" data-echange="1">🔁<br>Échanger</div>`;
+function installerManip(m) {
+  manip = m;
+  const box = $('manip');
+  zones = { porte: [] };
+  box.innerHTML = `<div class="rangee"><div><div class="lab">👛 Mon porte-monnaie</div><div class="source"></div></div>
+    <div class="zone table" data-zone="porte"><span class="titre">Comptoir</span></div>${ECHANGE}</div>`;
+  const src = box.querySelector('.source');
+  for (const v of [6, 3, 1]) src.appendChild(elPiece(v));
+  $('titre-pieces').innerHTML = `👛 Les pièces <button class="reinit" id="reinit">↺ Recommencer</button>`;
+  $('reinit').onclick = () => { if (!bloque) installerManip(manip); };
+  dessinerZones();
+}
+function dessinerZones() {
+  for (const [z, l] of Object.entries(zones)) {
+    const el = document.querySelector(`[data-zone="${z}"]`);
+    el.querySelectorAll('.piece').forEach(p => p.remove());
+    l.sort((a, b) => b - a).forEach((v, i) => { const p = elPiece(v); p.dataset.i = i; p.dataset.de = z; el.appendChild(p); });
+  }
+}
+function cibleSous(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  if (el.closest('[data-echange]')) return { echange: true };
+  const z = el.closest('[data-zone]');
+  return z ? { zone: z.dataset.zone } : null;
+}
+document.addEventListener('pointerdown', e => {
+  const src = e.target.closest('#manip .piece');
+  if (!src || bloque) return;
+  e.preventDefault();
+  const v = +src.dataset.v, de = src.dataset.de || null;
+  const fant = elPiece(v); fant.classList.add('fantome');
+  fant.style.left = e.clientX + 'px'; fant.style.top = e.clientY + 'px';
+  document.body.appendChild(fant);
+  if (de) src.style.visibility = 'hidden';
+  let survol = null;
+  const bouge = ev => {
+    fant.style.left = ev.clientX + 'px'; fant.style.top = ev.clientY + 'px';
+    survol?.classList.remove('survol');
+    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+    survol = el && (el.closest('[data-echange]') || el.closest('[data-zone]'));
+    survol?.classList.add('survol');
+  };
+  const lache = ev => {
+    document.removeEventListener('pointermove', bouge); document.removeEventListener('pointerup', lache); document.removeEventListener('pointercancel', lache);
+    fant.remove(); survol?.classList.remove('survol');
+    const c = ev.type === 'pointerup' ? cibleSous(ev.clientX, ev.clientY) : null;
+    const retirer = () => { if (de) zones[de].splice(+src.dataset.i, 1); };
+    if (c?.echange && v > 1) {
+      // échange : la monnaie revient là d'où vient la pièce (ou dans le porte-monnaie)
+      retirer();
+      const ou = 'porte';
+      if (v === 3) zones[ou].push(1, 1, 1); else zones[ou].push(3, 3);
+    } else if (c?.zone && c.zone !== de) {
+      retirer(); zones[c.zone].push(v);
+    } else if (!c && de) {
+      retirer();   // pièce reprise du comptoir : elle revient dans le porte-monnaie
+    }
+    dessinerZones();
+    if (q?.sorte === 'porte' && !fini) afficherRetour('');
+  };
+  document.addEventListener('pointermove', bouge); document.addEventListener('pointerup', lache); document.addEventListener('pointercancel', lache);
+});
+const somme = l => l.reduce((a, b) => a + b, 0);
+function miniPieces(t) {
+  const l = [];
+  for (const v of [6, 3, 1]) while (t >= v) { l.push(v); t -= v; }
+  return '<span class="mini">' + l.map(v => elPiece(v).outerHTML).join('') + '</span>';
+}
+
+/* ================= Lignes de calcul ================= */
+let lignesOk = 0;
+function nouvelleLigne() {
+  const lig = document.createElement('div');
+  lig.className = 'lig';
+  lig.innerHTML = `<span class="pre">${lignesOk === 0 ? q.lettre + ' =' : '='}</span><input autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${lignesOk === 0 ? 'Écris ton expression ici' : 'Continue le calcul'}"><span class="msg"></span>`;
+  $('calcul').appendChild(lig);
+  const inp = lig.querySelector('input');
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); verifierLigne(lig); } });
+  inp.addEventListener('input', () => { inp.classList.remove('faux'); lig.querySelector('.msg').textContent = ''; });
+  setTimeout(() => inp.focus({ preventScroll: true }), 30);
+}
+function verifierLigne(lig) {
+  const inp = lig.querySelector('input'), msg = lig.querySelector('.msg');
+  const dire = (t, c) => { msg.textContent = t; msg.className = 'msg ' + c; };
+  if (!inp || !inp.value.trim()) return;
+  let r;
+  try { r = analyser(inp.value); }
+  catch (e) { if (e instanceof Erreur) { q.donne = echapper(inp.value); inp.classList.add('faux'); return dire(e.m, 'info'); } throw e; }
+  q.donne = rendre(r.jetons) + (q.sorte === 'pieces' && !r.arbre.v.u ? ` ${q.unite}` : '');
+  const v = r.arbre.v;
+  if (q.sorte === 'euro' && v.u !== 1) { inp.classList.add('faux'); return dire("Il manque l'unité : €.", 'info'); }
+  if (q.sorte === 'pieces' && v.u !== 0) { inp.classList.add('faux'); return dire(`Pas de € : on compte des ${q.unite}.`, 'info'); }
+  const juste = q.sorte === 'euro' ? v.n * 3 === q.rep * v.d : v.d === 1 && v.n === q.rep;
+  if (!juste) {
+    erreurs++; inp.classList.add('faux');
+    return dire(q.sorte === 'euro' ? "Ce n'est pas le bon prix." : "Ce n'est pas le bon nombre.", 'ko');
+  }
+  // ligne juste : figée
+  lignesOk++;
+  inp.replaceWith(Object.assign(document.createElement('span'), { className: 'rendu pop', innerHTML: rendre(r.jetons) + (q.sorte === 'pieces' ? ` ${q.unite}` : '') }));
+  lig.querySelector('.pre').classList.add('ok');
+  if (estMixte(r.arbre, q.sorte)) {
+    dire('✓', 'ok');
+    terminer(true);
+  } else {
+    dire(q.sorte === 'euro' ? 'Juste. Continue jusqu’au nombre mixte.' : 'Juste. Continue.', 'ok');
+    nouvelleLigne();
+  }
+}
+
+/* ================= Déroulement ================= */
+let niveau = 0, serie = [], iq = 0, q = null, fini = false, bloque = false, erreurs = 0;
+const eleve = { prenom: '', initiale: '' };
+function demarrer(n) {
+  niveau = n;
+  const def = NIVEAUX[n];
+  serie = [];
+  if (def.familles) {
+    // 4 de chaque famille, mélangés, jamais deux fois la même famille de suite
+    const par = nbQ() / def.familles.length;
+    let liste = def.familles.flatMap((f, k) => {
+      const t = [...f.types].sort(() => Math.random() - .5);
+      return Array.from({ length: par }, (_, i) => ({ k, g: t[i % t.length] }));
+    });
+    for (let essai = 0; essai < 500; essai++) {
+      liste.sort(() => Math.random() - .5);
+      if (liste.every((x, i) => i === 0 || x.k !== liste[i - 1].k)) break;
+    }
+    serie = liste.map(({ k, g }) => Object.assign(GEN[g](), { famille: k }));
+  } else {
+    let dernier = '';
+    for (let i = 0; i < nbQ(); i++) {
+      let g; do g = choix(def.types); while (g === dernier && new Set(def.types).size > 1);
+      dernier = g; serie.push(GEN[g]());
+    }
+  }
+  iq = 0;
+  dessinerNiveaux();
+  poser();
+}
+function poser() {
+  q = serie[iq]; fini = false; bloque = false; erreurs = 0; lignesOk = 0;
+  // espace insécable avant € : « 17 € » ne se coupe pas en fin de ligne
+  $('question').innerHTML = `<span class="num">Exercice ${iq + 1}</span>${q.texte.replace(/ €/g, '&nbsp;€')}`;
+  if (typeof placerPanneau === 'function') placerPanneau();
+  dessinerImage(q.scene);
+  installerManip(q.manip);
+  // réponse qui n'est pas un prix (un nombre de pièces, de bonbons) : pas de porte-monnaie
+  $('bloc-pieces').hidden = q.sorte === 'pieces';
+  const porte = q.sorte === 'porte';
+  $('bloc-calcul').hidden = porte;
+  $('valider').hidden = !porte;
+  $('voir-corr').hidden = false;
+  $('voir-aide').hidden = false; $('aide').innerHTML = ''; nbAides = 0; $('voir-aide').textContent = '🙋 Aide';
+  $('suivant').hidden = true;
+  afficherRetour('');
+  $('calcul').innerHTML = '';
+  if (!porte) nouvelleLigne();
+  dessinerNav();
+}
+function afficherRetour(html, cls = 'info') {
+  $('retour').innerHTML = html ? `<div class="retour ${cls}">${html}</div>` : '';
+}
+/* Échauffement : on vérifie les pièces */
+function validerPieces() {
+  if (fini) return;
+  const t = somme(zones.porte);
+  if (!t) return afficherRetour('Le comptoir est vide.');
+  q.donne = `${eur(t)} <span class="mini">${zones.porte.map(v => elPiece(v).outerHTML).join('')}</span>`;   // les pièces vraiment posées
+  if (t === q.rep) return terminer(true);
+  erreurs++;
+  afficherRetour(t < q.rep ? "Il manque de l'argent." : "Trop d'argent.", 'ko');
+}
+function correctionHTML() {
+  let c = q.corr.map(l => `<div>${l}</div>`).join('');
+  if (q.sorte === 'porte') c += `<div>Par exemple : ${miniPieces(q.rep)}</div>`;
+  return `<div class="corr">${c}</div>`;
+}
+function terminer(reussi) {
+  fini = true; bloque = true;
+  q.reussi = reussi; q.erreurs = erreurs; q.aides = nbAides;
+  $('valider').hidden = true; $('voir-corr').hidden = true; $('voir-aide').hidden = true; $('aide').innerHTML = '';
+  $('calcul').querySelectorAll('input').forEach(i => i.closest('.lig').remove());
+  if (reussi) {
+    afficherRetour(`<b>${choix(['Bravo !', 'Exact !', 'Parfait !'])}</b>${erreurs ? ` <span style="color:var(--muted)">(${erreurs} erreur${erreurs > 1 ? 's' : ''})</span>` : ''}`
+      + `<details style="margin-top:8px"><summary>Voir une correction</summary>${correctionHTML()}</details>`, 'ok');
+  } else afficherRetour('<b>Voici une correction :</b>' + correctionHTML(), 'ko');
+  $('suivant').textContent = iq + 1 < nbQ() ? 'Exercice suivant →' : 'Voir mon bilan';
+  $('suivant').hidden = false; $('suivant').focus();
+  dessinerNav();
+}
+function suivant() {
+  if (++iq < nbQ()) poser(); else bilan();
+}
+function bilan() {
+  const score = serie.filter(x => x.reussi).length;
+  $('diplome').hidden = !NIVEAUX[niveau].diplome;
+  const NB = nbQ(), emo = score === NB ? '🏆' : score >= .8 * NB ? '😃' : score >= .5 * NB ? '🙂' : '💪';
+  $('bilan-score').textContent = `${emo} ${score} / ${NB}`;
+  const rep = x => x.sorte === 'pieces' ? `${x.rep} ${x.unite}` : eur(x.rep);
+  $('bilan-liste').innerHTML = serie.map(x => `<div class="bl ${x.reussi ? 'ok' : 'ko'}"><span class="m">${x.reussi ? '✓' : '✗'}</span>`
+    + `<span class="q">${x.expr ? `${x.expr} = ` : ''}<b>${rep(x)}</b></span>`
+    + `<span class="y">Ta réponse : ${x.donne || '—'}</span></div>`).join('');
+  $('dlg-bilan').showModal();
+}
+function dessinerNav() {
+  $('nav').innerHTML = serie.map((x, i) => {
+    const c = x.reussi === true ? ' ok' : x.reussi === false ? ' ko' : '';
+    return `<button class="point${c}${i === iq ? ' courant' : ''}" tabindex="-1">${i + 1}</button>`;
+  }).join('');
+}
+function dessinerNiveaux() {
+  $('niveaux').innerHTML = NIVEAUX.map((n, i) => `<button class="onglet${i === niveau ? ' actif' : ''}" data-n="${i}">${n.nom}${n.diplome ? ' · 🎓 avec diplôme' : ''}</button>`).join('');
+  $('niveaux').querySelectorAll('button').forEach(b => b.onclick = () => choisirNiveau(+b.dataset.n));
+}
+
+$('valider').onclick = validerPieces;
+$('voir-corr').onclick = () => { if (!fini) terminer(false); };
+/* Aide révélée petit à petit : un indice de plus à chaque clic */
+let nbAides = 0;
+function indices() {
+  const l = q.aide.split('<br>');
+  if (q.sorte === 'euro') l.push('Mets € après chaque prix.', 'Mets des parenthèses.', 'Termine par un nombre mixte : 1 € + 2/3 €.');
+  if (q.sorte === 'pieces') l.push('Termine par un nombre entier.');
+  return l;
+}
+$('voir-aide').onclick = () => {
+  if (fini) return;
+  const l = indices();
+  nbAides++;
+  $('aide').innerHTML = `<div class="aide"><ul>${l.slice(0, nbAides).map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+  $('voir-aide').textContent = '🙋 Encore une aide';
+  $('voir-aide').hidden = nbAides >= l.length;
+};
+$('suivant').onclick = suivant;
+$('rejouer').onclick = () => { $('dlg-bilan').close(); demarrer(niveau); };
+/* Nom demandé à l'ouverture de l'appli */
+function entrer() {
+  const prenom = $('champPrenom').value.trim().replace(/\s+/g, ' '), ini = $('champInitiale').value.trim();
+  if (prenom.length < 2 || !/^[A-Za-zÀ-ÖØ-öø-ÿ]$/.test(ini)) {
+    $('eleveErreur').textContent = "Écris ton prénom et l'initiale de ton nom.";
+    return (prenom.length < 2 ? $('champPrenom') : $('champInitiale')).focus();
+  }
+  eleve.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
+  eleve.initiale = ini.toUpperCase();
+  $('eleve-nom').textContent = `👤 ${eleve.prenom} ${eleve.initiale}.`;
+  $('dlg-nom').close();
+  demarrer(niveauDemande);
+}
+$('entrer').onclick = entrer;
+for (const c of ['champPrenom', 'champInitiale']) $(c).addEventListener('keydown', e => { if (e.key === 'Enter') entrer(); });
+$('champInitiale').addEventListener('input', () => { $('champInitiale').value = $('champInitiale').value.toUpperCase(); });
+/* Le nom n'est demandé que pour le niveau avec diplôme */
+let niveauDemande = 0;
+function choisirNiveau(n) {
+  if (NIVEAUX[n].diplome && !eleve.prenom) {
+    niveauDemande = n;
+    $('eleveErreur').textContent = '';
+    $('dlg-nom').showModal();
+    $('champPrenom').focus();
+  } else demarrer(n);
+}
+/* Diplôme : la série Mélange (ouvert depuis le bilan) */
+let diplomeDepuisBilan = false;
+function montrerDiplome() {
+  diplomeDepuisBilan = true;
+  $('dlg-bilan').close();
+  ouvrirDiplome({ nom: `${eleve.prenom} ${eleve.initiale}.`, serie, familles: NIVEAUX[niveau].familles });
+}
+$('diplome').onclick = montrerDiplome;
+$('onglet').onclick = () => window.open(location.href, '_blank', 'noopener');
+
+/* Fenêtre étroite (une seule colonne) : boutons et retours juste sous l'expression, avant les pièces */
+const uneColonne = matchMedia('(max-width:900px)');
+function placerPanneau() {
+  const col = document.querySelector('.colonne');
+  // échauffement : on valide les pièces, donc boutons après les pièces
+  if (uneColonne.matches) (q?.sorte === 'porte' ? $('bloc-pieces') : $('bloc-calcul')).after(col);
+  else document.querySelector('main').append(col);
+}
+uneColonne.addEventListener('change', placerPanneau);
+placerPanneau();
+
+demarrer(0);
+</script>
+</body>
+</html>
