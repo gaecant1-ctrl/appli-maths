@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le champ de mines</title>
+<style>
+  :root{
+    --bg:#f4f1ea;
+    --panel:#ffffff;
+    --border:#d9d3c4;
+    --text:#2b2a26;
+    --muted:#7a7568;
+    --accent:#2f6fd6;
+    --ok:#2e9e5b;
+    --ko:#d6452f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+  #app{display:flex;height:100%;}
+  #sidebar{width:290px;min-width:290px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:14px;padding:16px;overflow-y:auto;}
+  h1{font-size:20px;margin:0;display:flex;align-items:center;gap:8px;}
+  .cases{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+  .cases button{padding:9px 2px;}
+  button{font:inherit;font-size:15px;border:1px solid var(--border);background:#f7f5ef;color:var(--text);
+    border-radius:8px;padding:9px 8px;cursor:pointer;}
+  button:hover{border-color:var(--accent);}
+  button.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  #consigne{font-size:17px;line-height:1.4;background:#fbf8f0;border:1px solid var(--border);
+    border-radius:10px;padding:12px;min-height:84px;}
+  #consigne b{color:var(--accent);}
+  .etapes{font-size:14px;color:var(--muted);margin:0;padding-left:18px;line-height:1.5;}
+  #pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,58px);gap:6px;justify-content:center;}
+  #pad button{font-size:24px;padding:0;user-select:none;-webkit-user-select:none;touch-action:none;}
+  #pad .up{grid-column:2;grid-row:1;}
+  #pad .left{grid-column:1;grid-row:2;}
+  #pad .down{grid-column:2;grid-row:2;}
+  #pad .right{grid-column:3;grid-row:2;}
+  #pad button.held{background:var(--accent);color:#fff;}
+  .touches{font-size:13px;color:var(--muted);text-align:center;margin-top:-6px;}
+  .col{display:flex;flex-direction:column;gap:6px;}
+  label.chk{font-size:14px;display:flex;gap:8px;align-items:center;cursor:pointer;}
+  details{font-size:14px;color:var(--muted);}
+  details summary{cursor:pointer;}
+  details .col{margin-top:8px;}
+  #stage{flex:1;position:relative;background:#fff;}
+  #ggb{position:absolute;inset:0;}
+  #overlay{position:absolute;pointer-events:none;z-index:3;}
+  /* Dès que le bonhomme part : plus aucune construction possible */
+  #toast{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:4;display:none;
+    background:#2b2a26;color:#fff;border-radius:10px;padding:8px 16px;font-size:16px;}
+  #verrou{position:absolute;inset:0;z-index:2;display:none;cursor:not-allowed;}
+  #verrou .badge{position:absolute;top:8px;right:12px;background:#fff;border:2px solid var(--border);
+    border-radius:10px;padding:6px 12px;font-size:15px;color:var(--muted);}
+  #message{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:4;display:none;
+    background:#fff;border:3px solid var(--ko);border-radius:16px;padding:20px 28px;text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);}
+  #message.win{border-color:var(--ok);}
+  #message .smiley{display:none;line-height:0;margin-bottom:6px;animation:ouf 1.2s ease-in-out infinite;}
+  #message .smiley .goutte{animation:goutte 1.2s ease-in infinite;}
+  @keyframes goutte{0%{transform:translateY(0);opacity:1;}80%{transform:translateY(10px);opacity:1;}100%{transform:translateY(12px);opacity:0;}}
+  #message.win .smiley{display:block;}
+  @keyframes ouf{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg) scale(1.08);}}
+  #message .big{font-size:34px;font-weight:700;margin-bottom:6px;}
+  #message .small{font-size:16px;color:var(--muted);margin-bottom:14px;}
+  #message button{font-size:17px;background:var(--accent);color:#fff;border-color:var(--accent);padding:10px 18px;}
+  #loading{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);color:var(--muted);font-size:16px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h1>💣 Le champ de mines</h1>
+    <div class="cases" id="cases">
+      <button data-cas="0">Cas 0</button>
+      <button data-cas="1">Cas 1</button>
+      <button data-cas="2">Cas 2</button>
+      <button data-cas="3">Cas 3</button>
+      <button data-cas="4">Cas 4</button>
+      <button data-cas="5">Cas 5</button>
+      <button data-cas="6">Cas 6</button>
+    </div>
+    <div id="consigne"></div>
+    <ol class="etapes">
+      <li>Construis la ligne à suivre.</li>
+      <li>Fais traverser le bonhomme.</li>
+    </ol>
+    <div id="pad">
+      <button class="up" data-k="up" title="Avancer">↑</button>
+      <button class="left" data-k="left" title="Tourner à gauche">↺</button>
+      <button class="down" data-k="down" title="Reculer">↓</button>
+      <button class="right" data-k="right" title="Tourner à droite">↻</button>
+    </div>
+    <div class="touches">Flèches du clavier · Maj = lent</div>
+    <div class="col">
+      <button id="btn-reset">🔄 Recommencer</button>
+      <label class="chk"><input type="checkbox" id="chk-viseur" checked> Viseur</label>
+    </div>
+    <details>
+      <summary>Professeur</summary>
+      <div class="col">
+        <label class="chk"><input type="checkbox" id="chk-mines"> Montrer les mines</label>
+        <button id="btn-effacer">Effacer les tracés</button>
+      </div>
+    </details>
+  </aside>
+  <main id="stage">
+    <div id="ggb"></div>
+    <div id="verrou"><div class="badge">🔒 Construction terminée</div></div>
+    <canvas id="overlay"></canvas>
+    <div id="toast"></div>
+    <div id="message"><div class="smiley"><svg viewBox="0 0 120 120" width="96" height="96" aria-label="Ouf !">
+      <circle cx="60" cy="62" r="50" fill="#ffd23f" stroke="#e0a800" stroke-width="3"/>
+      <!-- yeux plissés de rire -->
+      <path d="M30 50 q10 -12 20 0" fill="none" stroke="#5a3a00" stroke-width="5" stroke-linecap="round"/>
+      <path d="M70 50 q10 -12 20 0" fill="none" stroke="#5a3a00" stroke-width="5" stroke-linecap="round"/>
+      <!-- sourcils inquiets -->
+      <path d="M28 36 l18 -6" stroke="#5a3a00" stroke-width="4" stroke-linecap="round"/>
+      <path d="M92 36 l-18 -6" stroke="#5a3a00" stroke-width="4" stroke-linecap="round"/>
+      <!-- grand rire -->
+      <path d="M32 70 q28 34 56 0 z" fill="#7a2e14" stroke="#5a3a00" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M36 71 h48 q-2 7 -6 9 h-36 q-4 -2 -6 -9 z" fill="#fff"/>
+      <path d="M48 92 q12 6 24 0 q-12 -8 -24 0 z" fill="#e8576b"/>
+      <!-- joues -->
+      <circle cx="26" cy="68" r="7" fill="#ff9a76" opacity=".6"/>
+      <circle cx="94" cy="68" r="7" fill="#ff9a76" opacity=".6"/>
+      <!-- goutte de sueur -->
+      <path class="goutte" d="M100 14 q-12 18 0 24 q12 -6 0 -24 z" fill="#6cc4ff" stroke="#2f8fd6" stroke-width="2"/>
+      <path d="M97 30 q-2 -4 1 -8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg></div><div class="big"></div><div class="small"></div><button id="btn-again">Recommencer</button></div>
+    <div id="loading">Chargement…</div>
+  </main>
+</div>
+
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+<script>
+// ---------- Données de la fiche (champs/mine.tex) ----------
+const A = [3,5], B = [21,2], C = [19,16], D = [6,11], E = [11.620367514034438,7.582024175978531];
+const CHAMP   = [A,B,C,D];
+const MUR_G   = [[0,4.959491939531724],[3,5],[6,11],[3,18],[0,18]];
+const MUR_D   = [[19,16],[22,18],[24,18],[24,2],[21,2]];
+const ARRIVEE = [[3,18],[6,11],[19,16],[22,18]];
+const W = 24, H = 18;
+const DEPART_POS = [12,1.2];
+
+const TOL = 0.5;          // écart permis à la ligne sûre (unités)
+const VITESSE = 3;        // unités / s
+const ROTATION = 100;     // degrés / s
+const LENT = 0.3;
+
+// ---------- Géométrie ----------
+const sub=(p,q)=>[p[0]-q[0],p[1]-q[1]], add=(p,q)=>[p[0]+q[0],p[1]+q[1]];
+const mul=(p,k)=>[p[0]*k,p[1]*k], dot=(p,q)=>p[0]*q[0]+p[1]*q[1];
+const norm=p=>Math.hypot(p[0],p[1]), unit=p=>mul(p,1/norm(p));
+function pied(P,U,V){ const u=sub(V,U); return add(U,mul(u,dot(sub(P,U),u)/dot(u,u))); }
+function distSeg(P,U,V){
+  const u=sub(V,U); let t=dot(sub(P,U),u)/dot(u,u); t=Math.max(0,Math.min(1,t));
+  return norm(sub(P,add(U,mul(u,t))));
+}
+function dansPoly(P,poly){
+  let c=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const [xi,yi]=poly[i],[xj,yj]=poly[j];
+    if(((yi>P[1])!==(yj>P[1])) && P[0]<(xj-xi)*(P[1]-yi)/(yj-yi)+xi) c=!c;
+  }
+  return c;
+}
+function distPoly(P,poly){ let m=Infinity; for(let i=0;i<poly.length;i++) m=Math.min(m,distSeg(P,poly[i],poly[(i+1)%poly.length])); return m; }
+const droite=(M,dir)=>{ const u=mul(unit(dir),40); return [sub(M,u),add(M,u)]; };
+const prolonge=(U,V,l)=>add(V,mul(unit(sub(V,U)),l));   // V prolongé de l au-delà, depuis U
+
+// Ligne sûre de chaque cas : liste de segments (ou cercle de centre A pour le cas 2)
+// Cas 2 : E sur [AB] avec AE = 13,5 (comme sur la fiche élève ; entre 1,3×AD et 0,8×AC)
+const rCercle = 13.5;
+const E3 = ()=>add(A,mul(unit(sub(B,A)),rCercle));
+// Cas 1 : E sur [AB], F sur [DC]
+const E1 = add(A,mul(sub(B,A),0.3)), F1c = add(D,mul(sub(C,D),0.7));
+// Cas 3 : E sur [AB], sortie par la perpendiculaire à (DC)
+const E2 = add(A,mul(sub(B,A),0.6));
+const HB = pied(E2,D,C);                // pied de la perpendiculaire à (DC) issue de E
+const F1 = pied(E,A,B), F2 = pied(E,D,C);
+const CAS = [
+  // Cas 0 : démonstration, quelques mines cachées, pas de ligne à construire
+  { texte:"Traverse le champ de mines.", E:false, demo:true, chemin:[] },
+  { texte:"Entre en <b>E</b>, sors en <b>F</b>.<br>Prends le <b>plus court chemin</b>.", E:false, pts:['E1','F1'],
+    chemin:[ [prolonge(F1c,E1,2), prolonge(E1,F1c,2)] ] },
+  { texte:"Entre en <b>E</b>.<br>Reste toujours à la <b>même distance</b> du point A.", E:false, pts:['E3'], cercle:true, chemin:[] },
+  { texte:"Entre en <b>E</b>.<br>Prends le <b>plus court chemin</b> pour sortir.", E:false, pts:['E2'],
+    chemin:[ [prolonge(HB,E2,2), prolonge(E2,HB,2)] ] },
+  { texte:"Traverse par le <b>plus court chemin</b> qui passe par E.", E:true,
+    chemin:[ [prolonge(E,F1,2), E], [E, prolonge(E,F2,2)] ] },
+  { texte:"Passe par E.<br>Reste toujours à la <b>même distance</b> du mur [BC].", E:true,
+    chemin:[ droite(E, sub(C,B)) ] },
+  // Cas 6 : médiatrice de [AB]
+  { texte:"Entre, sors et reste <b>à égale distance</b> des points A et B.", E:false,
+    chemin:[ droite(mul(add(A,B),0.5), [-(B[1]-A[1]), B[0]-A[0]]) ] },
+];
+const RAYON_DEMO = 0.8;   // cas 0 : explosion à moins de 0,8 d'une mine
+function distChemin(P){
+  if(CAS[cas].cercle) return Math.abs(norm(sub(P,A))-rCercle);
+  return Math.min(...CAS[cas].chemin.map(s=>distSeg(P,s[0],s[1]))); }
+
+// Mines : réseau hexagonal dans ABCD, hors du couloir sûr
+function genererMines(){
+  if(CAS[cas].demo){            // cas 0 : 7 mines éparpillées, bien séparées
+    const m=[];
+    for(let essai=0;m.length<7 && essai<5000;essai++){
+      const p=[3+Math.random()*18, 2+Math.random()*14];
+      if(dansPoly(p,CHAMP) && distPoly(p,CHAMP)>1 && m.every(q=>norm(sub(p,q))>3.2)) m.push(p);
+    }
+    return m;
+  }
+  const m=[], s=1.05; let r=0;
+  for(let y=1;y<17.5;y+=s*0.866,r++){
+    for(let x=2+(r%2)*s/2;x<22;x+=s){
+      const p=[x+(Math.random()-.5)*.3, y+(Math.random()-.5)*.3];
+      if(dansPoly(p,CHAMP) && distPoly(p,CHAMP)>0.3 && distChemin(p)>TOL+0.45) m.push(p);
+    }
+  }
+  return m;
+}
+
+// ---------- État ----------
+let ggb=null, cas=0, mines=[], baseObjets=new Set();
+const bh = { pos:[...DEPART_POS], ang:Math.PI/2, phase:0, trace:[], etat:'jeu', tEtat:0, boom:null };
+const keys = { up:false, down:false, left:false, right:false, lent:false };
+
+// ---------- GeoGebra ----------
+const params = {
+  appName:"classic", width:800, height:600,
+  showToolBar:true, showToolBarHelp:false, showAlgebraInput:false, showMenuBar:false,
+  showResetIcon:false, allowStyleBar:false, enableRightClick:true, enableShiftDragZoom:false,
+  language:"fr", perspective:"G", showGrid:false, showAxes:false, disableAutoScale:true,
+  // Déplacer | Intersection | Milieu | Droite | Segment | Demi-droite | Perpendiculaire | Parallèle | Médiatrice | Cercle | Gomme
+  customToolBar:"0 | 5 | 19 | 2 | 15 | 18 | 4 | 3 | 8 | 10 | 6",
+  appletOnLoad(api){ ggb=api; setTimeout(construire, 300); }
+};
+window.addEventListener('load',()=>new GGBApplet(params,true).inject('ggb'));
+
+const pt=p=>`(${p[0]},${p[1]})`;
+
+// ---------- Codage automatique (repris de geogebra-chasse-tresor) ----------
+let codageEnCours=false, nbEgaux=0;
+const ligne=t=>t==='line'||t==='segment'||t==='ray';
+const args=cs=>cs.split(',').map(x=>x.trim());
+function extremites(seg){
+  const m=(ggb.getCommandString(seg)||'').match(/^Segment\((.+)\)$/);
+  if(m){ const a=args(m[1]); if(a.length===2) return a; }
+  // côtés du champ : a=[AB], b=[BC], c=[CD], d=[DA]
+  return {a:['A','B'],b:['B','C'],c:['C','D'],d:['D','A']}[seg]||null;
+}
+// Angle(d1,d2) vaut 90° ou 270° selon l'orientation : on garde celui de 90°.
+function angleDroit(d1,d2){
+  let n=ggb.evalCommandGetLabels(`Angle(${d1},${d2})`); if(!n) return;
+  if(Math.abs(ggb.getValue(n)-Math.PI/2)>0.01){ ggb.deleteObject(n); n=ggb.evalCommandGetLabels(`Angle(${d2},${d1})`); }
+  if(n){ ggb.setLabelVisible(n,false); ggb.setColor(n,0,0,0); ggb.setFixed(n,true,false); }
+}
+// Deux demi-segments avec la même marque (> puis >> pour le milieu suivant).
+function longueursEgales(P,M,Q){
+  const deco=4+(nbEgaux++%2);
+  for(const [u,v] of [[P,M],[M,Q]]){
+    const s=ggb.evalCommandGetLabels(`Segment(${u},${v})`); if(!s) continue;
+    ggb.evalCommand(`SetDecoration(${s},${deco})`); ggb.setLabelVisible(s,false); ggb.setColor(s,0,0,0); ggb.setFixed(s,true,false);
+  }
+}
+// Pas de point libre ni de point posé sur un objet : seulement les points donnés,
+// les intersections et les milieux. Un clic dans le vide avec un outil est annulé.
+function pointALaVolee(n){
+  if(codageEnCours) return false;
+  const cs=ggb.getCommandString(n,false)||'';
+  const interdit = ggb.getObjectType(n)==='point'
+    ? (ggb.isIndependent(n) || /^Point\b/.test(cs))
+    // objet construit sur un point à la volée déjà effacé : il reste en coordonnées ou en Point[…]
+    : /Point\[|\(\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\)/.test(cs);
+  if(!interdit) return false;
+  setTimeout(()=>{
+    if(ggb.exists(n)) ggb.deleteObject(n);
+    const m=ggb.getMode(); ggb.setMode(0); ggb.setMode(m);   // l'outil oublie ses clics en cours
+    toast('Clique sur un point déjà construit.');
+  },0);
+  return true;
+}
+let toastT;
+function toast(t){
+  const el=document.getElementById('toast'); el.textContent=t; el.style.display='block';
+  clearTimeout(toastT); toastT=setTimeout(()=>el.style.display='none',2200);
+}
+function coder(n){
+  // pas de nom automatique (D, f, g…) sur les tracés des élèves, comme dans la chasse au trésor
+  ggb.setLabelVisible(n,false);
+  const cs=ggb.getCommandString(n)||'', type=ggb.getObjectType(n);
+  let m=cs.match(/^Perpendiculaire\((.+)\)$/);
+  if(m && ligne(type)){
+    const a=args(m[1]); if(a.length!==2) return;
+    const d=ggb.getObjectType(a[0])==='point'?a[1]:a[0];
+    if(ligne(ggb.getObjectType(d))) angleDroit(d,n);
+    return;
+  }
+  m=cs.match(/^MilieuCentre\((.+)\)$/);
+  if(m && type==='point'){
+    const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
+    if(pq) longueursEgales(pq[0],n,pq[1]);
+    return;
+  }
+  m=cs.match(/^Médiatrice\((.+)\)$/);
+  if(m && ligne(type)){
+    const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
+    if(!pq) return;
+    const I=ggb.evalCommandGetLabels(`Midpoint(${pq[0]},${pq[1]})`);
+    if(I){ ggb.setLabelVisible(I,false); ggb.setPointSize(I,2); ggb.setFixed(I,true,false); longueursEgales(pq[0],I,pq[1]); }
+    const d=ggb.evalCommandGetLabels(`Line(${pq[0]},${pq[1]})`);
+    if(d){ ggb.setVisible(d,false); angleDroit(d,n); }
+  }
+}
+function poly(nom,pts,couleur,opacite){
+  ggb.evalCommand(`${nom}=Polygon({${pts.map(pt).join(',')}})`);
+  ggb.setColor(nom,...couleur); ggb.setFilling(nom,opacite); ggb.setLineThickness(nom,4);
+  ggb.setLabelVisible(nom,false); ggb.setFixed(nom,true,false);
+}
+function construire(){
+  ggb.setErrorDialogsActive(false);
+  ggb.setGridVisible(false); ggb.setAxesVisible(false,false);
+  ggb.showTooltip && ggb.showTooltip(0);
+  poly('départ', [[3,5],MUR_G[0],[0,0],[24,0],[24,2],[21,2]], [46,158,91], 0.12);
+  poly('arrivée', ARRIVEE, [46,158,91], 0.12);
+  poly('murG', MUR_G, [90,70,50], 0.25); poly('murD', MUR_D, [90,70,50], 0.25);
+  ['départ','arrivée','murG','murD'].forEach(n=>ggb.setLineThickness(n,3));
+  for(const [n,p] of [['A',A],['B',B],['C',C],['D',D]]){
+    ggb.evalCommand(`${n}=${pt(p)}`); ggb.setColor(n,214,40,40); ggb.setPointSize(n,5);
+    ggb.setFixed(n,true,true); ggb.setLabelVisible(n,true);
+  }
+  ggb.evalCommand('champ=Polygon(A,B,C,D)');
+  ggb.setColor('champ',120,110,90); ggb.setFilling('champ',0.18);
+  ggb.setLabelVisible('champ',false); ggb.setFixed('champ',true,false);
+  for(const s of ['a','b','c','d']){ ggb.setLabelVisible(s,false); ggb.setLineThickness(s,6); ggb.setColor(s,60,55,45); ggb.setFixed(s,true,true); }
+  ggb.evalCommand(`E=${pt(E)}`); ggb.setColor('E',40,60,220); ggb.setPointSize('E',5); ggb.setPointStyle('E',1); ggb.setFixed('E',true,true); ggb.setLabelVisible('E',true);
+  // Points E et F des cas 1 et 2 (objets distincts du E des cas 3 et 4, nommés par légende)
+  for(const [n,c,p] of [['E1','E',E1],['F1','F',F1c],['E2','E',E2],['E3','E',E3()]]){
+    ggb.evalCommand(`${n}=${pt(p)}`); ggb.setColor(n,40,60,220); ggb.setPointSize(n,5); ggb.setPointStyle(n,1);
+    ggb.setFixed(n,true,true); ggb.setCaption(n,c); ggb.setLabelStyle(n,3); ggb.setLabelVisible(n,true);
+  }
+  ggb.evalCommand('txtD=Text("Départ",(1,0.6))'); ggb.evalCommand('txtA=Text("Arrivée",(10.5,16.3))');
+  for(const t of ['txtD','txtA']){ ggb.setFixed(t,true,false); ggb.setColor(t,30,110,60); }
+  baseObjets = new Set(ggb.getAllObjectNames());
+  ggb.registerAddListener(n=>{ if(pointALaVolee(n)) return; if(!codageEnCours){ codageEnCours=true; try{ coder(n); }catch(e){ console.warn('codage',e); } finally{ codageEnCours=false; } } });
+  cadrer();
+  window.addEventListener('resize',()=>{ ggb.setSize(stage.clientWidth,stage.clientHeight); setTimeout(cadrer,150); });
+  choisirCas(0);
+  document.getElementById('loading').style.display='none';
+  requestAnimationFrame(boucle);
+}
+const stage=document.getElementById('stage');
+function cadrer(){
+  ggb.setSize(stage.clientWidth,stage.clientHeight);
+  setTimeout(()=>{
+    const vp=JSON.parse(ggb.getViewProperties(1)); if(!vp.width) return;
+    const sc=Math.min(vp.width/(W+1), vp.height/(H+1)), hx=vp.width/sc/2, hy=vp.height/sc/2;
+    ggb.setCoordSystem(W/2-hx,W/2+hx,H/2-hy,H/2+hy);
+    majVue();
+  },100);
+}
+
+// ---------- Calque du bonhomme ----------
+const cv=document.getElementById('overlay'), ctx=cv.getContext('2d');
+let vue=null;
+function majVue(){
+  if(!ggb) return;
+  const vp=JSON.parse(ggb.getViewProperties(1));
+  // la vue graphique = le plus grand canvas de l'applet
+  let best=null,ba=0;
+  for(const c of document.querySelectorAll('#ggb canvas')){ const r=c.getBoundingClientRect(); if(r.width*r.height>ba){ba=r.width*r.height;best=r;} }
+  if(!best) return;
+  const s=stage.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  Object.assign(cv.style,{left:(best.left-s.left)+'px',top:(best.top-s.top)+'px',width:best.width+'px',height:best.height+'px'});
+  if(cv.width!==Math.round(best.width*dpr)){ cv.width=Math.round(best.width*dpr); cv.height=Math.round(best.height*dpr); }
+  vue={...vp, w:best.width, h:best.height, k:best.width/vp.width, dpr};
+}
+setInterval(majVue,300);
+const ecran=p=>[vue.k*(p[0]-vue.xMin)/vue.invXscale, vue.h-vue.k*(p[1]-vue.yMin)/vue.invYscale];
+
+function dessinerMine(p,u){
+  const [x,y]=ecran(p), r=0.22*u;
+  ctx.save(); ctx.translate(x,y);
+  ctx.strokeStyle='#222'; ctx.lineWidth=Math.max(1.5,r*0.35);
+  for(let i=0;i<8;i++){ const a=i*Math.PI/4; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*r*1.5,Math.sin(a)*r*1.5); ctx.stroke(); }
+  ctx.fillStyle='#2a2a2a'; ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill();
+  ctx.fillStyle='#e33'; ctx.beginPath(); ctx.arc(-r*.25,-r*.25,r*.3,0,7); ctx.fill();
+  ctx.restore();
+}
+
+function dessinerBonhomme(u){
+  const [x,y]=ecran(bh.pos);
+  u*=1.3;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(-bh.ang); // l'axe +x local = direction de marche
+  const pas=Math.sin(bh.phase)*0.22*u;
+  // ombre
+  ctx.fillStyle='rgba(0,0,0,.15)'; ctx.beginPath(); ctx.ellipse(0.05*u,0.05*u,0.28*u,0.45*u,0,0,7); ctx.fill();
+  // pieds
+  ctx.fillStyle='#4a3326';
+  ctx.beginPath(); ctx.ellipse(pas,-0.14*u,0.14*u,0.08*u,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-pas,0.14*u,0.14*u,0.08*u,0,0,7); ctx.fill();
+  // bras (balancement opposé aux pieds)
+  ctx.fillStyle='#f0c39a';
+  ctx.beginPath(); ctx.arc(-pas*0.8,-0.4*u,0.08*u,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(pas*0.8,0.4*u,0.08*u,0,7); ctx.fill();
+  // épaules / tee-shirt
+  ctx.fillStyle='#e8762d'; ctx.strokeStyle='#9b4a17'; ctx.lineWidth=Math.max(1,0.03*u);
+  ctx.beginPath(); ctx.ellipse(0,0,0.18*u,0.38*u,0,0,7); ctx.fill(); ctx.stroke();
+  // tête + casquette avec visière vers l'avant
+  ctx.fillStyle='#2f6fd6'; ctx.beginPath(); ctx.ellipse(0.17*u,0,0.12*u,0.15*u,0,-Math.PI/2,Math.PI/2); ctx.fill();
+  ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,0.17*u,0,7); ctx.fill();
+  ctx.fillStyle='#2f6fd6'; ctx.beginPath(); ctx.arc(0,0,0.15*u,-Math.PI*0.75,Math.PI*0.75); ctx.fill();
+  ctx.restore();
+}
+
+function dessinerViseur(u){
+  const [x,y]=ecran(bh.pos), L=4*u;
+  ctx.save(); ctx.strokeStyle='rgba(47,111,214,.55)'; ctx.lineWidth=2; ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(x+Math.cos(bh.ang)*0.4*u,y-Math.sin(bh.ang)*0.4*u); ctx.lineTo(x+Math.cos(bh.ang)*L,y-Math.sin(bh.ang)*L); ctx.stroke();
+  ctx.restore();
+}
+
+function dessinerExplosion(u,t){
+  const [x,y]=ecran(bh.boom);
+  ctx.save(); ctx.translate(x,y);
+  if(t<0.9){
+    const k=t/0.9;
+    for(const [c,f] of [['#ffe066',1],['#ff9f1c',0.75],['#e63946',0.5]]){
+      ctx.fillStyle=c; ctx.globalAlpha=1-k*0.6;
+      ctx.beginPath();
+      for(let i=0;i<=16;i++){ const a=i*Math.PI/8, r=(i%2?0.6:1)*f*(0.5+2.2*k)*u; ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r); }
+      ctx.fill();
+    }
+  }
+  // fumée
+  ctx.globalAlpha=Math.min(0.7,t*0.8);
+  ctx.fillStyle='#666';
+  for(let i=0;i<7;i++){ const a=i*0.9, r=(0.5+0.6*Math.min(t,2))*u; ctx.beginPath(); ctx.arc(Math.cos(a)*r*0.7,Math.sin(a)*r*0.7-t*0.2*u,0.45*u*Math.min(1,t+0.3),0,7); ctx.fill(); }
+  ctx.restore();
+}
+
+// Murs hachurés (GeoGebra n'accepte pas les hachures par l'API)
+function hachures(poly){
+  ctx.save(); ctx.beginPath();
+  poly.forEach((p,i)=>{ const [x,y]=ecran(p); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.closePath(); ctx.clip();
+  ctx.strokeStyle='rgba(70,55,40,.55)'; ctx.lineWidth=1.5;
+  for(let d=-vue.h;d<vue.w;d+=9){ ctx.beginPath(); ctx.moveTo(d,vue.h); ctx.lineTo(d+vue.h,0); ctx.stroke(); }
+  ctx.restore();
+}
+
+function dessiner(){
+  if(!vue) return;
+  ctx.setTransform(vue.dpr,0,0,vue.dpr,0,0);
+  ctx.clearRect(0,0,vue.w,vue.h);
+  const u=vue.k/vue.invXscale; // pixels par unité
+  hachures(MUR_G); hachures(MUR_D);
+  // traces de pas
+  ctx.fillStyle='rgba(90,60,30,.35)';
+  for(const p of bh.trace){ const [x,y]=ecran(p); ctx.beginPath(); ctx.arc(x,y,Math.max(1.5,0.05*u),0,7); ctx.fill(); }
+  const montrer=document.getElementById('chk-mines').checked;
+  for(const m of mines){
+    if(montrer || apresCoup()) dessinerMine(m,u);
+  }
+  if(bh.etat==='boum'){ dessinerExplosion(u,bh.tEtat); return; }
+  if(document.getElementById('chk-viseur').checked && bh.etat==='jeu') dessinerViseur(u);
+  dessinerBonhomme(u);
+}
+
+// ---------- Déplacement ----------
+function libre(p){
+  const m=0.3;
+  if(p[0]<m||p[0]>W-m||p[1]<m||p[1]>H-m) return false;
+  if(dansPoly(p,MUR_G)||dansPoly(p,MUR_D)) return false;
+  if(distPoly(p,MUR_G)<m || distPoly(p,MUR_D)<m) return false;
+  return true;
+}
+let tPrec=performance.now();
+function boucle(t){
+  const dt=Math.min(0.05,(t-tPrec)/1000); tPrec=t;
+  if(bh.etat==='jeu') avancer(dt); else bh.tEtat+=dt;
+  dessiner();
+  requestAnimationFrame(boucle);
+}
+// Mines montrées seulement après coup : fin de l'explosion, ou arrivée
+const apresCoup=()=> bh.etat==='gagne' || (bh.etat==='boum' && bh.tEtat>1.1);
+function verrouiller(on){
+  document.getElementById('verrou').style.display=on?'block':'none';
+  if(on && ggb){ ggb.setMode(0); if(document.activeElement) document.activeElement.blur(); }
+}
+function avancer(dt){
+  const k=keys.lent?LENT:1;
+  if(keys.left)  bh.ang+=ROTATION*Math.PI/180*dt*k;
+  if(keys.right) bh.ang-=ROTATION*Math.PI/180*dt*k;
+  const sens=(keys.up?1:0)-(keys.down?1:0);
+  if(!sens) return;
+  const d=sens*VITESSE*dt*k, dir=[Math.cos(bh.ang),Math.sin(bh.ang)];
+  let np=add(bh.pos,mul(dir,d));
+  if(!libre(np)){            // glisser le long du mur
+    const nx=[np[0],bh.pos[1]], ny=[bh.pos[0],np[1]];
+    np = libre(nx)?nx : libre(ny)?ny : null;
+    if(!np) return;
+  }
+  bh.phase+=Math.abs(d)*5;
+  const der=bh.trace[bh.trace.length-1];
+  if(!der || norm(sub(np,der))>0.3) bh.trace.push([...np]);
+  bh.pos=np;
+  const touche = CAS[cas].demo ? mines.some(q=>norm(sub(q,bh.pos))<RAYON_DEMO) : distChemin(bh.pos)>TOL;
+  if(dansPoly(bh.pos,CHAMP) && touche){ boum(); return; }
+  if(dansPoly(bh.pos,ARRIVEE) && distPoly(bh.pos,[D,C])>0.5){ gagne(); }
+}
+
+function boum(){
+  bh.etat='boum'; bh.tEtat=0; bh.boom=[...bh.pos];
+  sonExplosion();
+  clearTimeout(boum.t);
+  boum.t=setTimeout(()=>afficher(false,'BOUM !','Tu as marché sur une mine.'),1100);
+}
+function gagne(){
+  bh.etat='gagne';
+  sonVictoire();
+  const dernier = cas===CAS.length-1;
+  afficher(true,'Bravo !', dernier?'Tu as réussi tous les cas.':'Tu as traversé le champ de mines.',
+           dernier?'Revenir au cas 1':'Cas suivant →');
+}
+const msg=document.getElementById('message');
+function afficher(ok,a,b,bouton='Recommencer'){
+  msg.className=ok?'win':''; msg.querySelector('.big').textContent=a; msg.querySelector('.small').textContent=b;
+  document.getElementById('btn-again').textContent=bouton;
+  msg.style.display='block';
+}
+function recommencer(){
+  clearTimeout(boum.t);
+  verrouiller(false);
+  Object.assign(bh,{pos:[...DEPART_POS],ang:Math.PI/2,phase:0,trace:[],etat:'jeu',tEtat:0,boom:null});
+  msg.style.display='none';
+  for(const k in keys) keys[k]=false;
+  document.querySelectorAll('#pad button').forEach(b=>b.classList.remove('held'));
+}
+function choisirCas(i){
+  cas=i;
+  document.querySelectorAll('#cases button').forEach(b=>b.classList.toggle('active',+b.dataset.cas===i));
+  document.getElementById('consigne').innerHTML=`<b>Cas ${i}</b><br>`+CAS[i].texte;
+  document.querySelector('.etapes').style.display = CAS[i].demo ? 'none' : '';
+  if(ggb){ ggb.setVisible('E',CAS[i].E); for(const n of ['E1','F1','E2','E3']) ggb.setVisible(n,(CAS[i].pts||[]).includes(n)); }
+  mines=genererMines();
+  recommencer();
+}
+
+// ---------- Sons ----------
+let ac=null;
+function audio(){ try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} return ac; }
+function sonExplosion(){
+  const a=audio(); if(!a) return;
+  const n=a.sampleRate*1.4, buf=a.createBuffer(1,n,a.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.5);
+  const s=a.createBufferSource(); s.buffer=buf;
+  const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(1800,a.currentTime); f.frequency.exponentialRampToValueAtTime(120,a.currentTime+1.2);
+  const g=a.createGain(); g.gain.value=0.9;
+  s.connect(f).connect(g).connect(a.destination); s.start();
+}
+function sonVictoire(){
+  const a=audio(); if(!a) return;
+  [523,659,784,1046].forEach((fq,i)=>{
+    const o=a.createOscillator(), g=a.createGain(), t=a.currentTime+i*0.13;
+    o.type='triangle'; o.frequency.value=fq; g.gain.setValueAtTime(0.25,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.35);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t+0.4);
+  });
+}
+
+// ---------- Commandes ----------
+const TOUCHES={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+function saisieTexte(){
+  const el=document.activeElement; if(!el) return false;
+  if(el.isContentEditable) return el.offsetWidth>2;
+  return (el.tagName==='INPUT'&&el.type==='text'||el.tagName==='TEXTAREA') && el.offsetWidth>2;
+}
+// En phase de capture : les flèches pilotent le bonhomme, pas les objets GeoGebra.
+window.addEventListener('keydown',e=>{
+  keys.lent=e.shiftKey;
+  const k=TOUCHES[e.key]; if(!k || saisieTexte()) return;
+  e.preventDefault(); e.stopPropagation(); audio();
+  keys[k]=true; if(bh.etat==='jeu') verrouiller(true);
+},true);
+window.addEventListener('keyup',e=>{
+  keys.lent=e.shiftKey;
+  const k=TOUCHES[e.key]; if(!k) return;
+  e.preventDefault(); e.stopPropagation();
+  keys[k]=false;
+},true);
+window.addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; });
+
+document.querySelectorAll('#pad button').forEach(b=>{
+  const k=b.dataset.k;
+  const on=e=>{ e.preventDefault(); audio(); keys[k]=true; if(bh.etat==='jeu') verrouiller(true); b.classList.add('held'); b.setPointerCapture&&b.setPointerCapture(e.pointerId); };
+  const off=()=>{ keys[k]=false; b.classList.remove('held'); };
+  b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off);
+  b.addEventListener('pointercancel',off); b.addEventListener('lostpointercapture',off);
+});
+document.querySelectorAll('#cases button').forEach(b=>b.addEventListener('click',()=>choisirCas(+b.dataset.cas)));
+document.getElementById('btn-reset').addEventListener('click',recommencer);
+function effacerTraces(){
+  if(!ggb) return;
+  for(const n of ggb.getAllObjectNames()) if(!baseObjets.has(n) && ggb.exists(n)) ggb.deleteObject(n);
+}
+// Après une traversée réussie : cas suivant (figure propre) ; après une explosion : on recommence.
+document.getElementById('btn-again').addEventListener('click',()=>{
+  if(bh.etat==='gagne'){ effacerTraces(); choisirCas(cas===CAS.length-1 ? 1 : cas+1); }
+  else recommencer();
+});
+document.getElementById('btn-effacer').addEventListener('click',effacerTraces);
+</script>
+</body>
+</html>
