@@ -13,27 +13,55 @@
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
-  #app{display:flex;height:100%;}
+  body{display:flex;flex-direction:column;}
+  /* en-tête : même mise en page que l'appli evaluation (titre à gauche, boutons à droite) */
+  header{display:flex;align-items:center;gap:14px;padding:0 20px;min-height:54px;flex:0 0 auto;
+    background:#f6ead6;border-bottom:1px solid #dcc29a;flex-wrap:wrap;}
+  #titre_appli{font-size:1.2rem;padding:10px 0;}
+  #titre_appli b{color:var(--bois);}
+  .header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;}
+  .filet-header{width:1px;height:22px;background:#dcc29a;flex-shrink:0;}
+  .btn-header, button.btn-header{background:transparent;border:.5px solid #dcc29a;height:34px;padding:0 14px;font-size:.82rem;font-weight:500;
+    border-radius:6px;cursor:pointer;color:#6b4318;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap;}
+  .btn-header:hover{border-color:#6b4318;color:#40280e;}
+  /* seul état coloré de l'en-tête : bordure et texte, pas de fond plein (comme evaluation) */
+  button.btn-header.active, .btn-header.active{background:transparent;border-color:var(--bois);color:var(--bois);font-weight:600;}
+  #app{display:flex;flex:1 1 auto;min-height:0;}
   #sidebar{width:290px;min-width:290px;background:var(--panel);border-right:1px solid var(--border);
     display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;}
-  h1{font-size:20px;margin:0;}
-  .onglet{display:block;text-align:center;text-decoration:none;color:var(--text);font-size:15px;
-    border:1px solid var(--border);background:#f7f3ea;border-radius:8px;padding:8px;}
-  .manches{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   button{font:inherit;font-size:15px;border:1px solid var(--border);background:#f7f3ea;color:var(--text);
     border-radius:8px;padding:9px 8px;cursor:pointer;}
   button:hover{border-color:var(--accent);}
   button.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
   button:disabled{opacity:.45;cursor:default;}
-  #consigne{font-size:17px;line-height:1.4;background:#fbf7ee;border:1px solid var(--border);border-radius:10px;padding:12px;}
-  #consigne .outils{display:block;margin-top:8px;font-size:15px;color:var(--muted);}
-  .reponse{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .reponse button{font-size:18px;font-weight:700;padding:14px 6px;color:#fff;border:none;}
-  #btnRouge{background:var(--rouge);} #btnBleue{background:var(--bleu);}
-  #score{font-size:15px;color:var(--muted);text-align:center;}
+  /* colonne de droite : terrain en haut, zone de réponse en dessous */
+  #droite{flex:1;display:flex;flex-direction:column;min-width:0;}
+  /* hauteur fixe : le terrain ne bouge pas quand le verdict s'affiche */
+  #zoneReponse{flex:0 0 104px;display:flex;align-items:center;gap:14px;padding:8px 16px;overflow:hidden;
+    background:var(--panel);border-top:1px solid var(--border);}
+  #question{flex:1 1 0;min-width:220px;}
+  #consigne{font-size:17px;line-height:1.3;}
+    .reponse{display:flex;gap:10px;flex:0 0 auto;}
+  .reponse button{font-size:19px;font-weight:700;padding:14px 26px;color:#fff;border:none;}
+  .reponse.serre button{padding:14px 16px;}
+  #score{font-size:14px;color:var(--muted);margin-top:2px;white-space:nowrap;}
+  /* pendant le verdict, le message prend la place des boutons de couleur */
+  #zoneReponse.verdict .reponse{display:none;}
   .reglage{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
   .reglage input{width:100%;}
-  .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .groupe-label{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:4px;}
+  .choix2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .choix3{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
+  .choix3 button{padding:8px 4px;font-size:14px;}
+  .choix3 button:last-child:nth-child(odd){grid-column:1 / -1;}
+  .choixB{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .choixB button{padding:8px 4px;font-size:14px;}
+  .choix4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .choix2 button,.choix4 button{padding:8px 4px;font-size:14px;}
+  .choix4 .melange{grid-column:1 / -1;}
+  /* choix verrouillés pendant un quiz (conventions de l'appli evaluation) */
+  #atelierChoix button:disabled{cursor:default;opacity:1;color:#9a9a9a;}
+  #atelierChoix button.active:disabled{opacity:.55;color:#e8e8e8;}
   button.principal{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
   details#reglagesProf summary{font-size:14px;}
   .zoom{display:grid;grid-template-columns:1fr 1fr 2fr;gap:6px;}
@@ -41,18 +69,38 @@
   .col{display:flex;flex-direction:column;gap:6px;}
   details{font-size:14px;color:var(--muted);} details summary{cursor:pointer;} details .col{margin-top:8px;}
   /* terrain : cadre en bois autour de l'applet */
-  #stage{flex:1;position:relative;background:var(--bois);padding:14px;
+  #stage{flex:1 1 auto;min-height:0;position:relative;background:var(--bois);padding:14px;
     background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 40px);}
   #terrain{position:absolute;inset:14px;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 2px #5e3b17;}
   #ggb{position:absolute;inset:0;}
   #overlay{position:absolute;pointer-events:none;z-index:3;}
-  #verrou{position:absolute;inset:0;z-index:2;display:none;cursor:not-allowed;}
+  #verrou{position:absolute;inset:0;z-index:2;display:none;cursor:default;}
+  /* ---------- Guide (même principe que l'appli evaluation : overlay sur la zone de jeu) ---------- */
+  #overlayGuide{display:none;position:absolute;inset:0;z-index:20;background:rgba(138,90,43,.18);
+    backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;}
+  #overlayGuide.visible{display:flex;}
+  #guideCarte{position:relative;background:#fff;color:#222;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;
+    border-radius:16px;border:2px solid var(--bois);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:26px 32px;}
+  #guideCarte h2{text-align:center;margin:0 0 16px;font-size:1.3em;color:var(--bois);}
+  #guideCarte h3{color:var(--bois);font-size:1em;margin:16px 0 6px;}
+  #guideCarte p, #guideCarte li{margin:0 0 4px;line-height:1.5;font-size:.95em;color:#333;}
+  #guideCarte ul{margin:0;padding-left:20px;}
+  #btnFermerGuide{position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;padding:0;font-size:20px;}
   #toast{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:5;display:none;
     background:#2b2a26;color:#fff;border-radius:10px;padding:8px 16px;font-size:16px;}
-  #message{display:none;background:#fff;border:3px solid var(--ko);border-radius:14px;padding:10px 12px;text-align:center;}
+  #message{display:none;align-items:center;gap:14px;background:#fff;border:3px solid var(--ko);border-radius:14px;padding:6px 12px;flex:0 1 auto;min-width:0;}
+  #message .texte{text-align:center;}
   #message.win{border-color:var(--ok);}
-  #message .big{font-size:28px;font-weight:700;margin-bottom:4px;}
-  #message .small{font-size:17px;margin-bottom:12px;}
+  #message .big{font-size:24px;font-weight:700;}
+  #message .small{font-size:16px;}
+  /* distances mesurées, de la plus courte à la plus longue (seulement pendant le verdict) */
+  #distances{display:none;grid-template-rows:auto auto;grid-auto-flow:column;gap:2px 16px;flex:0 0 auto;font-size:15px;font-weight:600;
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 12px;}
+  #distances span{white-space:nowrap;}
+  #zoneReponse.verdict #distances:not(:empty){display:grid;}
+  /* pendant le verdict, la question laisse la place aux distances (le score reste) */
+  #zoneReponse.verdict #consigne{display:none;}
+  #zoneReponse.verdict #question{min-width:0;flex:0 1 auto;}
   #message .boutons{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
   #message button.principal{background:var(--accent);color:#fff;border-color:var(--accent);}
   #loading{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
@@ -60,41 +108,41 @@
 </style>
 </head>
 <body>
+<header>
+  <span id="titre_appli">🎯 Qui tient le point ? <b>Pétanque et distances</b></span>
+  <div class="header-actions">
+    <button id="btnAtelier" class="btn-header active">Atelier</button>
+    <button id="btnQuiz" class="btn-header">Quiz</button>
+    <div class="filet-header"></div>
+    <a id="onglet" class="btn-header" target="_blank" rel="noopener" title="Ouvrir l’appli dans un nouvel onglet">Nouvel onglet</a>
+    <div class="filet-header"></div>
+    <button id="btnGuide" class="btn-header">Guide</button>
+  </div>
+</header>
 <div id="app">
   <aside id="sidebar">
-    <h1>🎯 Qui tient le point ?</h1>
-    <a id="onglet" class="onglet" target="_blank" rel="noopener" title="Ouvrir l’appli dans un nouvel onglet">↗ Nouvel onglet</a>
-    <div class="modes"><button id="btnAtelier" class="active">🛠 Atelier</button><button id="btnQuiz">🏆 Quiz</button></div>
     <div id="quizSetup" class="col" style="display:none">
       <label class="reglage">Nombre de questions :
         <select id="quizN"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
-      <label class="reglage">Outils :
-        <select id="quizOutils">
-          <option value="prog">progression : cercle → milieu-perpendiculaire → compas → tous</option>
-          <option value="0">le cercle</option>
-          <option value="2">segment, milieu, perpendiculaire</option>
-          <option value="4">cercle, intersection, droite</option>
-          <option value="5">tous les outils</option>
-        </select></label>
       <button id="btnDemarrer" class="principal">▶ Démarrer le quiz</button>
     </div>
-    <div id="atelierManches" class="manches"></div>
-    <div id="consigne"></div>
-    <div class="reponse">
-      <button id="btnRouge">Rouge</button>
-      <button id="btnBleue">Bleue</button>
+    <div id="atelierChoix" class="col">
+      <div class="groupe-label">Outils</div>
+      <div class="choix3" id="choixOutils"></div>
+      <div class="groupe-label">Boules</div>
+      <div class="choixB" id="choixBoules"></div>
+      <div class="groupe-label">Niveau</div>
+      <div class="choix4" id="choixNiveau"></div>
+      <button id="btnDonne">🔄 Nouvelle donne</button>
     </div>
-    <div id="message"><div class="big"></div><div class="small"></div>
-      <div class="boutons"><button id="btnRejouer">Rejouer</button><button id="btnSuivante" class="principal">Manche suivante →</button></div></div>
-    <div id="score"></div>
     <div class="col">
       <label class="chk"><input type="checkbox" id="chkBoules" checked> Afficher les boules</label>
-      <label class="chk"><input type="checkbox" id="chkNoms"> Afficher les noms A, B, C</label>
+      <label class="chk"><input type="checkbox" id="chkNoms"> Afficher les noms</label>
       <div class="zoom"><button id="btnPlus" title="Zoomer">🔍＋</button><button id="btnMoins" title="Dézoomer">🔍－</button><button id="btnRecadrer">Tout le terrain</button></div>
       <button id="btnCentrer">🎯 Centrer sur le cochonnet</button>
     </div>
-    <details id="reglagesProf" open>
-      <summary>Réglages du professeur</summary>
+    <details id="reglagesProf">
+      <summary>Réglages fins (professeur)</summary>
       <div class="col">
       <label class="reglage">Placement des boules :
         <select id="mode"><option value="mediatrice">par la médiatrice</option><option value="distances">par les distances</option></select></label>
@@ -113,12 +161,12 @@
           <input type="range" id="ecart" min="0.5" max="10" step="0.5"></label>
       </div>
       <div class="reglage" id="resume"></div>
-      <button id="btnDonne">🔄 Nouvelle donne</button>
         <button id="btnEffacer">Effacer les tracés</button>
         <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="chkTransparent" checked> Boules transparentes</label>
       </div>
     </details>
   </aside>
+  <div id="droite">
   <main id="stage">
     <div id="terrain">
       <div id="ggb"></div>
@@ -126,8 +174,48 @@
       <canvas id="overlay"></canvas>
       <div id="toast"></div>
       <div id="loading">Chargement…</div>
+      <div id="overlayGuide"><div id="guideCarte">
+        <button id="btnFermerGuide" aria-label="Fermer">×</button>
+        <h2>Mode d'emploi</h2>
+        <h3>Objectif</h3>
+        <p>Deux, trois ou quatre boules de couleur et un cochonnet <b>noir</b> (entouré d'un anneau), vus de dessus. Trouver, <b>en construisant</b>, quelle boule est la plus proche du cochonnet : à l'œil, l'écart est trop petit.</p>
+        <h3>Construire</h3>
+        <ul>
+          <li><b>Le cercle</b> de centre le cochonnet passant par une boule : les autres boules sont-elles dedans ou dehors ?</li>
+          <li><b>La médiatrice</b> du segment qui joint deux boules avec l'outil médiatrice : de quel côté est le cochonnet ? (avec plus de deux boules, on compare deux par deux)</li>
+          <li>Ou bien on la construit : tracer le segment qui joint les boules, placer son <b>milieu</b>, puis la <b>perpendiculaire</b> au segment passant par ce milieu.</li>
+        </ul>
+        <p>On clique sur les croix au centre des boules et du cochonnet. On ne peut pas créer de point au hasard : seulement des intersections et des milieux. Les milieux et les angles droits se codent tout seuls.</p>
+        <h3>Répondre</h3>
+        <p>Cliquer sur la couleur de la boule (<b>Rouge</b>, <b>Bleue</b>, <b>Verte</b>, <b>Violette</b>). Le terrain se bloque, le mètre ruban se déroule du cochonnet vers chaque boule, et le verdict s'affiche sous le terrain avec les distances, de la plus courte à la plus longue.</p>
+        <h3>Atelier</h3>
+        <ul>
+          <li><b>Outils</b> : Cercle, Médiatrice (l'outil médiatrice), Milieu + perp. (segment, milieu et perpendiculaire), Tous (tous ces outils) ou Au hasard (Cercle, Médiatrice ou Milieu + perp., tiré à chaque donne).</li>
+          <li><b>Boules</b> : 2, 3 ou 4. Chaque boule en plus est un peu plus loin du cochonnet que la précédente.</li>
+          <li><b>Niveau</b> : 1 à 4, ou Mélangé (un niveau au hasard à chaque donne). Plus le niveau monte, plus les boules sont loin du cochonnet et plus elles sont serrées : l'écart entre les deux plus proches est de 3 à 5 cm au niveau 1 et de 0,5 à 1 cm au niveau 4, et les boules en plus se resserrent de la même façon.</li>
+          <li><b>Nouvelle donne</b> : un nouveau tirage avec les mêmes choix.</li>
+          <li><b>Réglages fins (professeur)</b>, repliés : fixer soi-même les distances (toucher un réglage remplace le niveau, cliquer sur un niveau le remet), effacer les tracés, boules transparentes ou non.</li>
+        </ul>
+        <h3>Quiz</h3>
+        <p>Le quiz garde les <b>outils</b>, le nombre de <b>boules</b> et le <b>niveau</b> choisis dans le panneau (et les réglages fins s'ils ont été modifiés). Le niveau <b>Mélangé</b> tire un niveau de 1 à 4 au hasard à chaque question. Choisir le nombre de questions (10 par défaut) puis <b>Démarrer le quiz</b> : les choix sont verrouillés jusqu'à la fin, où s'affiche le score.</p>
+        <h3>Affichage</h3>
+        <ul>
+          <li><b>Afficher les boules</b> : sinon, seulement les centres.</li>
+          <li><b>Afficher les noms</b> : C cochonnet ; A boule rouge, B bleue, D verte, E violette.</li>
+          <li><b>Zoom</b> : boutons 🔍＋ / 🔍－, molette ou pincement ; « Tout le terrain » et « Centrer sur le cochonnet » remettent la vue en place. Le terrain mesure 4 m sur 2,2 m.</li>
+        </ul>
+      </div></div>
     </div>
   </main>
+  <!-- zone de réponse, sous le terrain : question, choix, verdict -->
+  <section id="zoneReponse">
+    <div id="question"><div id="consigne"></div><div id="score"></div></div>
+    <div class="reponse" id="reponse"></div>
+    <div id="distances"></div>
+    <div id="message"><div class="texte"><div class="big"></div><div class="small"></div></div>
+      <div class="boutons"><button id="btnRejouer">Rejouer</button><button id="btnSuivante" class="principal">Manche suivante →</button></div></div>
+  </section>
+  </div>
 </div>
 
 <script src="https://www.geogebra.org/apps/deployggb.js"></script>
@@ -140,18 +228,36 @@ const R_BOULE = 0.375, R_COCHONNET = 0.15;   // boule de 7,5 cm, cochonnet de 3 
 
 // Outils GeoGebra : 0 Déplacer, 5 Intersection, 19 Milieu, 2 Droite, 15 Segment,
 // 4 Perpendiculaire, 10 Cercle (centre-point), 6 Gomme
-const MANCHES = [
-  // ecart : réglage conseillé en cm (écart entre les distances, ou distance du cochonnet à la médiatrice)
-  { outils:"0 | 10 | 6",            noms:"le cercle",                                 ecart:4 },
-  { outils:"0 | 10 | 6",            noms:"le cercle",                                 ecart:2 },
-  { outils:"0 | 15 | 19 | 4 | 6",   noms:"le segment, le milieu, la perpendiculaire", ecart:3 },
-  { outils:"0 | 15 | 19 | 4 | 6",   noms:"le segment, le milieu, la perpendiculaire", ecart:1.5 },
-  { outils:"0 | 10 | 5 | 2 | 6",    noms:"le cercle, l'intersection, la droite",      ecart:2 },
-  { outils:"0 | 5 | 19 | 2 | 15 | 4 | 10 | 6", noms:"tous les outils",                ecart:1 },
+// Choix des outils : Cercle, Médiatrice, Milieu + perpendiculaire, Tous, ou Au hasard (l'un des trois premiers, tiré à chaque donne)
+const OUTILS = [
+  { outils:"0 | 10 | 6",          court:"Cercle" },
+  { outils:"0 | 8 | 6",           court:"Médiatrice" },   // outil Médiatrice direct (id 8)
+  { outils:"0 | 15 | 19 | 4 | 6", court:"Milieu + perp." },
+  { outils:"0 | 10 | 8 | 15 | 19 | 4 | 6", court:"Tous", tous:true },   // tous les outils (pas tiré par « Au hasard »)
 ];
+const HASARD = OUTILS.length;
+// Boules : nom dans GeoGebra, nom affiché (C est le cochonnet), couleur
+const BOULES = [
+  { gg:'R', lettre:'A', nom:'rouge',    c:'#c8322a', rgb:[200,50,42] },
+  { gg:'B', lettre:'B', nom:'bleue',    c:'#2459c9', rgb:[36,89,201] },
+  { gg:'V', lettre:'D', nom:'verte',    c:'#2e8b3a', rgb:[46,139,58] },
+  { gg:'J', lettre:'E', nom:'violette', c:'#7b3fb0', rgb:[123,63,176] },
+];
+// Niveaux : plages de tirage (en cm) pour le placement par la médiatrice.
+// h : distance du cochonnet à la médiatrice ; entre : distance entre les boules ;
+// loin : éloignement du cochonnet par rapport au segment. Plus h est petit, plus c'est dur.
+// plus (3 ou 4 boules) : chaque boule en plus est plus loin que la précédente de k fois l'écart
+// entre les deux premières (k dans la plage), et d'au moins min cm.
+const NIVEAUX = [
+  { h:[3,5],     entre:[50,90],   loin:[30,60],   plus:{k:[2,4],   min:2}   },
+  { h:[2,3],     entre:[70,130],  loin:[50,100],  plus:{k:[1.5,3], min:1}   },
+  { h:[1,2],     entre:[100,170], loin:[80,130],  plus:{k:[1,2],   min:0.5} },
+  { h:[0.5,1],   entre:[130,200], loin:[100,150], plus:{k:[1,1.5], min:0.5} },
+];
+const PLUS_MANUEL = {k:[1,3], min:0.5};   // réglages fins
 
 // ---------- État ----------
-let ggb=null, manche=0, donne=null, etat='jeu', baseObjets=new Set(), bons=0, joues=0;
+let ggb=null, nbBoules=2, plus=NIVEAUX[0].plus, outil=0, outilDonne=0, barre=null, niveau=0, manuel=false, donne=null, etat='jeu', baseObjets=new Set(), bons=0, joues=0;
 const dist=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 
@@ -192,13 +298,37 @@ function nouvelleDonne(relache=false){
   return relache ? {C:[8,4.5],R:[5.6,6.2],B:[10.4,1.9]} : nouvelleDonne(true);   // 2e essai sans exigence sur la médiatrice
 }
 
+// Avec 3 ou 4 boules : les deux plus proches sont tirées comme d'habitude, chaque autre boule est un peu
+// plus loin que la précédente, d'un écart qui dépend du niveau (plus serré aux niveaux élevés).
+// Les couleurs sont mélangées.
+function donneComplete(){
+  const d=nouvelleDonne(), pos=[d.R,d.B];
+  let dref=Math.max(dist(d.C,d.R),dist(d.C,d.B));
+  const gap=dref-Math.min(dist(d.C,d.R),dist(d.C,d.B)), mini=plus.min/10;
+  for(let k=2;k<nbBoules;k++){
+    let P=null;
+    const plages=[[Math.max(plus.k[0]*gap,mini),Math.max(plus.k[1]*gap,mini*1.5)],[0.3,1.5],[0.3,5]];
+    for(const [a,b] of plages){
+      for(let e=0;e<3000&&!P;e++){
+        const r=dref+rnd(a,b), t=rnd(0,2*Math.PI), Q=[d.C[0]+r*Math.cos(t),d.C[1]+r*Math.sin(t)];
+        if(dedans(Q) && pos.every(X=>dist(Q,X)>2.5)) P=Q;   // au moins 25 cm entre deux boules
+      }
+      if(P) break;
+    }
+    if(!P) P=[d.C[0]+(dref+1)*(d.C[0]<W/2?1:-1),d.C[1]];
+    pos.push(P); dref=dist(d.C,P);
+  }
+  for(let i=pos.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pos[i],pos[j]]=[pos[j],pos[i]]; }
+  return {C:d.C, boules:pos};
+}
+
 // ---------- GeoGebra ----------
 const params = {
   appName:"classic", width:800, height:600,
   showToolBar:true, showToolBarHelp:false, showAlgebraInput:false, showMenuBar:false,
   showResetIcon:false, allowStyleBar:false, enableRightClick:false, enableShiftDragZoom:true,   // zoom à la molette / au pincement autorisé
   language:"fr", perspective:"G", showGrid:false, showAxes:false, disableAutoScale:true,
-  customToolBar:MANCHES[0].outils,
+  customToolBar:OUTILS[0].outils,
   appletOnLoad(api){ ggb=api; setTimeout(construire, 300); }
 };
 window.addEventListener('load',()=>new GGBApplet(params,true).inject('ggb'));
@@ -216,7 +346,13 @@ function extremites(seg){
 function angleDroit(d1,d2){
   let n=ggb.evalCommandGetLabels(`Angle(${d1},${d2})`); if(!n) return;
   if(Math.abs(ggb.getValue(n)-Math.PI/2)>0.01){ ggb.deleteObject(n); n=ggb.evalCommandGetLabels(`Angle(${d2},${d1})`); }
-  if(n){ ggb.setLabelVisible(n,false); ggb.setColor(n,0,0,0); ggb.setFixed(n,true,false); }
+  if(n){ ggb.setLabelVisible(n,false); ggb.setColor(n,0,0,0); ggb.setFixed(n,true,false); petitAngle(n); }
+}
+// Angle droit deux fois plus petit que celui de GeoGebra (taille d'arc 30 → 15)
+function petitAngle(n){
+  let x=ggb.getXML(n);
+  x = /<arcSize /.test(x) ? x.replace(/<arcSize val="\d+"\s*\/>/,'<arcSize val="15"/>') : x.replace('</element>','<arcSize val="15"/></element>');
+  ggb.evalXML(x);
 }
 function longueursEgales(P,M,Q){
   const deco=4+(nbEgaux++%2);
@@ -225,7 +361,7 @@ function longueursEgales(P,M,Q){
     ggb.evalCommand(`SetDecoration(${s},${deco})`); ggb.setLabelVisible(s,false); ggb.setColor(s,0,0,0); ggb.setFixed(s,true,false);
   }
 }
-// Pas de point libre : seulement R, B, C, les intersections et les milieux.
+// Pas de point libre : seulement les boules, le cochonnet, les intersections et les milieux.
 function pointALaVolee(n){
   if(codageEnCours) return false;
   const cs=ggb.getCommandString(n,false)||'';
@@ -260,6 +396,16 @@ function coder(n){
   if(m && type==='point'){
     const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
     if(pq) longueursEgales(pq[0],n,pq[1]);
+    return;
+  }
+  m=cs.match(/^Médiatrice\((.+)\)$/);
+  if(m && ligne(type)){
+    const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
+    if(!pq) return;
+    const I=ggb.evalCommandGetLabels(`Midpoint(${pq[0]},${pq[1]})`);
+    if(I){ ggb.setLabelVisible(I,false); ggb.setPointSize(I,2); ggb.setColor(I,40,40,40); ggb.setFixed(I,true,false); longueursEgales(pq[0],I,pq[1]); }
+    const d=ggb.evalCommandGetLabels(`Line(${pq[0]},${pq[1]})`);
+    if(d){ ggb.setVisible(d,false); angleDroit(d,n); }
   }
 }
 
@@ -271,14 +417,14 @@ function construire(){
   // fond sable
   try{ ggb.setGraphicsOptions(1,{bgColor:'#E9DCBC'}); }catch(e){}
   try{ ggb.evalXML('<euclidianView><bgColor r="233" g="220" b="188"/></euclidianView>'); }catch(e){}
-  for(const n of ['R','B','C']){ ggb.evalCommand(`${n}=(0,0)`); }
-  ggb.setColor('R',200,50,42); ggb.setColor('B',36,89,201); ggb.setColor('C',200,140,20);
-  for(const n of ['R','B','C']){ ggb.setPointSize(n,3); ggb.setLabelVisible(n,false); ggb.setFixed(n,true,true); }
+  for(const b of BOULES){ ggb.evalCommand(`${b.gg}=(0,0)`); ggb.setColor(b.gg,...b.rgb); }
+  ggb.evalCommand('C=(0,0)'); ggb.setColor('C',0,0,0);
+  for(const n of [...BOULES.map(b=>b.gg),'C']){ ggb.setPointSize(n,3); ggb.setLabelVisible(n,false); ggb.setFixed(n,true,true); }
   baseObjets = new Set(ggb.getAllObjectNames());
   ggb.registerAddListener(n=>{ if(pointALaVolee(n)) return; if(!codageEnCours){ codageEnCours=true; try{ coder(n); }catch(e){ console.warn('codage',e); } finally{ codageEnCours=false; } } });
   cadrer();
   window.addEventListener('resize',()=>setTimeout(cadrer,150));
-  choisirManche(0);
+  nouvelle();
   document.getElementById('loading').style.display='none';
   requestAnimationFrame(boucle);
 }
@@ -293,8 +439,11 @@ function cadrer(){
   },100);
 }
 function placer(){
-  ggb.setFixed('R',false); ggb.setCoords('R',...donne.R); ggb.setFixed('R',true,true);
-  ggb.setFixed('B',false); ggb.setCoords('B',...donne.B); ggb.setFixed('B',true,true);
+  // boules non utilisées : cachées (on ne peut pas cliquer dessus)
+  BOULES.forEach((b,i)=>{
+    const p=donne.boules[i]; ggb.setVisible(b.gg,!!p);
+    if(p){ ggb.setFixed(b.gg,false); ggb.setCoords(b.gg,...p); ggb.setFixed(b.gg,true,true); }
+  });
   ggb.setFixed('C',false); ggb.setCoords('C',...donne.C); ggb.setFixed('C',true,true);
 }
 function effacerTraces(){
@@ -340,10 +489,16 @@ function cochonnet(p,u){
   ctx.save();
   ctx.globalAlpha=document.getElementById('chkTransparent').checked?0.7:1;
   const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);
-  g.addColorStop(0,'#fff3b0'); g.addColorStop(1,'#d98e0b');
+  g.addColorStop(0,'#777'); g.addColorStop(1,'#000');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
   ctx.restore();
-  croix(x,y,'#7a4a00');
+  reperCochonnet(x,y);
+}
+// cochonnet : en noir, entouré d'un anneau pour bien le repérer, même de loin
+function reperCochonnet(x,y){
+  ctx.save(); ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,11,0,7); ctx.stroke(); ctx.restore();
+  croix(x,y,'#000');
 }
 // le centre reste toujours visible : c'est lui qu'on vise avec les outils
 function croix(x,y,c){
@@ -351,7 +506,7 @@ function croix(x,y,c){
   ctx.beginPath(); ctx.moveTo(x-5,y-5); ctx.lineTo(x+5,y+5); ctx.moveTo(x-5,y+5); ctx.lineTo(x+5,y-5); ctx.stroke();
 }
 // mètre ruban déroulé du cochonnet vers une boule (t de 0 à 1)
-function ruban(p,u,t,texte,c){
+function ruban(p,t){
   const [x0,y0]=ecran(donne.C), [x1,y1]=ecran(p);
   const x=x0+(x1-x0)*t, y=y0+(y1-y0)*t;
   ctx.save();
@@ -359,12 +514,6 @@ function ruban(p,u,t,texte,c){
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x,y); ctx.stroke();
   ctx.strokeStyle='#5a4500'; ctx.lineWidth=1; ctx.setLineDash([2,6]);
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x,y); ctx.stroke();
-  if(t>=1){
-    ctx.setLineDash([]); ctx.font='bold 18px system-ui'; ctx.textAlign='center';
-    const mx=x0+(x1-x0)*.62, my=y0+(y1-y0)*.62-12, w=ctx.measureText(texte).width+12;
-    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillRect(mx-w/2,my-15,w,22);
-    ctx.fillStyle=c; ctx.fillText(texte,mx,my+1);
-  }
   ctx.restore();
 }
 let tVerdict=0;
@@ -375,19 +524,19 @@ function dessiner(){
   const u=vue.k/vue.invXscale;
   if(etat==='verdict'){
     const t=Math.min(1,tVerdict/0.8);
-    ruban(donne.R,u,t,`${Math.round(dist(donne.C,donne.R)*100)/10} cm`.replace('.',','),'#c8322a');
-    ruban(donne.B,u,t,`${Math.round(dist(donne.C,donne.B)*100)/10} cm`.replace('.',','),'#2459c9');
+    donne.boules.forEach(p=>ruban(p,t));
   }
   const boules=document.getElementById('chkBoules').checked;
   if(boules){
-    boule(donne.R,u,'#c8322a'); boule(donne.B,u,'#2459c9'); cochonnet(donne.C,u);
+    donne.boules.forEach((p,i)=>boule(p,u,BOULES[i].c)); cochonnet(donne.C,u);
   } else {   // seulement les centres
-    for(const [p,c] of [[donne.R,'#c8322a'],[donne.B,'#2459c9'],[donne.C,'#7a4a00']]){ const [x,y]=ecran(p); croix(x,y,c); }
+    for(const [p,c] of donne.boules.map((p,i)=>[p,BOULES[i].c])){ const [x,y]=ecran(p); croix(x,y,c); }
+    reperCochonnet(...ecran(donne.C));
   }
-  // noms : A pour la boule rouge, B pour la bleue, C pour le cochonnet (dans GeoGebra : R, B, C)
+  // noms : C pour le cochonnet ; A rouge, B bleue, D verte, E violette (dans GeoGebra : R, B, V, J)
   if(document.getElementById('chkNoms').checked){
     ctx.save(); ctx.font='italic bold 20px "Times New Roman",serif'; ctx.textBaseline='bottom';
-    for(const [p,n,c,r] of [[donne.R,'A','#c8322a',R_BOULE],[donne.B,'B','#2459c9',R_BOULE],[donne.C,'C','#7a4a00',R_COCHONNET]]){
+    for(const [p,n,c,r] of [...donne.boules.map((p,i)=>[p,BOULES[i].lettre,BOULES[i].c,R_BOULE]),[donne.C,'C','#000',R_COCHONNET]]){
       const [x,y]=ecran(p), d=(boules?r*u*0.75:0)+6;
       ctx.lineWidth=4; ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.strokeText(n,x+d,y-d);
       ctx.fillStyle=c; ctx.fillText(n,x+d,y-d);
@@ -408,39 +557,60 @@ function boucle(t){
 const msg=document.getElementById('message');
 function verrouiller(on){
   document.getElementById('verrou').style.display=on?'block':'none';
+  document.getElementById('zoneReponse').classList.toggle('verdict',on);
   if(on){ ggb.setMode(0); }
-  document.getElementById('btnRouge').disabled=on; document.getElementById('btnBleue').disabled=on;
+  document.querySelectorAll('#reponse button').forEach(b=>b.disabled=on);
 }
-function choisirManche(i){
-  manche=i;
-  document.querySelectorAll('#atelierManches button').forEach((b,k)=>b.classList.toggle('active',k===i));
-  document.getElementById('consigne').innerHTML=
-    `<b>Manche ${i+1}</b><br>Quelle boule est la plus proche du cochonnet ?<span class="outils">Outils : ${MANCHES[i].noms}.</span>`;
-  ggb.setCustomToolBar(MANCHES[i].outils);
-  document.getElementById('ecart').value=MANCHES[i].ecart;
-  document.getElementById('hMed').value=MANCHES[i].ecart; majEcart();
-  nouvelle();
+// Le niveau tire les réglages au hasard dans ses plages (sauf si le professeur a touché aux réglages fins).
+const pas=(v,p)=>Math.round(v/p)*p;
+function appliquerNiveau(){
+  if(manuel){ plus=PLUS_MANUEL; return; }
+  // niveau 4 (index) = mélangé : un niveau 1 à 4 au hasard à chaque donne
+  const N=NIVEAUX[niveau===NIVEAUX.length ? Math.floor(Math.random()*NIVEAUX.length) : niveau];
+  plus=N.plus;
+  $('mode').value='mediatrice';
+  $('hMed').value=pas(rnd(...N.h),0.5);
+  $('entre').value=pas(rnd(...N.entre),5);
+  $('loin').value=pas(rnd(...N.loin),5);
+  majEcart();
 }
+function majChoix(){
+  document.querySelectorAll('#choixOutils button').forEach((b,k)=>b.classList.toggle('active',k===outil));
+  document.querySelectorAll('#choixBoules button').forEach((b,k)=>b.classList.toggle('active',k+2===nbBoules));
+  document.querySelectorAll('#reponse button').forEach((b,k)=>b.style.display=k<nbBoules?'':'none');
+  $('reponse').classList.toggle('serre',nbBoules>2);
+  document.querySelectorAll('#choixNiveau button').forEach((b,k)=>b.classList.toggle('active',!manuel && k===niveau));
+  if(mode==='atelier') $('consigne').innerHTML =
+    'Quelle boule est la plus proche du cochonnet (en noir) ?';
+}
+function choisirOutil(i){ outil=i; nouvelle(); }
+function choisirNiveau(j){ niveau=j; manuel=false; majChoix(); nouvelle(); }
 function nouvelle(){
-  donne=nouvelleDonne(); placer(); effacerTraces();
-  etat='jeu'; tVerdict=0; msg.style.display='none'; verrouiller(false);
+  const tirables=OUTILS.map((o,i)=>i).filter(i=>!OUTILS[i].tous);
+  outilDonne = outil===HASARD ? tirables[Math.floor(Math.random()*tirables.length)] : outil;
+  if(barre!==OUTILS[outilDonne].outils){ barre=OUTILS[outilDonne].outils; ggb.setCustomToolBar(barre); }
+  appliquerNiveau();
+  donne=donneComplete(); placer(); effacerTraces();
+  etat='jeu'; tVerdict=0; msg.style.display='none'; $('distances').textContent=''; verrouiller(false);
+  majChoix();
 }
-function repondre(couleur){
+function repondre(choix){
   if(etat!=='jeu') return;
-  const rouge=dist(donne.C,donne.R), bleue=dist(donne.C,donne.B);
-  const bonne = rouge<bleue ? 'rouge' : 'bleue';
+  const d=donne.boules.map(p=>dist(donne.C,p)), bonne=d.indexOf(Math.min(...d));
   etat='verdict'; tVerdict=0; verrouiller(true); joues++;
-  const ok = couleur===bonne; if(ok) bons++;
+  const ok = choix===bonne; if(ok) bons++;
   majScore();
   setTimeout(()=>{
     msg.className=ok?'win':'';
     msg.querySelector('.big').textContent = ok ? 'Bravo !' : 'Perdu…';
-    msg.querySelector('.small').innerHTML = `La boule <b style="color:${bonne==='rouge'?'#c8322a':'#2459c9'}">${bonne}</b> tient le point.`;
+    msg.querySelector('.small').innerHTML = `La boule <b style="color:${BOULES[bonne].c}">${BOULES[bonne].nom}</b> tient le point.`;
+    $('distances').innerHTML = d.map((x,i)=>[x,i]).sort((a,b)=>a[0]-b[0])
+      .map(([x,i])=>`<span style="color:${BOULES[i].c}">${BOULES[i].nom} : ${virgule(x*10)} cm</span>`).join('');
     const enQuiz = mode==='quiz' && quiz;
-    $('btnRejouer').style.display = enQuiz ? 'none' : '';
-    $('btnSuivante').textContent = enQuiz ? (quiz.k+1<quiz.n ? 'Question suivante →' : 'Voir le score') : 'Manche suivante →';
-    $('btnSuivante').style.display = enQuiz || manche<MANCHES.length-1 ? '' : 'none';
-    msg.style.display='block';
+    $('btnRejouer').style.display = 'none';
+    $('btnSuivante').textContent = enQuiz ? (quiz.k+1<quiz.n ? 'Question suivante →' : 'Voir le score') : 'Nouvelle donne →';
+    $('btnSuivante').style.display = '';
+    msg.style.display='flex';
     son(ok);
   },900);
 }
@@ -449,39 +619,36 @@ function majScore(){ document.getElementById('score').textContent = joues ? `Bon
 // ---------- Modes : atelier (réglages du professeur) / quiz (série de questions) ----------
 let mode='atelier', quiz=null;   // quiz = {n, k, outils}
 const $=id=>document.getElementById(id);
+// Pendant un quiz, les choix restent visibles mais verrouillés.
+function verrouillerChoix(on){
+  document.querySelectorAll('#atelierChoix button, #reglagesProf input, #reglagesProf select, #reglagesProf button').forEach(e=>e.disabled=on);
+}
 function passerEn(m){
-  mode=m; quiz=null;
+  mode=m; quiz=null; verrouillerChoix(false);
   $('btnAtelier').classList.toggle('active',m==='atelier'); $('btnQuiz').classList.toggle('active',m==='quiz');
-  $('atelierManches').style.display = m==='atelier'?'':'none';
-  $('reglagesProf').style.display = m==='atelier'?'':'none';
+  $('btnDonne').style.display = m==='atelier'?'':'none';
   $('quizSetup').style.display = m==='quiz'?'':'none';
   $('btnSuivante').onclick=suite;
   bons=0; joues=0; majScore();
-  if(m==='atelier') choisirManche(manche);
+  if(m==='atelier') nouvelle();
   else { etat='attente'; verrouiller(true); msg.style.display='none'; effacerTraces();
-         $('consigne').innerHTML='<b>Quiz</b><br>Choisir le nombre de questions et les outils, puis démarrer.'; }
+         $('consigne').innerHTML='<b>Quiz</b> · Choisir les outils, le niveau et le nombre de questions, puis démarrer.'; }
 }
-// difficulté croissante : le cochonnet se rapproche de la médiatrice (4 cm → 1 cm)
+// Le quiz garde les réglages choisis dans le panneau (outils, niveau ou niveau mélangé, réglages fins).
 function questionQuiz(){
-  const {n,k,outils}=quiz;
-  const m = outils==='prog' ? [0,2,4,5][Math.min(3,Math.floor(4*k/n))] : +outils;
-  manche=m; ggb.setCustomToolBar(MANCHES[m].outils);
-  $('mode').value='mediatrice';
-  $('entre').value=Math.round(rnd(60,160)/5)*5;
-  $('loin').value=Math.round(rnd(50,130)/5)*5;
-  $('hMed').value=Math.max(1,Math.round((4-3*k/Math.max(1,n-1))*2)/2);
-  majEcart();
-  $('consigne').innerHTML=`<b>Question ${k+1} / ${n}</b><br>Quelle boule est la plus proche du cochonnet ?<span class="outils">Outils : ${MANCHES[m].noms}.</span>`;
+  const {n,k}=quiz;
   nouvelle();
+  $('consigne').innerHTML=`<b>Question ${k+1} / ${n}</b> · Quelle boule est la plus proche du cochonnet (en noir) ?`;
 }
 function demarrerQuiz(){
-  quiz={n:+$('quizN').value, k:0, outils:$('quizOutils').value};
+  quiz={n:+$('quizN').value, k:0};
   bons=0; joues=0; majScore();
   $('quizSetup').style.display='none';
+  verrouillerChoix(true);
   questionQuiz();
 }
 function suite(){
-  if(mode==='atelier'){ choisirManche(Math.min(manche+1,MANCHES.length-1)); return; }
+  if(mode==='atelier'){ nouvelle(); return; }
   if(!quiz){ passerEn('quiz'); return; }
   quiz.k++;
   if(quiz.k<quiz.n){ questionQuiz(); return; }
@@ -489,12 +656,13 @@ function suite(){
   etat='attente'; verrouiller(true); effacerTraces();
   msg.className=bons>=quiz.n/2?'win':'';
   msg.querySelector('.big').textContent=`Score : ${bons} / ${quiz.n}`;
+  $('distances').textContent='';
   msg.querySelector('.small').textContent= bons===quiz.n ? 'Parfait, un vrai champion de pétanque !' : 'Le quiz est terminé.';
   $('btnRejouer').style.display='none';
   $('btnSuivante').textContent='Nouveau quiz';
   $('btnSuivante').style.display='';
-  msg.style.display='block';
-  quiz=null;
+  msg.style.display='flex';
+  quiz=null; verrouillerChoix(false);
 }
 
 // ---------- Son ----------
@@ -509,10 +677,20 @@ function son(ok){
 }
 
 // ---------- Boutons ----------
-const zone=document.getElementById('atelierManches');
-MANCHES.forEach((m,i)=>{ const b=document.createElement('button'); b.textContent=`Manche ${i+1}`; b.onclick=()=>choisirManche(i); zone.appendChild(b); });
-document.getElementById('btnRouge').onclick=()=>repondre('rouge');
-document.getElementById('btnBleue').onclick=()=>repondre('bleue');
+[...OUTILS.map(o=>o.court),'Au hasard'].forEach((t,i)=>{ const b=document.createElement('button'); b.textContent=t; b.onclick=()=>choisirOutil(i); $('choixOutils').appendChild(b); });
+NIVEAUX.forEach((n,j)=>{ const b=document.createElement('button'); b.textContent=j+1; b.title=`Niveau ${j+1}`; b.onclick=()=>choisirNiveau(j); $('choixNiveau').appendChild(b); });
+{ const b=document.createElement('button'); b.textContent='Mélangé'; b.className='melange'; b.title='Un niveau au hasard à chaque donne';
+  b.onclick=()=>choisirNiveau(NIVEAUX.length); $('choixNiveau').appendChild(b); }
+BOULES.forEach((bl,i)=>{ const b=document.createElement('button'); b.textContent=bl.nom[0].toUpperCase()+bl.nom.slice(1); b.style.background=bl.c;
+  b.onclick=()=>repondre(i); $('reponse').appendChild(b); });
+[2,3,4].forEach(n=>{ const b=document.createElement('button'); b.textContent=n; b.title=`${n} boules`;
+  b.onclick=()=>{ nbBoules=n; nouvelle(); }; $('choixBoules').appendChild(b); });
+// Guide : fermeture par ×, clic à côté ou Échap
+const overlayGuide=document.getElementById('overlayGuide');
+document.getElementById('btnGuide').onclick=()=>overlayGuide.classList.add('visible');
+document.getElementById('btnFermerGuide').onclick=()=>overlayGuide.classList.remove('visible');
+overlayGuide.addEventListener('click',e=>{ if(e.target===overlayGuide) overlayGuide.classList.remove('visible'); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') overlayGuide.classList.remove('visible'); });
 document.getElementById('btnDonne').onclick=nouvelle;
 document.getElementById('btnRecadrer').onclick=cadrer;
 // Zoom autour du centre de la vue (aussi à la molette ou au pincement sur le terrain ;
@@ -547,8 +725,8 @@ function majEcart(){
     ? `Boules à ${val('entre')} cm l'une de l'autre ; cochonnet à environ ${val('loin')} cm du segment et à ${virgule(val('hMed'))} cm de la médiatrice.`
     : `Une boule à ${virgule(val('distance')-val('ecart')/2)} cm, l'autre à ${virgule(val('distance')+val('ecart')/2)} cm.`;
 }
-for(const id of ['ecart','distance','entre','hMed','loin']) document.getElementById(id).oninput=majEcart;
-document.getElementById('mode').onchange=()=>{ majEcart(); nouvelle(); };
+for(const id of ['ecart','distance','entre','hMed','loin']) document.getElementById(id).oninput=()=>{ manuel=true; majEcart(); majChoix(); };
+document.getElementById('mode').onchange=()=>{ manuel=true; majEcart(); majChoix(); nouvelle(); };
 document.getElementById('btnRejouer').onclick=nouvelle;
 document.getElementById('btnSuivante').onclick=suite;
 document.getElementById('btnAtelier').onclick=()=>passerEn('atelier');
