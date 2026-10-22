@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Régionnement</title>
+<style>
+  :root{
+    --bg:#f1f3f6; --panel:#fffefb; --border:#d5dae2; --text:#2b2a26; --muted:#727a86;
+    --accent:#2f6fd6; --ok:#2e9e5b; --ko:#d6452f; --oubli:#e08a00; --cadre:#5b6b80;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+  body{display:flex;flex-direction:column;}
+  /* en-tête : même mise en page que l'appli evaluation (titre à gauche, boutons à droite) */
+  header{display:flex;align-items:center;gap:14px;padding:0 20px;min-height:54px;flex:0 0 auto;
+    background:#e9eef5;border-bottom:1px solid #c9d2de;flex-wrap:wrap;}
+  #titre_appli{font-size:1.2rem;padding:10px 0;}
+  #titre_appli b{color:var(--cadre);}
+  /* mode diplôme (quiz) : barre dorée + badge, pour qu'on voie tout de suite qu'on est évalué */
+  header.diplome{background:linear-gradient(90deg,#f7e9b8,#fbf3d6);border-bottom-color:#c9a227;}
+  #badgeDiplome{display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;
+    background:linear-gradient(90deg,#c9a227 60%,#f7e08a 100%);color:#1f2430;font-weight:700;font-size:.95rem;white-space:nowrap;}
+  header.diplome #badgeDiplome{display:inline-flex;}
+  #badgeDiplome span{font-weight:500;}
+  @media (max-width:1000px){ header.diplome #titre_appli b{display:none;} }
+  .header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;}
+  .filet-header{width:1px;height:22px;background:#c9d2de;flex-shrink:0;}
+  .btn-header, button.btn-header{background:transparent;border:.5px solid #c9d2de;height:34px;padding:0 14px;font-size:.82rem;font-weight:500;
+    border-radius:6px;cursor:pointer;color:#3d4a5c;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap;}
+  .btn-header:hover{border-color:#3d4a5c;color:#1f2733;}
+  button.btn-header.active, .btn-header.active{background:transparent;border-color:var(--cadre);color:var(--cadre);font-weight:600;}
+  #app{display:flex;flex:1 1 auto;min-height:0;}
+  #sidebar{width:290px;min-width:290px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;}
+  button{font:inherit;font-size:15px;border:1px solid var(--border);background:#f5f7fa;color:var(--text);
+    border-radius:8px;padding:9px 8px;cursor:pointer;}
+  button:hover{border-color:var(--accent);}
+  button.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  button:disabled{opacity:.45;cursor:default;}
+  .groupe-label{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:4px;}
+  .choix2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .choix2 button,.choix4 button{padding:8px 4px;font-size:14px;}
+  .choix2 button:last-child:nth-child(odd){grid-column:1 / -1;}
+  /* types de contraintes : numérotés, pour ne pas dire aux élèves quel outil sert */
+  .choix5{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .choix5 button{padding:8px 4px;font-size:14px;}
+  .choix5 .melange{grid-column:1 / -1;}
+  .choix3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .choix3 button{padding:8px 4px;font-size:14px;}
+  .choix4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  #atelierChoix button:disabled{cursor:default;opacity:1;color:#9a9a9a;}
+  #atelierChoix button.active:disabled{opacity:.55;color:#e8e8e8;}
+  button.principal{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+  .reglage{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+  .reglage input{width:100%;}
+  .reglage input[type=text]{font:inherit;font-size:15px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;color:var(--text);}
+  .erreur{font-size:13px;color:var(--ko);min-height:0;}
+  #btnDiplome{background:linear-gradient(90deg,#c9a227 60%,#f7e08a 100%);color:#1f2430;border:none;font-weight:700;}
+  .zoom{display:grid;grid-template-columns:1fr 1fr 2fr;gap:6px;}
+  .chk{font-size:15px;display:flex;gap:8px;align-items:center;cursor:pointer;}
+  .col{display:flex;flex-direction:column;gap:6px;}
+  details{font-size:14px;color:var(--muted);} details summary{cursor:pointer;} details .col{margin-top:8px;}
+  #droite{flex:1;display:flex;flex-direction:column;min-width:0;}
+  /* plan : simple cadre autour de l'applet, fond uni */
+  #stage{flex:1 1 auto;min-height:0;position:relative;background:var(--cadre);padding:10px;}
+  #plan{position:absolute;inset:10px;border-radius:4px;overflow:hidden;}
+  #ggb{position:absolute;inset:0;}
+  #overlay{position:absolute;pointer-events:none;z-index:3;}
+  #verrou{position:absolute;inset:0;z-index:2;display:none;cursor:default;}
+  #toast{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:5;display:none;
+    background:#2b2a26;color:#fff;border-radius:10px;padding:8px 16px;font-size:16px;}
+  #loading{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);color:var(--muted);font-size:16px;}
+  /* ---------- zone de réponse, sous le plan ---------- */
+  #zoneReponse{flex:0 0 auto;display:flex;flex-direction:column;gap:8px;padding:10px 16px;
+    background:var(--panel);border-top:1px solid var(--border);}
+  #ligneQuestion{display:flex;align-items:baseline;gap:12px;}
+  #consigne{font-size:18px;line-height:1.3;flex:1;}
+  #consigne .contrainte{font-weight:700;white-space:nowrap;}
+  #consigne .donnees{font-size:16px;color:#444;margin-bottom:2px;}
+  #consigne .donnees span{white-space:nowrap;}
+  #score{font-size:14px;color:var(--muted);white-space:nowrap;}
+  #ligneReponse{display:flex;align-items:center;gap:12px;min-height:52px;}
+  #puces{display:flex;flex-wrap:wrap;gap:5px;flex:1;}
+  #puces button{min-width:40px;padding:5px 6px;font-size:16px;font-family:"Times New Roman",serif;font-style:italic;background:#fff;}
+  #puces button.choisi{background:var(--accent);border-color:var(--accent);color:#fff;}
+  #puces button.juste{background:var(--ok);border-color:var(--ok);color:#fff;}
+  #puces button.faux{background:var(--ko);border-color:var(--ko);color:#fff;}
+  #puces button.oubli{background:#fff;border:3px dashed var(--oubli);color:var(--oubli);}
+  #puces button:disabled{opacity:1;cursor:default;}
+  #btnValider{font-size:18px;font-weight:700;padding:12px 26px;flex:0 0 auto;}
+  #message{display:none;align-items:center;gap:14px;background:#fff;border:3px solid var(--ko);border-radius:14px;padding:6px 12px;flex:0 0 auto;}
+  #message.win{border-color:var(--ok);}
+  #message .texte{text-align:center;}
+  #message .big{font-size:22px;font-weight:700;}
+  #message .small{font-size:14px;color:var(--muted);}
+  #zoneReponse.verdict #btnValider{display:none;}
+  #zoneReponse.verdict #message{display:flex;}
+  .legende{font-size:13px;color:var(--muted);}
+  .legende b.j{color:var(--ok);} .legende b.f{color:var(--ko);} .legende b.o{color:var(--oubli);}
+  /* ---------- Nom sur le diplôme (overlay à l'entrée du quiz) ---------- */
+  #overlayNom{display:none;position:absolute;inset:0;z-index:15;background:rgba(201,162,39,.22);backdrop-filter:blur(2px);
+    align-items:center;justify-content:center;padding:20px;}
+  #overlayNom.visible{display:flex;}
+  #carteNom{background:#fffdf6;border:3px solid #c9a227;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+    padding:22px 28px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px;}
+  #carteNom .titreNom{font-size:1.5rem;font-weight:700;text-align:center;color:#1f5c33;}
+  #carteNom .reglage{font-size:15px;color:var(--text);}
+  #carteNom input[type=text]{font-size:20px;padding:10px 12px;}
+  #carteNom select{font:inherit;font-size:15px;padding:6px;}
+  #carteNom #btnDemarrer{font-size:18px;padding:12px;}
+  #carteNom .aideNom{font-size:13px;color:var(--muted);text-align:center;}
+  /* ---------- Guide (overlay sur le plan, comme l'appli evaluation) ---------- */
+  #overlayGuide{display:none;position:absolute;inset:0;z-index:20;background:rgba(91,107,128,.18);
+    backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;}
+  #overlayGuide.visible{display:flex;}
+  #guideCarte{position:relative;background:#fff;color:#222;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;
+    border-radius:16px;border:2px solid var(--cadre);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:26px 32px;}
+  #guideCarte h2{text-align:center;margin:0 0 16px;font-size:1.3em;color:var(--cadre);}
+  #guideCarte h3{color:var(--cadre);font-size:1em;margin:16px 0 6px;}
+  #guideCarte p, #guideCarte li{margin:0 0 4px;line-height:1.5;font-size:.95em;color:#333;}
+  #guideCarte ul{margin:0;padding-left:20px;}
+  #btnFermerGuide{position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;padding:0;font-size:20px;}
+</style>
+</head>
+<body>
+<header>
+  <span id="titre_appli">📍 Régionnement <b>Où sont les points M ?</b></span>
+  <span id="badgeDiplome">🎓 Mode diplôme<span id="badgeInfo"></span></span>
+  <div class="header-actions">
+    <button id="btnAtelier" class="btn-header active">Atelier</button>
+    <button id="btnQuiz" class="btn-header">Quiz</button>
+    <div class="filet-header"></div>
+    <a id="onglet" class="btn-header" target="_blank" rel="noopener" title="Ouvrir l’appli dans un nouvel onglet">Nouvel onglet</a>
+    <div class="filet-header"></div>
+    <button id="btnGuide" class="btn-header">Guide</button>
+  </div>
+</header>
+<div id="app">
+  <aside id="sidebar">
+    <div id="atelierChoix" class="col">
+      <div class="groupe-label">Contraintes</div>
+      <div class="choix5" id="choixType"></div>
+      <div class="groupe-label">Points M</div>
+      <div class="choix4" id="choixPoints"></div>
+      <div class="groupe-label">Points sur chaque frontière</div>
+      <div class="choix3" id="choixSur"></div>
+      <button id="btnDonne">🔄 Nouvelle figure</button>
+    </div>
+    <div class="col">
+      <div class="zoom"><button id="btnPlus" title="Zoomer">🔍＋</button><button id="btnMoins" title="Dézoomer">🔍－</button><button id="btnRecadrer">Tout le plan</button></div>
+    </div>
+    <details id="reglagesProf">
+      <summary>Réglages fins (professeur)</summary>
+      <div class="col">
+        <label class="reglage">Distance minimale des points M aux frontières : <b id="valMarge"></b>
+          <input type="range" id="marge" min="0.2" max="1.5" step="0.1" value="0.5"></label>
+        <label class="chk"><input type="checkbox" id="chkZone" checked> Colorier la zone à la correction</label>
+        <button id="btnEffacer">Effacer les tracés</button>
+      </div>
+    </details>
+  </aside>
+  <div id="droite">
+  <main id="stage">
+    <div id="plan">
+      <div id="ggb"></div>
+      <div id="verrou"></div>
+      <canvas id="overlay"></canvas>
+      <div id="toast"></div>
+      <div id="loading">Chargement…</div>
+      <!-- entrée en mode diplôme : nom sur le diplôme, directement par-dessus le plan -->
+      <div id="overlayNom"><div id="carteNom">
+        <div class="titreNom">🎓 Mode diplôme</div>
+        <label class="reglage">Nom sur le diplôme
+          <input type="text" id="quizNom" maxlength="40" placeholder="Prénom et initiale, ou la classe" autocomplete="off"></label>
+        <div id="erreurNom" class="erreur"></div>
+        <label class="reglage">Nombre de questions
+          <select id="quizN"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
+        <button id="btnDemarrer" class="principal">▶ Démarrer le quiz</button>
+        <div class="aideNom">Les contraintes et le nombre de points sont ceux du panneau de gauche.</div>
+      </div></div>
+      <div id="overlayGuide"><div id="guideCarte">
+        <button id="btnFermerGuide" aria-label="Fermer">×</button>
+        <h2>Mode d'emploi</h2>
+        <h3>Objectif</h3>
+        <p>Des points fixes <b>A</b>, <b>B</b> (parfois <b>C</b>) et un nuage de points <i>M</i><sub>1</sub>, <i>M</i><sub>2</sub>… Sélectionner <b>tous</b> les points <i>M</i> qui vérifient la contrainte, par exemple <i>AM</i> &lt; 3 cm, <i>AM</i> &lt; <i>BM</i>, ou deux contraintes à la fois.</p>
+        <h3>Construire</h3>
+        <p>Tous les outils sont toujours disponibles (cercle centre-rayon, cercle centre-point, médiatrice, segment, milieu, perpendiculaire, parallèle, intersection) : c'est à l'élève de choisir ce qui sert.</p>
+        <ul>
+          <li><b>Cercle (centre, rayon)</b> : pour <i>AM</i> &lt; 3 cm, le cercle de centre A et de rayon 3 cm sépare les points à moins de 3 cm (dedans) de ceux à plus de 3 cm (dehors). On peut taper le rayon comme on veut : 3, 3 cm, 2,5 ou 2,5 cm.</li>
+          <li><b>Médiatrice</b> de [AB] : pour <i>AM</i> &lt; <i>BM</i>, elle sépare les points plus proches de A de ceux plus proches de B.</li>
+        </ul>
+        <p>Avec la droite (<i>AB</i>) (seuls les points <i>A</i> et <i>B</i> sont donnés : la droite est à tracer), l'énoncé est en mots : points situés <b>à</b> 2 cm, <b>à moins de</b> 2 cm, <b>à au plus</b> 2 cm ou <b>à plus de</b> 2 cm de la droite (<i>AB</i>). La frontière est formée des deux <b>parallèles</b> à (<i>AB</i>) à 2 cm, une de chaque côté.</p>
+        <p>On ne peut pas créer de point au hasard : seulement des intersections et des milieux. Les milieux et les angles droits se codent tout seuls.</p>
+        <h3>Points sur une frontière</h3>
+        <p>Chaque contrainte est écrite dans une couleur : c'est la couleur de sa frontière (cercle ou médiatrice). Quand on trace le bon cercle, la bonne médiatrice ou la bonne parallèle, le tracé prend cette couleur. Les points <i>M</i> restent gris : un point <b>exactement sur</b> une frontière est signalé par une <b>donnée</b> de l'énoncé (on ne peut pas le voir à l'œil). C'est ce qui permet de jouer avec &lt; et ≤ : pour <i>AM</i> ≤ 3 cm ces points sont à sélectionner, pour <i>AM</i> &lt; 3 cm non, et pour <i>AM</i> = 3 cm ce sont les seuls.</p>
+        <p>Exemple de données, dès le départ : « On sait que : <i>AM</i><sub>3</sub> = 4 cm ; <i>AM</i><sub>7</sub> = <i>BM</i><sub>7</sub> ».</p>
+        <h3>Sélectionner et valider</h3>
+        <p>Cliquer sur un point <i>M</i> (avec l'outil Déplacer, la flèche) ou sur sa pastille sous le plan : il passe en bleu ; un deuxième clic le désélectionne. Plusieurs points peuvent être sélectionnés. Puis <b>Valider</b>.</p>
+        <p>Correction : la zone qui convient est coloriée, la frontière est en trait plein si elle est comprise (≤, ≥, =) et en pointillés sinon (&lt;, &gt;), et chaque point est marqué <b style="color:var(--ok)">juste</b> (bien sélectionné), <b style="color:var(--ko)">faux</b> (sélectionné à tort) ou <b style="color:var(--oubli)">oublié</b> (il fallait le sélectionner).</p>
+        <h3>Atelier</h3>
+        <ul>
+          <li><b>Contraintes</b> : six sortes numérotées de 1 à 6 (les numéros ne disent pas quel outil utiliser : c'est à l'élève de le trouver), ou Mélangé (une sorte au hasard à chaque figure).</li>
+          <li><b>Points M</b> : 6, 8, 10 ou 12 points.</li>
+          <li><b>Points sur chaque frontière</b> : 0, 1 ou 2 points posés exactement sur chaque cercle ou médiatrice. Avec 0, les contraintes n'utilisent que &lt; et &gt; ; sinon aussi ≤, ≥ et, pour une seule contrainte, =.</li>
+          <li><b>Réglages fins (professeur)</b>, repliés : distance minimale des points aux frontières (plus elle est petite, plus c'est difficile à l'œil), zone coloriée ou non, effacer les tracés.</li>
+        </ul>
+        <h3>Quiz</h3>
+        <p>Le quiz garde les choix du panneau. En mode Quiz, la barre du haut devient dorée avec le badge <b>🎓 Mode diplôme</b> (puis le nom et la question en cours). Une fenêtre s'ouvre aussitôt sur le plan : écrire le <b>nom à mettre sur le diplôme</b> (prénom et initiale, ou la classe), choisir le nombre de questions (10 par défaut) puis <b>Démarrer le quiz</b> (ou touche Entrée) : les choix sont verrouillés jusqu'à la fin. Une question est réussie si la sélection est exactement la bonne. À la fin, le score s'affiche avec le bouton <b>🎓 Mon diplôme</b> : diplôme A4 paysage à imprimer (ou enregistrer en PDF), avec le score, une mention, les contraintes jouées et la moyenne d'erreurs.</p>
+        <h3>Affichage</h3>
+        <p><b>Zoom</b> : boutons 🔍＋ / 🔍－, molette ou pincement ; « Tout le plan » remet la vue. 1 carreau invisible = 1 cm : le plan mesure 16 cm sur 10 cm.</p>
+      </div></div>
+    </div>
+  </main>
+  <!-- zone de réponse, sous le plan : contrainte, pastilles des points, Valider -->
+  <section id="zoneReponse">
+    <div id="ligneQuestion"><div id="consigne"></div><div id="score"></div></div>
+    <div id="ligneReponse">
+      <div id="puces"></div>
+      <button id="btnValider" class="principal">Valider</button>
+      <div id="message"><div class="texte"><div class="big"></div><div class="small"></div></div>
+        <button id="btnSuivante" class="principal">Nouvelle figure →</button>
+        <button id="btnDiplome" style="display:none">🎓 Mon diplôme</button></div>
+    </div>
+  </section>
+  </div>
+</div>
+
+<script src="https://www.geogebra.org/apps/deployggb.js"></script>
+<script src="diplome.js"></script>
+<script>
+document.getElementById('onglet').href = location.href;
+const $=id=>document.getElementById(id);
+const W = 16, H = 10;   // plan de 16 cm sur 10 cm (1 unité = 1 cm)
+const NMAX = 12;
+
+// Outils GeoGebra : 0 Déplacer, 34 Cercle (centre, rayon), 10 Cercle (centre, point), 8 Médiatrice,
+// 15 Segment, 19 Milieu, 4 Perpendiculaire, 3 Parallèle, 5 Intersection, 6 Gomme
+// Tous les outils, toujours : à l'élève de choisir ce qui sert
+const OUTILS_TOUS = "0 | 34 | 10 | 8 | 15 | 19 | 4 | 3 | 5 | 6";
+// Types de contraintes : affichés seulement par leur numéro (1 à 5) ; les noms restent dans le code
+const TYPES = [
+  { court:"Cercle" },
+  { court:"Médiatrice" },
+  { court:"Deux cercles" },
+  { court:"Cercle + médiatrice" },
+  { court:"Trois points" },
+  { court:"Droite" },          // distance à la droite (AB), énoncé en mots
+];
+const MELANGE = TYPES.length;
+
+// ---------- État ----------
+let ggb=null, type=0, typeDonne=0, nbPoints=10, nbSur=1;
+let fig=null, choisis=new Set(), etat='jeu', baseObjets=new Set(), bons=0, joues=0, erreursCumul=0;
+const dist=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pas=(v,p)=>Math.round(v/p)*p;
+const virgule=v=>String(Math.round(v*10)/10).replace('.',',');
+const nomM=i=>i<10?`M_${i}`:`M_{${i}}`;            // nom GeoGebra du point M_i
+const htmlM=i=>`<i>M</i><sub>${i}</sub>`;
+
+// ---------- Contraintes ----------
+// atome {k:'c', P, op, r} : PM op r (cercle de centre P et de rayon r)
+// atome {k:'m', P, Q, op}  : PM op QM (médiatrice de [PQ])
+// atome {k:'d', op, r}     : distance de M à la droite (AB) op r (frontière : les deux parallèles à r cm)
+// op : < > ≤ ≥ =  — chaque atome a une couleur : sa frontière et les points posés dessus la prennent
+const FRONT = [ {c:'#c2185b', rgb:[194,24,91]}, {c:'#7b3fb0', rgb:[123,63,176]} ];
+const EPS = 1e-6;
+const op2txt=o=>({'<':'&lt;','>':'&gt;','≤':'≤','≥':'≥','=':'='})[o];
+// distance à la droite : pas de symbole, une phrase
+const PHRASE_D={'=':'à','<':'à moins de','≤':'à au plus','>':'à plus de'};
+const distDroite=M=>{ const {P,u}=fig.droite; return Math.abs((M[0]-P[0])*u[1]-(M[1]-P[1])*u[0]); };
+function texteAtome(a){
+  if(a.k==='d') return `${PHRASE_D[a.op]} ${virgule(a.r)} cm de la droite (<i>AB</i>)`;
+  return a.k==='c' ? `<i>${a.P}M</i> ${op2txt(a.op)} ${virgule(a.r)} cm` : `<i>${a.P}M</i> ${op2txt(a.op)} <i>${a.Q}M</i>`;
+}
+function compare(x,o){   // x = d1 − d2 (ou d − r)
+  return o==='<' ? x<-EPS : o==='>' ? x>EPS : o==='≤' ? x<=EPS : o==='≥' ? x>=-EPS : Math.abs(x)<=EPS;
+}
+function vraiAtome(a,M){
+  if(a.k==='d') return compare(distDroite(M)-a.r,a.op);
+  return a.k==='c' ? compare(dist(fig.pts[a.P],M)-a.r,a.op) : compare(dist(fig.pts[a.P],M)-dist(fig.pts[a.Q],M),a.op);
+}
+const vrai=M=>fig.atomes.every(a=>vraiAtome(a,M));
+// distance de M à la frontière d'un atome (cercle ou médiatrice)
+function ecartFrontiere(a,M){
+  if(a.k==='d') return Math.abs(distDroite(M)-a.r);
+  if(a.k==='c') return Math.abs(dist(fig.pts[a.P],M)-a.r);
+  const P=fig.pts[a.P], Q=fig.pts[a.Q];
+  return Math.abs(dist(P,M)**2-dist(Q,M)**2)/(2*dist(P,Q));
+}
+// un point au hasard sur la frontière d'un atome
+function surFrontiere(a){
+  if(a.k==='d'){ const {P,u}=fig.droite, t=rnd(-12,12), c=(Math.random()<.5?-1:1)*a.r; return [P[0]+t*u[0]+c*u[1],P[1]+t*u[1]-c*u[0]]; }
+  if(a.k==='c'){ const t=rnd(0,2*Math.PI), P=fig.pts[a.P]; return [P[0]+a.r*Math.cos(t),P[1]+a.r*Math.sin(t)]; }
+  const P=fig.pts[a.P], Q=fig.pts[a.Q], I=[(P[0]+Q[0])/2,(P[1]+Q[1])/2], L=dist(P,Q), v=[-(Q[1]-P[1])/L,(Q[0]-P[0])/L], t=(Math.random()<.5?-1:1)*rnd(1.5,12);   // pas sur le codage du milieu
+  return [I[0]+t*v[0],I[1]+t*v[1]];
+}
+// avec des points sur les frontières : inégalités larges aussi, et « = » s'il n'y a qu'une contrainte
+const op=(seul)=>choisir(nbSur ? (seul ? ['<','>','≤','≥','≤','≥','='] : ['<','>','≤','≥']) : ['<','>']);
+const choisir=t=>t[Math.floor(Math.random()*t.length)];
+const dedans=(p,m)=>p[0]>m&&p[0]<W-m&&p[1]>m&&p[1]<H-m;
+
+function nouvelleFigure(){
+  const marge=+$('marge').value;
+  for(let essai=0;essai<500;essai++){
+    // contrainte 6 : la droite (AB) ; seuls les points A et B sont donnés, la droite n'est pas tracée
+    if(typeDonne===5){
+      const P=[rnd(5,11),rnd(3.5,6.5)], t=rnd(0,Math.PI), u=[Math.cos(t),Math.sin(t)], L=rnd(5,8), o=choisir(nbSur?['=','<','≤','>']:['<','>']);
+      const A=[P[0]-L/2*u[0],P[1]-L/2*u[1]], B=[P[0]+L/2*u[0],P[1]+L/2*u[1]];
+      if(!dedans(A,1.5)||!dedans(B,1.5)) continue;
+      fig={pts:{A,B},atomes:[{k:'d',op:o,r:pas(rnd(1.5,3),0.5),couleur:FRONT[0]}],droite:{P:A,u},M:[],sur:[]};
+      if(remplir(marge)) return fig; else continue;
+    }
+    // points fixes
+    const pts={}, troisPoints = typeDonne===4;
+    pts.A=[rnd(3,W-3),rnd(2.5,H-2.5)];
+    let ok=false;
+    for(let e=0;e<200&&!ok;e++){ const a=rnd(0,2*Math.PI), L=rnd(5,9); pts.B=[pts.A[0]+L*Math.cos(a),pts.A[1]+L*Math.sin(a)]; ok=dedans(pts.B,2.5); }
+    if(!ok) continue;
+    if(troisPoints){
+      ok=false;
+      for(let e=0;e<300&&!ok;e++){ pts.C=[rnd(2.5,W-2.5),rnd(2.5,H-2.5)]; ok=dist(pts.C,pts.A)>4.5&&dist(pts.C,pts.B)>4.5&&Math.abs((pts.B[0]-pts.A[0])*(pts.C[1]-pts.A[1])-(pts.B[1]-pts.A[1])*(pts.C[0]-pts.A[0]))/dist(pts.A,pts.B)>3; }
+      if(!ok) continue;
+    }
+    const AB=dist(pts.A,pts.B);
+    // contraintes selon le type
+    let atomes;
+    const P=choisir(['A','B']), Q=P==='A'?'B':'A';
+    if(typeDonne===0) atomes=[{k:'c',P,op:op(true),r:pas(rnd(2.5,5),0.5)}];
+    else if(typeDonne===1) atomes=[{k:'m',P:'A',Q:'B',op:op(true)}];
+    else if(typeDonne===2){
+      // deux cercles qui se coupent
+      let r1,r2; do{ r1=pas(rnd(2.5,6),0.5); r2=pas(rnd(2.5,6),0.5); } while(!(r1+r2>AB+1 && Math.abs(r1-r2)<AB-1));
+      atomes=[{k:'c',P:'A',op:op(),r:r1},{k:'c',P:'B',op:op(),r:r2}];
+    }
+    else if(typeDonne===3){
+      // le cercle coupe la médiatrice
+      const r=pas(rnd(AB/2+1,AB+1.5),0.5);
+      atomes=[{k:'m',P:'A',Q:'B',op:op()},{k:'c',P,op:op(),r}];
+    }
+    else { const R=choisir(['A','B','C']), [S,T]=['A','B','C'].filter(x=>x!==R); const o=()=>nbSur&&Math.random()<.5?'≤':'<'; atomes=[{k:'m',P:R,Q:S,op:o()},{k:'m',P:R,Q:T,op:o()}]; }
+    atomes.forEach((a,k)=>a.couleur=FRONT[k]);
+    fig={pts,atomes,M:[],sur:[]};   // sur[i] : indice de l'atome dont le point i est sur la frontière, ou -1
+    if(remplir(marge)) return fig;
+  }
+  return fig;
+}
+// nuage de points de la figure fig : points sur les frontières, puis points au hasard ; false si la figure ne convient pas
+function remplir(marge){
+  const {pts,atomes}=fig;
+  const fixes=Object.values(pts);
+  const libre=M=>dedans(M,0.8) && !fixes.some(F=>dist(F,M)<1.2) && !fig.M.some(N=>dist(N,M)<1.2);
+  // points posés exactement sur chaque frontière (loin des autres frontières)
+  for(const [k,a] of atomes.entries()) for(let q=0;q<nbSur;q++){
+    for(let e=0;e<500;e++){
+      const M=surFrontiere(a);
+      if(!libre(M) || atomes.some((b,l)=>l!==k && ecartFrontiere(b,M)<marge)) continue;
+      fig.M.push(M); fig.sur.push(k); break;
+    }
+  }
+  // nuage de points : loin des frontières, des autres points et des points fixes
+  for(let e=0;e<6000&&fig.M.length<nbPoints;e++){
+    const M=[rnd(0.8,W-0.8),rnd(0.7,H-0.7)];
+    if(fixes.some(F=>dist(F,M)<1.2)||fig.M.some(N=>dist(N,M)<1.2)) continue;
+    if(atomes.some(a=>ecartFrontiere(a,M)<marge)) continue;
+    fig.M.push(M); fig.sur.push(-1);
+  }
+  if(fig.M.length<nbPoints || fig.sur.filter(k=>k>=0).length<nbSur*atomes.length) return false;
+  // on mélange l'ordre des points (les points sur les frontières ne sont pas toujours M_1, M_2…)
+  for(let i=fig.M.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [fig.M[i],fig.M[j]]=[fig.M[j],fig.M[i]]; [fig.sur[i],fig.sur[j]]=[fig.sur[j],fig.sur[i]]; }
+  const nv=fig.M.filter(vrai).length, mini=atomes.some(a=>a.op==='=')?1:2;
+  return nv>=mini && nv<=nbPoints-2;
+}
+
+// ---------- GeoGebra ----------
+const params = {
+  appName:"classic", width:800, height:600,
+  showToolBar:true, showToolBarHelp:false, showAlgebraInput:false, showMenuBar:false,
+  showResetIcon:false, allowStyleBar:false, enableRightClick:false, enableShiftDragZoom:true,
+  language:"fr", perspective:"G", showGrid:false, showAxes:false, disableAutoScale:true,
+  customToolBar:OUTILS_TOUS,
+  appletOnLoad(api){ ggb=api; setTimeout(construire, 300); }
+};
+window.addEventListener('load',()=>new GGBApplet(params,true).inject('ggb'));
+
+// ---------- Codage automatique (repris de champMines / pétanque) ----------
+let codageEnCours=false, nbEgaux=0;
+const ligne=t=>t==='line'||t==='segment'||t==='ray';
+const args=cs=>cs.split(',').map(x=>x.trim());
+function extremites(seg){
+  const m=(ggb.getCommandString(seg)||'').match(/^Segment\((.+)\)$/);
+  if(m){ const a=args(m[1]); if(a.length===2) return a; }
+  return null;
+}
+function angleDroit(d1,d2){
+  let n=ggb.evalCommandGetLabels(`Angle(${d1},${d2})`); if(!n) return;
+  if(Math.abs(ggb.getValue(n)-Math.PI/2)>0.01){ ggb.deleteObject(n); n=ggb.evalCommandGetLabels(`Angle(${d2},${d1})`); }
+  if(n){ ggb.setLabelVisible(n,false); ggb.setColor(n,0,0,0); ggb.setFixed(n,true,false); petitAngle(n); }
+}
+// Angle droit deux fois plus petit que celui de GeoGebra (taille d'arc 30 → 15)
+function petitAngle(n){
+  let x=ggb.getXML(n);
+  x = /<arcSize /.test(x) ? x.replace(/<arcSize val="\d+"\s*\/>/,'<arcSize val="15"/>') : x.replace('</element>','<arcSize val="15"/></element>');
+  ggb.evalXML(x);
+}
+function longueursEgales(P,M,Q){
+  const deco=4+(nbEgaux++%2);
+  for(const [u,v] of [[P,M],[M,Q]]){
+    const s=ggb.evalCommandGetLabels(`Segment(${u},${v})`); if(!s) continue;
+    ggb.evalCommand(`SetDecoration(${s},${deco})`); ggb.setLabelVisible(s,false); ggb.setColor(s,0,0,0); ggb.setFixed(s,true,false);
+  }
+}
+// Pas de point libre : seulement A, B, C, les points M, les intersections et les milieux.
+function pointALaVolee(n){
+  if(codageEnCours) return false;
+  const cs=ggb.getCommandString(n,false)||'';
+  const interdit = ggb.getObjectType(n)==='point'
+    ? (ggb.isIndependent(n) || /^Point\b/.test(cs))
+    : /Point\[|\(\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\)/.test(cs);
+  if(!interdit) return false;
+  setTimeout(()=>{
+    if(ggb.exists(n)) ggb.deleteObject(n);
+    const m=ggb.getMode(); ggb.setMode(0); ggb.setMode(m);
+    toast('Clique sur A, B, un point M ou un point construit.');
+  },0);
+  return true;
+}
+// Rayon tapé par les élèves : « 3cm », « 3 cm », « 2,5 » ou « 2,5 cm » → 3 ou 2.5.
+// On corrige le champ de la fenêtre GeoGebra juste avant qu'elle le lise (Entrée ou clic sur OK).
+function rayonPropre(t){
+  const v=t.trim().replace(/\s*(cm|centim[eè]tres?)\.?\s*$/i,'').replace(/(\d)\s*,\s*(\d)/g,'$1.$2').trim();
+  return /^\d+(\.\d+)?$/.test(v) ? v : t;
+}
+function corrigerRayon(){
+  for(const i of document.querySelectorAll('#ggb input.TextField')){ const v=rayonPropre(i.value); if(v!==i.value) i.value=v; }
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Enter' && e.target.matches?.('#ggb input.TextField')) corrigerRayon(); },true);
+for(const ev of ['pointerdown','mousedown','touchstart']) document.addEventListener(ev,e=>{ if(e.target.closest?.('#ggb')) corrigerRayon(); },true);
+let toastT;
+function toast(t){
+  const el=$('toast'); el.textContent=t; el.style.display='block';
+  clearTimeout(toastT); toastT=setTimeout(()=>el.style.display='none',2400);
+}
+// Un cercle ou une médiatrice tracé par l'élève qui est une frontière de l'énoncé prend la couleur de cette frontière
+const pos=n=>[ggb.getXcoord(n),ggb.getYcoord(n)];
+// coefficients a x + b y + c = 0 d'une droite GeoGebra (lus dans son XML)
+function coefs(n){
+  const m=(ggb.getXML(n)||'').match(/<coords x="([^"]+)" y="([^"]+)" z="([^"]+)"/);
+  return m ? [+m[1],+m[2],+m[3]] : null;
+}
+function frontiereDe(cs,type){
+  if(!fig) return null;
+  const ad=fig.atomes.find(a=>a.k==='d');
+  if(ad && type==='line'){
+    // une droite parallèle à (AB) à la bonne distance
+    const n=frontiereDe.nom, c=n&&coefs(n); if(!c) return null;
+    const L=Math.hypot(c[0],c[1]), {P,u}=fig.droite;
+    if(Math.abs(c[0]/L*u[0]+c[1]/L*u[1])>1e-6) return null;            // pas parallèle
+    const v=(c[0]*P[0]+c[1]*P[1]+c[2])/L;                                  // distance signée de P à la droite
+    if(Math.abs(Math.abs(v)-ad.r)>1e-6) return null;
+    return ad;
+  }
+  let m=cs.match(/^Cercle\((\w+), (.+)\)$/);
+  if(m && (type==='circle'||type==='conic')){
+    const C=m[1], x=m[2].trim(), r = /^-?[\d.]+$/.test(x) ? +x : (ggb.exists(x)&&ggb.getObjectType(x)==='point' ? dist(pos(C),pos(x)) : NaN);
+    return fig.atomes.find(a=>a.k==='c' && a.P===C && Math.abs(a.r-r)<1e-6) || null;
+  }
+  m=cs.match(/^Médiatrice\((.+)\)$/);
+  if(m && ligne(type)){
+    const a=args(m[1]), pq=a.length===2?a:(a.length===1?extremites(a[0]):null); if(!pq) return null;
+    return fig.atomes.find(b=>b.k==='m' && ((b.P===pq[0]&&b.Q===pq[1])||(b.P===pq[1]&&b.Q===pq[0]))) || null;
+  }
+  return null;
+}
+function coder(n){
+  ggb.setLabelVisible(n,false);
+  ggb.setColor(n,40,40,40); ggb.setLineThickness(n,3);
+  const cs=ggb.getCommandString(n)||'', type=ggb.getObjectType(n);
+  if(type==='point') ggb.setPointStyle(n,1);   // des croix partout, pas de points ronds
+  frontiereDe.nom=n; const f=frontiereDe(cs,type); if(f) ggb.setColor(n,...f.couleur.rgb);
+  let m=cs.match(/^Perpendiculaire\((.+)\)$/);
+  if(m && ligne(type)){
+    const a=args(m[1]); if(a.length!==2) return;
+    const d=ggb.getObjectType(a[0])==='point'?a[1]:a[0];
+    if(ligne(ggb.getObjectType(d))) angleDroit(d,n);
+    return;
+  }
+  m=cs.match(/^MilieuCentre\((.+)\)$/);
+  if(m && type==='point'){
+    const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
+    if(pq) longueursEgales(pq[0],n,pq[1]);
+    return;
+  }
+  m=cs.match(/^Médiatrice\((.+)\)$/);
+  if(m && ligne(type)){
+    const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
+    if(!pq) return;
+    const I=ggb.evalCommandGetLabels(`Midpoint(${pq[0]},${pq[1]})`);
+    if(I){ ggb.setLabelVisible(I,false); ggb.setPointSize(I,4); ggb.setPointStyle(I,1); ggb.setColor(I,40,40,40); ggb.setFixed(I,true,false); longueursEgales(pq[0],I,pq[1]); }
+    const d=ggb.evalCommandGetLabels(`Line(${pq[0]},${pq[1]})`);
+    if(d){ ggb.setVisible(d,false); angleDroit(d,n); }
+  }
+}
+
+function construire(){
+  ggb.setErrorDialogsActive(false);
+  ggb.setGridVisible(false); ggb.setAxesVisible(false,false);
+  try{ ggb.enableShiftDragZoom(true); }catch(e){}
+  for(const n of ['A','B','C']){ ggb.evalCommand(`${n}=(0,0)`); ggb.setColor(n,0,0,0); ggb.setPointSize(n,5); ggb.setPointStyle(n,1); ggb.setLabelVisible(n,true); ggb.setFixed(n,true,true); }
+  for(let i=1;i<=NMAX;i++){
+    const n=nomM(i); ggb.evalCommand(`${n}=(0,0)`);
+    ggb.setPointStyle(n,1); ggb.setLabelVisible(n,true); ggb.setFixed(n,true,true);
+  }
+  baseObjets = new Set(ggb.getAllObjectNames());
+  ggb.registerAddListener(n=>{ if(pointALaVolee(n)) return; if(!codageEnCours){ codageEnCours=true; try{ coder(n); }catch(e){ console.warn('codage',e); } finally{ codageEnCours=false; } } });
+  // un clic sur un point M (outil Déplacer) le sélectionne ou le désélectionne
+  ggb.registerClickListener(n=>{
+    const i=indiceM(n); if(i && ggb.getMode()===0) basculer(i);
+  });
+  cadrer();
+  window.addEventListener('resize',()=>setTimeout(cadrer,150));
+  nouvelle();
+  $('loading').style.display='none';
+  requestAnimationFrame(boucle);
+}
+function indiceM(n){ const m=String(n).replace(/[{}]/g,'').match(/^M_(\d+)$/); return m ? +m[1] : 0; }
+const plan=$('plan');
+function cadrer(){
+  ggb.setSize(plan.clientWidth,plan.clientHeight);
+  setTimeout(()=>{
+    const vp=JSON.parse(ggb.getViewProperties(1)); if(!vp.width) return;
+    const sc=Math.min(vp.width/W, vp.height/H), hx=vp.width/sc/2, hy=vp.height/sc/2;
+    ggb.setCoordSystem(W/2-hx,W/2+hx,H/2-hy,H/2+hy);
+    majVue();
+  },100);
+}
+function placer(){
+  const poser=(n,p)=>{ ggb.setVisible(n,!!p); if(p){ ggb.setFixed(n,false); ggb.setCoords(n,...p); ggb.setFixed(n,true,true); } };
+  for(const n of ['A','B','C']) poser(n,fig.pts[n]);
+  for(let i=1;i<=NMAX;i++) poser(nomM(i),fig.M[i-1]);
+  majCouleurs();
+}
+// points M : toujours gris (un point sur une frontière est signalé par une donnée de l'énoncé, pas par une couleur) ;
+// sélectionnés : plus gros (+ anneau bleu)
+function majCouleurs(){
+  if(!fig) return;
+  for(let i=1;i<=fig.M.length;i++){ const n=nomM(i); ggb.setColor(n,60,60,60); ggb.setPointSize(n,choisis.has(i)?7:5); }
+}
+function effacerTraces(){
+  for(const n of ggb.getAllObjectNames()) if(!baseObjets.has(n) && ggb.exists(n)) ggb.deleteObject(n);
+}
+
+// ---------- Calque : sélection, correction ----------
+const cv=$('overlay'), ctx=cv.getContext('2d');
+let vue=null;
+function majVue(){
+  if(!ggb) return;
+  const vp=JSON.parse(ggb.getViewProperties(1));
+  let best=null,ba=0;
+  for(const c of document.querySelectorAll('#ggb canvas')){ const r=c.getBoundingClientRect(); if(r.width*r.height>ba){ba=r.width*r.height;best=r;} }
+  if(!best) return;
+  const s=plan.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  Object.assign(cv.style,{left:(best.left-s.left)+'px',top:(best.top-s.top)+'px',width:best.width+'px',height:best.height+'px'});
+  if(cv.width!==Math.round(best.width*dpr)){ cv.width=Math.round(best.width*dpr); cv.height=Math.round(best.height*dpr); }
+  vue={...vp, w:best.width, h:best.height, k:best.width/vp.width, dpr};
+}
+const ecran=p=>[vue.k*(p[0]-vue.xMin)/vue.invXscale, vue.h-vue.k*(p[1]-vue.yMin)/vue.invYscale];
+const monde=(x,y)=>[vue.xMin+x/vue.k*vue.invXscale, vue.yMin+(vue.h-y)/vue.k*vue.invYscale];
+function anneau(p,c,pointille){
+  const [x,y]=ecran(p);
+  ctx.save(); ctx.strokeStyle=c; ctx.lineWidth=3; if(pointille) ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.arc(x,y,13,0,7); ctx.stroke(); ctx.restore();
+}
+function dessiner(){
+  if(!vue||!fig) return;
+  ctx.setTransform(vue.dpr,0,0,vue.dpr,0,0);
+  ctx.clearRect(0,0,vue.w,vue.h);
+  if(etat==='verdict'){
+    // zone qui convient, coloriée par petits carrés
+    if($('chkZone').checked){
+      ctx.fillStyle='rgba(46,158,91,.16)'; const s=5;
+      for(let x=0;x<vue.w;x+=s) for(let y=0;y<vue.h;y+=s) if(vrai(monde(x+s/2,y+s/2))) ctx.fillRect(x,y,s,s);
+    }
+    // frontières en pointillés
+    const u=vue.k/vue.invXscale;
+    // frontière incluse (≤, ≥, =) en trait plein, exclue (<, >) en pointillés
+    ctx.save(); ctx.lineWidth=2.5;
+    for(const a of fig.atomes){
+      ctx.strokeStyle=a.couleur.c; ctx.setLineDash(['<','>'].includes(a.op)?[8,6]:[]);
+      ctx.beginPath();
+      if(a.k==='d'){ const {P,u:v}=fig.droite; for(const c of [a.r,-a.r]){ const Q=[P[0]+c*v[1],P[1]-c*v[0]];
+             ctx.moveTo(...ecran([Q[0]-60*v[0],Q[1]-60*v[1]])); ctx.lineTo(...ecran([Q[0]+60*v[0],Q[1]+60*v[1]])); } }
+      else if(a.k==='c'){ const [x,y]=ecran(fig.pts[a.P]); ctx.arc(x,y,a.r*u,0,7); }
+      else { const P=fig.pts[a.P], Q=fig.pts[a.Q], I=[(P[0]+Q[0])/2,(P[1]+Q[1])/2], v=[-(Q[1]-P[1]),Q[0]-P[0]], L=Math.hypot(...v);
+             const E1=ecran([I[0]+v[0]/L*60,I[1]+v[1]/L*60]), E2=ecran([I[0]-v[0]/L*60,I[1]-v[1]/L*60]); ctx.moveTo(...E1); ctx.lineTo(...E2); }
+      ctx.stroke();
+    }
+    ctx.restore();
+    fig.M.forEach((M,k)=>{ const i=k+1, c=choisis.has(i), v=vrai(M);
+      if(c&&v) anneau(M,'#2e9e5b'); else if(c) anneau(M,'#d6452f'); else if(v) anneau(M,'#e08a00',true); });
+  } else {
+    for(const i of choisis) anneau(fig.M[i-1],'#2563eb');
+  }
+}
+function boucle(){ majVue(); dessiner(); requestAnimationFrame(boucle); }
+
+// ---------- Déroulement ----------
+const msg=$('message');
+function verrouiller(on){
+  $('verrou').style.display=on?'block':'none';
+  $('zoneReponse').classList.toggle('verdict',on && etat==='verdict');
+  if(on) ggb.setMode(0);
+  $('btnValider').disabled=on;
+  document.querySelectorAll('#puces button').forEach(b=>b.disabled=on);
+}
+function basculer(i){
+  if(etat!=='jeu') return;
+  choisis.has(i) ? choisis.delete(i) : choisis.add(i);
+  majCouleurs(); majPuces();
+}
+function majPuces(){
+  const z=$('puces'); z.innerHTML='';
+  fig.M.forEach((M,k)=>{
+    const i=k+1, b=document.createElement('button'); b.innerHTML=htmlM(i);
+    if(etat==='verdict'){ const c=choisis.has(i), v=vrai(M); b.className = c&&v?'juste': c?'faux': v?'oubli':''; b.disabled=true; }
+    else { b.className=choisis.has(i)?'choisi':''; b.onclick=()=>basculer(i); b.disabled = etat!=='jeu'; }
+    z.appendChild(b);
+  });
+}
+// Données de départ pour les points posés sur une frontière : AM₃ = 4 cm (cercle), AM₇ = BM₇ (médiatrice)
+function donnees(){
+  const d=[];
+  fig.sur.forEach((k,j)=>{ if(k<0) return; const a=fig.atomes[k], Mi=`M</i><sub>${j+1}</sub>`;
+    d.push(a.k==='d' ? `<i>${Mi} est à ${virgule(a.r)} cm de (<i>AB</i>)` : a.k==='c' ? `<i>${a.P}${Mi} = ${virgule(a.r)} cm` : `<i>${a.P}${Mi} = <i>${a.Q}${Mi}`); });
+  return d.length ? `<div class="donnees">On sait que : ${d.map(x=>`<span>${x}</span>`).join(' ; ')}.</div>` : '';
+}
+const enonce=()=>fig.droite
+  ? `${donnees()}Sélectionner tous les points <i>M</i> situés <span class="contrainte" style="color:${fig.atomes[0].couleur.c}">${texteAtome(fig.atomes[0])}</span>.`
+  : `${donnees()}Sélectionner tous les points <i>M</i> tels que : ${fig.atomes.map(a=>`<span class="contrainte" style="color:${a.couleur.c}">${texteAtome(a)}</span>`).join(' et ')}.`;
+function majChoix(){
+  document.querySelectorAll('#choixType button').forEach((b,k)=>b.classList.toggle('active',k===type));
+  document.querySelectorAll('#choixPoints button').forEach(b=>b.classList.toggle('active',+b.textContent===nbPoints));
+  document.querySelectorAll('#choixSur button').forEach(b=>b.classList.toggle('active',+b.textContent===nbSur));
+}
+function nouvelle(){
+  $('btnDiplome').style.display='none';
+  typeDonne = type===MELANGE ? Math.floor(Math.random()*TYPES.length) : type;
+  fig=nouvelleFigure(); choisis=new Set();
+  etat='jeu'; effacerTraces(); placer();
+  verrouiller(false); majPuces();
+  $('consigne').innerHTML = (mode==='quiz'&&quiz ? `<b>Question ${quiz.k+1} / ${quiz.n}</b> · ` : '') + enonce();
+  majChoix(); majBadge();
+}
+function valider(){
+  if(etat!=='jeu') return;
+  const justes=fig.M.map((M,k)=>vrai(M)===choisis.has(k+1));
+  const erreurs=justes.filter(x=>!x).length, ok=erreurs===0;
+  etat='verdict'; verrouiller(true); majPuces(); majCouleurs(); joues++; if(ok) bons++; erreursCumul+=erreurs; majScore();
+  msg.className=ok?'win':'';
+  msg.querySelector('.big').textContent = ok ? 'Bravo !' : erreurs===1 ? '1 erreur' : `${erreurs} erreurs`;
+  const nf=fig.M.filter((M,k)=>choisis.has(k+1)&&!vrai(M)).length, no=fig.M.filter((M,k)=>!choisis.has(k+1)&&vrai(M)).length;
+  msg.querySelector('.small').innerHTML = ok ? 'Tous les points sont bien placés.'
+    : `<span class="legende">${nf?`<b class="f">${nf} en trop</b>`:''}${nf&&no?' · ':''}${no?`<b class="o">${no} oublié${no>1?'s':''}</b>`:''}</span>`;
+  const enQuiz = mode==='quiz' && quiz;
+  $('btnSuivante').textContent = enQuiz ? (quiz.k+1<quiz.n ? 'Question suivante →' : 'Voir le score') : 'Nouvelle figure →';
+  son(ok);
+}
+function majScore(){ $('score').textContent = joues ? `Réussies : ${bons} / ${joues}` : ''; }
+
+// ---------- Modes : atelier / quiz ----------
+let mode='atelier', quiz=null;
+function verrouillerChoix(on){
+  document.querySelectorAll('#atelierChoix button, #reglagesProf input, #reglagesProf button').forEach(e=>e.disabled=on);
+}
+// en-tête doré + badge pendant tout le mode quiz ; nom et question une fois le quiz lancé
+function majBadge(){
+  document.querySelector('header').classList.toggle('diplome',mode==='quiz');
+  $('badgeInfo').innerHTML = quiz ? ` · ${quiz.nom.replace(/[<>&]/g,'')} · question ${Math.min(quiz.k+1,quiz.n)} / ${quiz.n}` : '';
+}
+function passerEn(m){
+  mode=m; quiz=null; verrouillerChoix(false);
+  $('btnAtelier').classList.toggle('active',m==='atelier'); $('btnQuiz').classList.toggle('active',m==='quiz');
+  $('btnDonne').style.display = m==='atelier'?'':'none';
+  ouvrirNom(m==='quiz');
+  bons=0; joues=0; majScore();
+  $('btnDiplome').style.display='none';
+  majBadge();
+  if(m==='atelier') nouvelle();
+  else { etat='attente'; effacerTraces(); choisis=new Set(); majCouleurs(); verrouiller(true); majPuces();
+         $('consigne').innerHTML='<b>Mode diplôme</b> · Écrire le nom sur le diplôme, puis démarrer.'; }
+}
+function ouvrirNom(on){
+  $('overlayNom').classList.toggle('visible',on);
+  if(on){ $('erreurNom').textContent=''; setTimeout(()=>{ $('quizNom').focus(); $('quizNom').select(); },50); }
+}
+function demarrerQuiz(){
+  // le quiz ne démarre pas sans nom (il sera écrit sur le diplôme)
+  const nom=$('quizNom').value.trim().replace(/\s+/g,' ');
+  if(nom.length<2){ $('erreurNom').textContent='Écris le nom à mettre sur le diplôme.'; $('quizNom').focus(); return; }
+  $('erreurNom').textContent='';
+  quiz={n:+$('quizN').value, k:0, nom};
+  bons=0; joues=0; erreursCumul=0; majScore();
+  ouvrirNom(false);
+  verrouillerChoix(true);
+  nouvelle();
+}
+function suite(){
+  if(mode==='atelier'){ nouvelle(); return; }
+  if(!quiz){ passerEn('quiz'); return; }
+  quiz.k++;
+  if(quiz.k<quiz.n){ nouvelle(); return; }
+  // fin du quiz
+  msg.className=bons>=quiz.n/2?'win':'';
+  msg.querySelector('.big').textContent=`Score : ${bons} / ${quiz.n}`;
+  msg.querySelector('.small').textContent= bons===quiz.n ? 'Parfait !' : 'Le quiz est terminé.';
+  $('btnSuivante').textContent='Nouveau quiz';
+  // diplôme : nom, score, contraintes jouées, moyenne d'erreurs
+  const q=quiz, infos={ nom:q.nom, score:bons, total:q.n,
+    niveau:`${type===MELANGE?'Contraintes mélangées':'Contraintes '+(type+1)} · ${nbPoints} points`, erreurs:erreursCumul/q.n };
+  $('btnDiplome').onclick=()=>ouvrirDiplome(infos);
+  $('btnDiplome').style.display='';
+  quiz=null; verrouillerChoix(false); majBadge();
+}
+
+// ---------- Son ----------
+let ac=null;
+function son(ok){
+  try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  (ok?[523,659,784]:[330,262]).forEach((f,i)=>{
+    const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime+i*.13;
+    o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.3);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+.35);
+  });
+}
+
+// ---------- Boutons ----------
+[...TYPES.map((t,i)=>String(i+1)),'Mélangé'].forEach((t,i)=>{ const b=document.createElement('button'); b.textContent=t; if(i===MELANGE) b.className='melange';
+  b.onclick=()=>{ type=i; nouvelle(); }; $('choixType').appendChild(b); });
+[0,1,2].forEach(n=>{ const b=document.createElement('button'); b.textContent=n; b.title=n?`${n} point${n>1?'s':''} exactement sur chaque cercle ou médiatrice`:'Aucun point sur les frontières (seulement < et >)';
+  b.onclick=()=>{ nbSur=n; nouvelle(); }; $('choixSur').appendChild(b); });
+[6,8,10,12].forEach(n=>{ const b=document.createElement('button'); b.textContent=n; b.onclick=()=>{ nbPoints=n; nouvelle(); }; $('choixPoints').appendChild(b); });
+$('btnValider').onclick=valider;
+$('btnSuivante').onclick=suite;
+$('btnDonne').onclick=nouvelle;
+$('btnAtelier').onclick=()=>passerEn('atelier');
+$('btnQuiz').onclick=()=>passerEn('quiz');
+$('btnDemarrer').onclick=demarrerQuiz;
+$('quizNom').addEventListener('keydown',e=>{ if(e.key==='Enter') demarrerQuiz(); });
+$('btnEffacer').onclick=()=>{ if(etat==='jeu'){ effacerTraces(); majCouleurs(); } };
+$('btnRecadrer').onclick=cadrer;
+function zoomer(f){
+  const vp=JSON.parse(ggb.getViewProperties(1));
+  const x0=vp.xMin, x1=vp.xMin+vp.width*vp.invXscale, y0=vp.yMin, y1=vp.yMin+vp.height*vp.invYscale;
+  const cx=(x0+x1)/2, cy=(y0+y1)/2, hx=(x1-x0)/2/f, hy=(y1-y0)/2/f;
+  ggb.setCoordSystem(cx-hx,cx+hx,cy-hy,cy+hy);
+}
+$('btnPlus').onclick=()=>zoomer(1.6);
+$('btnMoins').onclick=()=>zoomer(1/1.6);
+const majMarge=()=>$('valMarge').textContent=virgule(+$('marge').value)+' cm';
+$('marge').oninput=majMarge; $('marge').onchange=()=>{ if(mode==='atelier') nouvelle(); }; majMarge();
+// Guide : fermeture par ×, clic à côté ou Échap
+const overlayGuide=$('overlayGuide');
+$('btnGuide').onclick=()=>overlayGuide.classList.add('visible');
+$('btnFermerGuide').onclick=()=>overlayGuide.classList.remove('visible');
+overlayGuide.addEventListener('click',e=>{ if(e.target===overlayGuide) overlayGuide.classList.remove('visible'); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') overlayGuide.classList.remove('visible'); });
+</script>
+</body>
+</html>
