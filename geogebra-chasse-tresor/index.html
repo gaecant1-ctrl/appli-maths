@@ -174,6 +174,17 @@
   }
   #hunt-score b{ color:var(--accent2); font-size:16px; }
   #hunt-score button{ flex:0 0 auto; padding:4px 8px; font-size:11px; }
+  button.nouvel-eleve{ width:100%; margin:6px 0 8px 0; background:#7a3e14; border-color:#a8581f; color:#fff; font-weight:600; }
+  button.nouvel-eleve:hover{ background:#94501c; }
+  button.diplome-btn{ width:100%; margin:0 0 8px 0; background:linear-gradient(90deg,#c9a227 60%,#f7e08a 100%); border:none; color:#1f2430; font-weight:700; }
+  #nom-dlg{ position:fixed; inset:0; display:none; z-index:50; align-items:flex-start; justify-content:center; padding-top:110px; background:rgba(10,14,24,.75); }
+  #eleve-nom{ font-size:13px; color:#cfd6e4; margin:2px 0 6px 0; } #eleve-nom b{ color:#f7e08a; }
+  #nom-dlg.show{ display:flex; }
+  #nom-dlg .card{ background:#fffdf6; color:#1b1b1b; border:3px solid #c9a227; border-radius:14px; padding:18px 20px; width:320px; display:flex; flex-direction:column; gap:10px; box-shadow:0 10px 30px rgba(0,0,0,.4); font-size:14px; }
+  #nom-dlg .titre{ font-size:20px; font-weight:700; color:#1f5c33; text-align:center; }
+  #nom-input{ font-size:18px; padding:8px 10px; border:2px solid #c9a227; border-radius:8px; }
+  #nom-err{ margin:0; min-height:1em; font-size:12px; color:#c62828; }
+  #nom-dlg .row button:not(.check){ background:#eef1f7; color:#1b1b1b; border-color:#cfd6e4; }
   #hunt-picker button.free{ flex:1 1 100%; margin-top:2px; }
   #hunt-body{ margin-top:10px; }
   #hunt-body[hidden]{ display:none; }
@@ -250,8 +261,10 @@
       <h2>Chasse au trésor</h2>
       <div id="hunt-score">
         <span>Trésors trouvés : <b id="hunt-score-val">0 / 10</b></span>
-        <button id="btn-score-reset" title="Remettre le compteur à zéro">Remettre à zéro</button>
       </div>
+      <div id="eleve-nom"></div>
+      <button id="btn-score-reset" class="wide nouvel-eleve" title="À faire quand un nouvel élève s'installe sur cet ordinateur">🧹 Nouvel élève : effacer les trésors</button>
+      <button id="btn-diplome" class="wide diplome-btn">🎓 Mon diplôme</button>
       <div class="row" id="hunt-picker"></div>
       <div id="hunt-body" hidden>
         <div id="hunt-instructions"></div>
@@ -364,12 +377,24 @@
         </div>
       </form>
     </div>
+    <div id="nom-dlg" role="dialog" aria-label="Nom sur le diplôme">
+      <form class="card" id="nom-form">
+        <div class="titre">🗺️ Avant de commencer</div>
+        <label for="nom-input">Écris ton prénom et l'initiale de ton nom (il sera sur ton diplôme) :</label>
+        <input id="nom-input" autocomplete="off" maxlength="40">
+        <p id="nom-err"></p>
+        <div class="row">
+          <button type="submit" class="check">Commencer la chasse</button>
+        </div>
+      </form>
+    </div>
     <div id="win">
       <div class="card">
         <div class="imgs"><img src="img/bravo.png" alt="Bravo"><img src="img/tresor.png" alt="Trésor"></div>
         <div class="row">
           <button id="btn-win-close">Fermer</button>
           <button id="btn-win-next" class="check">Exercice suivant</button>
+          <button id="btn-win-diplome" class="diplome-btn" style="display:none">🎓 Mon diplôme</button>
         </div>
       </div>
     </div>
@@ -377,6 +402,7 @@
 </div>
 
 <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+<script src="diplome.js"></script>
 <script>
   let ggbApplet = null;
   const statusText = document.getElementById('status-text');
@@ -1268,8 +1294,10 @@
   const winEl = document.getElementById('win');
 
   // --- Compteur de réussite ---
-  // Solved exercises are remembered in this browser (survives a reload or
-  // "nouvel onglet"); "Remettre à zéro" clears it for the next pupil.
+  // Les trésors trouvés restent enregistrés dans ce navigateur (un élève qui
+  // recharge la page par erreur ne perd rien). Sur les ordinateurs du collège,
+  // sans session individuelle, le bouton « Nouvel élève » efface le compteur
+  // (avec confirmation) avant que l'élève suivant ne commence.
   const SCORE_KEY = 'chasseTresor.solved.v5';
   let solved = new Set();
   try{ solved = new Set(JSON.parse(localStorage.getItem(SCORE_KEY) || '[]')); }catch(_){}
@@ -1284,11 +1312,14 @@
     });
   }
   document.getElementById('btn-score-reset').addEventListener('click', ()=>{
-    if(!solved.size || !confirm('Remettre le compteur de trésors à zéro ?')) return;
+    if(!confirm('Nouvel élève : effacer le nom et tous les trésors trouvés sur cet ordinateur ?\n\nLes exercices réussis par l\'élève précédent ne seront plus cochés.')) return;
     solved.clear();
     saveScore();
+    try{ localStorage.removeItem('chasseTresor.nom'); }catch(_){}
     renderScore();
-    toast('Compteur remis à zéro');
+    if(huntIndex >= 0) loadHunt(0);
+    exigerNom();
+    toast('Trésors effacés : bonne chasse !');
   });
 
   HUNTS.forEach((h,i)=>{
@@ -1429,8 +1460,44 @@
     renderScore();
     document.getElementById('btn-win-next').style.display =
       huntIndex < HUNTS.length-1 ? '' : 'none';
+    // tous les trésors trouvés : le diplôme est proposé tout de suite
+    document.getElementById('btn-win-diplome').style.display =
+      solved.size === HUNTS.length ? '' : 'none';
     winEl.classList.add('show');
   }
+
+  // --- Nom de l'élève : demandé AVANT de commencer, gardé avec les trésors ---
+  // Il ne peut être changé qu'avec « Nouvel élève » (qui efface aussi les trésors).
+  const NOM_KEY = 'chasseTresor.nom';
+  const nomDlg = document.getElementById('nom-dlg'), nomInput = document.getElementById('nom-input');
+  function lireNom(){ try{ return localStorage.getItem(NOM_KEY) || ''; }catch(_){ return ''; } }
+  function afficherNom(){ const n = lireNom(); document.getElementById('eleve-nom').innerHTML = n ? `Élève : <b>${n.replace(/[<>&]/g,'')}</b>` : ''; }
+  function exigerNom(){
+    afficherNom();
+    if(lireNom()) return;
+    winEl.classList.remove('show');
+    nomInput.value = ''; document.getElementById('nom-err').textContent = '';
+    nomDlg.classList.add('show');
+    setTimeout(()=>nomInput.focus(), 50);
+  }
+  document.getElementById('nom-form').addEventListener('submit', e=>{
+    e.preventDefault();
+    const nom = nomInput.value.trim().replace(/\s+/g,' ');
+    if(nom.length < 2){ document.getElementById('nom-err').textContent = 'Écris ton prénom et l\'initiale de ton nom.'; nomInput.focus(); return; }
+    try{ localStorage.setItem(NOM_KEY, nom); }catch(_){}
+    nomDlg.classList.remove('show');
+    afficherNom();
+    toast(`Bonne chasse, ${nom} !`);
+  });
+  function voirDiplome(){
+    const nom = lireNom();
+    if(!nom){ exigerNom(); return; }
+    winEl.classList.remove('show');
+    ouvrirDiplome({ nom, score: solved.size, total: HUNTS.length, niveau: 'Chasse au trésor GeoGebra' });
+  }
+  document.getElementById('btn-diplome').addEventListener('click', voirDiplome);
+  document.getElementById('btn-win-diplome').addEventListener('click', voirDiplome);
+  exigerNom();
 
   document.getElementById('btn-hunt-check').addEventListener('click', ()=>safe(checkHunt, 'vérification'));
   document.getElementById('btn-hunt-restart').addEventListener('click', ()=>safe(()=>loadHunt(huntIndex), 'recommencer'));
