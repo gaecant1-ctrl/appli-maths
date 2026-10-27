@@ -8,6 +8,7 @@ class Grille {
         this.divId = divId;
         this.grid = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
         this.phantomGrid = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
+        this.montrerErreurs = false; // après une mission ratée : jetons faux et manquants entourés
         this.injectCSS();
 
         this.container = document.getElementById(divId);
@@ -122,6 +123,38 @@ drawTokens() {
             }
         }
     }
+
+    // 🔹 Erreurs : cercle en pointillés dans chaque case différente du modèle
+    // (dans le trou : la grille bleue est dessinée par-dessus les jetons)
+    if (this.montrerErreurs) {
+        ctx.save();
+        ctx.strokeStyle = "#ffd60a";
+        ctx.lineWidth = 4;
+        ctx.setLineDash([5, 4]);
+        for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < this.cols; c++) {
+                if (this.grid[r][c] !== this.phantomGrid[r][c]) {
+                    ctx.beginPath();
+                    ctx.arc(c * this.cellSize + this.cellSize / 2, r * this.cellSize + this.cellSize / 2, this.cellSize / 2.5 - 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+        ctx.restore();
+    }
+}
+
+// Nombre de jetons au mauvais endroit (couleur fausse ou en trop) et de jetons manquants
+compterErreurs() {
+    let faux = 0, manquants = 0;
+    for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+            const g = this.grid[r][c], p = this.phantomGrid[r][c];
+            if (g && g !== p) faux++;
+            else if (!g && p) manquants++;
+        }
+    }
+    return { faux, manquants };
 }
 
 
@@ -150,13 +183,20 @@ estColonnePleine(n) {
 
 // Renvoie une promesse résolue quand le jeton a fini de tomber
 ajouter(coul, n) {
+    // Les messages qui commencent par 💥 s'affichent tels quels à l'élève
+    if (typeof n !== "number" || Number.isNaN(n)) {
+      throw new Error("💥 Le numéro de colonne n’est pas un nombre : as-tu donné une valeur à n ?");
+    }
+    if (coul !== "red" && coul !== "green") {
+      throw new Error("💥 La couleur du jeton n’est pas choisie : as-tu donné une valeur à c ?");
+    }
     n = n-1;
     if (n < 0 || n >= this.cols){
-      throw new Error(`la colonne ${n + 1} n'existe pas !`);
+      throw new Error(`💥 La colonne ${n + 1} n’existe pas : les colonnes vont de 1 à ${this.cols}.`);
     } 
          // Vérifier si la colonne est pleine
     if (this.estColonnePleine(n + 1)) {
-        throw new Error(`la colonne ${n + 1} est pleine !`);
+        throw new Error(`💥 La colonne ${n + 1} est pleine !`);
     }
     let r = this.rows - 1;
     while (r >= 0 && this.grid[r][n] !== null) r--;
@@ -198,6 +238,7 @@ ajouter(coul, n) {
 
     vider() {
         this.generation++;
+        this.montrerErreurs = false;
         this.grid = Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
         this.drawTokens();
         
