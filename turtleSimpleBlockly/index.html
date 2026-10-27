@@ -148,6 +148,34 @@
   #serieChoix button:last-child{border-radius:0 8px 8px 0;border-left:none;}
   #serieChoix button.actif{background:var(--accent);color:#fff;}
   #maGrille{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px var(--border);}
+  /* --- Zone de blocs la plus grande possible : la page tient dans la fenêtre,
+     les blocs prennent toute la place laissée par la grille et la colonne de droite --- */
+  body{display:flex;flex-direction:column;height:100vh;}
+  header{flex:none;}
+  main{flex:1;min-height:0;width:100%;max-width:none;grid-template-rows:minmax(0,1fr);}
+  main > .scene:not(.accueil){display:flex;flex-direction:column;min-height:0;}
+  .plateau{flex:1;min-height:0;align-items:stretch;}
+  .gauche{align-self:flex-start;}
+  .programme{display:flex;flex-direction:column;}
+  #blocklyDiv{flex:1;height:auto;min-height:260px;position:relative;}
+  /* Blockly suit la taille du cadre, pas l'inverse : sans cela, il empêche la zone de rétrécir */
+  #blocklyDiv .injectionDiv{position:absolute;inset:0;}
+  .colonne{position:static;max-height:100%;overflow:auto;}
+  /* écran moyen : boutons de l'en-tête réduits à leur icône (le texte reste en info-bulle) */
+  @media (max-width:1200px){ header .txt{display:none;} }
+  /* fenêtre étroite ou basse : la page défile, les blocs gardent une bonne hauteur */
+  @media (max-width:860px){
+    body{height:auto;min-height:100vh;}
+    main{grid-template-rows:none;}
+    #blocklyDiv{flex:none;height:60vh;}
+    .colonne{max-height:none;}
+  }
+  @media (max-height:600px){
+    body{height:auto;min-height:100vh;}
+    main{grid-template-rows:none;}
+    #blocklyDiv{flex:none;height:380px;}
+    .colonne{max-height:none;}
+  }
   </style>
 </head>
 <body>
@@ -160,9 +188,9 @@
   <div class="pastilles" id="pastilles"></div>
   <input type="number" id="exoInput" min="1" max="6" value="1" hidden>
   <span id="eleveInfo"></span>
-  <button class="onglet" id="btnFiche" title="Fiche papier de l'exercice">🖨 Fiche papier</button>
-  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓 Diplôme</button>
-  <button class="onglet" id="newTabButton" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗ Nouvel onglet</button>
+  <button class="onglet" id="btnFiche" title="Fiche papier de l'exercice">🖨<span class="txt"> Fiche papier</span></button>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
+  <button class="onglet" id="newTabButton" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
 </header>
 <main>
   <section class="scene accueil" id="accueil">
@@ -556,6 +584,7 @@ const workspace = Blockly.inject('blocklyDiv', {
   toolbox: TOOLBOX.sans,
   media: 'https://unpkg.com/blockly/media/'
 });
+new ResizeObserver(() => Blockly.svgResize(workspace)).observe(document.getElementById('blocklyDiv'));
 
 let block = workspace.newBlock('programme');
 block.initSvg();

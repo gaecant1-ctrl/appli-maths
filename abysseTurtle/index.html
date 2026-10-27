@@ -3,67 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Défi Tortue - Programmation par Blocs</title>
+    <title>Défi Tortue des Abysses</title>
 
     <script src="https://unpkg.com/blockly@10.4.0/blockly.min.js"></script>
     <script src="https://unpkg.com/blockly@10.4.0/javascript_compressed.js"></script>
-    <script src="acorn_interpreter.js"></script>
+    <script src="https://unpkg.com/blockly@10.4.0/msg/fr.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CENTRALISATION DU THÈME SOUS-MARIN VIA :ROOT --- */
+        /* --- THÈME : page claire comme les autres applis ; seule la zone de tracé reste « abysses » --- */
         :root {
-            --bg-global: #050b14;        /* Fond de la page : Bleu abyssal très sombre */
-            --bg-card: #0d1527;          /* Fond des panneaux : Bleu cockpit */
-            --bg-canvas: #070d1a;        /* Fond de la zone de dessin : Eau profonde */
-            --text-main: #f8fafc;        /* Texte principal : Blanc cassé lumineux */
-            --text-muted: #64748b;       /* Texte secondaire */
-            --border-color: #1e293b;     /* Bordures sombres high-tech */
-            
-            /* Couleurs néon des accents */
-            --color-primary: #00f5d4;    /* Cyan Néon (Accent principal & Slider) */
+            --bg-global: #f5f1e8;        /* Fond de la page */
+            --bg-card: #fffdf8;          /* Fond des panneaux */
+            --bg-elem: #f5f1e8;          /* Fond des champs, curseur, choix du mode */
+            --bg-canvas: #070d1a;        /* Fond de la zone de dessin : eau profonde */
+            --text-main: #1f2430;        /* Texte principal */
+            --text-muted: #6b6f7a;       /* Texte secondaire */
+            --border-color: #d9d2c3;     /* Bordures */
+
+            /* Couleurs des accents */
+            --color-primary: #0f8f80;    /* Turquoise (titre, élément actif, curseur) */
             --color-run: #10b981;        /* Vert exécution */
             --color-run-hover: #059669;
             --color-reset: #ef4444;      /* Rouge réinitialisation */
             --color-reset-hover: #dc2626;
-            --color-generate: #7209b7;   /* Violet mystique pour le nouveau défi */
+            --color-generate: #7209b7;   /* Violet pour le nouveau défi */
             --color-generate-hover: #5b0696;
-            
+
             /* Dimensions standardisées pour l'homogénéisation */
             --radius-card: 16px;
             --radius-elem: 10px;
-            --elem-height: 48px;         
+            --elem-height: 48px;
         }
 
         /* --- DESIGN GLOBAL --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-global);
             color: var(--text-main);
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 30px 20px;
-        }
-        
-        h2 { 
-            margin-bottom: 25px; 
-            font-weight: 700;
-            color: var(--color-primary);
-            font-size: 28px;
-            letter-spacing: -0.5px;
-            text-shadow: 0 0 10px rgba(0, 245, 212, 0.3);
+            padding: 16px;
         }
 
+        /* --- EN-TÊTE : titre, numéro de défi, élève, fiche, diplôme, nouvel onglet --- */
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            flex: none;
+            width: 100%;
+            margin-bottom: 16px;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+        }
+        header h1 {
+            margin-right: auto;
+            font-weight: 700;
+            color: var(--color-primary);
+            font-size: 21px;
+            letter-spacing: -0.5px;
+        }
+        .numero-defi { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+        .numero-defi input {
+            width: 78px; padding: 6px 8px; text-align: center; font: inherit; font-size: 14px;
+            color: var(--text-main); background: var(--bg-elem);
+            border: 1px solid var(--border-color); border-radius: 8px;
+        }
+        .numero-defi input:focus { outline: none; border-color: var(--color-primary); }
+        #erreurNumero { color: #c0392b; font-size: 12px; }
+        #eleveInfo { font-size: 13px; font-weight: 600; color: var(--text-main); }
+        .onglet {
+            flex: none; height: auto; padding: 7px 12px; font-size: 13px; font-weight: 600;
+            color: var(--text-main); background: var(--bg-elem);
+            border: 1px solid var(--border-color); border-radius: 8px; box-shadow: none;
+        }
+        .onglet:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+        /* Zone de travail : elle prend toute la hauteur restante ; les blocs prennent toute la largeur laissée par le dessin */
         #main-container {
+            flex: 1;
+            min-height: 0;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            gap: 25px;
+            align-items: stretch;
+            gap: 20px;
             width: 100%;
-            max-width: 1200px;
         }
 
         /* --- CONFIGURATION DES CARTES --- */
@@ -71,29 +104,42 @@
             background: var(--bg-card);
             border-radius: var(--radius-card);
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
         }
 
         #workspace-area {
-            width: 600px;
+            flex: 1;
+            min-width: 0;
         }
-        
+
+        /* Blockly suit la taille du cadre, pas l'inverse : sans cela, il empêche la zone de rétrécir */
+        #blocklyDiv .injectionDiv { position: absolute; inset: 0; }
         #blocklyDiv {
+            position: relative;
             width: 100%;
-            height: 350px; 
+            flex: 1;
+            min-height: 260px;
             border-radius: 12px;
             border: 1px solid var(--border-color);
             overflow: hidden;
         }
+        /* Bloc en cours d'exécution : contour néon épais */
+        .blocklyHighlighted > .blocklyPath {
+            stroke: #ffea00 !important;
+            stroke-width: 5px !important;
+            filter: drop-shadow(0 0 6px #ffea00);
+        }
 
         #render-area {
+            flex: none;
             width: 390px;
             align-items: center;
+            align-self: flex-start;
         }
-        
+
         #canvas-container {
             position: relative;
             width: 350px;
@@ -102,9 +148,9 @@
             border: 1px solid var(--border-color);
             background-color: var(--bg-canvas);
             overflow: hidden;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.15);
         }
-        
+
         canvas {
             position: absolute;
             top: 0;
@@ -137,58 +183,53 @@
             gap: 6px;
         }
         button:active { transform: scale(0.97); }
-        
+
         .btn-run { background-color: var(--color-run); }
         .btn-run:hover { background-color: var(--color-run-hover); box-shadow: 0 6px 12px rgba(16, 185, 129, 0.2); }
-        
+
         .btn-reset { background-color: var(--color-reset); }
         .btn-reset:hover { background-color: var(--color-reset-hover); box-shadow: 0 6px 12px rgba(239, 68, 68, 0.2); }
-        
+
         .btn-generate { background-color: var(--color-generate); }
         .btn-generate:hover { background-color: var(--color-generate-hover); box-shadow: 0 6px 12px rgba(114, 9, 183, 0.3); }
 
         /* Style modes */
-/* Style du conteneur global (on enlève sa bordure et son fond) */
-.mode-selector {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    height: var(--elem-height);
-    flex: 3.5;
-}
-        
-/* Style individuel de chaque bouton de mode */
-.mode-selector label {
-    flex: 1;
-    text-align: center;
-    cursor: pointer;
-    border-radius: var(--radius-elem); /* Utilisation de ton arrondi standardisé */
-    font-weight: 600;
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--bg-canvas); /* Fond sombre individuel */
-    border: 1px solid var(--border-color); /* Bordure individuelle discrète */
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    height: 100%;
-}
-        
-/* Effet au survol d'un mode non sélectionné */
-.mode-selector label:hover {
-    border-color: rgba(0, 245, 212, 0.4);
-    color: var(--text-main);
-}
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            background: var(--bg-elem);
+            padding: 4px;
+            border-radius: var(--radius-elem);
+            border: 1px solid var(--border-color);
+            height: var(--elem-height);
+            flex: 3.5;
+        }
 
-/* Style de l'élément sélectionné (actif) */
-.mode-selector label:has(input:checked) {
-    background: var(--bg-card);
-    color: var(--color-primary);
-    border-color: var(--color-primary); /* La bordure prend la couleur cyan néon */
-    box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
-}
+        .mode-selector label {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+
+        .mode-selector input[type="radio"] { display: none; }
+
+        .mode-selector label:has(input:checked) {
+            background: var(--bg-card);
+            color: var(--color-primary);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--color-primary);
+        }
 
         /* Curseur de vitesse */
         .slider-container {
@@ -196,16 +237,16 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            background: var(--bg-canvas);
+            background: var(--bg-elem);
             padding: 0 10px;
             border-radius: var(--radius-elem);
             border: 1px solid var(--border-color);
             height: var(--elem-height);
             flex: 1.2;
         }
-        
+
         .slider-container span { font-size: 16px; user-select: none; }
-        
+
         input[type="range"] {
             flex-grow: 1;
             -webkit-appearance: none;
@@ -216,7 +257,7 @@
             outline: none;
             min-width: 40px;
         }
-        
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -224,50 +265,128 @@
             height: 14px;
             border-radius: 50%;
             background: var(--color-primary);
-            box-shadow: 0 0 6px var(--color-primary);
             cursor: pointer;
             transition: transform 0.1s ease;
         }
         input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        /* --- MESSAGE APRÈS L'EXÉCUTION --- */
+        #message {
+            margin-top: 15px;
+            padding: 12px 14px;
+            border-radius: var(--radius-elem);
+            font-size: 15px;
+            line-height: 1.4;
+            border: 1px solid var(--border-color);
+            border-left-width: 5px;
+            background: var(--bg-elem);
+        }
+        #message.cache { display: none; }
+        #message.ok { border-color: #10b981; background: #e3f4e8; }
+        #message.ko { border-color: #f97316; background: #fff3e6; }
+        .legende { margin-top: 10px; font-size: 12px; color: var(--text-muted); text-align: center; }
+        .legende b.orange { color: #ea580c; }
+        .legende b.rouge { color: #dc2626; }
+
+        /* --- ACCUEIL (nom de l'élève), dans la page : l'en-tête reste visible --- */
+        .accueil { display: none; width: 100%; max-width: 640px; }
+        body.sans-nom .accueil { display: flex; }
+        body.sans-nom #main-container { display: none; }
+        .accueil h2 { color: var(--color-primary); font-size: 22px; margin-bottom: 12px; }
+        .accueil p { margin: 4px 0; line-height: 1.5; }
+        .accueil label { display: block; margin-top: 18px; font-weight: 600; }
+        #champNom {
+            display: block; width: 100%; max-width: 420px; margin-top: 8px; padding: 10px 12px;
+            font: inherit; color: var(--text-main); background: #fff;
+            border: 2px solid var(--border-color); border-radius: var(--radius-elem);
+        }
+        #champNom:focus { outline: none; border-color: var(--color-primary); }
+        #erreurNom { color: #c0392b; font-size: 13px; min-height: 1.4em; margin: 6px 0; }
+        .accueil .btn-run { flex: none; width: 200px; align-self: flex-end; }
+
+        /* les boutons du calque d'impression ne prennent pas le style des boutons du thème */
+        #overlayFiche button { flex: none; height: auto; box-shadow: none; }
+        #overlayFiche #btnFermerFiche { color: #6b6f7a; }
+
+        /* écran moyen : boutons de l'en-tête réduits à leur icône (le texte reste en info-bulle) */
+        @media (max-width: 1200px) {
+            header .txt { display: none; }
+        }
+        /* fenêtre étroite : le dessin passe sous les blocs, la page défile */
+        @media (max-width: 900px) {
+            body { height: auto; min-height: 100vh; }
+            #main-container { flex-direction: column; align-items: center; }
+            #workspace-area { width: 100%; }
+            #blocklyDiv { flex: none; height: 60vh; }
+        }
+        /* fenêtre très basse : on garde une zone de blocs utilisable, la page défile */
+        @media (max-height: 560px) {
+            body { height: auto; min-height: 100vh; }
+            #blocklyDiv { flex: none; height: 320px; }
+        }
     </style>
 </head>
 <body>
 
-    <h2>⚓ Défi Tortue des Abysses</h2>
-    
+    <header>
+        <h1>⚓ Défi Tortue des Abysses</h1>
+        <form class="numero-defi" id="allerNumero" autocomplete="off">
+            <label for="champNumero">Défi n°</label>
+            <input id="champNumero" type="text" inputmode="numeric" maxlength="5" placeholder="12345">
+            <button type="submit" class="onglet">OK</button>
+            <span id="erreurNumero"></span>
+        </form>
+        <span id="eleveInfo"></span>
+        <button class="onglet" id="btnFiche" title="Fiche papier du défi">🖨<span class="txt"> Fiche papier</span></button>
+        <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
+        <button class="onglet" id="btnOnglet" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+    </header>
+
+    <section class="accueil card-panel" id="accueil">
+        <h2>⚓ Défi Tortue des Abysses</h2>
+        <p>Programme la tortue pour qu'elle suive exactement le parcours lumineux.</p>
+        <p>Les longueurs sont écrites ; les angles dessinés sont ceux du parcours : à toi de trouver de combien la tortue doit tourner !</p>
+        <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
+        <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+        <div id="erreurNom"></div>
+        <button class="btn-run" id="btnCommencer">Commencer →</button>
+    </section>
+
     <div id="main-container">
         <div id="workspace-area" class="card-panel">
             <div id="blocklyDiv"></div>
             <div class="buttons-group">
-                <button class="btn-run" onclick="runCode()">Exécuter le code</button>
-                <button class="btn-reset" onclick="reinitialiserUtilisateur()">Réinitialiser</button>
+                <button class="btn-run" onclick="runCode()">▶ Exécuter le code</button>
+                <button class="btn-reset" onclick="reinitialiserUtilisateur()">↺ Réinitialiser</button>
                 <div class="slider-container">
                     <span>🐢</span>
-                    <input type="range" id="vitesseSlider" min="50" max="1000" step="50" value="750">
+                    <input type="range" id="vitesseSlider" min="50" max="1000" step="50" value="750" aria-label="Vitesse">
                     <span>🐇</span>
                 </div>
             </div>
+            <div id="message" class="cache"></div>
         </div>
 
         <div id="render-area" class="card-panel">
             <div id="canvas-container">
                 <canvas id="bgCanvas" width="350" height="350"></canvas>
                 <canvas id="trackCanvas" width="350" height="350"></canvas>
+                <canvas id="erreurCanvas" width="350" height="350"></canvas>
                 <canvas id="turtleCanvas" width="350" height="350"></canvas>
             </div>
             <div class="buttons-group">
-                <button class="btn-generate" onclick="genererNouveauCheminDefi()">Défi</button>
+                <button class="btn-generate" onclick="nouveauDefi()">Défi</button>
                 <div class="mode-selector">
                     <label>
-                        <input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)"> 
-                        Libre 
+                        <input type="radio" name="modeChemin" value="libre" checked onchange="changerMode(this.value)">
+                        Libre
                     </label>
                     <label>
-                        <input type="radio" name="modeChemin" value="polygone" onchange="changerMode(this.value)"> 
-                        Polygone 
+                        <input type="radio" name="modeChemin" value="polygone" onchange="changerMode(this.value)">
+                        Polygone
                     </label>
                     <label>
-                        <input type="radio" name="modeChemin" value="parallelogramme" onchange="changerMode(this.value)"> 
+                        <input type="radio" name="modeChemin" value="parallelogramme" onchange="changerMode(this.value)">
                         Parallélo.
                     </label>
                 </div>
@@ -281,19 +400,20 @@
         // --- 1. CONFIGURATION DES CANEVAS ---
         const bgCtx = document.getElementById('bgCanvas').getContext('2d');
         const trackCtx = document.getElementById('trackCanvas').getContext('2d');
+        const erreurCtx = document.getElementById('erreurCanvas').getContext('2d');
         const turtleCtx = document.getElementById('turtleCanvas').getContext('2d');
 
-        let typeChemin = 'libre'; 
+        let typeChemin = 'libre';
         let departX = CANVAS_SIZE / 2, departY = CANVAS_SIZE / 2;
-        let executionEnCours = false;
-        let monInterpreteur = null;
+        let defi = null;          // défi en cours : { numero, mode, actions, sommets }
 
         // --- 2. CLASSE DE LA TORTUE VIRTUELLE ---
+        // Coordonnées « mathématiques » : y vers le haut ; le canevas est retourné au dessin
         class VirtualPythonTurtle {
             constructor(x, y, ctx) {
                 this.x = x;
                 this.y = y;
-                this.heading = 0; 
+                this.heading = 0;
                 this.isDown = true;
                 this.ctx = ctx;
             }
@@ -305,7 +425,7 @@
 
                 if (this.isDown && this.ctx) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(this.x, CANVAS_SIZE - this.y); 
+                    this.ctx.moveTo(this.x, CANVAS_SIZE - this.y);
                     this.ctx.lineTo(nextX, CANVAS_SIZE - nextY);
                     this.ctx.stroke();
                 }
@@ -316,16 +436,16 @@
             backward(distance) { this.forward(-distance); }
             left(angle) { this.heading = (this.heading + angle) % 360; }
             right(angle) { this.heading = (this.heading - angle) % 360; }
-            
+
             up() { this.isDown = false; }
             down() { this.isDown = true; }
             goto(x, y) { this.x = x; this.y = y; }
 
-            write(text) {
+            write(text, couleur = "#e2e8f0") {
                 if (!this.ctx) return;
                 this.ctx.save();
                 this.ctx.translate(this.x, CANVAS_SIZE - this.y);
-                this.ctx.fillStyle = "#e2e8f0"; 
+                this.ctx.fillStyle = couleur;
                 this.ctx.font = "bold 12px Arial";
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "middle";
@@ -335,6 +455,7 @@
         }
 
         let tUtilisateur = new VirtualPythonTurtle(departX, departY, trackCtx);
+        let traceUtilisateur = [];   // points par lesquels la tortue de l'élève est passée
 
         // --- 3. DÉFINITION DES BLOCS BLOCKLY ---
         Blockly.Blocks['programme'] = {
@@ -395,24 +516,26 @@
         };
 
         // --- CONFIGURATION DU GÉNÉRATEUR JAVASCRIPT ---
+        // Chaque bloc attend la fin de son animation ; le bloc en cours est surligné
         Blockly.JavaScript.forBlock = Blockly.JavaScript.forBlock || {};
+        Blockly.JavaScript.STATEMENT_PREFIX = 'surligner(%1);\n';
         Blockly.JavaScript.forBlock['programme'] = function(block) { return ""; };
         Blockly.JavaScript.forBlock['avancer'] = function(block) {
             var distance = block.getFieldValue('DISTANCE') || '0';
-            return `grille.avancer(${distance});\n`;
+            return `await tortue.avancer(${distance});\n`;
         };
         Blockly.JavaScript.forBlock['tourner_gauche'] = function(block) {
             var angle = block.getFieldValue('ANGLE') || '90';
-            return `grille.tournerGauche(${angle});\n`;
+            return `await tortue.tourner(${angle});\n`;
         };
         Blockly.JavaScript.forBlock['tourner_droite'] = function(block) {
             var angle = block.getFieldValue('ANGLE') || '90';
-            return `grille.tournerDroite(${angle});\n`;
+            return `await tortue.tourner(-${angle});\n`;
         };
         Blockly.JavaScript.forBlock['repeter_x_fois'] = function(block) {
             let fois = block.getFieldValue('FOIS') || '4';
             let branch = Blockly.JavaScript.statementToCode(block, 'DO');
-            return `for (var k = 0; k < ${fois}; k++) {\n${branch}}\n`;
+            return `for (let k = 0; k < ${fois}; k++) {\n${branch}}\n`;
         };
 
         const workspace = Blockly.inject('blocklyDiv', {
@@ -425,7 +548,7 @@
                     <block type="repeter_x_fois"></block>
                 </xml>
             `,
-            media: 'https://unpkg.com/blockly/media/',
+            media: 'https://unpkg.com/blockly@10.4.0/media/',
             sounds: false
         });
 
@@ -434,379 +557,734 @@
         startBlock.render();
         startBlock.moveBy(20, 20);
         startBlock.setDeletable(false);
-        workspace.addChangeListener(Blockly.Events.disableOrphans); 
+        workspace.addChangeListener(Blockly.Events.disableOrphans);
+        new ResizeObserver(() => Blockly.svgResize(workspace)).observe(document.getElementById('blocklyDiv'));
 
-        // --- 4. CONNEXION DE L'API ACORN (JS-INTERPRETER) ---
-        function initAPI(interpreter, globalObject) {
-            const grillePseudo = interpreter.createObjectProto(interpreter.OBJECT_PROTO);
-            interpreter.setProperty(globalObject, 'grille', grillePseudo);
+        // --- 4. EXÉCUTION BLOC PAR BLOC ---
+        // Chaque exécution a son numéro : une exécution remplacée (nouveau clic) ou interrompue
+        // (Réinitialiser, nouveau défi) voit ses animations abandonnées et ne reprend jamais.
+        let executionId = 0;
+        const dureeBloc = () => 1050 - parseInt(document.getElementById("vitesseSlider").value);
 
-            interpreter.setProperty(grillePseudo, 'avancer', interpreter.createNativeFunction(function(dist) {
-                trackCtx.strokeStyle = "#0066ff"; 
-                trackCtx.lineWidth = 4;           
-                trackCtx.shadowBlur = 10;         
-                trackCtx.shadowColor = "#0066ff";
-                
-                tUtilisateur.forward(dist);
-                
-                trackCtx.shadowBlur = 0;          
-                rafraichirIconeTortue();
-            }));
+        function surligner(id) { workspace.highlightBlock(id); }
 
-            interpreter.setProperty(grillePseudo, 'tournerGauche', interpreter.createNativeFunction(function(angle) {
-                tUtilisateur.left(angle);
-                rafraichirIconeTortue();
-            }));
-
-            interpreter.setProperty(grillePseudo, 'tournerDroite', interpreter.createNativeFunction(function(angle) {
-                tUtilisateur.right(angle);
-                rafraichirIconeTortue();
-            }));
-        }
-        
-        function executionPasAPas() {
-            if (!executionEnCours) return;
-
-            let aEncoreDuCode = true;
-            let valeurSlider = parseInt(document.getElementById("vitesseSlider").value);
-            
-            if (valeurSlider === 1000) {
-                while (monInterpreteur && monInterpreteur.step()) {}
-                aEncoreDuCode = false;
-            } else {
-                for (let i = 0; i < 20; i++) {
-                    if (monInterpreteur && monInterpreteur.step()) {
-                        aEncoreDuCode = true;
-                    } else {
-                        aEncoreDuCode = false;
-                        break;
-                    }
-                }
-            }
-
-            if (aEncoreDuCode) {
-                let vitesse = 1050 - valeurSlider;
-                setTimeout(executionPasAPas, vitesse);
-            } else {
-                executionEnCours = false;
-                console.log("Parcours terminé !");
-            }
+        // Anime une valeur de 0 à 1 pendant la durée d'un bloc ; abandonnée si l'exécution change
+        function animer(etape) {
+            const id = executionId, duree = dureeBloc(), debut = performance.now();
+            return new Promise(resolve => {
+                const image = maintenant => {
+                    if (id !== executionId) return;
+                    const f = Math.min(1, (maintenant - debut) / duree);
+                    etape(f);
+                    if (f < 1) requestAnimationFrame(image); else resolve();
+                };
+                requestAnimationFrame(image);
+            });
         }
 
-        function runCode() {
-            if (executionEnCours) return;
+        // La tortue de l'élève : elle glisse, pivote, et retient ses points de passage
+        const tortue = {
+            async avancer(distance) {
+                const x0 = tUtilisateur.x, y0 = tUtilisateur.y, rad = tUtilisateur.heading * Math.PI / 180;
+                const dx = distance * Math.cos(rad), dy = distance * Math.sin(rad);
+                let px = x0, py = y0;
+                await animer(f => {
+                    const nx = x0 + dx * f, ny = y0 + dy * f;
+                    trackCtx.strokeStyle = "#0066ff";
+                    trackCtx.lineWidth = 4;
+                    trackCtx.lineCap = "round";
+                    trackCtx.shadowBlur = 10;
+                    trackCtx.shadowColor = "#0066ff";
+                    trackCtx.beginPath();
+                    trackCtx.moveTo(px, CANVAS_SIZE - py);
+                    trackCtx.lineTo(nx, CANVAS_SIZE - ny);
+                    trackCtx.stroke();
+                    trackCtx.shadowBlur = 0;
+                    px = nx; py = ny;
+                    tUtilisateur.x = nx; tUtilisateur.y = ny;
+                    rafraichirIconeTortue();
+                });
+                traceUtilisateur.push({ x: tUtilisateur.x, y: tUtilisateur.y });
+            },
+            async tourner(angle) {
+                const h0 = tUtilisateur.heading;
+                await animer(f => { tUtilisateur.heading = h0 + angle * f; rafraichirIconeTortue(); });
+                tUtilisateur.heading = (h0 + angle) % 360;
+            }
+        };
 
+        async function runCode() {
+            if (!eleve.nom) return;
             reinitialiserUtilisateur();
-            
+            const monId = executionId;
+
             let rootBlock = workspace.getTopBlocks().find(b => b.type === "programme");
             if (!rootBlock) return;
 
             try {
                 Blockly.JavaScript.init(workspace);
                 const codeGenere = Blockly.JavaScript.blockToCode(rootBlock);
-                console.log("Code envoyé à Acorn :\n", codeGenere);
-
-                if (!codeGenere.trim()) return;
-
-                executionEnCours = true;
-                monInterpreteur = new Interpreter(codeGenere, initAPI);
-                executionPasAPas();
-
+                if (!codeGenere.replace(/surligner\([^)]*\);/g, "").trim()) {
+                    afficherMessage("Accroche des blocs sous « Quand le programme démarre ».", "ko");
+                    return;
+                }
+                const programme = new Function("tortue", "surligner", `return (async function() {\n${codeGenere}\n})();`);
+                await programme(tortue, surligner);
+                if (monId !== executionId) return;
+                workspace.highlightBlock(null);
+                verifierDefi();
             } catch (e) {
-                console.error("Erreur d'interprétation : ", e);
-                executionEnCours = false;
+                if (monId === executionId) afficherMessage("Erreur dans le programme : " + e.message, "ko");
             }
         }
 
         function reinitialiserUtilisateur() {
-            executionEnCours = false;
+            executionId++;
+            workspace.highlightBlock(null);
             trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            erreurCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
             tUtilisateur.x = departX;
             tUtilisateur.y = departY;
             tUtilisateur.heading = 0;
+            traceUtilisateur = [{ x: departX, y: departY }];
+            afficherMessage("");
             rafraichirIconeTortue();
         }
 
-        // --- 5. LOGIQUE MATHEMATIQUE RECTIFIEE POUR LES ARCS ---
-function dessinerArcEtAngle(ctx, sommetX, sommetY, angleEntree, angleSortie, angleRotation, sens, afficherValeur) {
-    ctx.save();
-    ctx.strokeStyle = "#475569"; 
-    ctx.lineWidth = 1.5;
-
-    let radEntreeProlongement = (angleEntree + 180) * Math.PI / 180;
-    let vAx = Math.cos(radEntreeProlongement), vAy = Math.sin(radEntreeProlongement);
-    let radSortie = angleSortie * Math.PI / 180;
-    let vBx = Math.cos(radSortie), vBy = Math.sin(radSortie);
-
-    let ax = sommetX + 30 * vAx, ay = sommetY + 30 * vAy;
-    let bx = sommetX + 30 * vBx, by = sommetY + 30 * vBy;
-
-    let startAngleRad = Math.atan2(CANVAS_SIZE - ay - (CANVAS_SIZE - sommetY), ax - sommetX);
-    let endAngleRad = Math.atan2(CANVAS_SIZE - by - (CANVAS_SIZE - sommetY), bx - sommetX);
-
-    let sensBalayageCanvas = (sens === "droite"); 
-    ctx.beginPath();
-    ctx.arc(sommetX, CANVAS_SIZE - sommetY, 30, startAngleRad, endAngleRad, sensBalayageCanvas);
-    ctx.stroke();
-
-    if (afficherValeur) {
-        let bissectriceX = vAx + vBx, bissectriceY = vAy + vBy;
-        let norme = Math.sqrt(bissectriceX * bissectriceX + bissectriceY * bissectriceY);
-        if (norme < 0.01) {
-            bissectriceX = -Math.sin(radEntreeProlongement);
-            bissectriceY = Math.cos(radEntreeProlongement);
-            norme = 1;
+        function afficherMessage(texte, sorte) {
+            const m = document.getElementById("message");
+            m.innerHTML = texte;
+            m.className = texte ? sorte : "cache";
         }
-        let etiquetteX = sommetX + (46 * (bissectriceX / norme));
-        let etiquetteY = sommetY + (46 * (bissectriceY / norme));
 
-        ctx.translate(etiquetteX, CANVAS_SIZE - etiquetteY);
-        ctx.fillStyle = "#e2e8f0";
-        ctx.font = "bold 11px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText((180 - angleRotation) + "°", 0, 0);
-    }
-    ctx.restore();
-}
+        // --- 5. VÉRIFICATION DU TRACÉ ---
+        // Le parcours et le tracé sont découpés en points tous les 3 unités ;
+        // chaque point de l'un doit être à moins de TOLERANCE de l'autre.
+        const TOLERANCE = 6;
+        const distanceAuSegment = (p, a, b) => {
+            const dx = b.x - a.x, dy = b.y - a.y, l = dx * dx + dy * dy;
+            let t = l ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / l : 0;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+        };
+        const distanceALaLigne = (p, points) => {
+            let d = Infinity;
+            for (let i = 0; i + 1 < points.length; i++) d = Math.min(d, distanceAuSegment(p, points[i], points[i + 1]));
+            return points.length === 1 ? Math.hypot(p.x - points[0].x, p.y - points[0].y) : d;
+        };
+        function echantillons(a, b) {
+            const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 3)), pts = [];
+            for (let k = 0; k <= n; k++) pts.push({ x: a.x + (b.x - a.x) * k / n, y: a.y + (b.y - a.y) * k / n });
+            return pts;
+        }
+
+        function verifierDefi() {
+            const S = defi.sommets, U = traceUtilisateur;
+            // points du parcours que la tortue n'a pas suivis, segment par segment
+            const manquants = S.slice(0, -1).map((a, i) => echantillons(a, S[i + 1]).filter(p => distanceALaLigne(p, U) > TOLERANCE));
+            // points du tracé qui sortent du parcours
+            const enTrop = [];
+            for (let i = 0; i + 1 < U.length; i++) enTrop.push(...echantillons(U[i], U[i + 1]).filter(p => distanceALaLigne(p, S) > TOLERANCE));
+
+            const k = manquants.findIndex(m => m.length);
+            if (k < 0 && !enTrop.length) {
+                afficherMessage("✅ Défi réussi ! La tortue suit exactement le parcours.", "ok");
+                marquerReussi();
+                return;
+            }
+            // dessin des écarts : en orange ce qui manque, en rouge ce qui est en trop
+            erreurCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            const point = (p, couleur) => { erreurCtx.fillStyle = couleur; erreurCtx.beginPath(); erreurCtx.arc(p.x, CANVAS_SIZE - p.y, 2.6, 0, Math.PI * 2); erreurCtx.fill(); };
+            manquants.flat().forEach(p => point(p, "#fb923c"));
+            enTrop.forEach(p => point(p, "#f87171"));
+            const entourer = p => {
+                erreurCtx.strokeStyle = "#ffea00"; erreurCtx.lineWidth = 2; erreurCtx.setLineDash([5, 4]);
+                erreurCtx.beginPath(); erreurCtx.arc(p.x, CANVAS_SIZE - p.y, 16, 0, Math.PI * 2); erreurCtx.stroke();
+                erreurCtx.setLineDash([]);
+            };
+
+            const proche = (p, q) => Math.hypot(p.x - q.x, p.y - q.y) <= TOLERANCE + 2;
+            const fin = U[U.length - 1];
+            const legende = ' <div class="legende">En <b class="orange">orange</b> : ce qui manque. En <b class="rouge">rouge</b> : ce qui est en trop.</div>';
+            const conseil = typeChemin === 'polygone' ? " Dans un polygone régulier, la tortue fait un tour complet (360°) en tournant à chaque sommet."
+                : " La tortue tourne de 180° moins l’angle dessiné.";
+            let texte;
+            if (k < 0) {
+                texte = "❌ Le parcours est suivi, mais la tortue va trop loin.";
+                entourer(fin);
+            } else if (k > 0 && proche(fin, S[k]) && U.length >= 2 && !U.slice(0, -1).some(p => proche(p, S[k]))) {
+                texte = `❌ Ton programme s’arrête trop tôt : il manque la suite après le segment n°${k}.`;
+                entourer(S[k]);
+            } else if (k > 0 && U.some(p => proche(p, S[k]))) {
+                texte = `❌ Le virage n°${k} n’est pas le bon.` + conseil;
+                entourer(S[k]);
+            } else {
+                const n = k > 0 ? k : 1;
+                texte = `❌ La longueur du segment n°${n} n’est pas la bonne : regarde le nombre écrit à côté.`;
+                entourer(S[n]);
+            }
+            afficherMessage(texte + legende, "ko");
+        }
+
+        // --- 6. LOGIQUE MATHEMATIQUE RECTIFIEE POUR LES ARCS ---
+        function dessinerArcEtAngle(ctx, sommetX, sommetY, angleEntree, angleSortie, angleRotation, sens, avecValeur, couleurs) {
+            ctx.save();
+            ctx.strokeStyle = couleurs.arc;
+            ctx.lineWidth = 1.5;
+
+            let radEntreeProlongement = (angleEntree + 180) * Math.PI / 180;
+            let vAx = Math.cos(radEntreeProlongement), vAy = Math.sin(radEntreeProlongement);
+            let radSortie = angleSortie * Math.PI / 180;
+            let vBx = Math.cos(radSortie), vBy = Math.sin(radSortie);
+
+            let ax = sommetX + 30 * vAx, ay = sommetY + 30 * vAy;
+            let bx = sommetX + 30 * vBx, by = sommetY + 30 * vBy;
+
+            let startAngleRad = Math.atan2(CANVAS_SIZE - ay - (CANVAS_SIZE - sommetY), ax - sommetX);
+            let endAngleRad = Math.atan2(CANVAS_SIZE - by - (CANVAS_SIZE - sommetY), bx - sommetX);
+
+            let sensBalayageCanvas = (sens === "droite");
+            ctx.beginPath();
+            ctx.arc(sommetX, CANVAS_SIZE - sommetY, 30, startAngleRad, endAngleRad, sensBalayageCanvas);
+            ctx.stroke();
+
+            if (avecValeur) {
+                let bissectriceX = vAx + vBx, bissectriceY = vAy + vBy;
+                let norme = Math.sqrt(bissectriceX * bissectriceX + bissectriceY * bissectriceY);
+                if (norme < 0.01) {
+                    bissectriceX = -Math.sin(radEntreeProlongement);
+                    bissectriceY = Math.cos(radEntreeProlongement);
+                    norme = 1;
+                }
+                let etiquetteX = sommetX + (46 * (bissectriceX / norme));
+                let etiquetteY = sommetY + (46 * (bissectriceY / norme));
+
+                ctx.translate(etiquetteX, CANVAS_SIZE - etiquetteY);
+                ctx.fillStyle = couleurs.texte;
+                ctx.font = "bold 11px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText((180 - angleRotation) + "°", 0, 0);
+            }
+            ctx.restore();
+        }
+
+        // --- 7. CRÉATION DES DÉFIS ---
+        // Chaque défi a un numéro à 5 chiffres : le mode (1 libre, 2 polygone, 3 parallélogramme), puis 4 chiffres.
+        // Le numéro sert de graine au hasard : un même numéro redonne le même défi (tant qu'on ne change pas ce code).
+        const MODES = ['libre', 'polygone', 'parallelogramme'];
+        let alea = Math.random;
+        function graine(n) {
+            let a = n >>> 0;
+            alea = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        }
+        const hasard = n => Math.floor(alea() * n);
+        const choisir = t => t[hasard(t.length)];
 
         function changerMode(nouveauMode) {
             typeChemin = nouveauMode;
-            genererNouveauCheminDefi();
+            nouveauDefi();
         }
 
-        function genererNouveauCheminDefi() {
-            executionEnCours = false;
-            bgCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            trackCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        // numero : imposé (dicté par le professeur), sinon tiré au hasard dans le mode en cours
+        function nouveauDefi(numero) {
+            numero = numero || (MODES.indexOf(typeChemin) + 1) * 10000 + Math.floor(Math.random() * 10000);
+            typeChemin = MODES[Math.floor(numero / 10000) - 1];
+            document.querySelectorAll('input[name="modeChemin"]').forEach(r => r.checked = r.value === typeChemin);
+            graine(numero);
+            const actions = genererActions();
+            alea = Math.random;
+            defi = { numero, mode: typeChemin, actions };
+            placerDefi();
+            dessinerDefi(bgCtx, COULEURS_ECRAN);
+            reinitialiserUtilisateur();
+            majEleve();
+        }
 
-            bgCtx.lineCap = "round";
-            bgCtx.lineJoin = "round";
-
-            let cheminValide = false;
-            let actions = [];
-            let départTheoriqueX = CANVAS_SIZE / 2, départTheoriqueY = CANVAS_SIZE / 2;
-
-            while (!cheminValide) {
-                actions = [];
-                let simu = { x: départTheoriqueX, y: départTheoriqueY, heading: 0 };
-                let historiqueSommets = [{ x: simu.x, y: simu.y }];
-
-                // --- GÉNÉRATION DU PARCOURS LIBRE ---
+        // Le parcours : des longueurs multiples de 10 et des angles multiples de 5
+        function genererActions() {
+            for (;;) {
+                const actions = [];
                 if (typeChemin === 'libre') {
-                    let nbSegments = 3;
+                    const nbSegments = 3;
                     for (let i = 0; i < nbSegments; i++) {
-                        let d = Math.floor(Math.random() * 40) + 100; 
-                        let rad = simu.heading * Math.PI / 180;
-                        simu.x += d * Math.cos(rad);
-                        simu.y += d * Math.sin(rad);
-                        historiqueSommets.push({ x: simu.x, y: simu.y });
-                        actions.push({ type: 'av', valeur: d });
-
-                        if (i < nbSegments - 1) {
-                            let angle = Math.floor(Math.random() * 55) + 55;
-                            let sens = Math.random() > 0.5 ? 'droite' : 'gauche';
-                            if (sens === 'droite') simu.heading = (simu.heading - angle) % 360;
-                            else simu.heading = (simu.heading + angle) % 360;
-                            actions.push({ type: sens, valeur: angle });
-                        }
+                        actions.push({ type: 'av', valeur: choisir([80, 90, 100, 110, 120, 130]) });
+                        if (i < nbSegments - 1) actions.push({ type: choisir(['droite', 'gauche']), valeur: 5 * (11 + hasard(12)) });
                     }
-                // --- GÉNÉRATION DU POLYGONE RÉGULIER ---
-                } else if (typeChemin === 'polygone'){
-                    let optionsCotes = [3, 4, 5, 6, 8];
-                    let nbCotes = optionsCotes[Math.floor(Math.random() * optionsCotes.length)];
-                    let angleRotationPolygone = 360 / nbCotes;
-                    let longueurCote = (nbCotes >= 6) ? (nbCotes === 8 ? 70 : 100) : (nbCotes === 5 ? 100 : 120);
-                    let sensUnique = Math.random() > 0.5 ? 'droite' : 'gauche';
-
+                } else if (typeChemin === 'polygone') {
+                    const nbCotes = choisir([3, 4, 5, 6, 8]);
+                    const longueurCote = { 3: 120, 4: 120, 5: 100, 6: 80, 8: 60 }[nbCotes];
+                    const sensUnique = choisir(['droite', 'gauche']);
                     for (let i = 0; i < nbCotes; i++) {
-                        let rad = simu.heading * Math.PI / 180;
-                        simu.x += longueurCote * Math.cos(rad);
-                        simu.y += longueurCote * Math.sin(rad);
-                        historiqueSommets.push({ x: simu.x, y: simu.y });
                         actions.push({ type: 'av', valeur: longueurCote });
-
-                        if (i < nbCotes - 1) {
-                            if (sensUnique === 'droite') simu.heading = (simu.heading - angleRotationPolygone) % 360;
-                            else simu.heading = (simu.heading + angleRotationPolygone) % 360;
-                            actions.push({ type: sensUnique, valeur: angleRotationPolygone });
-                        }
+                        if (i < nbCotes - 1) actions.push({ type: sensUnique, valeur: 360 / nbCotes });
                     }
-                // --- GÉNÉRATION DU PARALLÉLOGRAMME ---
-                } else if (typeChemin === 'parallelogramme') {
-                    let a = Math.floor(Math.random() * 30) + 110; 
-                    let b = Math.floor(Math.random() * 30) + 60;  
-                    let angleDonne = Math.floor(Math.random() * 30) + 50; 
-                    let rotation1 = 180 - angleDonne; 
-                    let rotation2 = angleDonne;       
-                    let sens = Math.random() > 0.5 ? 'droite' : 'gauche';
-
+                } else {
+                    const a = choisir([110, 120, 130]), b = choisir([60, 70, 80]);
+                    const angleDonne = 5 * (10 + hasard(6));      // 50° à 75°
+                    const sens = choisir(['droite', 'gauche']);
                     for (let i = 0; i < 2; i++) {
-                        let rad1 = simu.heading * Math.PI / 180;
-                        simu.x += a * Math.cos(rad1); simu.y += a * Math.sin(rad1);
-                        historiqueSommets.push({ x: simu.x, y: simu.y });
                         actions.push({ type: 'av', valeur: a });
-                        
-                        if (sens === 'droite') simu.heading = (simu.heading - rotation1) % 360;
-                        else simu.heading = (simu.heading + rotation1) % 360;
-                        actions.push({ type: sens, valeur: rotation1 });
-
-                        let rad2 = simu.heading * Math.PI / 180;
-                        simu.x += b * Math.cos(rad2); simu.y += b * Math.sin(rad2);
-                        historiqueSommets.push({ x: simu.x, y: simu.y });
+                        actions.push({ type: sens, valeur: 180 - angleDonne });
                         actions.push({ type: 'av', valeur: b });
-                        
-                        if (sens === 'droite') simu.heading = (simu.heading - rotation2) % 360;
-                        else simu.heading = (simu.heading + rotation2) % 360;
-                        actions.push({ type: sens, valeur: rotation2 });
+                        if (i === 0) actions.push({ type: sens, valeur: angleDonne });
                     }
                 }
-
-                // --- VERIFICATION DU CADRAGE DANS LE CANVAS ---
-                let xMin = Math.min(...historiqueSommets.map(s => s.x));
-                let xMax = Math.max(...historiqueSommets.map(s => s.x));
-                let yMin = Math.min(...historiqueSommets.map(s => s.y));
-                let yMax = Math.max(...historiqueSommets.map(s => s.y));
-
-                if ((xMax - xMin) <= (CANVAS_SIZE - 60) && (yMax - yMin) <= (CANVAS_SIZE - 60)) {
-                    cheminValide = true;
-                    let deltaX = (CANVAS_SIZE / 2) - (xMin + xMax) / 2;
-                    let deltaY = (CANVAS_SIZE / 2) - (yMin + yMax) / 2;
-
-                    departX = départTheoriqueX + deltaX;
-                    departY = départTheoriqueY + deltaY;
-
-                    tUtilisateur.x = departX; tUtilisateur.y = departY; tUtilisateur.heading = 0;
-                    
-                    let tAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
-                    let pAffichage = new VirtualPythonTurtle(departX, departY, bgCtx);
-                    pAffichage.up();
-
-                    let sensPolygone = actions.find(act => act.type === 'gauche' || act.type === 'droite')?.type || 'gauche';
-
-                    function avDefi(r) {
-                        let oldX = tAffichage.x, oldY = tAffichage.y;
-                        let actuelHeading = tAffichage.heading; 
-
-                        bgCtx.save();
-                        bgCtx.strokeStyle = "#ff3355"; 
-                        bgCtx.lineWidth = 5;           
-                        bgCtx.shadowBlur = 30;         
-                        bgCtx.shadowColor = "#ff3355"; 
-                        
-                        bgCtx.beginPath();
-                        bgCtx.moveTo(oldX, CANVAS_SIZE - oldY);
-                        let rad = actuelHeading * Math.PI / 180;
-                        let nextX = oldX + r * Math.cos(rad);
-                        let nextY = oldY + r * Math.sin(rad);
-                        bgCtx.lineTo(nextX, CANVAS_SIZE - nextY);
-                        bgCtx.stroke();
-
-                        bgCtx.strokeStyle = "#ffe5ec"; 
-                        bgCtx.lineWidth = 1;           
-                        bgCtx.shadowBlur = 6;          
-                        bgCtx.stroke(); 
-
-                        bgCtx.restore();
-
-                        tAffichage.x = nextX;
-                        tAffichage.y = nextY;
-
-                        let milieuX = (oldX + tAffichage.x) / 2;
-                        let milieuY = (oldY + tAffichage.y) / 2;
-
-                        let angleDecalage = actuelHeading * Math.PI / 180;
-                        if (typeChemin === 'polygone' || typeChemin === 'parallelogramme') {
-                            angleDecalage += (sensPolygone === 'gauche') ? -Math.PI / 2 : Math.PI / 2;
-                        } else {
-                            angleDecalage += -Math.PI / 2;
-                        }
-
-                        let decX = milieuX + 24 * Math.cos(angleDecalage);
-                        let decY = milieuY + 24 * Math.sin(angleDecalage);
-
-                        pAffichage.goto(decX, decY);
-                        pAffichage.write(r);
-                    }
-
-                    // --- DETECTION PEDAGOGIQUE SUR LA BOUCLE DE TRACE ---
-                    let indexAngle = 0;
-                    actions.forEach(act => {
-                        if (act.type === 'av') {
-                            avDefi(act.valeur);
-                        } else {
-                            let oldH = tAffichage.heading;
-                            if (act.type === 'droite') tAffichage.right(act.valeur);
-                            else tAffichage.left(act.valeur);
-                            
-                            // Logique de filtrage stricte
-                            if (typeChemin === 'libre') {
-                                // Mode Libre : Arc et valeur partout
-                                dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, true);
-                            } else if (typeChemin === 'polygone') {
-                                // Mode Polygone : Arc partout mais pas de texte (codage de l'égalité)
-                                dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, false);
-                            } else if (typeChemin === 'parallelogramme') {
-                                // Mode Parallélogramme : Uniquement le tout premier angle (donnée minimale)
-                                if (indexAngle === 0) {
-                                    dessinerArcEtAngle(bgCtx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, true);
-                                }
-                            }
-                            indexAngle++;
-                        }
-                    });
-                }
+                // cadrage dans le canevas
+                const s = sommetsDe(actions, 0, 0);
+                const xs = s.map(p => p.x), ys = s.map(p => p.y);
+                if (Math.max(...xs) - Math.min(...xs) <= CANVAS_SIZE - 60 && Math.max(...ys) - Math.min(...ys) <= CANVAS_SIZE - 60) return actions;
             }
-            rafraichirIconeTortue();
+        }
+
+        // Sommets du parcours à partir d'un départ (cap initial : vers la droite)
+        function sommetsDe(actions, x, y) {
+            const t = new VirtualPythonTurtle(x, y, null), s = [{ x, y }];
+            for (const act of actions) {
+                if (act.type === 'av') { t.forward(act.valeur); s.push({ x: t.x, y: t.y }); }
+                else if (act.type === 'droite') t.right(act.valeur); else t.left(act.valeur);
+            }
+            return s;
+        }
+
+        // Centre le parcours dans le canevas
+        function placerDefi() {
+            const s = sommetsDe(defi.actions, 0, 0);
+            const xs = s.map(p => p.x), ys = s.map(p => p.y);
+            departX = CANVAS_SIZE / 2 - (Math.min(...xs) + Math.max(...xs)) / 2;
+            departY = CANVAS_SIZE / 2 - (Math.min(...ys) + Math.max(...ys)) / 2;
+            defi.sommets = sommetsDe(defi.actions, departX, departY);
+        }
+
+        const COULEURS_ECRAN = { trait: "#ff3355", halo: 30, coeur: "#ffe5ec", texte: "#e2e8f0", arc: "#475569" };
+        const COULEURS_PAPIER = { trait: "#1d3b8f", halo: 0, coeur: null, texte: "#111", arc: "#666" };
+
+        // Dessine le parcours : segments, longueurs, et les angles utiles selon le mode
+        function dessinerDefi(ctx, couleurs) {
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            const tAffichage = new VirtualPythonTurtle(departX, departY, ctx);
+            const pAffichage = new VirtualPythonTurtle(departX, departY, ctx);
+            pAffichage.up();
+            const sensPolygone = defi.actions.find(act => act.type !== 'av').type;
+
+            function avDefi(r) {
+                const oldX = tAffichage.x, oldY = tAffichage.y, actuelHeading = tAffichage.heading;
+                const rad = actuelHeading * Math.PI / 180;
+                const nextX = oldX + r * Math.cos(rad), nextY = oldY + r * Math.sin(rad);
+                ctx.save();
+                ctx.strokeStyle = couleurs.trait;
+                ctx.lineWidth = couleurs.halo ? 5 : 3;
+                ctx.shadowBlur = couleurs.halo;
+                ctx.shadowColor = couleurs.trait;
+                ctx.beginPath();
+                ctx.moveTo(oldX, CANVAS_SIZE - oldY);
+                ctx.lineTo(nextX, CANVAS_SIZE - nextY);
+                ctx.stroke();
+                if (couleurs.coeur) {
+                    ctx.strokeStyle = couleurs.coeur;
+                    ctx.lineWidth = 1;
+                    ctx.shadowBlur = 6;
+                    ctx.stroke();
+                }
+                ctx.restore();
+                tAffichage.x = nextX;
+                tAffichage.y = nextY;
+
+                // longueur écrite à côté du segment (côté extérieur pour les figures fermées)
+                const milieuX = (oldX + nextX) / 2, milieuY = (oldY + nextY) / 2;
+                let angleDecalage = actuelHeading * Math.PI / 180;
+                if (typeChemin === 'polygone' || typeChemin === 'parallelogramme') {
+                    angleDecalage += (sensPolygone === 'gauche') ? -Math.PI / 2 : Math.PI / 2;
+                } else {
+                    angleDecalage += -Math.PI / 2;
+                }
+                pAffichage.goto(milieuX + 24 * Math.cos(angleDecalage), milieuY + 24 * Math.sin(angleDecalage));
+                pAffichage.write(r, couleurs.texte);
+            }
+
+            // Angles : libre, tous avec leur valeur ; polygone, codés égaux sans valeur ; parallélogramme, le premier seulement
+            let indexAngle = 0;
+            defi.actions.forEach(act => {
+                if (act.type === 'av') avDefi(act.valeur);
+                else {
+                    const oldH = tAffichage.heading;
+                    if (act.type === 'droite') tAffichage.right(act.valeur); else tAffichage.left(act.valeur);
+                    if (typeChemin !== 'parallelogramme' || indexAngle === 0) {
+                        dessinerArcEtAngle(ctx, tAffichage.x, tAffichage.y, oldH, tAffichage.heading, act.valeur, act.type, typeChemin !== 'polygone', couleurs);
+                    }
+                    indexAngle++;
+                }
+            });
         }
 
         // --- DESSIN DE LA TORTUE VUE DU DESSUS ---
-        function rafraichirIconeTortue() {
-            turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            turtleCtx.save();
-            turtleCtx.translate(tUtilisateur.x, CANVAS_SIZE - tUtilisateur.y);
-            turtleCtx.rotate(-tUtilisateur.heading * Math.PI / 180);
-            
-            turtleCtx.shadowBlur = 8;
-            turtleCtx.shadowColor = "#00ff66"; 
+        function dessinerTortue(ctx, x, y, heading) {
+            ctx.save();
+            ctx.translate(x, CANVAS_SIZE - y);
+            ctx.rotate(-heading * Math.PI / 180);
 
-            turtleCtx.fillStyle = "#00f5d4";
-            turtleCtx.beginPath();
-            turtleCtx.ellipse(5, -9, 8, 3, Math.PI / 4, 0, Math.PI * 2);
-            turtleCtx.ellipse(5, 9, 8, 3, -Math.PI / 4, 0, Math.PI * 2);
-            turtleCtx.fill();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "#00ff66";
 
-            turtleCtx.beginPath();
-            turtleCtx.ellipse(-7, -7, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
-            turtleCtx.ellipse(-7, 7, 4, 2, Math.PI / 6, 0, Math.PI * 2);
-            turtleCtx.fill();
+            ctx.fillStyle = "#00f5d4";
+            ctx.beginPath();
+            ctx.ellipse(5, -9, 8, 3, Math.PI / 4, 0, Math.PI * 2);
+            ctx.ellipse(5, 9, 8, 3, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
 
-            turtleCtx.beginPath();
-            turtleCtx.moveTo(-10, 0);
-            turtleCtx.lineTo(-14, -2);
-            turtleCtx.lineTo(-14, 2);
-            turtleCtx.closePath();
-            turtleCtx.fill();
+            ctx.beginPath();
+            ctx.ellipse(-7, -7, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
+            ctx.ellipse(-7, 7, 4, 2, Math.PI / 6, 0, Math.PI * 2);
+            ctx.fill();
 
-            turtleCtx.beginPath();
-            turtleCtx.ellipse(-1, 0, 10, 8, 0, 0, Math.PI * 2);
-            turtleCtx.fillStyle = "#00ff66"; 
-            turtleCtx.fill();
-            
-            turtleCtx.strokeStyle = "#050b14";
-            turtleCtx.lineWidth = 1.5;
-            turtleCtx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-14, -2);
+            ctx.lineTo(-14, 2);
+            ctx.closePath();
+            ctx.fill();
 
-            turtleCtx.beginPath();
-            turtleCtx.arc(12, 0, 4, 0, Math.PI * 2);
-            turtleCtx.fillStyle = "#00f5d4";
-            turtleCtx.fill();
+            ctx.beginPath();
+            ctx.ellipse(-1, 0, 10, 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "#00ff66";
+            ctx.fill();
 
-            turtleCtx.restore();
+            ctx.strokeStyle = "#050b14";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(12, 0, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#00f5d4";
+            ctx.fill();
+
+            ctx.restore();
         }
 
+        function rafraichirIconeTortue() {
+            turtleCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            dessinerTortue(turtleCtx, tUtilisateur.x, tUtilisateur.y, tUtilisateur.heading);
+        }
+
+        // --- 8. ÉLÈVE : NOM ET DÉFIS RÉUSSIS ---
+        // Mémorisés dans ce navigateur ; le même nom retrouve sa progression (clé : le numéro du défi)
+        const CLE_ELEVE = "abysses.eleve";
+        const NOMS_MODES = { libre: "Libre", polygone: "Polygone", parallelogramme: "Parallélogramme" };
+        let eleve = { nom: "", fait: {} };
+        let enregistre = null;
+        function empreinte(nom, fait) {
+            const t = "abysses✦" + nom + "✦" + Object.keys(fait).sort().join(";");
+            let h = 2166136261;
+            for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+            return h.toString(36);
+        }
+        try {
+            const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
+            if (e && typeof e.nom === "string" && e.fait && e.cle === empreinte(e.nom, e.fait)) enregistre = { nom: e.nom, fait: e.fait };
+        } catch (e) {}
+        function sauverEleve() {
+            try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ nom: eleve.nom, fait: eleve.fait, cle: empreinte(eleve.nom, eleve.fait) })); } catch (e) {}
+        }
+        // défis réussis dans un mode (le premier chiffre du numéro donne le mode)
+        const reussisDansMode = mode => Object.keys(eleve.fait).filter(k => MODES[Math.floor(k / 10000) - 1] === mode).length;
+
+        function choisirEleve(nom) {
+            if (nom !== eleve.nom) {
+                eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, fait: {} };
+                enregistre = eleve;
+                sauverEleve();
+            }
+            document.body.classList.remove("sans-nom");
+            Blockly.svgResize(workspace); // la zone de blocs était cachée : Blockly recalcule sa taille
+            majEleve();
+        }
+
+        function marquerReussi() {
+            if (!eleve.fait[defi.numero]) { eleve.fait[defi.numero] = true; sauverEleve(); }
+            majEleve();
+        }
+
+        function majEleve() {
+            const info = document.getElementById("eleveInfo");
+            const n = Object.keys(eleve.fait).length;
+            info.textContent = eleve.nom ? "👤 " + eleve.nom + " · " + n + " réussi" + (n > 1 ? "s" : "") : "";
+            // le numéro du défi en cours s'affiche en grisé dans le champ « Défi n° »
+            document.getElementById("champNumero").placeholder = defi.numero;
+        }
+
+        function commencer() {
+            const champ = document.getElementById("champNom");
+            const nom = champ.value.trim().replace(/\s+/g, " ");
+            if (nom.length < 2) { document.getElementById("erreurNom").textContent = "Écris ton prénom et ton nom."; champ.focus(); return; }
+            choisirEleve(nom);
+        }
+        document.getElementById("btnCommencer").onclick = commencer;
+        document.getElementById("champNom").addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+
+        // Aller directement à un défi à partir de son numéro (celui de la fiche papier)
+        document.getElementById("allerNumero").addEventListener("submit", ev => {
+            ev.preventDefault();
+            const v = document.getElementById("champNumero").value.trim(), code = parseInt(v, 10);
+            if (!/^\d{5}$/.test(v) || !MODES[Math.floor(code / 10000) - 1]) { document.getElementById("erreurNumero").textContent = "Numéro inconnu"; return; }
+            document.getElementById("erreurNumero").textContent = "";
+            document.getElementById("champNumero").value = "";
+            nouveauDefi(code);
+        });
+
+        // --- 9. IMPRESSION : FICHE PAPIER ET DIPLÔME ---
+        const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(210mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #2f5fd0;background:#2f5fd0;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-dessin{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:8px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:3mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 4mm;min-width:32mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-etoiles{font-size:12pt;letter-spacing:.5mm;color:#d9d2c3;}
+#overlayFiche .d-etoiles .pleine{color:#d4a62a;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#ficheCarte.large{width:min(297mm,100%);}
+#overlayFiche .ligne-identite{display:flex;gap:12mm;margin-bottom:6mm;}
+#overlayFiche .trait{display:inline-block;width:70mm;border-bottom:1px solid #1f2430;}
+#overlayFiche h2{font-size:15pt;margin:0 0 2mm;}
+#overlayFiche .num{font-weight:400;color:#6b6f7a;}
+#overlayFiche .consigne{font-weight:600;margin:0 0 6mm;}
+#overlayFiche .corps{display:flex;gap:7mm;align-items:flex-start;}
+#overlayFiche .prog{font-size:10pt;font-weight:700;flex:1;}
+#overlayFiche .b{display:inline-block;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm;margin:.6mm 0;border:1.5px solid;}
+#overlayFiche .chap{background:#fff1bf;border-color:#cc9900;border-radius:5mm 5mm 1.5mm 1.5mm;padding-top:3mm;}
+#overlayFiche .mouv{background:#dbe9ff;border-color:#3373cc;}
+#overlayFiche .c-m > .b{display:table;}
+#overlayFiche .c{width:max-content;min-width:45mm;margin:.6mm 0;}
+#overlayFiche .c-t{background:#ffe3b3;border:1.5px solid #cf8b17;border-bottom:none;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm 1.5mm 0 0;}
+#overlayFiche .c-m{border-left:5mm solid #ffc978;padding:1mm 0 1mm 1mm;min-height:8mm;box-shadow:-1.5px 0 0 #cf8b17;}
+#overlayFiche .c-p{background:#ffe3b3;border:1.5px solid #cf8b17;border-top:none;height:4mm;border-radius:0 0 1.5mm 1.5mm;width:100%;}
+#overlayFiche .nb{display:inline-block;background:#fff;border:1px solid #999;border-radius:999px;min-width:8mm;padding:0 1.5mm;text-align:center;}
+#overlayFiche .ligne-ecrire{border-bottom:1px dotted #888;height:8mm;}
+#overlayFiche .reserve{margin-top:5mm;font-size:10pt;color:#333;line-height:1.6;font-weight:400;}
+#overlayFiche .f-toile svg{display:block;}
+#overlayFiche .f-leg{font-size:10pt;color:#555;margin-top:1mm;text-align:center;}
+#overlayFiche .ftab{border-collapse:collapse;font-size:10.5pt;}
+#overlayFiche .ftab th,#overlayFiche .ftab td{border:1px solid #777;padding:1.5mm 3mm;text-align:center;}
+#overlayFiche .ftab td{height:7mm;}
+#overlayFiche .ftab td:first-child{width:42mm;}
+#overlayFiche .ftab td + td{width:12mm;}
+#overlayFiche .t-suivi{font-weight:600;margin:5mm 0 1.5mm;}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;font-size:5mm;line-height:1;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+  #overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}
+}`;
+
+        // Calque d'impression commun au diplôme (A4 paysage) et à la fiche papier (A4 portrait)
+        function ouvrirOverlay(contenu, sens) {
+            let ov = document.getElementById("overlayFiche");
+            if (!ov) {
+                const st = document.createElement("style");
+                st.textContent = FICHE_CSS;
+                document.head.append(st);
+                ov = document.createElement("div");
+                ov.id = "overlayFiche";
+                ov.addEventListener("click", e => { if (e.target === ov) fermerOverlay(); });
+                document.body.append(ov);
+            }
+            ov.innerHTML = `<div id="ficheCarte"${sens === "landscape" ? ' class="large"' : ""}>
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions"><button type="button" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong> et coche <strong>« Graphiques d’arrière-plan »</strong> pour garder les couleurs.</p>
+    ${contenu}
+  </div>`;
+            document.getElementById("btnFermerFiche").onclick = fermerOverlay;
+            document.getElementById("btnImprimerFiche").onclick = () => window.print();
+            ov.classList.add("ouverte");
+            document.body.classList.add("fiche-ouverte");
+            let st = document.getElementById("styleOrientation");
+            if (!st) { st = document.createElement("style"); st.id = "styleOrientation"; document.head.append(st); }
+            st.textContent = "@media print{@page{size:A4 " + sens + ";margin:" + (sens === "landscape" ? "10mm" : ".8cm") + ";}}";
+            return ov;
+        }
+
+        function fermerOverlay() {
+            const ov = document.getElementById("overlayFiche");
+            if (ov) ov.classList.remove("ouverte");
+            document.body.classList.remove("fiche-ouverte");
+        }
+
+        // Le parcours redessiné en couleurs d'impression (le néon sur fond noir ne s'imprime pas)
+        function imageDefiPapier() {
+            const c = document.createElement("canvas");
+            c.width = CANVAS_SIZE; c.height = CANVAS_SIZE;
+            const ctx = c.getContext("2d");
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            dessinerDefi(ctx, COULEURS_PAPIER);
+            // la tortue au départ, tournée vers la droite
+            ctx.save();
+            ctx.translate(departX, CANVAS_SIZE - departY);
+            ctx.fillStyle = "#2e8b57";
+            ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(4, -6); ctx.lineTo(16, 0); ctx.lineTo(4, 6); ctx.closePath(); ctx.fill();
+            ctx.restore();
+            return c.toDataURL("image/png");
+        }
+
+        function ficheContenu() {
+            const lignes = Array.from({ length: 12 }, () => '<div class="ligne-ecrire"></div>').join("");
+            const consigne = {
+                libre: "Écris un programme pour que la tortue suive ce parcours. Attention : les angles dessinés sont ceux du parcours, pas ceux dont la tortue tourne !",
+                polygone: "Écris un programme pour que la tortue trace ce polygone régulier. Les angles marqués sont égaux : de combien la tortue doit-elle tourner ?",
+                parallelogramme: "Écris un programme pour que la tortue trace ce parallélogramme. Un seul angle est donné : déduis les autres."
+            }[defi.mode];
+            return `<div class="ligne-identite"><span>Nom : <span class="trait"></span></span><span>Prénom : <span class="trait"></span></span></div>
+<h2>⚓ Défi Tortue des Abysses <span class="num">— ${NOMS_MODES[defi.mode]}, défi n°${defi.numero}</span></h2>
+<p class="consigne">${esc(consigne)} La flèche verte montre le départ de la tortue.</p>
+<div class="corps">
+  <div><img src="${imageDefiPapier()}" width="300" height="300" alt="Parcours du défi" style="border:1px solid #999;border-radius:2mm"></div>
+  <div class="prog"><div class="b chap">Quand le programme démarre</div>${lignes}
+    <div class="reserve">Blocs : Avancer de … unités — Tourner à gauche de … degrés — Tourner à droite de … degrés — Répéter … fois</div>
+  </div>
+</div>`;
+        }
+
+        function ouvrirFiche() { ouvrirOverlay(ficheContenu(), "portrait"); }
+
+        function mention(ok, total) {
+            const x = ok / total * 20;
+            return x >= 20 ? "Félicitations !" : x >= 16 ? "Très bien" : x >= 14 ? "Bien" : x >= 12 ? "Assez bien" : x >= 10 ? "Réussi" : "Continue tes efforts";
+        }
+
+        // Diplôme : une médaille par mode, 3 étoiles = 3 défis réussis dans ce mode
+        function diplomeContenu() {
+            const total = Object.keys(eleve.fait).length;
+            const etoilesMax = 3 * MODES.length;
+            const etoiles = MODES.reduce((t, m) => t + Math.min(3, reussisDansMode(m)), 0);
+            const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+            const medailles = MODES.map(m => {
+                const r = reussisDansMode(m);
+                const et = [0, 1, 2].map(k => `<span class="${k < r ? "pleine" : ""}">★</span>`).join("");
+                return `<div class="d-med${r >= 3 ? " complete" : ""}"><div class="d-med-nom">${NOMS_MODES[m]}</div><div class="d-med-pts">${r} défi${r > 1 ? "s" : ""}</div><div class="d-etoiles">${et}</div></div>`;
+            }).join("");
+            const festons = Array.from({ length: 48 }, (_, k) => {
+                const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+                return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+            }).join(" ") + "Z";
+            const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${total}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">défi${total > 1 ? "s" : ""} réussi${total > 1 ? "s" : ""}</text>
+  </svg>`;
+            // un hexagone régulier, comme ceux de la tortue
+            const hexa = Array.from({ length: 6 }, (_, k) => (25 + 18 * Math.cos(k * Math.PI / 3)).toFixed(1) + "," + (25 + 18 * Math.sin(k * Math.PI / 3)).toFixed(1)).join(" ");
+            const dessin = `<div class="d-dessin"><svg width="110" height="80" viewBox="0 0 50 50" aria-hidden="true"><polygon points="${hexa}" fill="none" stroke="#1d3b8f" stroke-width="2"/><circle cx="25" cy="25" r="2" fill="#2e8b57"/></svg></div>`;
+            const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+            const frise = Array.from({ length: 6 }, () => ["🐢", "⚓"]).flat().map(e => `<span>${e}</span>`).join("");
+            return `<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${dessin}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">de programmation · <b>Défi Tortue des Abysses</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${esc(eleve.nom || "……………………")}</div>
+        <div class="d-pour">pour avoir guidé la tortue des abysses en calculant longueurs et angles.</div>
+        <div class="d-mention">${mention(etoiles, etoilesMax)}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-meds">${medailles}</div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`;
+        }
+
+        // Le diplôme garde sa taille A4 ; à l'écran, il est réduit pour tenir dans la fenêtre
+        function ouvrirDiplome() {
+            if (!eleve.nom) { document.body.classList.add("sans-nom"); return; }
+            const ov = ouvrirOverlay(diplomeContenu(), "landscape");
+            const d = ov.querySelector(".diplome");
+            const carte = getComputedStyle(d.parentElement);
+            const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+            const r = d.getBoundingClientRect();
+            const e = Math.min(1, place / r.width);
+            d.style.transform = "scale(" + e + ")";
+            d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+            d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+        }
+        document.getElementById("btnFiche").onclick = ouvrirFiche;
+        document.getElementById("btnDiplome").onclick = ouvrirDiplome;
+
+        // Nouvel onglet : on transmet le défi, les blocs posés et le nom
+        const CLE_TRANSFERT = "abysses_transfert";
+        document.getElementById("btnOnglet").onclick = function () {
+            try {
+                localStorage.setItem(CLE_TRANSFERT, JSON.stringify({ blocs: Blockly.serialization.workspaces.save(workspace), nom: eleve.nom }));
+            } catch (e) {}
+            const url = new URL(window.location.href);
+            url.searchParams.set("defi", defi.numero);
+            window.open(url.toString(), "_blank");
+        };
+
         window.onload = function() {
-            genererNouveauCheminDefi();
+            const numero = parseInt(new URLSearchParams(window.location.search).get("defi"), 10);
+            nouveauDefi(MODES[Math.floor(numero / 10000) - 1] ? numero : undefined);
+            if (numero) {
+                try {
+                    const etat = localStorage.getItem(CLE_TRANSFERT);
+                    if (etat) {
+                        localStorage.removeItem(CLE_TRANSFERT);
+                        const t = JSON.parse(etat);
+                        Blockly.serialization.workspaces.load(t.blocs, workspace);
+                        if (t.nom) choisirEleve(t.nom);
+                    }
+                } catch (e) {}
+            }
+            // accueil : le nom d'abord (l'en-tête reste utilisable)
+            if (!eleve.nom) {
+                document.body.classList.add("sans-nom");
+                setTimeout(() => document.getElementById("champNom").focus(), 0);
+            }
         };
     </script>
 </body>
