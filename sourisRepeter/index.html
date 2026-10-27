@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La souris — Répéter</title>
+<script src="https://unpkg.com/blockly/blockly.min.js"></script>
+<script src="https://unpkg.com/blockly/msg/fr.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f1e8;
+    --panel:#fffdf8;
+    --ink:#1f2430;
+    --muted:#6b6f7a;
+    --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --sais:#e6eefc;   --sais-b:#9db6ec;
+    --boucle:#fdf0d8; --boucle-b:#e5b865;
+    --ok:#1f8a4c;     --ok-bg:#e3f4e8;   --ok-b:#86c79a;
+    --ko:#c0392b;     --ko-bg:#fbe6e3;
+    --case:#fbf8f1;   --trace:#fff1c9;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;min-height:100vh;
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  header{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+    padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;}
+  nav{display:flex;gap:6px;flex-wrap:wrap;}
+  button{font:inherit;cursor:pointer;}
+  .tab{
+    border:1px solid var(--border);background:var(--bg);color:var(--ink);
+    padding:6px 14px;border-radius:999px;font-size:.85rem;
+  }
+  .tab.actif{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+
+  main{
+    display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px;
+    max-width:1480px;margin:0 auto;padding:24px;
+  }
+  @media (max-width:980px){ main{grid-template-columns:1fr;padding:16px;gap:16px;} }
+
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;}
+  .entete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .entete h2{margin:0;font-size:1.3rem;}
+  .points{display:flex;gap:6px;}
+  .point{
+    width:28px;height:28px;border-radius:50%;border:2px solid var(--border);
+    background:var(--bg);font-size:.75rem;color:var(--muted);padding:0;
+  }
+  .point.fait{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .point.courant{border-color:var(--accent);color:var(--accent);font-weight:700;}
+  .consigne{margin:0 0 18px;font-weight:600;font-size:1.1rem;}
+
+  .plateau{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;}
+
+  /* Grille */
+  .grille{display:grid;gap:3px;background:var(--border);padding:3px;border-radius:10px;flex:none;}
+  .case{
+    width:42px;height:42px;background:var(--case);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;font-size:1.5rem;position:relative;
+  }
+  .case.objectif{background:#e6eefc;box-shadow:inset 0 0 0 2px #9db6ec;}
+  .case.trace{background:var(--trace);}
+  .case.objectif.trace{background:#c9ecd4;box-shadow:inset 0 0 0 2px var(--ok-b);}
+  .case.hors{background:#f9d9d4;}
+  .case .pas{position:absolute;left:3px;top:1px;font-size:.7rem;color:#6d8fd6;}
+  .case .lettre{position:absolute;right:3px;bottom:1px;font-size:.8rem;font-weight:800;color:var(--accent);}
+  .case.souris{outline:3px solid var(--accent);outline-offset:-3px;}
+  .case .perso{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.8rem;z-index:2;}
+  .case .perso svg{width:36px;height:36px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));}
+  /* Quand la souris est sur le fromage ou un drapeau, il passe dans le coin pour rester visible */
+  .case.occupee .emo-case{position:absolute;left:1px;top:-2px;font-size:1rem;}
+  .case.boum{background:var(--ko-bg);}
+  /* bloc de roche : la souris ne peut pas y entrer */
+  .case.roche{background:linear-gradient(145deg,#a7a39b 0%,#8a867e 55%,#77736b 100%);box-shadow:inset 2px 2px 0 rgba(255,255,255,.25),inset -2px -2px 0 rgba(0,0,0,.18);}
+  .case.roche.boum{background:linear-gradient(145deg,#d98b80,#b5554a);}
+
+  /* Programme : Blockly */
+  .programme{flex:1;min-width:400px;display:flex;flex-direction:column;}
+  @media (max-width:560px){ .programme{min-width:0;} }
+  #blockly{height:560px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  /* Bloc en cours d'exécution : contour jaune épais */
+  .blocklyHighlighted > .blocklyPath{stroke:#ffc400 !important;stroke-width:5px !important;filter:drop-shadow(0 0 6px #ffc400);}
+
+  .prediction{margin-top:18px;display:flex;align-items:center;gap:10px;font-weight:600;flex-wrap:wrap;}
+  .slot{
+    min-width:60px;min-height:42px;border-radius:10px;border:2px dashed var(--accent);background:#fff;color:var(--accent);
+    display:inline-flex;align-items:center;justify-content:center;padding:0 10px;font-size:1rem;
+  }
+  .slot.rempli{border-style:solid;color:var(--ink);}
+  .slot.survol{background:#dde7ff;transform:scale(1.06);}
+  .rappel{animation:secoue .4s ease;}
+  @keyframes secoue{25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+  .palette{display:flex;gap:10px;flex-wrap:wrap;}
+  .gauche{flex:none;}
+  .propositions{margin-top:32px;padding-top:12px;border-top:1px dashed var(--border);}
+  .propositions-titre{font-weight:600;color:var(--muted);margin-bottom:8px;}
+  .piece{
+    border:2px solid var(--border);background:#fff;border-radius:10px;padding:8px 14px;font-size:1rem;
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .piece:hover{border-color:var(--accent);}
+  .fantome{position:fixed;z-index:1000;pointer-events:none;box-shadow:0 10px 24px rgba(0,0,0,.2);}
+
+  /* Colonne de droite */
+  .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;}
+  aside h3{margin:0 0 10px;font-size:1rem;}
+  .boutons{display:flex;flex-direction:column;gap:8px;}
+  .suite{
+    background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:12px 22px;font-size:1.05rem;font-weight:600;width:100%;
+  }
+  .suite:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .second{width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--ink);font-size:.95rem;}
+  .second:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .second:disabled{color:var(--muted);cursor:default;}
+  .aide{color:var(--muted);font-size:.9rem;margin:0 0 12px;}
+  .blocs{font-size:.9rem;margin:0 0 10px;padding:6px 10px;border-radius:8px;background:#fff6d6;display:flex;justify-content:space-between;gap:8px;}
+  .blocs.trop{background:var(--ko-bg);}
+
+  .tours{display:flex;flex-direction:column;gap:6px;font-size:.92rem;}
+  .tours .m{border:2px solid;border-radius:10px;padding:6px 10px;}
+  .tours .m b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;}
+  .tours .m-boucle{background:var(--boucle);border-color:var(--boucle-b);}
+  .tours .m-boucle b{color:#8a5a00;}
+  .tours .m-bloc{background:var(--sais);border-color:var(--sais-b);}
+  .tours .m-bloc b{color:#2a4f9e;}
+  .tours .rang{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+  .tours .rang span{width:18px;height:18px;border-radius:50%;border:2px solid var(--boucle-b);background:#fff;}
+  .tours .rang span.fait{background:var(--boucle-b);}
+  .tours .rang span.encours{background:#ffc400;border-color:#c99500;}
+
+  .retour{border-radius:10px;padding:12px 14px;font-size:1rem;margin-top:12px;}
+  .retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  .retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+
+  .intro p{font-size:1.1rem;}
+  .etapes{background:#f1edfc;border:2px solid #7a5fd0;border-radius:12px;padding:12px 16px 12px 40px;font-size:1.05rem;}
+  .etapes li{margin-bottom:4px;}
+  .actions{margin-top:18px;display:flex;justify-content:flex-end;}
+  .actions .suite{width:auto;}
+  .eleve{font-size:.85rem;font-weight:600;}
+  .eleve .note{background:var(--ok-bg);border:1px solid var(--ok-b);border-radius:999px;padding:3px 10px;margin-left:6px;}
+  .nom-eleve{display:flex;flex-direction:column;gap:6px;margin:18px 0 6px;font-weight:600;font-size:1.05rem;}
+  .nom-eleve input{font:inherit;font-weight:400;padding:10px 12px;border:2px solid var(--border);border-radius:10px;max-width:420px;}
+  .nom-eleve input:focus{outline:none;border-color:var(--accent);}
+  .erreur-nom{color:var(--ko);font-size:.85rem;font-weight:400;}
+  .numero{font-weight:400;color:var(--muted);font-size:1rem;}
+  .aller-numero{display:flex;align-items:center;gap:6px;font-size:.85rem;}
+  .aller-numero input{width:78px;font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:8px;text-align:center;}
+  .erreur-numero{color:var(--ko);font-size:.8rem;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐭 La souris — Répéter</h1>
+  <nav id="nav"></nav>
+  <form class="aller-numero" id="allerNumero" autocomplete="off">
+    <label for="champNumero">Grille n°</label>
+    <input id="champNumero" type="text" inputmode="numeric" maxlength="5" placeholder="41583">
+    <button type="submit" class="onglet">OK</button>
+    <span id="erreurNumero" class="erreur-numero"></span>
+  </form>
+  <span class="eleve" id="eleveInfo"></span>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme" style="display:none">🎓 Diplôme</button>
+  <button class="onglet" id="onglet" title="Ouvrir l’appli dans un nouvel onglet">↗ Nouvel onglet</button>
+</header>
+<main>
+  <section class="scene" id="scene"></section>
+  <div class="colonne" id="colonne"></div>
+</main>
+
+<script>
+// ---------- Données ----------
+// Cases : "." vide, "S" départ, "F" fromage, "A"/"B"/"C" arrivées lettrées (niveau 1)
+// Programme : liste de blocs { t: "A" | "G" | "D" } ou { rep: nombre, corps: [...] }
+// Directions : 0 haut, 1 droite, 2 bas, 3 gauche
+const DR = [-1, 0, 1, 0], DC = [0, 1, 0, -1];
+const TOURNE = { G: d => (d + 3) % 4, D: d => (d + 1) % 4 };
+const N = 10;  // taille de la grille
+
+const NIVEAUX = [
+  {
+    nom: "1. Prévoir",
+    consigne: "Lis le programme. Où la souris va-t-elle s’arrêter ?",
+    items: [
+      { mode: "prevoir", genere: { type: "lignes", segs: 2 } },
+      { mode: "prevoir", genere: { type: "motif", forme: "escalier" } },
+      { mode: "prevoir", genere: { type: "lignes", segs: 3 } }
+    ]
+  },
+  {
+    nom: "2. Compléter",
+    consigne: "Choisis les nombres pour que la souris traverse le labyrinthe.",
+    items: [
+      { mode: "completer", genere: { type: "lignes", segs: 2, roches: true } },
+      { mode: "completer", genere: { type: "lignes", segs: 3, roches: true } },
+      { mode: "completer", genere: { type: "motif", forme: "escalier", roches: true } }
+    ]
+  },
+  {
+    nom: "3. Lignes droites",
+    consigne: "Écris le programme. Attention au nombre de blocs !",
+    items: [
+      { mode: "ecrire", genere: { type: "lignes", segs: 2, roches: true } },
+      { mode: "ecrire", genere: { type: "lignes", segs: 3, roches: true } }
+    ]
+  },
+  {
+    nom: "4. Plus court chemin",
+    consigne: "Plusieurs chemins mènent au fromage. Programme le plus court !",
+    items: [
+      { mode: "court", genere: { type: "court", murs: 8, ecart: 4 } },
+      { mode: "court", genere: { type: "court", murs: 10, ecart: 2 } },
+      { mode: "court", genere: { type: "court", murs: 13, ecart: 2 } }
+    ]
+  },
+  {
+    nom: "5. Motifs",
+    consigne: "Trouve le motif qui se répète, puis écris le programme.",
+    items: [
+      { mode: "ecrire", genere: { type: "motif", forme: "escalier", roches: true } },
+      { mode: "ecrire", genere: { type: "motif", forme: "creneau", roches: true } }
+    ]
+  }
+];
+
+// ---------- État ----------
+let ecran = { type: "intro" };
+// ---------- Élève ----------
+// Grilles réussies de l'élève (mémorisées dans ce navigateur) ; le même nom retrouve sa progression
+const CLE_ELEVE = "sourisRepeter.eleve";
+let eleve = { nom: "", fait: {} };
+let enregistre = null;
+function empreinte(nom, fait) {
+  const t = "sourisRepeter✦" + nom + "✦" + Object.keys(fait).sort().join(";");
+  let h = 2166136261;
+  for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(36);
+}
+try {
+  const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
+  if (e && typeof e.nom === "string" && e.fait && e.cle === empreinte(e.nom, e.fait)) enregistre = { nom: e.nom, fait: e.fait };
+} catch (e) {}
+const sauverEleve = () => {
+  try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ nom: eleve.nom, fait: eleve.fait, cle: empreinte(eleve.nom, eleve.fait) })); } catch (e) {}
+};
+const nbGrilles = () => NIVEAUX.reduce((t, niv) => t + niv.items.length, 0);
+const nbReussies = () => Object.keys(eleve.fait).length;
+let programme = [];       // programme lu dans Blockly (voir lireProgramme)
+let etapes = [];          // programme déroulé : un bloc de mouvement par étape
+let prediction = null;    // lettre glissée (mode prévoir)
+let sim = null;           // état de la simulation
+let minuteur = null;
+let ws = null;            // espace de travail Blockly
+
+const fr = s => s.replace(/ ([?!:;»])/g, " $1").replace(/« /g, "« ");
+const $ = id => document.getElementById(id);
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of enfants) if (c != null) e.append(typeof c === "string" ? fr(c) : c);
+  return e;
+}
+
+const itemCourant = () => NIVEAUX[ecran.n].items[ecran.i];
+
+const SOURIS = `<svg viewBox="0 0 40 40" aria-label="souris">
+  <path d="M20 33 C20 38 27 37 29 39" fill="none" stroke="#c98b9b" stroke-width="1.6" stroke-linecap="round"/>
+  <ellipse cx="20" cy="23" rx="9" ry="11" fill="#9aa1ab"/>
+  <circle cx="12.5" cy="11" r="4.5" fill="#b8bec6"/><circle cx="12.5" cy="11" r="2.5" fill="#f2b6c4"/>
+  <circle cx="27.5" cy="11" r="4.5" fill="#b8bec6"/><circle cx="27.5" cy="11" r="2.5" fill="#f2b6c4"/>
+  <ellipse cx="20" cy="11" rx="6" ry="8" fill="#9aa1ab"/>
+  <circle cx="17.3" cy="8.5" r="1.2" fill="#1f2430"/><circle cx="22.7" cy="8.5" r="1.2" fill="#1f2430"/>
+  <circle cx="20" cy="3.4" r="1.8" fill="#e5798f"/>
+  <path d="M17 5 L11 3.5 M17 5.5 L11 6 M23 5 L29 3.5 M23 5.5 L29 6" stroke="#6b6f7a" stroke-width=".6"/>
+</svg>`;
+
+// ---------- Blocs ----------
+const COUL = { evenement: "#ffbf00", controle: "#ffab19", mouvement: "#4c97ff" };
+const CHOIX_NB = [["?", "?"]].concat(Array.from({ length: 10 }, (_, k) => [String(k + 1), String(k + 1)]));
+
+Blockly.Blocks["depart"] = { init() {
+  this.appendDummyInput().appendField("quand ▶ Lancer est cliqué");
+  this.setNextStatement(true); this.setColour(COUL.evenement);
+  this.hat = "cap";
+} };
+Blockly.Blocks["repeter"] = { init() {
+  this.appendDummyInput().appendField("répéter").appendField(new Blockly.FieldDropdown(CHOIX_NB), "NB").appendField("fois");
+  this.appendStatementInput("DO");
+  this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.controle);
+} };
+for (const [type, texte] of [["avancer", "avancer d’une case"], ["tourner_gauche", "tourner à gauche ↺"], ["tourner_droite", "tourner à droite ↻"]]) {
+  Blockly.Blocks[type] = { init() {
+    this.appendDummyInput().appendField(texte);
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setColour(COUL.mouvement);
+  } };
+}
+// Clic droit sur un bloc « tourner » : bascule entre gauche et droite, sans décrocher le bloc
+const AUTRE_SENS = { tourner_gauche: "tourner_droite", tourner_droite: "tourner_gauche" };
+for (const type in AUTRE_SENS) {
+  Blockly.Blocks[type].customContextMenu = function (options) {
+    // pas sur les blocs imposés (verrouillés) ni dans le menu des blocs
+    if (this.isInFlyout || !this.isMovable() || !this.isEditable()) return;
+    options.unshift({
+      text: "⇄ " + (type === "tourner_gauche" ? "tourner à droite ↻" : "tourner à gauche ↺"),
+      enabled: true,
+      callback: () => basculer(this)
+    });
+  };
+}
+function basculer(b) {
+  const ws = b.workspace, prev = b.previousConnection.targetConnection, suite = b.getNextBlock();
+  const xy = b.getRelativeToSurfaceXY();
+  Blockly.Events.setGroup(true);
+  if (suite) suite.unplug();
+  const nb = ws.newBlock(AUTRE_SENS[b.type]);
+  nb.initSvg(); nb.render();
+  b.dispose(false);
+  if (prev) prev.connect(nb.previousConnection); else nb.moveBy(xy.x, xy.y);
+  if (suite) nb.nextConnection.connect(suite.previousConnection);
+  Blockly.Events.setGroup(false);
+}
+const THEME = Blockly.Theme.defineTheme("souris", { base: Blockly.Themes.Classic, fontStyle: { size: 13, weight: "bold" } });
+const TYPE_ACTION = { A: "avancer", G: "tourner_gauche", D: "tourner_droite" };
+const ACTION_TYPE = { avancer: "A", tourner_gauche: "G", tourner_droite: "D" };
+const TEXTE = { A: "avancer d’une case", G: "tourner à gauche", D: "tourner à droite" };
+
+// Construit le programme de l'item dans Blockly ; en « prévoir » et « compléter », tout est verrouillé
+// (en « compléter », seuls les nombres des « répéter » se choisissent)
+function construireProgramme(item) {
+  const verrou = b => { b.setMovable(false); b.setDeletable(false); };
+  const nouveau = type => { const b = ws.newBlock(type); b.initSvg(); return b; };
+  const dep = nouveau("depart"); verrou(dep);
+  if (item.mode === "ecrire" || item.mode === "court") { dep.render(); dep.moveBy(16, 16); return; }
+  const poser = (prog, connexion) => {
+    for (const ins of prog) {
+      const b = nouveau(ins.rep ? "repeter" : TYPE_ACTION[ins.t]);
+      verrou(b);
+      if (ins.rep) {
+        b.setFieldValue(item.mode === "completer" ? "?" : String(ins.rep), "NB");
+        poser(ins.corps, b.getInput("DO").connection);
+      }
+      connexion.connect(b.previousConnection);
+      connexion = b.nextConnection;
+    }
+  };
+  poser(item.prog, dep.nextConnection);
+  ws.getAllBlocks(false).forEach(b => b.render());
+  dep.moveBy(16, 16);
+}
+
+// Lit le programme accroché sous « quand ▶ Lancer est cliqué »
+function lireProgramme() {
+  const dep = ws.getAllBlocks(false).find(b => b.type === "depart");
+  const lire = b => {
+    const prog = [];
+    for (; b; b = b.getNextBlock()) {
+      if (b.type === "repeter") {
+        const v = b.getFieldValue("NB");
+        prog.push({ rep: v === "?" ? null : +v, corps: lire(b.getInputTargetBlock("DO")), id: b.id });
+      } else if (ACTION_TYPE[b.type]) prog.push({ t: ACTION_TYPE[b.type], id: b.id });
+    }
+    return prog;
+  };
+  return dep ? lire(dep.getNextBlock()) : [];
+}
+
+const nbBlocs = prog => prog.reduce((t, ins) => t + 1 + (ins.rep !== undefined ? nbBlocs(ins.corps) : 0), 0);
+
+// Le programme déroulé : chaque étape est un bloc de mouvement, avec les tours des boucles qui l'entourent
+function deroule(prog, boucles = [], sortie = []) {
+  for (const ins of prog) {
+    if (sortie.length > 400) break;
+    if (ins.rep !== undefined) {
+      for (let k = 1; k <= (ins.rep || 0); k++) deroule(ins.corps, [...boucles, { id: ins.id, k, n: ins.rep }], sortie);
+    } else sortie.push({ t: ins.t, id: ins.id, boucles });
+  }
+  return sortie;
+}
+
+// ---------- Simulation ----------
+function depart(item) {
+  for (let r = 0; r < item.grille.length; r++) {
+    const c = item.grille[r].indexOf("S");
+    if (c >= 0) return { r, c, d: item.dir, pas: 0, av: 0, trace: new Set([r + "," + c]), fin: null, dernier: null };
+  }
+}
+
+const estArrivee = ch => ch === "F" || "ABC".includes(ch);
+
+function unPas(item, e) {
+  const s = etapes[e.pas];
+  if (!s) { e.fin = "arret"; return e; }
+  e.dernier = s;
+  e.pas++;
+  if (s.t === "A") {
+    const nr = e.r + DR[e.d], nc = e.c + DC[e.d];
+    if (nr < 0 || nc < 0 || nr >= N || nc >= N) { e.fin = "sortie"; e.boum = true; return e; }
+    if (item.grille[nr][nc] === "R") { e.fin = "roche"; e.boum = true; return e; }
+    e.r = nr; e.c = nc; e.av++;
+    e.trace.add(nr + "," + nc);
+    if (estArrivee(item.grille[nr][nc])) { e.fin = item.grille[nr][nc]; return e; }
+  } else e.d = TOURNE[s.t](e.d);
+  if (e.pas >= etapes.length) e.fin = "arret";
+  return e;
+}
+
+// Trajet d'un programme sur une grille sans bord (pour créer les grilles et tracer le chemin)
+function trajet(prog, r, c, d) {
+  const pos = [[r, c]], moves = [];
+  for (const s of deroule(prog)) {
+    if (s.t === "A") { moves.push([r, c, d]); r += DR[d]; c += DC[d]; pos.push([r, c]); }
+    else d = TOURNE[s.t](d);
+  }
+  return { pos, moves, fin: [r, c] };
+}
+
+// Chemin à suivre (cases → directions des flèches) ; inutile quand les rochers dessinent déjà le couloir
+function cheminObjectif(item) {
+  const chemin = new Map();
+  if (item.mode === "prevoir" || item.mode === "court" || item.genere.roches) return chemin;
+  const t = trajet(item.prog, item.r0, item.c0, item.dir);
+  for (const [r, c, d] of t.moves) { const k = r + "," + c; if (!chemin.has(k)) chemin.set(k, []); chemin.get(k).push(d); }
+  chemin.set(t.fin.join(","), []);
+  return chemin;
+}
+
+// ---------- Création automatique des grilles ----------
+// Chaque grille vient d'un numéro à 5 chiffres : niveau, pastille, puis 3 chiffres (ex. 41583 = niveau 4, grille ①).
+// Le numéro sert de graine au hasard : un même numéro redonne la même grille, tant qu'on ne change
+// ni l'ordre des tirages, ni les réglages « genere », ni la simulation. Toute modification ici change
+// les grilles des numéros déjà notés (fiches papier à refaire).
+let alea = Math.random;
+function graine(n) {
+  let a = n >>> 0;
+  alea = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const hasard = n => Math.floor(alea() * n);
+const choisir = t => t[hasard(t.length)];
+function melangeTab(t) { t = [...t]; for (let k = t.length - 1; k > 0; k--) { const j = hasard(k + 1); [t[k], t[j]] = [t[j], t[k]]; } return t; }
+const inverse = t => t === "G" ? "D" : "G";
+const avance = { t: "A" };
+
+// Lignes droites : « répéter L fois avancer », puis un virage, etc.
+function progLignes(o) {
+  const prog = [];
+  for (let k = 0; k < o.segs; k++) {
+    if (k) prog.push({ t: choisir(["G", "D"]) });
+    prog.push({ rep: 3 + hasard(4), corps: [avance] });
+  }
+  return prog;
+}
+
+// Motif répété : escalier (avancer, tourner, avancer, tourner dans l'autre sens) ou créneau
+function progMotif(o) {
+  const t = choisir(["G", "D"]), u = inverse(t);
+  // créneau : 2 cases en haut et en bas, sinon le couloir de rochers aurait un raccourci
+  if (o.forme === "creneau") {
+    return [{ rep: 2, corps: [avance, { t }, avance, { t: u }, avance, avance, { t: u }, avance, { t }, avance] }];
+  }
+  const k1 = 1 + hasard(2), k2 = 1 + hasard(2);
+  const corps = [...Array(k1).fill(avance), { t }, ...Array(k2).fill(avance), { t: u }];
+  return [{ rep: 3 + hasard(2), corps }];
+}
+
+// Place des ensembles de cases (coordonnées relatives au départ) dans la grille ; renvoie le décalage ou null
+function placer(cases) {
+  const rs = cases.map(p => p[0]), cs = cases.map(p => p[1]);
+  const r1 = Math.min(...rs), r2 = Math.max(...rs), c1 = Math.min(...cs), c2 = Math.max(...cs);
+  if (r2 - r1 >= N || c2 - c1 >= N) return null;
+  return [hasard(N - (r2 - r1)) - r1, hasard(N - (c2 - c1)) - c1];
+}
+
+const cle = p => p[0] + "," + p[1];
+const sansRetour = pos => new Set(pos.map(cle)).size === pos.length;
+
+// Erreurs de lecture possibles : un nombre de répétitions ±1, un virage dans le mauvais sens
+function variantes(prog) {
+  const out = [];
+  const copie = p => p.map(x => x.rep !== undefined ? { rep: x.rep, corps: copie(x.corps) } : { t: x.t });
+  const parcourir = (p, chemin) => p.forEach((x, k) => {
+    const ici = [...chemin, k];
+    const modifier = f => { const c = copie(prog); let q = c; ici.slice(0, -1).forEach(j => q = q[j].corps); f(q[ici[ici.length - 1]]); out.push(c); };
+    if (x.rep !== undefined) {
+      modifier(y => y.rep++);
+      if (x.rep > 1) modifier(y => y.rep--);
+      parcourir(x.corps, ici);
+    } else if (x.t !== "A") modifier(y => y.t = inverse(y.t));
+  });
+  parcourir(prog, []);
+  return out;
+}
+
+// Parcours en largeur depuis (r, c) : distance (en cases) de chaque case libre ; g : tableau de lignes
+function distances(g, r, c) {
+  const dist = new Map([[r + "," + c, 0]]);
+  const file = [[r, c]];
+  for (let k = 0; k < file.length; k++) {
+    const [x, y] = file[k], dx = dist.get(x + "," + y);
+    for (let d = 0; d < 4; d++) {
+      const nx = x + DR[d], ny = y + DC[d];
+      if (nx < 0 || ny < 0 || nx >= N || ny >= N || g[nx][ny] === "R" || dist.has(nx + "," + ny)) continue;
+      dist.set(nx + "," + ny, dx + 1); file.push([nx, ny]);
+    }
+  }
+  return dist;
+}
+
+// Plus court chemin : des murs de rochers droits tirés au hasard. On garde la grille s'il y a un vrai choix :
+// en bouchant toutes les cases des plus courts chemins, il reste une autre route, au plus « ecart » cases plus longue
+function genererCourt(o) {
+  for (let essai = 0; essai < 5000; essai++) {
+    const g = Array.from({ length: N }, () => Array(N).fill("."));
+    for (let m = 0; m < o.murs; m++) {
+      const d = hasard(2), lg = 2 + hasard(4);
+      let r = hasard(N), c = hasard(N);
+      for (let k = 0; k < lg && r < N && c < N; k++) { g[r][c] = "R"; d ? c++ : r++; }
+    }
+    const libres = [];
+    g.forEach((l, r) => l.forEach((ch, c) => { if (ch === ".") libres.push([r, c]); }));
+    const [sr, sc] = choisir(libres), [fr, fc] = choisir(libres);
+    if (Math.abs(sr - fr) + Math.abs(sc - fc) < 6) continue;
+    g[sr][sc] = "S"; g[fr][fc] = "F";
+    const lignes = g.map(l => l.join(""));
+    const dS = distances(lignes, sr, sc), dF = distances(lignes, fr, fc);
+    const dist = dS.get(fr + "," + fc);
+    // le trajet direct est barré : le plus court fait au moins un détour
+    if (dist === undefined || dist < 8 || dist < Math.abs(sr - fr) + Math.abs(sc - fc) + 2) continue;
+    // cases situées sur au moins un plus court chemin
+    const bouche = lignes.map((l, r) => [...l].map((ch, c) => {
+      const k = r + "," + c;
+      return ch === "." && dS.get(k) + dF.get(k) === dist ? "R" : ch;
+    }).join(""));
+    const autre = distances(bouche, sr, sc).get(fr + "," + fc);
+    if (autre === undefined || autre > dist + o.ecart) continue;
+    return { grille: lignes, dir: hasard(4), dist };
+  }
+  return null;
+}
+
+function genererItem(mode, o) {
+  if (mode === "court") return genererCourt(o);
+  for (let essai = 0; essai < 5000; essai++) {
+    const prog = o.type === "motif" ? progMotif(o) : progLignes(o);
+    const d = hasard(4), t = trajet(prog, 0, 0, d);
+    if (!sansRetour(t.pos)) continue;
+    const vu = new Set(t.pos.map(cle));
+    // couloir de rochers : deux cases du chemin qui se touchent sans se suivre ouvriraient un raccourci
+    if (o.roches && t.pos.some((p, k) => t.pos.some((q, j) => j > k + 1 && Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) === 1))) continue;
+    let cases = t.pos, pieges = [];
+    if (mode === "prevoir") {
+      // deux arrivées-pièges : là où s'arrête la souris si on lit mal un bloc
+      const cand = melangeTab(variantes(prog).map(v => trajet(v, 0, 0, d)).filter(v => !vu.has(cle(v.fin))));
+      for (const v of cand) {
+        if (pieges.some(p => cle(p.fin) === cle(v.fin))) continue;
+        if (!placer(cases.concat(v.pos))) continue;
+        pieges.push(v); cases = cases.concat(v.pos);
+        if (pieges.length === 2) break;
+      }
+      if (pieges.length < 2) continue;
+    }
+    const dec = placer(cases);
+    if (!dec) continue;
+    const g = Array.from({ length: N }, () => Array(N).fill("."));
+    const mettre = (p, ch) => { const r = p[0] + dec[0], c = p[1] + dec[1]; if (r >= 0 && c >= 0 && r < N && c < N) g[r][c] = ch; };
+    // les rochers bordent le chemin (diagonales comprises) : c'est le seul passage
+    if (o.roches) t.pos.forEach(([r, c]) => {
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) if (!vu.has(cle([r + i, c + j]))) mettre([r + i, c + j], "R");
+    });
+    mettre([0, 0], "S");
+    mettre(t.fin, mode === "prevoir" ? "A" : "F");
+    pieges.forEach((p, k) => mettre(p.fin, "BC"[k]));
+    return { prog, grille: g.map(l => l.join("")), dir: d, r0: dec[0], c0: dec[1], maxBlocs: nbBlocs(prog) };
+  }
+  return null;
+}
+
+// ---------- Actions ----------
+// Lettres des arrivées tirées au hasard (avec le numéro de la grille, pour que la fiche papier corresponde)
+let melange = { A: "A", B: "B", C: "C" };
+const lettre = l => melange[l] || l;
+function melanger() {
+  const l = melangeTab(["A", "B", "C"]);
+  melange = { A: l[0], B: l[1], C: l[2] };
+}
+
+// numero : numéro de grille imposé (dicté par le professeur) ; sinon tiré au hasard
+function allerA(n, i, numero) {
+  arreter();
+  // on ne commence pas sans son nom (il figure sur le diplôme)
+  if (!eleve.nom) { ecran = { type: "intro" }; rendu(); return; }
+  ecran = { type: "item", n, i };
+  const it = itemCourant();
+  it.numero = numero || (n + 1) * 10000 + (i + 1) * 1000 + Math.floor(Math.random() * 1000);
+  graine(it.numero);
+  const g = genererItem(it.mode, it.genere);
+  if (g) Object.assign(it, g);
+  melanger();
+  alea = Math.random;
+  prediction = null;
+  sim = depart(it);
+  rendu();
+}
+
+function arreter() { clearTimeout(minuteur); minuteur = null; }
+
+function problemes() {
+  const item = itemCourant(), pb = [];
+  if (item.mode === "prevoir") { if (prediction === null) pb.push("Glisse ta prévision dans la case."); return pb; }
+  if (!programme.length) { pb.push("Accroche des blocs sous « quand ▶ Lancer est cliqué »."); return pb; }
+  const reps = [];
+  const chercher = p => p.forEach(x => { if (x.rep !== undefined) { reps.push(x); chercher(x.corps); } });
+  chercher(programme);
+  if (reps.some(x => !x.rep)) pb.push("Choisis le nombre de chaque « répéter ».");
+  if (reps.some(x => !x.corps.length)) pb.push("Mets des blocs dans chaque « répéter ».");
+  return pb;
+}
+const pret = () => problemes().length === 0;
+const tropDeBlocs = () => itemCourant().mode === "ecrire" && nbBlocs(programme) > itemCourant().maxBlocs;
+
+// Étape à venir (surlignée), ou la dernière jouée à la fin
+function etapeAffichee() {
+  if (sim.fin) return sim.dernier;
+  if (!pret()) return null;
+  if (itemCourant().mode === "prevoir" && sim.pas === 0 && !minuteur) return null;
+  return etapes[sim.pas] || null;
+}
+
+function surligner() {
+  if (!ws) return;
+  ws.highlightBlock(null);
+  const s = etapeAffichee();
+  if (s) [...s.boucles.map(b => b.id), s.id].forEach(id => ws.highlightBlock(id, true));
+}
+
+function lancer(pasAPas) {
+  const item = itemCourant();
+  if (sim.fin) sim = depart(item);
+  if (pasAPas) { arreter(); unPas(item, sim); terminerSiFini(); majVue(); return; }
+  const boucle = () => {
+    unPas(item, sim);
+    if (!terminerSiFini()) minuteur = setTimeout(boucle, 450);
+    majVue();
+  };
+  arreter();
+  minuteur = setTimeout(boucle, 200);
+  majVue();
+}
+
+function terminerSiFini() {
+  if (!sim.fin) return false;
+  arreter();
+  if (reussite() && !eleve.fait[ecran.n + "-" + ecran.i]) { eleve.fait[ecran.n + "-" + ecran.i] = true; sauverEleve(); majEleve(); }
+  return true;
+}
+
+function reussite() {
+  const item = itemCourant();
+  if (!sim || !sim.fin) return false;
+  if (item.mode === "prevoir") return sim.fin === "A" && prediction === lettre("A");
+  // ≤ plutôt que = : si la distance minimale calculée était fausse, on ne refuserait jamais un chemin plus court
+  if (item.mode === "court") return sim.fin === "F" && sim.av <= item.dist;
+  return sim.fin === "F" && !tropDeBlocs();
+}
+
+function recommencer() {
+  arreter();
+  sim = depart(itemCourant());
+  majVue();
+}
+
+function suivant() {
+  const { n, i } = ecran;
+  if (i + 1 < NIVEAUX[n].items.length) allerA(n, i + 1);
+  else if (n + 1 < NIVEAUX.length) allerA(n + 1, 0);
+  else { arreter(); ecran = { type: "fin" }; rendu(); }
+}
+
+// ---------- Glisser-déposer (prévision) ----------
+function attacherGlisser(piece, val) {
+  piece.addEventListener("pointerdown", e => {
+    if (e.button > 0 || minuteur) return;
+    e.preventDefault();
+    const x0 = e.clientX, y0 = e.clientY, rect = piece.getBoundingClientRect();
+    let fantome = null, survol = null;
+    const cibleSous = ev => {
+      const t = document.elementFromPoint(ev.clientX, ev.clientY);
+      return t && t.closest("[data-cible]");
+    };
+    const bouge = ev => {
+      if (!fantome) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+        fantome = piece.cloneNode(true);
+        fantome.classList.add("fantome");
+        fantome.style.width = rect.width + "px";
+        document.body.append(fantome);
+      }
+      fantome.style.left = (ev.clientX - (x0 - rect.left)) + "px";
+      fantome.style.top = (ev.clientY - (y0 - rect.top)) + "px";
+      const c = cibleSous(ev);
+      if (c !== survol) { survol && survol.classList.remove("survol"); survol = c; c && c.classList.add("survol"); }
+    };
+    const fin = ev => {
+      document.removeEventListener("pointermove", bouge);
+      document.removeEventListener("pointerup", fin);
+      document.removeEventListener("pointercancel", fin);
+      if (!fantome) {
+        const c = document.querySelector("[data-cible]");
+        if (c) { c.classList.remove("rappel"); void c.offsetWidth; c.classList.add("rappel"); }
+        return;
+      }
+      fantome.remove();
+      survol && survol.classList.remove("survol");
+      if (ev.type === "pointerup" && cibleSous(ev)) { prediction = val; sim = depart(itemCourant()); majVue(); }
+    };
+    document.addEventListener("pointermove", bouge);
+    document.addEventListener("pointerup", fin);
+    document.addEventListener("pointercancel", fin);
+  });
+}
+
+// ---------- Diplôme ----------
+// Affiché dans un calque ; à l'impression, seul le calque est visible (A4 paysage)
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const DIPLOME_CSS = `
+#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(297mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #2f5fd0;background:#2f5fd0;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-dessin{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:8px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:3mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 4mm;min-width:32mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-etoiles{font-size:12pt;letter-spacing:.5mm;color:#d9d2c3;}
+#overlayFiche .d-etoiles .pleine{color:#d4a62a;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;font-size:5mm;line-height:1;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  @page{size:A4 landscape;margin:10mm;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+  #overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}
+}`;
+
+function mention(ok, total) {
+  const x = ok / total * 20;
+  return x >= 20 ? "Félicitations !" : x >= 16 ? "Très bien" : x >= 14 ? "Bien" : x >= 12 ? "Assez bien" : x >= 10 ? "Réussi" : "Continue tes efforts";
+}
+
+function diplomeContenu() {
+  const ok = nbReussies(), total = nbGrilles();
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  // une médaille par niveau : grilles réussies, une étoile par grille
+  const medailles = NIVEAUX.map((niv, n) => {
+    const m = niv.items.length, r = niv.items.filter((_, i) => eleve.fait[n + "-" + i]).length;
+    const etoiles = niv.items.map((_, i) => `<span class="${eleve.fait[n + "-" + i] ? "pleine" : ""}">★</span>`).join("");
+    return `<div class="d-med${r === m ? " complete" : ""}"><div class="d-med-nom">${esc(niv.nom.replace(/^\d+\.\s*/, ""))}</div><div class="d-med-pts">${r} / ${m}</div><div class="d-etoiles">${etoiles}</div></div>`;
+  }).join("");
+  // sceau doré : cercle festonné, rubans, grilles réussies au centre
+  const festons = Array.from({ length: 48 }, (_, k) => {
+    const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+    return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+  }).join(" ") + "Z";
+  const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${ok}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">grilles sur ${total}</text>
+  </svg>`;
+  // la souris dans son couloir de rochers, en escalier jusqu'au fromage
+  const roche = (x, y) => `<rect x="${x}" y="${y}" width="22" height="22" rx="3" fill="#8a867e"/>`;
+  const dessin = `<svg class="d-dessin" viewBox="0 0 120 110" aria-hidden="true">
+    ${[[30, 82], [54, 58], [78, 34], [6, 58], [30, 34], [54, 10]].map(([x, y]) => roche(x, y)).join("")}
+    <path d="M17 93 V69 H41 V45 H65 V21 H96" fill="none" stroke="#1d3b8f" stroke-width="2.2" stroke-dasharray="4 3" stroke-linecap="round"/>
+    <svg x="4" y="80" width="26" height="26" viewBox="0 0 40 40">${SOURIS.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>
+    <text x="104" y="29" text-anchor="middle" font-size="20">🧀</text>
+  </svg>`;
+  const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+  const frise = Array.from({ length: 4 }, () => ["🐭", "🔁", "🧀"]).flat().map(e => `<span>${e}</span>`).join("");
+  return `<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${dessin}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">de programmation · <b>La souris — Répéter</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${esc(eleve.nom || "……………………")}</div>
+        <div class="d-pour">pour avoir guidé une souris jusqu’au fromage avec des boucles « répéter ».</div>
+        <div class="d-mention">${mention(ok, total)}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-meds">${medailles}</div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`;
+}
+
+// Le diplôme garde sa taille A4 ; à l'écran, il est réduit pour tenir dans la fenêtre
+function ouvrirDiplome() {
+  if (!eleve.nom) { fermerDiplome(); arreter(); ecran = { type: "intro" }; rendu(); return; }
+  let ov = $("overlayFiche");
+  if (!ov) {
+    const st = document.createElement("style");
+    st.textContent = DIPLOME_CSS;
+    document.head.append(st);
+    ov = el("div", { id: "overlayFiche" });
+    ov.addEventListener("click", e => { if (e.target === ov) fermerDiplome(); });
+    document.body.append(ov);
+  }
+  ov.innerHTML = `<div id="ficheCarte">
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions"><button type="button" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong> et coche <strong>« Graphiques d’arrière-plan »</strong> pour garder les couleurs.</p>
+    ${diplomeContenu()}
+  </div>`;
+  $("btnFermerFiche").onclick = fermerDiplome;
+  $("btnImprimerFiche").onclick = () => window.print();
+  ov.classList.add("ouverte");
+  document.body.classList.add("fiche-ouverte");
+  const d = ov.querySelector(".diplome");
+  const carte = getComputedStyle(d.parentElement);
+  const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+  const r = d.getBoundingClientRect();
+  const e = Math.min(1, place / r.width);
+  d.style.transform = "scale(" + e + ")";
+  d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+  d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+}
+
+function fermerDiplome() {
+  const ov = $("overlayFiche");
+  if (ov) ov.classList.remove("ouverte");
+  document.body.classList.remove("fiche-ouverte");
+}
+
+// ---------- Rendu ----------
+function rendu() {
+  renduNav();
+  if (ws) { ws.dispose(); ws = null; }
+  const s = $("scene");
+  s.replaceChildren(); $("colonne").replaceChildren();
+  s.className = "scene";
+  if (ecran.type === "intro") return renduIntro(s);
+  if (ecran.type === "fin") return renduFin(s);
+
+  const niv = NIVEAUX[ecran.n], item = itemCourant();
+  s.append(
+    el("div", { class: "entete" },
+      el("h2", {}, niv.nom, el("span", { class: "numero" }, " — grille n°" + item.numero)),
+      niv.items.length > 1 ? el("div", { class: "points", id: "points" }) : null
+    ),
+    el("p", { class: "consigne" }, niv.consigne),
+    el("div", { class: "plateau" },
+      el("div", { class: "gauche" }, el("div", { id: "grille" }), el("div", { id: "prediction" })),
+      el("div", { class: "programme" }, el("div", { id: "blockly" })))
+  );
+
+  const libre = item.mode === "ecrire" || item.mode === "court";
+  const outils = libre ? ["avancer", "tourner_gauche", "tourner_droite", "repeter"] : [];
+  ws = Blockly.inject("blockly", {
+    renderer: "zelos",
+    theme: THEME,
+    readOnly: item.mode === "prevoir",
+    toolbox: outils.length ? { kind: "flyoutToolbox", contents: outils.map(t => ({ kind: "block", type: t })) } : undefined,
+    trashcan: libre,
+    move: { scrollbars: true, drag: true, wheel: true },
+    zoom: { startScale: 0.9 }
+  });
+  // Pas d'événements pendant la construction (sinon ils relancent la souris au départ un peu plus tard)
+  Blockly.Events.disable();
+  construireProgramme(item);
+  Blockly.Events.enable();
+  const relire = () => { programme = lireProgramme(); etapes = deroule(programme); };
+  relire();
+  ws.addChangeListener(ev => {
+    if (ev.isUiEvent) return;
+    relire();
+    arreter();
+    sim = depart(itemCourant());
+    majVue();
+  });
+  majVue();
+}
+
+// Met à jour tout sauf Blockly
+function majVue() {
+  const item = itemCourant();
+  const pts = $("points");
+  if (pts) pts.replaceChildren(...NIVEAUX[ecran.n].items.map((_, k) =>
+    el("button", {
+      class: "point" + (eleve.fait[ecran.n + "-" + k] ? " fait" : "") + (k === ecran.i ? " courant" : ""),
+      onclick: () => allerA(ecran.n, k)
+    }, String(k + 1))));
+  $("grille").replaceChildren(renduGrille(item));
+  $("prediction").replaceChildren(...renduPrediction(item));
+  const col = $("colonne");
+  col.replaceChildren();
+  renduColonne(col, item);
+  surligner();
+}
+
+function renduPrediction(item) {
+  if (item.mode !== "prevoir") return [];
+  const sl = el("span", { class: "slot" + (prediction ? " rempli" : "") }, prediction ? "🏁 " + prediction : "?");
+  if (!minuteur && sim.pas === 0) sl.dataset.cible = "prediction";
+  const pal = el("div", { class: "palette" });
+  for (const l of "ABC") { const pc = el("div", { class: "piece" }, "🏁 " + l); attacherGlisser(pc, l); pal.append(pc); }
+  return [
+    el("div", { class: "prediction" }, "La souris s’arrête sur :", sl),
+    el("div", { class: "propositions" }, el("div", { class: "propositions-titre" }, "Arrivées possibles :"), pal)
+  ];
+}
+
+function renduGrille(item) {
+  const objectif = cheminObjectif(item);
+  const g = el("div", { class: "grille" });
+  g.style.gridTemplateColumns = "repeat(" + N + ", auto)";
+  item.grille.forEach((ligne, r) => [...ligne].forEach((ch, c) => {
+    const ici = sim.r === r && sim.c === c;
+    const k = r + "," + c, surChemin = objectif.has(k), passe = sim.trace.has(k);
+    const cls = "case" + (surChemin ? " objectif" : "") + (passe ? (surChemin || !objectif.size ? " trace" : " hors") : "")
+      + (ici ? " souris" : "") + (ici && sim.boum ? " boum" : "");
+    const cse = el("div", { class: cls });
+    if (surChemin && !ici) objectif.get(k).forEach((d, j) => {
+      const f = el("span", { class: "pas" }, "➜");
+      f.style.transform = "rotate(" + [-90, 0, 90, 180][d] + "deg)";
+      f.style.left = (3 + j * 11) + "px";
+      cse.append(f);
+    });
+    if (ch === "R") cse.classList.add("roche");
+    if (ch === "F") cse.append(el("span", { class: "emo-case" }, "🧀"));
+    if ("ABC".includes(ch)) cse.append(el("span", { class: "emo-case" }, "🏁"), el("span", { class: "lettre" }, lettre(ch)));
+    if (ici) {
+      if (ch !== "." && ch !== "S") cse.classList.add("occupee");
+      const perso = el("div", { class: "perso" });
+      if (sim.boum) perso.append("💥");
+      else {
+        perso.innerHTML = SOURIS;
+        perso.firstChild.style.transform = "rotate(" + sim.d * 90 + "deg)";
+      }
+      cse.append(perso);
+    }
+    g.append(cse);
+  }));
+  return g;
+}
+
+function renduColonne(col, item) {
+  const cmd = el("aside", {}, el("h3", {}, "▶ Programme"));
+  for (const pb of problemes()) cmd.append(el("p", { class: "aide" }, pb));
+  if (item.mode === "ecrire") {
+    cmd.append(el("div", { class: "blocs" + (tropDeBlocs() ? " trop" : "") },
+      el("span", {}, "🧱 Blocs utilisés"), el("b", {}, nbBlocs(programme) + " / " + item.maxBlocs)));
+  }
+  if (item.mode === "court") {
+    cmd.append(el("div", { class: "blocs" }, el("span", {}, "🐾 Cases parcourues"), el("b", {}, String(sim.av))));
+  }
+  const lancerB = el("button", { class: "suite", onclick: () => lancer(false) }, "▶ Lancer");
+  const pasB = el("button", { class: "second", onclick: () => lancer(true) }, "⏭ Pas à pas");
+  const recB = el("button", { class: "second", onclick: recommencer }, "↺ Remettre la souris au départ");
+  if (!pret() || minuteur) { lancerB.disabled = true; pasB.disabled = true; }
+  if (sim.pas === 0 && !minuteur) recB.disabled = true;
+  cmd.append(el("div", { class: "boutons" }, lancerB, pasB, recB,
+    el("button", { class: "second", onclick: () => allerA(ecran.n, ecran.i) }, "🎲 Nouvelle grille")));
+
+  // Résultat
+  if (sim.fin) {
+    if (reussite()) {
+      const dernier = ecran.n === NIVEAUX.length - 1 && ecran.i === NIVEAUX[ecran.n].items.length - 1;
+      cmd.append(
+        el("div", { class: "retour ok" }, item.mode === "prevoir"
+          ? "✅ Bien prévu : la souris s’arrête sur 🏁 " + lettre("A") + " !"
+          : item.mode === "court" ? "✅ Bravo ! C’est le plus court chemin : " + sim.av + " cases."
+          : "✅ Bravo ! La souris a trouvé le fromage 🧀"),
+        el("div", { style: "margin-top:10px" }, el("button", { class: "suite", onclick: suivant }, dernier ? "Terminer →" : "Suite →")));
+    } else {
+      const msg = sim.fin === "F" && item.mode === "court" ? "🧀 Fromage trouvé en " + sim.av + " cases… mais un autre chemin est plus court !"
+        : sim.fin === "F" ? "🧱 Le fromage est trouvé, mais il y a trop de blocs. Utilise « répéter » !"
+        : sim.fin === "sortie" ? "💥 La souris est sortie de la grille !"
+        : sim.fin === "roche" ? "💥 La souris s’est cognée contre un rocher !"
+        : sim.fin === "arret" ? "✋ Le programme est fini : la souris n’est pas arrivée."
+        : "❌ La souris s’arrête sur 🏁 " + lettre(sim.fin) + ", pas sur 🏁 " + prediction + ".";
+      cmd.append(el("div", { class: "retour ko" }, msg));
+    }
+  }
+  col.append(cmd);
+
+  // Où en sont les boucles ?
+  const box = el("aside", {}, el("h3", {}, "🔁 Les boucles"));
+  const s = etapeAffichee();
+  if (!s) box.append(el("p", { class: "aide" }, "« répéter » refait plusieurs fois les blocs qu’il contient."));
+  else {
+    const t = el("div", { class: "tours" });
+    for (const b of s.boucles) {
+      const rang = el("div", { class: "rang" });
+      for (let k = 1; k <= b.n; k++) rang.append(el("span", { class: k < b.k ? "fait" : k === b.k ? "encours" : "" }));
+      t.append(el("div", { class: "m m-boucle" }, el("b", {}, "répéter " + b.n + " fois"), "Tour n°" + b.k + " sur " + b.n, rang));
+    }
+    t.append(el("div", { class: "m m-bloc" }, el("b", {}, sim.fin ? "Dernier bloc" : "Prochain bloc"), TEXTE[s.t]));
+    box.append(t);
+  }
+  col.append(box);
+}
+
+function renduIntro(s) {
+  s.classList.add("intro");
+  s.append(
+    el("h2", {}, "La souris cherche le fromage 🧀"),
+    el("p", {}, "La souris 🐭 suit le programme, bloc après bloc."),
+    el("ol", { class: "etapes" },
+      el("li", {}, "« avancer d’une case », « tourner à gauche », « tourner à droite » ;"),
+      el("li", {}, "« répéter 4 fois » : refait 4 fois les blocs qu’il contient.")
+    ),
+    el("p", {}, "Attention aux rochers : la souris ne peut pas les traverser.")
+  );
+  // champ toujours vide à l'accueil : chaque élève tape son nom (le même nom retrouve sa progression)
+  const champ = el("input", { id: "champNom", type: "text", autocomplete: "off", placeholder: "Prénom Nom", maxlength: "40" });
+  const erreur = el("span", { class: "erreur-nom" });
+  const commencer = () => {
+    const nom = champ.value.trim().replace(/\s+/g, " ");
+    if (nom.length < 2) { erreur.textContent = "Écris ton prénom et ton nom."; champ.focus(); return; }
+    if (nom !== eleve.nom) {
+      eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, fait: {} };
+      enregistre = eleve;
+      sauverEleve();
+    }
+    allerA(0, 0);
+  };
+  champ.addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+  s.append(
+    el("label", { class: "nom-eleve", for: "champNom" }, "Ton prénom et ton nom (pour le diplôme) :", champ, erreur),
+    el("div", { class: "actions" }, el("button", { class: "suite", onclick: commencer }, "Commencer →"))
+  );
+  setTimeout(() => champ.focus(), 0);
+}
+
+// Première grille pas encore réussie
+function grilleARefaire() {
+  for (let n = 0; n < NIVEAUX.length; n++)
+    for (let i = 0; i < NIVEAUX[n].items.length; i++)
+      if (!eleve.fait[n + "-" + i]) return [n, i];
+  return null;
+}
+
+function renduFin(s) {
+  if (!eleve.nom) { ecran = { type: "intro" }; return renduIntro(s); }
+  const a = grilleARefaire();
+  s.append(
+    el("h2", {}, "🏆 Bravo " + eleve.nom + " !"),
+    el("p", {}, "Avec « répéter », un programme long devient court."),
+    el("p", { style: "font-size:1.3rem;font-weight:700" }, "🧀 Grilles réussies : " + nbReussies() + " / " + nbGrilles()),
+    a ? el("p", {}, "Il te reste des grilles à réussir : vise " + nbGrilles() + " / " + nbGrilles() + " !") : el("p", {}, "🌟 Toutes les grilles sont réussies !"),
+    el("div", { class: "actions", style: "gap:10px" },
+      a ? el("button", { class: "second", style: "width:auto", onclick: () => allerA(a[0], a[1]) }, "↺ Grilles à réussir") : null,
+      el("button", { class: "suite", onclick: ouvrirDiplome }, "🎓 Mon diplôme"))
+  );
+}
+
+function majEleve() {
+  $("eleveInfo").replaceChildren(...(eleve.nom ? ["👤 " + eleve.nom, el("span", { class: "note" }, "🧀 " + nbReussies() + " / " + nbGrilles())] : []));
+  $("btnDiplome").style.display = eleve.nom ? "" : "none";
+}
+
+function renduNav() {
+  majEleve();
+  $("nav").replaceChildren(...NIVEAUX.map((niv, n) =>
+    el("button", { class: "tab" + (ecran.type === "item" && ecran.n === n ? " actif" : ""), onclick: () => allerA(n, 0) }, niv.nom)));
+}
+
+$("onglet").onclick = () => window.open(location.href, "_blank");
+$("btnDiplome").onclick = ouvrirDiplome;
+// Aller directement à une grille à partir de son numéro (celui de la fiche papier)
+$("allerNumero").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const v = $("champNumero").value.trim(), code = parseInt(v, 10);
+  const n = Math.floor(code / 10000) - 1, i = Math.floor(code / 1000) % 10 - 1;
+  if (!/^\d{5}$/.test(v) || !NIVEAUX[n] || !NIVEAUX[n].items[i]) { $("erreurNumero").textContent = "Numéro inconnu"; return; }
+  $("erreurNumero").textContent = "";
+  $("champNumero").value = "";
+  allerA(n, i, code);
+});
+rendu();
+</script>
+</body>
+</html>
