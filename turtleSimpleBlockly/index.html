@@ -3,419 +3,231 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blockly </title>
+  <title>La tortue — Programmation</title>
 
   <!-- Importer Blockly -->
   <script src="https://unpkg.com/blockly/blockly.min.js"></script>
-  <!-- Style pour le canevas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <style>
-    /* Ajouter un box-sizing global */
-    * {
-      box-sizing: border-box;
-    }
+  :root{
+    --bg:#f5f1e8;
+    --panel:#fffdf8;
+    --ink:#1f2430;
+    --muted:#6b6f7a;
+    --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --var:#a55b5b;    --var-bg:#fbeeee;   /* couleur des blocs variables */
+    --ok:#1f8a4c;     --ok-bg:#e3f4e8;    --ok-b:#86c79a;
+    --ko:#c0392b;     --ko-bg:#fbe6e3;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;min-height:100vh;
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  button{font:inherit;cursor:pointer;}
 
-    html, body {
-      height: 100%;
-    }
+  /* En-tête */
+  header{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+    padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;}
+  .pastilles{display:flex;gap:6px;}
+  .pastille{
+    width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
+    background:var(--bg);font-size:.8rem;color:var(--muted);padding:0;
+  }
+  .pastille:hover{border-color:var(--accent);}
+  .pastille.fait{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .pastille.actif{border-color:var(--accent);color:var(--accent);font-weight:700;box-shadow:0 0 0 2px #dde7ff;}
+  .pastille.fait.actif{color:#fff;}
+  #eleveInfo{font-size:.85rem;font-weight:600;}
+  .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
 
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-    }
+  main{
+    display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;
+    max-width:1480px;margin:0 auto;padding:24px;
+  }
+  /* écrans moyens (portable, vidéoprojecteur) : tout reste côte à côte */
+  @media (max-width:1200px){
+    main{grid-template-columns:minmax(0,1fr) 250px;gap:16px;padding:16px;}
+    .scene{padding:18px;}
+    .plateau{gap:16px;}
+    header{gap:8px 12px;padding:12px 16px;}
+  }
+  @media (max-width:860px){ main{grid-template-columns:1fr;} }
 
-    
+  /* Scène : la grille et le programme */
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;}
+  .entete h2{margin:0 0 6px;font-size:1.3rem;}
+  .entete .titre{font-weight:400;color:var(--muted);font-size:1rem;}
+  .consigne{margin:0 0 18px;font-weight:600;font-size:1.1rem;}
+  .plateau{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;}
+  .gauche{flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  #maGrille{filter:drop-shadow(0 6px 10px rgba(0,0,0,.18));}
+  .legende{font-size:.85rem;color:var(--muted);}
+  .programme{flex:1;min-width:300px;}
+  @media (max-width:640px){ .programme{min-width:0;} }
+  #blocklyDiv{height:580px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 
-    
-    #container {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      padding: 10px;
-      width: 100%;
-      flex: 1;
-      min-height: 660px; /* hauteur du panneau de rendu : en dessous, la page défile */
-    }
+  /* Bloc en cours d'exécution : contour jaune épais (Blockly ne le rend presque pas visible) */
+  .blocklyHighlighted > .blocklyPath{stroke:#ffc400;stroke-width:5px;filter:drop-shadow(0 0 6px #ffc400);}
+  .blocklyScrollbarVertical{display:none;}
 
-    #rendu {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: none;
-      width: 340px;
-      border: 2px solid #000;
-      padding: 10px;
-      box-sizing: border-box;
-      background : #f5f5dc;
-    }
-    
-    #prog {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-      position: relative;
-      border: 2px solid #000;
-      padding: 10px;
-      box-sizing: border-box;
-      background : lightblue;
-    }
+  /* Colonne de droite */
+  .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;}
+  aside h3{margin:0 0 10px;font-size:1rem;}
+  .blocs{font-size:.9rem;margin:0 0 12px;padding:6px 10px;border-radius:8px;background:#fff6d6;display:flex;justify-content:space-between;gap:8px;}
+  .boutons{display:flex;flex-direction:column;gap:8px;}
+  .suite{
+    background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:12px 22px;font-size:1.05rem;font-weight:600;width:100%;
+  }
+  .suite:hover{background:#2550b5;}
+  .second{width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--ink);font-size:.95rem;}
+  .second:hover{border-color:var(--accent);color:var(--accent);}
+  .vitesse{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:.85rem;color:var(--muted);}
+  .vitesse input{flex:1;accent-color:var(--accent);}
+  .vitesse .tortue{transform:scaleX(-1);}
 
-    #blocklyDiv {
-      flex: 1;
-      min-height: 0;
-      border: 2px solid #000;
-      box-sizing: border-box;
-    }
-    
-#maGrille {
-  width: 250px;
-  height: 300px;
-    border: 2px solid #000;
- /* overflow: hidden; /* Empêche le débordement du contenu */
-  box-sizing: border-box; /* Inclut la bordure dans les dimensions */
-  position: relative; /* Pour un meilleur contrôle des éléments enfants */
-}
+  /* Message après l'exécution */
+  #messageContainer{display:flex;align-items:flex-start;gap:8px;border-radius:10px;padding:12px 14px;font-size:.95rem;margin-top:14px;}
+  #messageContainer.hidden{display:none;}
+  #messageContainer.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+  #messageContainer.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  #messageContainer.info{background:#e6eefc;border-left:5px solid var(--accent);}
+  #messageAlerte{flex:1;}
+  #closeAlert{cursor:pointer;color:var(--muted);font-size:.8rem;line-height:1.6;}
+  #closeAlert:hover{color:var(--ko);}
 
-#maGrille canvas {
-  width: 100%; /* Assure que le canevas prend toute la largeur du parent */
-  height: 100%; /* Assure que le canevas prend toute la hauteur du parent */
-  box-sizing: border-box; /* Inclut les bordures dans la taille du canevas */
-}
-    
+  /* Variables : une étiquette par variable, qui clignote quand sa valeur change */
+  .liste-variables{display:flex;gap:10px;margin-bottom:10px;}
+  .variable{
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1rem;font-weight:700;
+    padding:4px 12px;background:#fff;border:2px solid var(--var);border-radius:8px;color:var(--ink);
+  }
+  .variable.change{animation:flashVariable .6s ease;}
+  @keyframes flashVariable{
+    0%{background:#ffc400;transform:scale(1.15);}
+    100%{background:#fff;transform:scale(1);}
+  }
 
-    /* Modifier la largeur de la flyout et de la barre de défilement */
-    .blocklyFlyout {
-    }
+  /* Tableau de suivi des variables */
+  .suivi{max-height:300px;overflow:auto;border:1px solid #ecd6d6;border-radius:8px;background:#fff;}
+  .suivi table{border-collapse:collapse;width:100%;font-size:.8rem;}
+  .suivi th{position:sticky;top:0;background:var(--var-bg);color:#6d3030;padding:4px 6px;text-align:left;}
+  .suivi td{padding:3px 6px;border-bottom:1px solid #f3e9e9;}
+  .suivi td + td, .suivi th + th{text-align:center;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;width:34px;padding:3px 2px;}
+  .suivi tr.test td{color:var(--muted);font-style:italic;}
+  .suivi tr:last-child td{background:#fff6cc;}
+  .suivi .vide{color:var(--muted);font-style:italic;padding:8px;}
 
-    /* Bloc en cours d'exécution : contour jaune épais (Blockly ne le rend presque pas visible) */
-    .blocklyHighlighted > .blocklyPath {
-      stroke: #ffc400;
-      stroke-width: 5px;
-      filter: drop-shadow(0 0 6px #ffc400);
-    }
-
-    .blocklyScrollbarVertical {
-      display: none; /* Masque complètement la barre de défilement */
-    }
-
-
-button {
-  border-radius: 8px;
-  margin-top: 10px;
-  margin-bottom: 20px;
-  padding: 10px 15px;
-  background: linear-gradient(135deg, #4CAF50, #45a049);
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-button:hover {
-  background: linear-gradient(135deg, #45a049, #3d8b40);
-  transform: scale(1.05);
-}
-
-#resetButton {
-  margin-top: 25px;
-  background: linear-gradient(135deg, #f44336, #e41f1f);
-}
-
-#resetButton:hover {
-  background: linear-gradient(135deg, #e41f1f, #c21717);
-}
-
-#messageContainer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: calc(100% - 40px);
-  max-width: 400px;
-  padding: 10px;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100; /* au-dessus de la zone Blockly */
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-  background-color: #444;
-  border: 3px solid transparent;
-  border-radius: 8px;
-  transition: all 0.3s ease-in-out;
-  position: absolute;
-  visibility: hidden; /* Caché par défaut */
-}
-
-#messageContainer.visible {
-  opacity: 1;
-  visibility: visible;
-}
-
-#messageContainer.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
-#messageAlerte {
-  flex: 1;
-  text-align: center;
-}
-
-#closeAlert {
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  color: white;
-  background-color: #888;
-  border-radius: 50%;
-  border: 1px solid #555;
-  transition: all 0.3s;
-}
-
-#closeAlert:hover {
-  background-color: red;
-  border-color: darkred;
-  color: white;
-}
-
-#newTabButton {
-  margin: 0;
-  white-space: nowrap;
-  padding: 6px 10px;
-  font-size: 12px;
-  background: linear-gradient(135deg, #2196F3, #1976D2);
-}
-
-#newTabButton:hover {
-  background: linear-gradient(135deg, #1976D2, #1565C0);
-}
-
-/* Suivi des variables : une étiquette par variable, qui clignote quand sa valeur change */
-#variables {
-  margin-top: auto; /* calé tout en bas du panneau */
-  width: 100%;
-  border: 2px solid #a55b5b; /* couleur des blocs variables */
-  border-radius: 8px;
-  background: #fbeeee;
-  overflow: hidden;
-}
-
-.titre-variables {
-  padding: 4px 10px;
-  background: #a55b5b;
-  color: white;
-  font-size: 13px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.liste-variables {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px;
-}
-
-.variable {
-  font-family: monospace;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 4px 10px;
-  background: white;
-  border: 2px solid #a55b5b; /* couleur des blocs variables */
-  border-radius: 6px;
-  color: #333;
-}
-
-.variable.change {
-  animation: flashVariable 0.6s ease;
-}
-
-@keyframes flashVariable {
-  0%   { background: #ffc400; transform: scale(1.15); }
-  100% { background: white;   transform: scale(1); }
-}
-
-#compteurBlocs {
-  font-size: 14px;
-  font-weight: bold;
-  text-align: center;
-  margin-top: 20px;
-}
-
-/* Barre d'en-tête : objectif | choix de l'exercice | nouvel onglet */
-#objectif {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex: none;
-  margin: 10px 10px 0;
-  padding: 6px 12px;
-  background-color: #d4edda; /* Vert doux */
-  color: #155724; /* Texte vert foncé pour le contraste */
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  font-size: 16px;
-  font-weight: bold;
-}
-
-#objec {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Choix de la série : deux boutons accolés, l'actif est plein */
-#serieChoix {
-  display: flex;
-  margin-right: 10px;
-}
-
-#serieChoix button {
-  margin: 0;
-  padding: 6px 10px;
-  font-size: 13px;
-  white-space: nowrap;
-  color: #155724;
-  background: white;
-  border: 2px solid #4CAF50;
-  box-shadow: none;
-}
-
-#serieChoix button:first-child {
-  border-radius: 8px 0 0 8px;
-}
-
-#serieChoix button:last-child {
-  border-radius: 0 8px 8px 0;
-  border-left: none;
-}
-
-#serieChoix button:hover {
-  transform: none;
-  background: #e8f5e9;
-}
-
-#serieChoix button.actif {
-  color: white;
-  background: linear-gradient(135deg, #4CAF50, #45a049);
-}
-
-.input-container {
-  color: black;
-  display: flex;
-  flex-direction : row;
-  align-items: center;
-  gap: 10px;
-}
-
-label {
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-input {
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  width: 50px;
-  text-align: center;
-}
-
-#objec::before {
-  content: "🎯";
-  font-size: 24px;
-}
-
-input[type="range"] {
-  width: 200px; /* Ajuste la largeur de la barre */
-}
-
-.slider-container {
-            display: flex;
-            /*justify-content: space-between;  /* Espacement des éléments sur la même ligne */
-            align-items: center;  /* Centrage vertical des éléments */
-            gap: 0px;  /* Espacement entre les éléments */
-            width: 250px;  /* Fixer la largeur du conteneur pour éviter que les éléments ne s'étendent trop */
-            border: 2px solid purple;/*dure visible autour du conteneur du slider */
-            margin-top : 20px;
-  
-}
-
-
-        /* Vous pouvez ajuster la valeur du margin-bottom selon vos préférences */
-.emoji-left, .emoji-right {
-  transform: scaleX(-1); 
-            font-size: 1rem;  /* Ajuster la taille des emojis */
-
-            padding: 5px; /* Padding pour rendre les bordures visibles */
-        }
+  /* Accueil : nom de l'élève */
+  #accueil{position:fixed;inset:0;background:rgba(31,36,48,.55);display:flex;align-items:center;justify-content:center;z-index:3000;}
+  #accueil.cache{display:none;}
+  .carte-accueil{background:var(--panel);border-radius:14px;padding:26px 30px;max-width:540px;width:calc(100% - 32px);box-shadow:0 10px 40px rgba(0,0,0,.3);}
+  .carte-accueil h2{margin:0 0 10px;font-size:1.3rem;}
+  .carte-accueil p{margin:6px 0;}
+  .carte-accueil label{display:block;margin-top:18px;font-weight:600;}
+  #champNom{display:block;width:100%;font:inherit;font-weight:400;padding:10px 12px;margin-top:6px;border:2px solid var(--border);border-radius:10px;}
+  #champNom:focus{outline:none;border-color:var(--accent);}
+  #erreurNom{color:var(--ko);font-size:.85rem;min-height:1.3em;margin:4px 0;}
+  .carte-accueil .actions{display:flex;justify-content:flex-end;}
+  .carte-accueil .suite{width:auto;}
+  /* Choix de la série : deux boutons accolés, l'actif est plein */
+  #serieChoix{display:flex;}
+  #serieChoix button{border:1px solid var(--accent);background:var(--panel);color:var(--accent);padding:6px 12px;font-size:.85rem;}
+  #serieChoix button:first-child{border-radius:8px 0 0 8px;}
+  #serieChoix button:last-child{border-radius:0 8px 8px 0;border-left:none;}
+  #serieChoix button.actif{background:var(--accent);color:#fff;}
+  #maGrille{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px var(--border);}
+  .legende .orange{color:#d97706;font-weight:700;}
+  .legende .rouge{color:#dc2626;font-weight:700;}
   </style>
-  
 </head>
 <body>
-<div id="objectif">
-  <span id="objec">Écrire un programme réalisant le tracé affiché</span>
-  <div class="input-container">
-    <div id="serieChoix">
-      <button data-serie="sans" class="actif">Sans variable</button>
-      <button data-serie="avec">Avec variable</button>
-    </div>
-    <label for="exoInput">Exercice :</label>
-    <input type="number" id="exoInput" min="1" max="6" value="1" />
+<header>
+  <h1>🐢 La tortue</h1>
+  <div id="serieChoix">
+    <button data-serie="sans" class="actif">Sans variable</button>
+    <button data-serie="avec">Avec variable</button>
   </div>
-  <button id="newTabButton" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗ Nouvel onglet</button>
+  <div class="pastilles" id="pastilles"></div>
+  <input type="number" id="exoInput" min="1" max="6" value="1" hidden>
+  <span id="eleveInfo"></span>
+  <button class="onglet" id="btnFiche" title="Fiche papier de l'exercice">🖨 Fiche papier</button>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓 Diplôme</button>
+  <button class="onglet" id="newTabButton" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗ Nouvel onglet</button>
+</header>
+<div id="accueil" class="cache">
+  <div class="carte-accueil">
+    <h2>🐢 La tortue : programmation</h2>
+    <p>La tortue avance, tourne et dessine avec son stylo.</p>
+    <p>Il faut reproduire le tracé en pointillés bleus, sans dépasser le nombre de blocs.</p>
+    <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
+    <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+    <div id="erreurNom"></div>
+    <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+  </div>
 </div>
-  <!-- Div pour Blockly -->
-  <div id="container">
-    <div id="prog">
-      <div id="blocklyDiv"></div>
-      <div id="messageContainer">
+<main>
+  <section class="scene">
+    <div class="entete"><h2 id="titreExo">Exercice 1</h2></div>
+    <p class="consigne">Écris un programme qui réalise le tracé en pointillés bleus.</p>
+    <div class="plateau">
+      <div class="gauche">
+        <div id="maGrille"></div>
+        <div class="legende" id="legende">1 carreau = 1 unité.</div>
+      </div>
+      <div class="programme"><div id="blocklyDiv"></div></div>
+    </div>
+  </section>
+  <div class="colonne">
+    <aside>
+      <h3>▶ Programme</h3>
+      <div class="blocs"><span>🧱 Blocs utilisés</span><b><span id="nbBlocs">0</span> / <span id="nbBlocksTot">0</span></b></div>
+      <div class="boutons">
+        <button class="suite" id="button"></button>
+        <button class="second" id="resetButton">↺ Réinitialiser</button>
+      </div>
+      <div class="vitesse">
+        <span class="tortue">🐢</span>
+        <input type="range" id="delai" min="0" max="950" step="50" value="0" oninput="updateValeur()" aria-label="Vitesse">
+        <span>🐇</span>
+      </div>
+      <div id="messageContainer" class="hidden">
         <span id="messageAlerte"></span>
-        <span id="closeAlert" onclick="fermerAlerte()">✖</span>
+        <span id="closeAlert" onclick="fermerAlerte()" title="Fermer">✖</span>
       </div>
-    </div>
-    <div id="rendu">
-
-      <div id="maGrille"></div>
-      <div id="compteurBlocs">Nb de blocs utilisés : <span id="nbBlocs">0</span>/<span id="nbBlocksTot">0</span></div>
-        <div class="slider-container">
-            <div class="emoji-left">🐢</div> <!-- Emoji de gauche -->
-            <input type="range" id="delai" min="0" max="950" step="50" value="0" oninput="updateValeur()">
-            <div class="emoji-right">🐇</div> <!-- Emoji de droite -->
-        </div>
-      <button id="button"></button>
-      <button id="resetButton">Réinitialiser</button>
-      <div id="variables">
-        <div class="titre-variables">Variables</div>
-        <div class="liste-variables">
-          <span class="variable" id="var-n">n = <span class="valeur">?</span></span>
-        </div>
+    </aside>
+    <aside id="variables">
+      <h3>📋 Variables</h3>
+      <div class="liste-variables">
+        <span class="variable" id="var-n">n = <span class="valeur">?</span></span>
       </div>
-    </div>
+      <div class="suivi" id="suivi">
+        <table><thead><tr><th>Bloc</th><th>n</th></tr></thead><tbody id="suiviCorps"></tbody></table>
+      </div>
+    </aside>
   </div>
+</main>
 
   <script>
 
 let delai=1000;
 
 function updateValeur() {
-            delai = 1000 - document.getElementById("delai").value;
-          
-        }
+    delai = 1000 - document.getElementById("delai").value;
+}
+// durée d'un déplacement ou d'une rotation de la tortue
+const dureeAnim = () => Math.max(60, delai);
 
 Blockly.Blocks['programme'] = {
   init: function() {
@@ -429,7 +241,6 @@ Blockly.Blocks['programme'] = {
 };
 
 Blockly.JavaScript.forBlock['programme'] = function(block) {
-
   return "";
 };
 
@@ -460,14 +271,12 @@ Blockly.Blocks['math_number'] = {
     this.appendDummyInput()
         .appendField(new Blockly.FieldNumber(0), "NUM");
     this.setOutput(true, "Number");
-    this.setColour(10); // 100 = Jaune, tu peux changer selon ton besoin
+    this.setColour(10);
     this.setTooltip("Un nombre.");
     this.setHelpUrl("");
   }
 };
 
-
-    
 // Chaque exécution a son numéro : une exécution remplacée (nouveau clic sur Exécuter)
 // ou interrompue (Réinitialiser) reste bloquée dans sa pause et ne reprend jamais.
 let executionId = 0;
@@ -492,13 +301,12 @@ function surligner(id) {
 // Suivi des variables : déclarées au début de chaque exécution (donc remises à « ? »),
 // affichées après chaque « mettre » / « ajouter »
 const VARIABLES_SUIVIES = ['n'];
-const NOMS_COULEURS = { red: "rouge", green: "vert" };
 const valeursAffichees = {};
 
 function afficherVariables(valeurs) {
     for (const nom of VARIABLES_SUIVIES) {
         const v = valeurs[nom];
-        const texte = v === undefined ? "?" : String(NOMS_COULEURS[v] || v);
+        const texte = v === undefined ? "?" : String(v);
         if (valeursAffichees[nom] === texte) continue;
         valeursAffichees[nom] = texte;
         const etiquette = document.getElementById("var-" + nom);
@@ -511,13 +319,7 @@ function afficherVariables(valeurs) {
     }
 }
 
-
-
-
-
-
-
-  Blockly.Blocks['mettre_a'] = {
+Blockly.Blocks['mettre_a'] = {
   init: function() {
     this.appendValueInput("VAR")
         .setCheck(["Number", "String"])
@@ -534,46 +336,27 @@ function afficherVariables(valeurs) {
   }
 };
 
-
-    Blockly.JavaScript.forBlock['mettre_a'] = function(block) {
- var variable = Blockly.JavaScript.valueToCode(block, 'VAR', Blockly.JavaScript.ORDER_ATOMIC);
+Blockly.JavaScript.forBlock['mettre_a'] = function(block) {
+  var variable = Blockly.JavaScript.valueToCode(block, 'VAR', Blockly.JavaScript.ORDER_ATOMIC);
   var valeur = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC);
-  var code = `${variable} = ${valeur};\n maj();\n await attendre(delai);\n`;
-  return code;
+  return `${variable} = ${valeur};\n maj();\n note("mettre", "${variable}", ${variable});\n await attendre(delai);\n`;
 };
-    
-    Blockly.Blocks['n'] = {
-      init: function() {
-        this.appendDummyInput()
-            .appendField("n");
-        this.setOutput(true, "Number");
-        this.setColour(10);
-        this.setTooltip("Récupérer la valeur de n");
-        this.setHelpUrl("");
-      }
-    };
-    
-       Blockly.Blocks['c'] = {
-      init: function() {
-        this.appendDummyInput()
-            .appendField("c");
-        this.setOutput(true, "String");
-        this.setColour(10);
-        this.setTooltip("Récupérer la valeur de c");
-        this.setHelpUrl("");
-      }
-    };
 
-    Blockly.JavaScript.forBlock['n'] = function(block) {
-      var code = 'n'; // Retourne la valeur de n
-      return [code, Blockly.JavaScript.ORDER_ATOMIC];
-    };
-    
-        Blockly.JavaScript.forBlock['c'] = function(block) {
-      var code = 'c'; // Retourne la valeur de n
-      return [code, Blockly.JavaScript.ORDER_ATOMIC];
-    };
-    
+Blockly.Blocks['n'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("n");
+    this.setOutput(true, "Number");
+    this.setColour(10);
+    this.setTooltip("Récupérer la valeur de n");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.JavaScript.forBlock['n'] = function(block) {
+  return ['n', Blockly.JavaScript.ORDER_ATOMIC];
+};
+
 // Définition du bloc "ajouter à"
 Blockly.Blocks['ajouter_a'] = {
   init: function() {
@@ -592,12 +375,10 @@ Blockly.Blocks['ajouter_a'] = {
   }
 };
 
-// Génération du code JavaScript pour "ajouter à"
 Blockly.JavaScript.forBlock['ajouter_a'] = function(block) {
- var variable = Blockly.JavaScript.valueToCode(block, 'VAR', Blockly.JavaScript.ORDER_ATOMIC);
+  var variable = Blockly.JavaScript.valueToCode(block, 'VAR', Blockly.JavaScript.ORDER_ATOMIC);
   var valeur = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC);
-  var code = `${variable} = ${variable}+${valeur};\n maj();\n await attendre(delai);\n`;
-  return code;
+  return `${variable} = ${variable}+${valeur};\n maj();\n note("ajouter", "${variable}", ${valeur});\n await attendre(delai);\n`;
 };
 
 // Définition du bloc "Si...Sinon"
@@ -620,13 +401,13 @@ Blockly.Blocks['si_sinon'] = {
   }
 };
 
-// Génération du code JavaScript pour "Si...Sinon"
 Blockly.JavaScript.forBlock['si_sinon'] = function(block) {
   var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_NONE) || 'false';
   var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
   var statements_else = Blockly.JavaScript.statementToCode(block, 'ELSE');
-  var code = `if (${condition}) {\n${statements_do}} else {\n${statements_else}}\n`;
-  return code;
+  // le test est noté dans le tableau de suivi, écrit comme sur le bloc (n = 1)
+  var texte = condition.replace(/==/g, "=").replace(/[()]/g, "");
+  return `{ const test = (${condition});\n note("si", ${JSON.stringify(texte)}, test);\n await attendre(delai);\n if (test) {\n${statements_do}} else {\n${statements_else}}\n}\n`;
 };
 
 Blockly.Blocks['repeter_x_fois'] = {
@@ -645,47 +426,34 @@ Blockly.Blocks['repeter_x_fois'] = {
   }
 };
 
-// Génération du code JavaScript
 Blockly.JavaScript.forBlock['repeter_x_fois'] = function(block) {
-    var nombre = Blockly.JavaScript.valueToCode(block, 'NOMBRE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-    var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
-
-    var code = `for (let i = 0; i < ${nombre}; i++) {
-         ${statements_do}; 
-    }\n`;
-    return code;
+  var nombre = Blockly.JavaScript.valueToCode(block, 'NOMBRE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+  var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+  return `{ const fois = (${nombre});\n grille.verifierNombre(fois, "Le nombre de répétitions");\n for (let i = 0; i < fois; i++) {\n${statements_do}}\n}\n`;
 };
 
 Blockly.Blocks['avancer'] = {
     init: function() {
         this.appendDummyInput()
             .appendField("Avancer de");
-        
         this.appendValueInput("DISTANCE")
-            .setCheck("Number"); 
-        
+            .setCheck("Number");
         this.appendDummyInput()
             .appendField("unités");
-
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(160);
     }
 };
 
-
-
 Blockly.Blocks['reculer'] = {
     init: function() {
         this.appendDummyInput()
             .appendField("Reculer de");
-        
         this.appendValueInput("DISTANCE")
-            .setCheck("Number"); 
-        
+            .setCheck("Number");
         this.appendDummyInput()
             .appendField("unités");
-
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(160);
@@ -736,47 +504,33 @@ Blockly.Blocks['baisser_stylo'] = {
     }
 };
 
-Blockly.Blocks['effacer'] = {
-    init: function() {
-        this.appendDummyInput()
-            .appendField("Effacer le dessin");
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setColour(0);
-    }
-};
-
-
+// La tortue glisse et pivote pendant dureeAnim() ; chaque mouvement est noté dans le suivi
 Blockly.JavaScript.forBlock['avancer'] = function(block) {
     var distance = Blockly.JavaScript.valueToCode(block, 'DISTANCE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-    return `grille.avancer(${distance});\n await attendre(delai);`;
+    return `await grille.deplacer(${distance}, dureeAnim());\n note("avancer", ${distance});\n`;
 };
 
 Blockly.JavaScript.forBlock['reculer'] = function(block) {
     var distance = Blockly.JavaScript.valueToCode(block, 'DISTANCE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-    return `grille.avancer(-(${distance}));\n await attendre(delai);`;
+    return `await grille.deplacer(-(${distance}), dureeAnim());\n note("reculer", ${distance});\n`;
 };
 
 Blockly.JavaScript.forBlock['tourner'] = function(block) {
     var angle = block.getFieldValue('ANGLE');
-    return `grille.tourner(${angle});\n await attendre(delai);`;
+    return `await grille.pivoter(${angle}, dureeAnim());\n note("gauche", ${angle});\n`;
 };
 
 Blockly.JavaScript.forBlock['tourner_droite'] = function(block) {
     var angle = block.getFieldValue('ANGLE');
-    return `grille.tourner(-${angle});\n await attendre(delai);`;
+    return `await grille.pivoter(-${angle}, dureeAnim());\n note("droite", ${angle});\n`;
 };
 
 Blockly.JavaScript.forBlock['lever_stylo'] = function(block) {
-    return `grille.leverStylo();\n await attendre(delai);\n`;
+    return `grille.leverStylo();\n note("lever");\n await attendre(delai / 2);\n`;
 };
 
 Blockly.JavaScript.forBlock['baisser_stylo'] = function(block) {
-    return `grille.baisserStylo();\n await attendre(delai);\n`;
-};
-
-Blockly.JavaScript.forBlock['effacer'] = function(block) {
-    return `grille.effacer();\n await attendre(delai);\n`;
+    return `grille.baisserStylo();\n note("baisser");\n await attendre(delai / 2);\n`;
 };
 
 // Boîtes à outils : la série « avec variable » ajoute n, mettre, ajouter, = et si/sinon
@@ -807,152 +561,130 @@ const workspace = Blockly.inject('blocklyDiv', {
   media: 'https://unpkg.com/blockly/media/'
 });
 
-
 let block = workspace.newBlock('programme');
 block.initSvg();
 block.render();
-block.moveBy(50, 50); // Position du bloc
+block.moveBy(50, 50);
 
- // Fonction pour exécuter le code généré par Blockly
-
-function attend(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 async function runCode() {
     executionId++;          // arrête une éventuelle exécution précédente
     const monId = executionId;
     workspace.highlightBlock(null);
     fermerAlerte();
     grille.effacer();
-    await attend(500);
+    viderSuivi();
     Blockly.JavaScript.init(workspace);
     let startBlock = workspace.getTopBlocks().find(b => b.type === "programme");
 
     if (!startBlock) {
-        alerte("Erreur : Vous devez ajouter un bloc Programme !");
+        alerte("Ajoute le bloc « Programme » et accroche tes blocs dessous.", "ko");
         return;
     }
     workspace.getAllBlocks().forEach(block => block.unselect());
-    executionEnCours=true;
+    executionEnCours = true;
     try {
         const code = Blockly.JavaScript.blockToCode(startBlock);
-        console.log("Code généré :", code); // Vérifier le code généré
-        if (!code) {
-            console.log("Aucun code généré.");
-            return;
-        }
         // Création d'une fonction asynchrone dynamique
-        let asyncFunction = new Function("attendre", "grille", "surligner", "afficherVariables", `
+        let asyncFunction = new Function("attendre", "grille", "surligner", "afficherVariables", "noter", "dureeAnim", `
             return (async function() {
                 let ${VARIABLES_SUIVIES.join(", ")};
                 const maj = () => afficherVariables({ ${VARIABLES_SUIVIES.join(", ")} });
+                const note = (sorte, a, b) => noter(sorte, a, b, { ${VARIABLES_SUIVIES.join(", ")} });
                 maj();
-                ${code} 
+                ${code}
             })();
         `);
 
-        // Exécution de la fonction avec `await`
-        await asyncFunction(attendre, grille, surligner, afficherVariables);
+        await asyncFunction(attendre, grille, surligner, afficherVariables, noter, dureeAnim);
+        if (monId !== executionId) return;
+        workspace.highlightBlock(null);
 
+        // Comparaison avec le modèle, morceau d'unité par morceau d'unité
+        const ecarts = grille.comparer();
+        const nb = nbBlocsProgramme(), max = +document.getElementById("nbBlocksTot").innerText;
+        if (!ecarts.manquants.length && !ecarts.enTrop.length) {
+            if (nb <= max) { alerte("✅ Mission réussie !", "ok"); marquerReussi(); }
+            else alerte(`Le tracé est juste, mais avec ${nb} blocs : ${max} au maximum. Utilise « Répéter » !`, "ko");
+        } else {
+            grille.montrerErreurs(ecarts);
+            const unites = k => k + (k > 1 ? " unités" : " unité");
+            const details = [];
+            if (ecarts.manquants.length) details.push("il manque " + unites(ecarts.manquants.length) + " de trait (en orange)");
+            if (ecarts.enTrop.length) details.push(unites(ecarts.enTrop.length) + (ecarts.enTrop.length > 1 ? " sont" : " est") + " en trop (en rouge)");
+            alerte("❌ Pas encore : " + details.join(", et ") + ".", "ko");
+        }
     } catch (e) {
-        alerte("Erreur dans le code généré : " + e.message);
-        console.error(e);
-    } finally {
-        if (monId === executionId) workspace.highlightBlock(null);
+        if (monId === executionId) {
+            // erreur de l'élève (n sans valeur…) : le bloc fautif reste surligné
+            if (e.message.startsWith("💥")) alerte(e.message, "ko");
+            else { workspace.highlightBlock(null); alerte("Erreur dans le programme : " + e.message, "ko"); }
+        }
     }
 }
 
-
-
-
-
+// Seuls les blocs accrochés au bloc Programme comptent (pas ceux qui traînent à côté)
+function nbBlocsProgramme() {
+    const prog = workspace.getTopBlocks().find(b => b.type === "programme");
+    return prog ? prog.getDescendants(false).length : 0;
+}
 
 function mettreAJourCompteur() {
-    let nombreBlocs = workspace.getAllBlocks().length;
-    let compteurElement = document.getElementById("nbBlocs");
-    if (compteurElement.innerText != nombreBlocs) {
-        compteurElement.innerText = nombreBlocs;
-    }
+    const nombreBlocs = nbBlocsProgramme();
+    const compteurElement = document.getElementById("nbBlocs");
+    if (compteurElement.innerText != nombreBlocs) compteurElement.innerText = nombreBlocs;
 }
 
+const button = document.getElementById("button");
+button.innerText = "▶ Exécuter";
+button.onclick = runCode;
 
-    // Ajouter un bouton pour exécuter le code généré
-    const button = document.getElementById("button");
-    button.innerText = "Exécuter";
-    button.onclick = runCode;
-
-
-    // Ajouter la fonctionnalité de réinitialisation
-    const resetButton = document.getElementById("resetButton");
+const resetButton = document.getElementById("resetButton");
 resetButton.onclick = function () {
-    executionEnCours=false;
+    executionEnCours = false;
     executionId++;
     workspace.highlightBlock(null);
     fermerAlerte();
-    grille.effacer(); 
-    //workspace.clear(); // Efface tous les blocs
-    mettreAJourCompteur(); // Remet à jour le compteur après effacement
+    grille.effacer();
+    viderSuivi();
+    mettreAJourCompteur();
 };
 
-
-function alerte(t) {
-    let container = document.getElementById("messageContainer");
-    let label = document.getElementById("messageAlerte");
-
-    label.innerText = t;
-    container.classList.remove("hidden"); // Supprime la classe cachée
-    container.classList.add("visible"); // Ajoute la classe pour afficher
-
-    // Change la couleur de la bordure et du fond selon le message
-    if (t.toLowerCase().includes("erreur")) {
-        container.style.borderColor = "red";
-        container.style.backgroundColor = "#ffcccc";
-        label.style.color = "black";
-    } else if (t.toLowerCase().includes("réussie") || t.toLowerCase().includes("réussi")) {
-        container.style.borderColor = "green";
-        container.style.backgroundColor = "#ccffcc";
-        label.style.color = "black";
+// sorte : "ok" (vert), "ko" (rouge) ; sinon la couleur est devinée d'après le texte
+function alerte(t, sorte) {
+    const container = document.getElementById("messageContainer");
+    document.getElementById("messageAlerte").innerText = t;
+    if (!sorte) {
+        const m = t.toLowerCase();
+        sorte = m.includes("erreur") || m.includes("échec") ? "ko" : m.includes("réussi") ? "ok" : "info";
     }
-    else if (t.toLowerCase().includes("échec") || t.toLowerCase().includes("réussi")) {
-        container.style.borderColor = "red";
-        container.style.backgroundColor = "#ffcccc";
-        label.style.color = "black";
-    } else {
-        container.style.borderColor = "blue";
-        container.style.backgroundColor = "#cce5ff";
-        label.style.color = "black";
-    }
+    container.className = sorte;
 }
 
-
 function fermerAlerte() {
-    let container = document.getElementById("messageContainer");
-    container.classList.remove("visible"); // Retire la classe visible
-    container.classList.add("hidden"); // Ajoute la classe cachée
+    document.getElementById("messageContainer").className = "hidden";
 }
 
 </script>
 <script src="grille.js"></script>
 <script>
 const grille = new Grille("maGrille");
-let executionEnCours=false;
+let executionEnCours = false;
 
-function nbTotChange(n){
-    document.getElementById("nbBlocksTot").innerText=n;
+function nbTotChange(n) {
+    document.getElementById("nbBlocksTot").innerText = n;
 }
-    
-    
+
 // Exercices par série : départ (x, y en px, angle), nombre de blocs visé, tracé modèle
 const EXERCICES = {
   sans: [
     { // carré
-      blocs: 6, x: 100, y: 200, angle: 0,
+      titre: "Carré", blocs: 6, x: 100, y: 200, angle: 0,
       trace() {
         for (let i = 0; i < 4; i++) { this.avancer(5); this.tourner(90); }
       }
     },
     { // escalier
-      blocs: 9, x: 40, y: 240, angle: 0,
+      titre: "Escalier", blocs: 9, x: 40, y: 240, angle: 0,
       trace() {
         for (let i = 0; i < 4; i++) {
           this.avancer(3); this.tourner(90); this.avancer(2); this.tourner(-90);
@@ -960,7 +692,7 @@ const EXERCICES = {
       }
     },
     { // croix
-      blocs: 8, x: 140, y: 140, angle: 0,
+      titre: "Croix", blocs: 8, x: 140, y: 140, angle: 0,
       trace() {
         for (let i = 0; i < 4; i++) {
           this.avancer(5);
@@ -972,7 +704,7 @@ const EXERCICES = {
       }
     },
     { // pointillés horizontaux
-      blocs: 9, x: 60, y: 140, angle: 0,
+      titre: "Pointillés", blocs: 9, x: 60, y: 140, angle: 0,
       trace() {
         for (let i = 0; i < 3; i++) {
           this.avancer(2); this.leverStylo(); this.avancer(1); this.baisserStylo();
@@ -980,7 +712,7 @@ const EXERCICES = {
       }
     },
     { // pointillés verticaux (tourner avant la boucle)
-      blocs: 10, x: 140, y: 240, angle: 0,
+      titre: "Pointillés verticaux", blocs: 10, x: 140, y: 240, angle: 0,
       trace() {
         this.tourner(90);
         for (let i = 0; i < 3; i++) {
@@ -989,7 +721,7 @@ const EXERCICES = {
       }
     },
     { // pointillés en équerre (tourner en fin de boucle)
-      blocs: 10, x: 120, y: 180, angle: 0,
+      titre: "Pointillés en équerre", blocs: 10, x: 120, y: 180, angle: 0,
       trace() {
         for (let i = 0; i < 3; i++) {
           this.avancer(2); this.leverStylo(); this.avancer(1); this.baisserStylo();
@@ -1000,7 +732,7 @@ const EXERCICES = {
   ],
   avec: [
     { // carrés emboîtés
-      blocs: 14, x: 80, y: 240, angle: 0,
+      titre: "Carrés emboîtés", blocs: 14, x: 80, y: 240, angle: 0,
       trace() {
         let n = 4;
         for (let j = 0; j < 5; j++) {
@@ -1010,7 +742,7 @@ const EXERCICES = {
       }
     },
     { // carrés séparés, stylo levé
-      blocs: 18, x: 120, y: 40, angle: -90,
+      titre: "Carrés séparés", blocs: 18, x: 120, y: 40, angle: -90,
       trace() {
         let n = 2;
         for (let j = 0; j < 3; j++) {
@@ -1021,7 +753,7 @@ const EXERCICES = {
       }
     },
     { // triangles en rosace
-      blocs: 15, x: 120, y: 120, angle: 0,
+      titre: "Rosace de triangles", blocs: 15, x: 120, y: 120, angle: 0,
       trace() {
         let n = 2;
         for (let j = 0; j < 6; j++) {
@@ -1032,7 +764,7 @@ const EXERCICES = {
       }
     },
     { // carrés alternés 1 / 2
-      blocs: 23, x: 20, y: 180, angle: 0,
+      titre: "Carrés alternés", blocs: 23, x: 20, y: 180, angle: 0,
       trace() {
         let n = 1;
         for (let j = 0; j < 9; j++) {
@@ -1047,19 +779,26 @@ const EXERCICES = {
 
 let serie = "sans";
 const exoInput = document.getElementById("exoInput");
+const exerciceCourant = () => parseInt(exoInput.value) || 1;
 
 function changerExercice() {
+    executionEnCours = false;
+    executionId++;
+    workspace.highlightBlock(null);
+    fermerAlerte();
     const liste = EXERCICES[serie];
-    let numero = parseInt(exoInput.value) || 1;
+    let numero = exerciceCourant();
     numero = Math.min(Math.max(numero, 1), liste.length);
     exoInput.value = numero;
     const exo = liste[numero - 1];
 
     grille.effacer();
+    viderSuivi();
     nbTotChange(exo.blocs);
     grille.setPosition(exo.x, exo.y);
     grille.setOrientation(exo.angle);
     grille.tracerFantome(exo.trace);
+    majEleve();
 }
 
 function changerSerie(nouvelleSerie, numero = 1) {
@@ -1076,14 +815,330 @@ function changerSerie(nouvelleSerie, numero = 1) {
 document.querySelectorAll("#serieChoix button").forEach(b =>
     b.onclick = () => { if (b.dataset.serie !== serie) changerSerie(b.dataset.serie); });
 
+// ---------- Tableau de suivi ----------
+// Une ligne par action : le bloc joué, puis la valeur de n juste après
+function noter(sorte, a, b, vals) {
+    const nom = v => v === undefined ? "?" : String(v);
+    const texte = {
+        mettre: () => `mettre ${a} à ${nom(b)}`,
+        ajouter: () => `ajouter ${nom(b)} à ${a}`,
+        si: () => `si ${a} ? ${b ? "oui" : "non"}`,
+        avancer: () => `avancer de ${nom(a)}`,
+        reculer: () => `reculer de ${nom(a)}`,
+        gauche: () => `tourner à gauche de ${a}°`,
+        droite: () => `tourner à droite de ${a}°`,
+        lever: () => "lever le stylo",
+        baisser: () => "baisser le stylo"
+    }[sorte]();
+    const corps = document.getElementById("suiviCorps");
+    const vide = corps.querySelector(".vide");
+    if (vide) vide.parentNode.remove();
+    const tr = document.createElement("tr");
+    if (sorte === "si") tr.className = "test";
+    for (const x of [texte, nom(vals.n)]) {
+        const td = document.createElement("td");
+        td.textContent = x;
+        tr.append(td);
+    }
+    corps.append(tr);
+    const zone = document.getElementById("suivi");
+    zone.scrollTop = zone.scrollHeight;
+}
 
-// Ouvrir dans un nouvel onglet en transmettant la série, l'exercice et les blocs posés
+function viderSuivi() {
+    document.getElementById("suiviCorps").innerHTML = '<tr><td class="vide" colspan="2">Lance le programme : chaque bloc ajoute une ligne.</td></tr>';
+}
+
+// ---------- Élève : nom, exercices réussis ----------
+// Mémorisés dans ce navigateur ; le même nom retrouve sa progression. Clé d'un exercice : « sans-3 », « avec-1 »…
+const CLE_ELEVE = "tortue.eleve";
+let eleve = { nom: "", fait: {} };
+let enregistre = null;
+function empreinte(nom, fait) {
+    const t = "tortue✦" + nom + "✦" + Object.keys(fait).sort().join(";");
+    let h = 2166136261;
+    for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+    return h.toString(36);
+}
+try {
+    const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
+    if (e && typeof e.nom === "string" && e.fait && e.cle === empreinte(e.nom, e.fait)) enregistre = { nom: e.nom, fait: e.fait };
+} catch (e) {}
+function sauverEleve() {
+    try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ nom: eleve.nom, fait: eleve.fait, cle: empreinte(eleve.nom, eleve.fait) })); } catch (e) {}
+}
+const nbExercices = () => EXERCICES.sans.length + EXERCICES.avec.length;
+const nbReussis = () => Object.keys(eleve.fait).length;
+
+function choisirEleve(nom) {
+    if (nom !== eleve.nom) {
+        eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, fait: {} };
+        enregistre = eleve;
+        sauverEleve();
+    }
+    document.getElementById("accueil").classList.add("cache");
+    majEleve();
+}
+
+function marquerReussi() {
+    const k = serie + "-" + exerciceCourant();
+    if (!eleve.fait[k]) { eleve.fait[k] = true; sauverEleve(); }
+    majEleve();
+}
+
+// Pastilles des exercices de la série (vertes si réussis), nom, compteur, titre de l'exercice
+function majEleve() {
+    const p = document.getElementById("pastilles");
+    p.replaceChildren(...EXERCICES[serie].map((exo, k) => {
+        const b = document.createElement("button");
+        const fait = eleve.fait[serie + "-" + (k + 1)];
+        b.className = "pastille" + (fait ? " fait" : "") + (exerciceCourant() === k + 1 ? " actif" : "");
+        b.textContent = fait ? "✓" : String(k + 1);
+        b.title = "Exercice " + (k + 1) + " : " + exo.titre;
+        b.onclick = () => { exoInput.value = k + 1; changerExercice(); };
+        return b;
+    }));
+    document.getElementById("eleveInfo").textContent = eleve.nom ? "👤 " + eleve.nom + " · " + nbReussis() + " / " + nbExercices() : "";
+    const k = exerciceCourant(), titre = document.getElementById("titreExo");
+    titre.textContent = "Exercice " + k + " ";
+    const sous = document.createElement("span");
+    sous.className = "titre";
+    sous.textContent = "— " + EXERCICES[serie][k - 1].titre + (serie === "avec" ? " (avec variable)" : "");
+    titre.append(sous);
+}
+
+// Accueil : le champ est toujours vide, chaque élève tape son nom
+function commencer() {
+    const champ = document.getElementById("champNom");
+    const nom = champ.value.trim().replace(/\s+/g, " ");
+    if (nom.length < 2) { document.getElementById("erreurNom").textContent = "Écris ton prénom et ton nom."; champ.focus(); return; }
+    choisirEleve(nom);
+}
+document.getElementById("btnCommencer").onclick = commencer;
+document.getElementById("champNom").addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+
+// ---------- Impression : fiche papier et diplôme ----------
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(210mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #2f5fd0;background:#2f5fd0;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-dessin{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:8px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:3mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 4mm;min-width:32mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-etoiles{font-size:12pt;letter-spacing:.5mm;color:#d9d2c3;}
+#overlayFiche .d-etoiles .pleine{color:#d4a62a;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#ficheCarte.large{width:min(297mm,100%);}
+#overlayFiche .ligne-identite{display:flex;gap:12mm;margin-bottom:6mm;}
+#overlayFiche .trait{display:inline-block;width:70mm;border-bottom:1px solid #1f2430;}
+#overlayFiche h2{font-size:15pt;margin:0 0 2mm;}
+#overlayFiche .num{font-weight:400;color:#6b6f7a;}
+#overlayFiche .consigne{font-weight:600;margin:0 0 6mm;}
+#overlayFiche .corps{display:flex;gap:7mm;align-items:flex-start;}
+#overlayFiche .prog{font-size:10pt;font-weight:700;flex:1;}
+#overlayFiche .b{display:inline-block;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm;margin:.6mm 0;border:1.5px solid;}
+#overlayFiche .chap{background:#fff1bf;border-color:#cc9900;border-radius:5mm 5mm 1.5mm 1.5mm;padding-top:3mm;}
+#overlayFiche .mouv{background:#dbe9ff;border-color:#3373cc;}
+#overlayFiche .c-m > .b{display:table;}
+#overlayFiche .c{width:max-content;min-width:45mm;margin:.6mm 0;}
+#overlayFiche .c-t{background:#ffe3b3;border:1.5px solid #cf8b17;border-bottom:none;color:#1f2430;padding:2mm 3mm;border-radius:1.5mm 1.5mm 0 0;}
+#overlayFiche .c-m{border-left:5mm solid #ffc978;padding:1mm 0 1mm 1mm;min-height:8mm;box-shadow:-1.5px 0 0 #cf8b17;}
+#overlayFiche .c-p{background:#ffe3b3;border:1.5px solid #cf8b17;border-top:none;height:4mm;border-radius:0 0 1.5mm 1.5mm;width:100%;}
+#overlayFiche .nb{display:inline-block;background:#fff;border:1px solid #999;border-radius:999px;min-width:8mm;padding:0 1.5mm;text-align:center;}
+#overlayFiche .ligne-ecrire{border-bottom:1px dotted #888;height:8mm;}
+#overlayFiche .reserve{margin-top:5mm;font-size:10pt;color:#333;line-height:1.6;font-weight:400;}
+#overlayFiche .f-toile svg{display:block;}
+#overlayFiche .f-leg{font-size:10pt;color:#555;margin-top:1mm;text-align:center;}
+#overlayFiche .ftab{border-collapse:collapse;font-size:10.5pt;}
+#overlayFiche .ftab th,#overlayFiche .ftab td{border:1px solid #777;padding:1.5mm 3mm;text-align:center;}
+#overlayFiche .ftab td{height:7mm;}
+#overlayFiche .ftab td:first-child{width:42mm;}
+#overlayFiche .ftab td + td{width:12mm;}
+#overlayFiche .t-suivi{font-weight:600;margin:5mm 0 1.5mm;}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;font-size:5mm;line-height:1;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+  #overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}
+}`;
+
+// Calque d'impression commun au diplôme (A4 paysage) et à la fiche papier (A4 portrait)
+function ouvrirOverlay(contenu, sens) {
+    let ov = document.getElementById("overlayFiche");
+    if (!ov) {
+        const st = document.createElement("style");
+        st.textContent = FICHE_CSS;
+        document.head.append(st);
+        ov = document.createElement("div");
+        ov.id = "overlayFiche";
+        ov.addEventListener("click", e => { if (e.target === ov) fermerOverlay(); });
+        document.body.append(ov);
+    }
+    ov.innerHTML = `<div id="ficheCarte"${sens === "landscape" ? ' class="large"' : ""}>
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions"><button type="button" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong> et coche <strong>« Graphiques d’arrière-plan »</strong> pour garder les couleurs.</p>
+    ${contenu}
+  </div>`;
+    document.getElementById("btnFermerFiche").onclick = fermerOverlay;
+    document.getElementById("btnImprimerFiche").onclick = () => window.print();
+    ov.classList.add("ouverte");
+    document.body.classList.add("fiche-ouverte");
+    let st = document.getElementById("styleOrientation");
+    if (!st) { st = document.createElement("style"); st.id = "styleOrientation"; document.head.append(st); }
+    st.textContent = "@media print{@page{size:A4 " + sens + ";margin:" + (sens === "landscape" ? "10mm" : ".8cm") + ";}}";
+    return ov;
+}
+
+function fermerOverlay() {
+    const ov = document.getElementById("overlayFiche");
+    if (ov) ov.classList.remove("ouverte");
+    document.body.classList.remove("fiche-ouverte");
+}
+
+// Le modèle dessiné sur quadrillage, avec la tortue au départ (flèche dans le sens de départ)
+function svgModele(echelle = 1) {
+    const w = grille.width, h = grille.height, p = grille.pas;
+    let s = `<svg width="${w * echelle}" height="${h * echelle}" viewBox="0 0 ${w} ${h}">`;
+    for (let i = 0; i <= w; i += p) s += `<line x1="${i}" y1="0" x2="${i}" y2="${h}" stroke="#ccc" stroke-width="1"/>`;
+    for (let i = 0; i <= h; i += p) s += `<line x1="0" y1="${i}" x2="${w}" y2="${i}" stroke="#ccc" stroke-width="1"/>`;
+    for (const [x1, y1, x2, y2] of grille.traitsFantome.values()) s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1d3b8f" stroke-width="3" stroke-linecap="round"/>`;
+    const a = -grille.angleDeDepart;
+    s += `<g transform="translate(${grille.xd},${grille.yd}) rotate(${a})"><circle r="5" fill="#2e8b57"/><path d="M4 -6 L16 0 L4 6 Z" fill="#2e8b57"/></g>`;
+    return s + "</svg>";
+}
+
+function ficheContenu() {
+    const k = exerciceCourant(), exo = EXERCICES[serie][k - 1], max = document.getElementById("nbBlocksTot").innerText;
+    const lignes = Array.from({ length: 12 }, () => '<div class="ligne-ecrire"></div>').join("");
+    const suivi = serie === "avec" ? `<p class="t-suivi">Suivi de la variable :</p><table class="ftab"><tr><th>Bloc</th><th>n</th></tr>${Array.from({ length: 8 }, () => "<tr><td></td><td></td></tr>").join("")}</table>` : "";
+    const blocs = "Avancer de … unités — Reculer de … unités — Tourner à gauche de … degrés — Tourner à droite de … degrés — Répéter … fois — Lever le stylo — Baisser le stylo"
+        + (serie === "avec" ? " — mettre … à … — Ajouter … à … — Si … alors … sinon … — … = … — n" : "");
+    return `<div class="ligne-identite"><span>Nom : <span class="trait"></span></span><span>Prénom : <span class="trait"></span></span></div>
+<h2>🐢 La tortue — Exercice ${k} <span class="num">— ${esc(exo.titre)}${serie === "avec" ? " (avec variable)" : ""}</span></h2>
+<p class="consigne">Écris un programme qui réalise ce tracé, avec au plus ${esc(max)} blocs. 1 carreau = 1 unité ; la flèche verte montre le départ de la tortue.</p>
+<div class="corps">
+  <div>${svgModele(.85)}${suivi}</div>
+  <div class="prog"><div class="b chap">Programme</div>${lignes}
+    <div class="reserve">Blocs : ${blocs}</div>
+  </div>
+</div>`;
+}
+
+function ouvrirFiche() { ouvrirOverlay(ficheContenu(), "portrait"); }
+
+function mention(ok, total) {
+    const x = ok / total * 20;
+    return x >= 20 ? "Félicitations !" : x >= 16 ? "Très bien" : x >= 14 ? "Bien" : x >= 12 ? "Assez bien" : x >= 10 ? "Réussi" : "Continue tes efforts";
+}
+
+function diplomeContenu() {
+    const ok = nbReussis(), total = nbExercices();
+    const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    // une médaille par série, une étoile par exercice réussi
+    const medailles = [["sans", "Sans variable"], ["avec", "Avec variable"]].map(([s, nom]) => {
+        const liste = EXERCICES[s], r = liste.filter((_, k) => eleve.fait[s + "-" + (k + 1)]).length;
+        const etoiles = liste.map((_, k) => `<span class="${eleve.fait[s + "-" + (k + 1)] ? "pleine" : ""}">★</span>`).join("");
+        return `<div class="d-med${r === liste.length ? " complete" : ""}"><div class="d-med-nom">${nom}</div><div class="d-med-pts">${r} / ${liste.length}</div><div class="d-etoiles">${etoiles}</div></div>`;
+    }).join("");
+    // sceau doré : cercle festonné, rubans, exercices réussis au centre
+    const festons = Array.from({ length: 48 }, (_, k) => {
+        const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+        return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+    }).join(" ") + "Z";
+    const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${ok}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">exercices sur ${total}</text>
+  </svg>`;
+    // une petite rosace de carrés tournés, dessinée par la tortue
+    let rosace = "";
+    for (let k = 0; k < 6; k++) rosace += `<rect x="0" y="0" width="22" height="22" fill="none" stroke="#1d3b8f" stroke-width="1.5" transform="translate(30,30) rotate(${k * 60})"/>`;
+    const dessin = `<div class="d-dessin"><svg width="120" height="80" viewBox="0 0 60 60" aria-hidden="true">${rosace}</svg></div>`;
+    const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+    const frise = Array.from({ length: 6 }, () => ["🐢", "✏️"]).flat().map(e => `<span>${e}</span>`).join("");
+    return `<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${dessin}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">de programmation · <b>La tortue</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${esc(eleve.nom || "……………………")}</div>
+        <div class="d-pour">pour avoir guidé une tortue dessinatrice avec des boucles et des variables.</div>
+        <div class="d-mention">${mention(ok, total)}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-meds">${medailles}</div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`;
+}
+
+// Le diplôme garde sa taille A4 ; à l'écran, il est réduit pour tenir dans la fenêtre
+function ouvrirDiplome() {
+    if (!eleve.nom) { document.getElementById("accueil").classList.remove("cache"); return; }
+    const ov = ouvrirOverlay(diplomeContenu(), "landscape");
+    const d = ov.querySelector(".diplome");
+    const carte = getComputedStyle(d.parentElement);
+    const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+    const r = d.getBoundingClientRect();
+    const e = Math.min(1, place / r.width);
+    d.style.transform = "scale(" + e + ")";
+    d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+    d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+}
+document.getElementById("btnFiche").onclick = ouvrirFiche;
+document.getElementById("btnDiplome").onclick = ouvrirDiplome;
+
+// Ouvrir dans un nouvel onglet en transmettant la série, l'exercice, les blocs posés et le nom
 const CLE_TRANSFERT = "turtleBlockly_transfert";
 
 document.getElementById("newTabButton").onclick = function () {
     try {
         localStorage.setItem(CLE_TRANSFERT, JSON.stringify(
-            Blockly.serialization.workspaces.save(workspace)));
+            { blocs: Blockly.serialization.workspaces.save(workspace), nom: eleve.nom }));
     } catch (e) {}
     const url = new URL(window.location.href);
     url.searchParams.set("serie", serie);
@@ -1097,18 +1152,23 @@ if (params.get("exo")) {
         const etat = localStorage.getItem(CLE_TRANSFERT);
         if (etat) {
             localStorage.removeItem(CLE_TRANSFERT);
-            Blockly.serialization.workspaces.load(JSON.parse(etat), workspace);
+            const t = JSON.parse(etat);
+            // ancien format : l'espace de travail seul
+            Blockly.serialization.workspaces.load(t.blocs || t, workspace);
+            if (t.nom) choisirEleve(t.nom);
         }
     } catch (e) {}
 }
 changerSerie(params.get("serie") === "avec" ? "avec" : "sans", params.get("exo") || 1);
-
+mettreAJourCompteur();
 
 workspace.addChangeListener(mettreAJourCompteur);
-document.getElementById("exoInput").addEventListener("change", changerExercice);
+
+// au chargement : demander le nom si personne n'est connecté
+if (!eleve.nom) {
+    document.getElementById("accueil").classList.remove("cache");
+    setTimeout(() => document.getElementById("champNom").focus(), 0);
+}
 </script>
-
-
-
 </body>
 </html>

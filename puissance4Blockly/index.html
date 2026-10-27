@@ -429,12 +429,13 @@ return ['"green"', Blockly.JavaScript.ORDER_ATOMIC];
 // Définition du bloc "ajouter à"
 Blockly.Blocks['ajouter_a'] = {
   init: function() {
-    this.appendValueInput("VAR")
-        .setCheck("Number")
-        .appendField("Ajouter à ");
+    // même forme que dans la tortue (et que Scratch) : « Ajouter 1 à n »
     this.appendValueInput("VALUE")
         .setCheck("Number")
-        .appendField(", ");
+        .appendField("Ajouter ");
+    this.appendValueInput("VAR")
+        .setCheck("Number")
+        .appendField("à");
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
@@ -893,7 +894,7 @@ function ficheContenu() {
     <table class="ftab"><tr><th>Bloc</th><th>n</th><th>c</th></tr>${suivi}</table>
   </div>
   <div class="prog"><div class="b chap">Programme</div>${lignes}
-    <div class="reserve">Blocs : mettre … à … — Ajouter à … , … — Ajouter un jeton … dans la colonne … — Répéter … fois — Si … alors … sinon … — … = … — n — c — rouge — vert</div>
+    <div class="reserve">Blocs : mettre … à … — Ajouter … à … — Ajouter un jeton … dans la colonne … — Répéter … fois — Si … alors … sinon … — … = … — n — c — rouge — vert</div>
   </div>
 </div>`;
 }
