@@ -128,18 +128,18 @@
   .suivi tr:last-child td{background:#fff6cc;}
   .suivi .vide{color:var(--muted);font-style:italic;padding:8px;}
 
-  /* Accueil : nom de l'élève */
-  #accueil{position:fixed;inset:0;background:rgba(31,36,48,.55);display:flex;align-items:center;justify-content:center;z-index:3000;}
-  #accueil.cache{display:none;}
-  .carte-accueil{background:var(--panel);border-radius:14px;padding:26px 30px;max-width:540px;width:calc(100% - 32px);box-shadow:0 10px 40px rgba(0,0,0,.3);}
-  .carte-accueil h2{margin:0 0 10px;font-size:1.3rem;}
-  .carte-accueil p{margin:6px 0;}
-  .carte-accueil label{display:block;margin-top:18px;font-weight:600;}
-  #champNom{display:block;width:100%;font:inherit;font-weight:400;padding:10px 12px;margin-top:6px;border:2px solid var(--border);border-radius:10px;}
+  /* Accueil : dans la page, comme la souris ; tant qu'il n'y a pas de nom, la zone de travail est cachée */
+  .accueil{display:none;grid-column:1 / -1;max-width:760px;}
+  body.sans-nom .accueil{display:block;}
+  body.sans-nom main > .scene:not(.accueil), body.sans-nom .colonne{display:none;}
+  .accueil h2{margin:0 0 12px;font-size:1.3rem;}
+  .accueil p{margin:6px 0;font-size:1.05rem;}
+  .accueil label{display:block;margin-top:20px;font-weight:600;}
+  #champNom{display:block;width:100%;max-width:420px;font:inherit;font-weight:400;padding:10px 12px;margin-top:6px;border:2px solid var(--border);border-radius:10px;}
   #champNom:focus{outline:none;border-color:var(--accent);}
   #erreurNom{color:var(--ko);font-size:.85rem;min-height:1.3em;margin:4px 0;}
-  .carte-accueil .actions{display:flex;justify-content:flex-end;}
-  .carte-accueil .suite{width:auto;}
+  .accueil .actions{display:flex;justify-content:flex-end;}
+  .accueil .suite{width:auto;}
   </style>
 
 </head>
@@ -153,8 +153,8 @@
   <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓 Diplôme</button>
   <button class="onglet" id="newTabButton" title="Ouvrir l'activité en plein écran dans un nouvel onglet">↗ Nouvel onglet</button>
 </header>
-<div id="accueil" class="cache">
-  <div class="carte-accueil">
+<main>
+  <section class="scene accueil" id="accueil">
     <h2>🔴🟢 Puissance 4 : programmation</h2>
     <p>Ton programme fait tomber des jetons dans la grille.</p>
     <p>Il faut obtenir le modèle dessiné en transparence, sans dépasser le nombre de blocs.</p>
@@ -162,9 +162,7 @@
     <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
     <div id="erreurNom"></div>
     <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
-  </div>
-</div>
-<main>
+  </section>
   <section class="scene">
     <div class="entete"><h2 id="titreExo">Exercice 1</h2></div>
     <p class="consigne">Ajoute des jetons dans les colonnes pour obtenir le modèle.</p>
@@ -717,7 +715,8 @@ function choisirEleve(nom) {
         enregistre = eleve;
         sauverEleve();
     }
-    document.getElementById("accueil").classList.add("cache");
+    document.body.classList.remove("sans-nom");
+    Blockly.svgResize(workspace); // la zone de blocs était cachée : Blockly recalcule sa taille
     majEleve();
 }
 
@@ -953,7 +952,7 @@ function diplomeContenu() {
 
 // Le diplôme garde sa taille A4 ; à l'écran, il est réduit pour tenir dans la fenêtre
 function ouvrirDiplome() {
-    if (!eleve.nom) { document.getElementById("accueil").classList.remove("cache"); return; }
+    if (!eleve.nom) { document.body.classList.add("sans-nom"); return; }
     const ov = ouvrirOverlay(diplomeContenu(), "landscape");
     const d = ov.querySelector(".diplome");
     const carte = getComputedStyle(d.parentElement);
@@ -1039,7 +1038,7 @@ if (exoUrl) {
 changerExercice()
 mettreAJourCompteur();
 if (!eleve.nom) {
-    document.getElementById("accueil").classList.remove("cache");
+    document.body.classList.add("sans-nom");
     setTimeout(() => document.getElementById("champNom").focus(), 0);
 }
 
