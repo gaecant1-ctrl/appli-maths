@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le crapaud et l'ascenseur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f1e8;
+    --panel:#fffdf8;
+    --ink:#1f2430;
+    --muted:#6b6f7a;
+    --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --ok:#1f8a4c;     --ok-bg:#e3f4e8;    --ok-b:#86c79a;
+    --ko:#c0392b;     --ko-bg:#fbe6e3;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;height:100vh;display:flex;flex-direction:column;
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  button{font:inherit;cursor:pointer;}
+
+  /* En-tête */
+  header{
+    flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+    padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:1.2rem;margin:0;margin-right:auto;}
+    width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
+    background:var(--bg);font-size:.8rem;color:var(--muted);padding:0;
+  }
+  #eleveInfo{font-size:.85rem;font-weight:600;}
+  .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+  @media (max-width:1200px){ header .txt{display:none;} main{grid-template-columns:minmax(0,1fr) 380px;} }
+
+  main{
+    flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:20px;
+    padding:20px;grid-template-rows:minmax(0,1fr);
+  }
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:0;}
+  .entete h2{margin:0;font-size:1.25rem;}
+  .entete .titre{font-weight:400;color:var(--muted);font-size:1rem;}
+
+  /* La zone de jeu : illustration agrandie au maximum, format 4:3 */
+  #cadreJeu{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;background:#1a272b;border-radius:12px;overflow:hidden;}
+  #jeu{display:block;border-radius:10px;box-shadow:0 4px 18px rgba(31,36,48,.15);}
+  #ecranJeu{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(31,36,48,.35);backdrop-filter:blur(2px);}
+  #ecranJeu.visible{display:flex;}
+  .carte-jeu{background:#fffdf8;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:22px 28px;max-width:420px;text-align:center;}
+  .carte-jeu h3{font-size:1.5rem;margin:0 0 10px;}
+  .carte-jeu p{margin:6px 0;}
+
+  .aide-touches{font-size:.8rem;color:var(--muted);text-align:center;}
+
+  /* Colonne de droite */
+  .colonne{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  aside h3{margin:0 0 10px;font-size:1rem;}
+  .calcul{font-size:1.6rem;font-weight:700;line-height:1.4;background:#eef6ff;border:2px solid #c9dcf7;color:var(--ink);padding:16px 12px;border-radius:12px;text-align:center;min-height:76px;}
+  .calcul.attente{color:var(--muted);font-weight:400;font-size:.9rem;background:var(--bg);border-color:var(--border);}
+  .reponse{display:flex;gap:8px;margin-top:10px;}
+  .reponse input{flex:1;min-width:0;font:inherit;font-size:1.4rem;padding:10px 12px;border:2px solid var(--border);border-radius:10px;text-align:center;}
+  .reponse input:focus{outline:none;border-color:var(--accent);}
+  .suite{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:600;}
+  .suite:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .second{width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:9px;color:var(--ink);font-size:.92rem;}
+  .second:hover{border-color:var(--accent);color:var(--accent);}
+  #retour{margin-top:12px;font-size:1.1rem;border-radius:10px;padding:10px 12px;}
+  #retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+  #retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  #retour.vide{display:none;}
+  .trappe{display:flex;gap:6px;margin-top:12px;align-items:center;font-size:.85rem;color:var(--muted);}
+  .trappe span{width:30px;height:30px;border-radius:6px;background:linear-gradient(#7a5a3a,#3e2a1a);}
+  .trappe span.ouverte{background:transparent;border:2px dashed #d9c4a6;}
+  .reglage{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.9rem;margin:8px 0;}
+  .reglage select{font:inherit;font-size:.9rem;padding:4px 6px;border:1px solid var(--border);border-radius:8px;background:var(--bg);}
+
+  /* Accueil (nom de l'élève), dans la page : l'en-tête reste visible */
+  .accueil{display:none;grid-column:1 / -1;max-width:760px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;align-self:start;}
+  body.sans-nom .accueil{display:block;}
+  body.sans-nom main > .scene, body.sans-nom .colonne{display:none;}
+  .accueil h2{margin:0 0 12px;}
+  .accueil p{margin:6px 0;font-size:1.05rem;}
+  .accueil label{display:block;margin-top:18px;font-weight:600;}
+  #champNom{display:block;width:100%;max-width:420px;font:inherit;padding:10px 12px;margin-top:6px;border:2px solid var(--border);border-radius:10px;}
+  #champNom:focus{outline:none;border-color:var(--accent);}
+  #erreurNom{color:var(--ko);font-size:.85rem;min-height:1.3em;margin:4px 0;}
+  .accueil .actions{display:flex;justify-content:flex-end;}
+
+  @media (max-width:900px){
+    body{height:auto;min-height:100vh;}
+    main{grid-template-columns:1fr;grid-template-rows:none;}
+    #cadreJeu{height:62vw;flex:none;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Le crapaud et l'ascenseur</h1>
+  <span id="eleveInfo"></span>
+  <button class="onglet" id="btnSon" title="Couper ou remettre le son">🔊</button>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
+  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+</header>
+<main>
+  <section class="accueil" id="accueil">
+    <h2>Le crapaud et l'ascenseur</h2>
+    <p>Fais sauter le crapaud sur l'ascenseur : il monte vers une trappe fermée.</p>
+    <p>Pendant la montée, calcule vite ! Chaque bonne réponse ouvre une planche. Il en faut 5 avant d'arriver au plafond…</p>
+    <p>Astuce : cherche le nombre qui se répète, et regroupe !</p>
+    <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
+    <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+    <div id="erreurNom"></div>
+    <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+  </section>
+  <section class="scene">
+    <div class="entete"><h2>Ouvre la trappe ! <span class="titre">— 5 bonnes réponses avant le plafond</span></h2></div>
+    <div id="cadreJeu">
+      <canvas id="jeu" width="240" height="180"></canvas>
+      <div id="ecranJeu"><div class="carte-jeu" id="carteJeu"></div></div>
+    </div>
+    <div class="aide-touches">Clavier : ← → pour marcher, espace ou ↑ pour sauter (flèche + espace : saut en avançant).</div>
+  </section>
+  <div class="colonne">
+    <aside>
+      <h3>Calcul</h3>
+      <div class="calcul attente" id="calcul">Monte sur l'ascenseur pour faire apparaître les calculs.</div>
+      <form class="reponse" id="formReponse" autocomplete="off">
+        <input id="champReponse" type="text" inputmode="decimal" placeholder="Ta réponse" disabled>
+        <button class="suite" id="btnValider" disabled>Valider</button>
+      </form>
+      <div id="retour" class="vide"></div>
+      <div class="trappe" id="trappe"></div>
+    </aside>
+    <aside>
+      <h3>Partie</h3>
+      <div class="reglage">
+        <label for="vitesse">Ascenseur</label>
+        <select id="vitesse">
+          <option value="150">lent (2 min 30)</option>
+          <option value="100" selected>normal (1 min 40)</option>
+          <option value="60">rapide (1 min)</option>
+        </select>
+      </div>
+      <button class="second" id="btnRecommencer">↺ Recommencer</button>
+    </aside>
+  </div>
+</main>
+
+<script>
+// ============================================================
+//  Le crapaud et l'ascenseur — d'après le niveau 5 de « Crapaud d'or » (Scratch)
+//  Monde : 240 × 180 pixels (y vers le bas), affiché agrandi. Le jeu tourne à 30 images/s, comme Scratch.
+// ============================================================
+const L = 240, H = 180;
+const $ = id => document.getElementById(id);
+const fr = s => s.replace(/ ([?!:;»])/g, " $1");
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+// ---------- Les calculs ----------
+// Écriture française : virgule décimale, signe × entouré d'espaces
+const nb = x => String(Math.round(x * 1000) / 1000).replace(".", ",");
+const entier = (a, b) => a + hasard(b - a + 1);
+
+// Un calcul astucieux : des produits qui ont un facteur commun, à regrouper.
+// Tout change d'un calcul à l'autre : la somme des autres facteurs (10, 20 ou 100), la place du facteur
+// commun, une soustraction, un facteur décimal, et un terme en plus qui se regroupe… ou pas :
+//   inclus : (17 × 33) + (2 × 33) + 33 = (17 + 2 + 1) × 33 = 20 × 33   (ou un 3e produit)
+//   pas inclus : (7 × 17) + (3 × 17) + 5 = 10 × 17 + 5
+const choisir = t => t[hasard(t.length)];
+const melange = t => { t = [...t]; for (let k = t.length - 1; k > 0; k--) { const j = hasard(k + 1); [t[k], t[j]] = [t[j], t[k]]; } return t; };
+function calcul() {
+  const k = choisir([10, 10, 20, 100]);
+  const forme = k === 10 && alea() < .15 ? "sous" : choisir(["deux", "deux", "seul", "trois", "ajout"]);
+  // facteur commun : entier, ou un vrai décimal (pas 9,0) une fois sur cinq
+  let a = k === 100 ? entier(2, 9) : entier(11, 35);
+  if (alea() < .2) do a = entier(11, 99) / 10; while (Number.isInteger(a));
+  const A = nb(a);
+  const produit = b => alea() < .5 ? `(${b} × ${A})` : `(${A} × ${b})`;
+  const decoupe = (total, n) => {          // n facteurs ≥ 2, tous différents, de somme total
+    for (;;) {
+      const f = []; let reste = total;
+      for (let i = 0; i < n - 1; i++) { const v = entier(2, reste - 2 * (n - 1 - i)); f.push(v); reste -= v; }
+      f.push(reste);
+      if (new Set(f).size === n && f.every(v => v >= 2)) return f;
+    }
+  };
+  let q, regroupe, c = 0;
+  if (forme === "sous") {
+    const b = entier(11, 19);
+    q = `${produit(b)} − ${produit(b - 10)}`;
+    regroupe = `(${b} − ${b - 10})`;
+  } else if (forme === "trois") {
+    const f = decoupe(k, 3);
+    q = f.map(produit).join(" + ");
+    regroupe = `(${f.join(" + ")})`;
+  } else if (forme === "seul") {
+    const f = decoupe(k - 1, 2);
+    q = melange([...f.map(produit), A]).join(" + ");
+    regroupe = `(${f.join(" + ")} + 1)`;
+  } else {
+    const f = decoupe(k, 2);
+    if (forme === "ajout") { do c = entier(1, 15); while (c === a); }
+    const termes = f.map(produit);
+    q = c ? (alea() < .5 ? [...termes, c] : [termes[0], c, termes[1]]).join(" + ") : termes.join(" + ");
+    regroupe = `(${f.join(" + ")})`;
+  }
+  const r = k * a + c;
+  const astuce = `${regroupe} × ${A}` + (c ? ` + ${c}` : "") + ` = ${k} × ${A}` + (c ? ` + ${c}` : "") + ` = ${nb(r)}`;
+  return { q, r, astuce };
+}
+const BONNES_REPONSES = 5;     // planches de la trappe
+
+// Réponse de l'élève : espaces ignorés, virgule ou point
+const lireNombre = t => { const s = t.replace(/\s/g, "").replace(",", "."); return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN; };
+const egal = (x, y) => Math.abs(x - y) < 1e-9;
+
+// ---------- Hasard ----------
+const alea = () => Math.random();
+const hasard = n => Math.floor(alea() * n);
+
+// ---------- Élève ----------
+const CLE_ELEVE = "crapaudAscenseur.eleve";
+let eleve = { nom: "", trappes: 0, reponses: 0, bonnes: 0 };
+let enregistre = null;
+function empreinte(nom, trappes, reponses, bonnes) {
+  const t = "crapaud✦" + nom + "✦" + trappes + "✦" + reponses + "✦" + bonnes;
+  let h = 2166136261;
+  for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(36);
+}
+try {
+  const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
+  if (e && typeof e.nom === "string" && Number.isInteger(e.trappes) && e.cle === empreinte(e.nom, e.trappes, e.reponses, e.bonnes))
+    enregistre = { nom: e.nom, trappes: e.trappes, reponses: e.reponses || 0, bonnes: e.bonnes || 0 };
+} catch (e) {}
+const sauverEleve = () => {
+  try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ nom: eleve.nom, trappes: eleve.trappes, reponses: eleve.reponses, bonnes: eleve.bonnes, cle: empreinte(eleve.nom, eleve.trappes, eleve.reponses, eleve.bonnes) })); } catch (e) {}
+};
+
+// ============================================================
+//  LE NIVEAU : décor, crapaud, ascenseur, trappe
+// ============================================================
+const SOL_GAUCHE = { x: 0, y: 140, w: 72, h: 40 };       // rebord de départ
+const MUR_DROIT = { x: 232, y: 56, w: 8, h: 116 };       // empêche de sortir sous le plafond
+const PLAFOND_Y = 46, PLAFOND_H = 10;                   // dalle du plafond (dessus = sol du haut)
+const TRAPPE_X = 96, TRAPPE_W = 40;                     // ouverture au-dessus de l'ascenseur
+const EAU_Y = 170;
+const ASC = { x: 96, w: 40, h: 6, depart: 150, attente: 122, haut: PLAFOND_Y };
+const CRAPAUD_W = 12, CRAPAUD_H = 10;
+const ECRASE_Y = PLAFOND_Y + PLAFOND_H + CRAPAUD_H;    // l'ascenseur ne peut pas monter plus haut si la trappe est fermée
+
+let crapaud, asc, partie;
+
+// (Re)met le crapaud au départ ; les calculs suivants seront nouveaux
+function recommencer() {
+  crapaud = { x: 16, y: SOL_GAUCHE.y - CRAPAUD_H, vx: 0, vy: 0, auSol: true, dir: 1, etat: "libre", ecrase: 0 };
+  asc = { y: ASC.depart, phase: "repos" };           // repos → approche → montee → sortie → arrive
+  partie = { planches: 0, question: null, reponses: 0, bonnes: 0, ouverture: [0, 0, 0, 0, 0], fin: null, image: 0 };
+  fermerEcran();
+  afficherCalcul(null);
+  majTrappe();
+  $("retour").className = "vide";
+}
+
+// ---------- Contrôles : clavier et boutons ----------
+const touches = { gauche: false, droite: false, saut: false };
+const CLAVIER = { ArrowLeft: "gauche", ArrowRight: "droite", ArrowUp: "saut", " ": "saut", Spacebar: "saut" };
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  const t = CLAVIER[e.key];
+  if (t) { touches[t] = true; e.preventDefault(); }
+});
+addEventListener("keyup", e => { const t = CLAVIER[e.key]; if (t) touches[t] = false; });
+// un bouton cliqué perd le focus : sinon la barre d'espace (saut) le réactiverait
+document.addEventListener("click", e => { const b = e.target.closest("header button, aside button"); if (b) b.blur(); });
+
+// ---------- Collisions ----------
+const recouvre = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+// Les obstacles du moment : la trappe n'est solide que là où ses planches sont fermées
+function obstacles() {
+  const o = [SOL_GAUCHE, MUR_DROIT,
+    { x: 0, y: PLAFOND_Y, w: TRAPPE_X, h: PLAFOND_H },
+    { x: TRAPPE_X + TRAPPE_W, y: PLAFOND_Y, w: L - TRAPPE_X - TRAPPE_W, h: PLAFOND_H },
+    { x: ASC.x, y: asc.y, w: ASC.w, h: ASC.h, ascenseur: true }];
+  partie.ouverture.forEach((ouv, k) => { if (ouv < 1) o.push({ x: TRAPPE_X + k * 8, y: PLAFOND_Y, w: 8, h: PLAFOND_H }); });
+  return o;
+}
+
+// ---------- Une image de jeu (1/30 s) ----------
+function pas() {
+  partie.image++;
+  const c = crapaud;
+  // l'écrasement continue de s'animer après la fin de la partie
+  if (c.etat === "ecrase") c.ecrase = Math.min(1, c.ecrase + .06);
+  if (partie.fin) return;
+
+  // Ascenseur
+  const dureeMontee = +$("vitesse").value * 30;                 // en images
+  const avant = asc.y;
+  if (asc.phase === "approche") {
+    asc.y = Math.max(ASC.attente, asc.y - 1);
+    if (asc.y === ASC.attente) { asc.phase = "montee"; poserQuestion(); }
+  } else if (asc.phase === "montee") {
+    if (partie.planches >= BONNES_REPONSES) asc.phase = "sortie";
+    else {
+      asc.y -= (ASC.attente - ECRASE_Y) / dureeMontee;
+      if (asc.y <= ECRASE_Y) { asc.y = ECRASE_Y; ecraser(); }
+    }
+  } else if (asc.phase === "sortie") {
+    asc.y = Math.max(ASC.haut, asc.y - 1);
+    if (asc.y === ASC.haut) { asc.phase = "arrive"; c.etat = "libre"; son("arrivee"); }
+  }
+  const dyAsc = asc.y - avant;
+  // ouverture animée des planches
+  partie.ouverture = partie.ouverture.map((v, k) => k < partie.planches ? Math.min(1, v + .08) : v);
+
+  // Crapaud
+  if (c.etat === "porte") { c.y += dyAsc; c.x += (ASC.x + ASC.w / 2 - CRAPAUD_W / 2 - c.x) * .2; return; }
+
+  const vMarche = c.auSol ? 3.5 : 2;
+  if (touches.saut && c.auSol) { c.vy = -6.2; c.auSol = false; son("saut"); }
+  if (touches.gauche) { c.vx = -vMarche; c.dir = -1; }
+  else if (touches.droite) { c.vx = vMarche; c.dir = 1; }
+  else c.vx *= c.auSol ? .6 : .8;      // sans flèche, l'élan se perd (aussi en l'air, comme dans Scratch)
+  c.vy = Math.min(c.vy + .5, 7);
+
+  const surAsc = c.auSol && c.y + CRAPAUD_H >= asc.y - .5 - dyAsc && c.x + CRAPAUD_W > ASC.x && c.x < ASC.x + ASC.w;
+  if (surAsc) c.y += dyAsc;
+
+  // déplacement horizontal puis vertical, en repoussant hors des obstacles
+  const obs = obstacles();
+  const boite = () => ({ x: c.x, y: c.y, w: CRAPAUD_W, h: CRAPAUD_H });
+  c.x += c.vx;
+  for (const o of obs) if (recouvre(boite(), o)) { c.x = c.vx > 0 ? o.x - CRAPAUD_W : o.x + o.w; c.vx = 0; }
+  if (c.x < 0) c.x = 0;
+  c.y += c.vy;
+  c.auSol = false;
+  for (const o of obs) if (recouvre(boite(), o)) {
+    if (c.vy >= 0) {
+      c.y = o.y - CRAPAUD_H; c.vy = 0; c.auSol = true;
+      // atterrissage sur l'ascenseur au repos : il démarre, le crapaud est emporté
+      if (o.ascenseur && asc.phase === "repos") { asc.phase = "approche"; c.etat = "porte"; c.vx = 0; son("ascenseur"); }
+    } else { c.y = o.y + o.h; c.vy = 0; }
+  }
+
+  // tombé à l'eau : on recommence le niveau
+  if (c.y > EAU_Y) { partie.fin = "eau"; son("plouf"); const p = partie; setTimeout(() => { if (partie === p) montrerEcran("eau"); }, 500); }
+  // sortie à droite, au-dessus du plafond : trappe franchie
+  if (c.x > L - 4 && c.y < PLAFOND_Y) gagner();
+}
+
+function ecraser() {
+  partie.fin = "ecrase";
+  crapaud.etat = "ecrase";
+  son("ecrase");
+  terminerQuestions();
+  const p = partie;
+  setTimeout(() => { if (partie === p) montrerEcran("ecrase"); }, 1300);
+}
+
+function gagner() {
+  partie.fin = "gagne";
+  son("victoire");
+  eleve.trappes++;
+  sauverEleve();
+  majEntete();
+  const p = partie;
+  setTimeout(() => { if (partie === p) montrerEcran("gagne"); }, 300);
+}
+
+// ---------- Questions ----------
+function poserQuestion() {
+  partie.question = calcul();
+  afficherCalcul(partie.question);
+}
+
+function afficherCalcul(q) {
+  const zone = $("calcul"), champ = $("champReponse");
+  if (!q) {
+    zone.className = "calcul attente";
+    zone.textContent = "Monte sur l'ascenseur pour faire apparaître les calculs.";
+    champ.disabled = true; $("btnValider").disabled = true; champ.value = "";
+    return;
+  }
+  zone.className = "calcul";
+  zone.textContent = q.q + " = ?";
+  champ.disabled = false; $("btnValider").disabled = false;
+  champ.value = "";
+  champ.focus();
+}
+
+function terminerQuestions() {
+  partie.question = null;
+  $("champReponse").disabled = true; $("btnValider").disabled = true;
+}
+
+$("formReponse").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const q = partie.question;
+  if (!q || partie.fin) return;
+  const v = lireNombre($("champReponse").value);
+  if (Number.isNaN(v)) { $("champReponse").focus(); return; }
+  partie.reponses++;
+  // compteurs de l'élève (pour le diplôme), enregistrés à chaque réponse
+  eleve.reponses++;
+  if (egal(v, q.r)) eleve.bonnes++;
+  sauverEleve();
+  const r = $("retour");
+  // l'astuce est toujours montrée : on regroupe le facteur commun
+  if (egal(v, q.r)) {
+    partie.bonnes++; partie.planches++;
+    r.className = "ok";
+    r.textContent = fr(`✅ ${q.q} = ${q.astuce}`);
+    son("bon");
+    majTrappe();
+    if (partie.planches >= BONNES_REPONSES) { terminerQuestions(); afficherCalcul(null); $("calcul").textContent = "🎉 Trappe ouverte ! Sors par la droite."; return; }
+  } else {
+    r.className = "ko";
+    r.textContent = fr(`❌ ${q.q} = ${q.astuce}`);
+    son("faux");
+  }
+  poserQuestion();
+});
+
+function majTrappe() {
+  $("trappe").replaceChildren(document.createTextNode("Trappe :"),
+    ...Array.from({ length: BONNES_REPONSES }, (_, k) => { const s = document.createElement("span"); if (k < (partie ? partie.planches : 0)) s.className = "ouverte"; return s; }));
+}
+
+// ---------- Écrans de fin (par-dessus le jeu) ----------
+function montrerEcran(sorte) {
+  const c = $("carteJeu");
+  if (sorte === "gagne") {
+    c.innerHTML = `<h3>TRAPPE OUVERTE !</h3><p>${partie.bonnes} bonne${partie.bonnes > 1 ? "s" : ""} réponse${partie.bonnes > 1 ? "s" : ""} sur ${partie.reponses}.</p>
+      <p>Trappes ouvertes en tout : <b>${eleve.trappes}</b></p>
+      <p><button class="suite" id="btnRejouer">↺ Rejouer</button> <button class="second" id="btnVoirDiplome" style="width:auto">🎓 Diplôme</button></p>`;
+    $("btnRejouer").onclick = () => recommencer();
+    $("btnVoirDiplome").onclick = ouvrirDiplome;
+  } else {
+    c.innerHTML = `<h3>${sorte === "eau" ? "PLOUF !" : "ÉCRASÉ !"}</h3><p>${sorte === "eau" ? "Le crapaud est tombé à l'eau." : "La trappe n'était pas ouverte à temps."}</p>
+      <p><button class="suite" id="btnRejouer">↺ Recommencer</button></p>`;
+    $("btnRejouer").onclick = () => recommencer();
+  }
+  $("ecranJeu").classList.add("visible");
+  setTimeout(() => { const b = c.querySelector("button"); if (b) b.focus(); }, 0);
+}
+function fermerEcran() { $("ecranJeu").classList.remove("visible"); }
+
+// ============================================================
+//  DESSIN : marais au crépuscule (illustration vectorielle, couleurs sourdes, brume)
+//  On dessine dans le monde 240 × 180 ; le canevas est à la résolution réelle de l'écran.
+// ============================================================
+const cv = $("jeu"), ctx = cv.getContext("2d");
+let echelle = 1;
+
+const arrondi = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+const degrade = (y1, y2, ...couleurs) => { const g = ctx.createLinearGradient(0, y1, 0, y2); couleurs.forEach((c, k) => g.addColorStop(k / (couleurs.length - 1), c)); return g; };
+const rond = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+const ovale = (x, y, rx, ry, a = 0) => { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx.fill(); };
+// pseudo-hasard fixe (décor identique d'une image à l'autre)
+const bruit = k => { const s = Math.sin(k * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+// Arbre mort : tronc tordu et branches nues
+function arbreMort(x, base, h, e, couleur) {
+  ctx.strokeStyle = couleur; ctx.lineCap = "round";
+  const branche = (x0, y0, ang, long, ep, n) => {
+    const x1 = x0 + Math.cos(ang) * long, y1 = y0 + Math.sin(ang) * long;
+    ctx.lineWidth = ep; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    if (n > 0) { branche(x1, y1, ang - .5 - bruit(x0 + n) * .3, long * .68, ep * .62, n - 1); branche(x1, y1, ang + .45 + bruit(y0 + n) * .3, long * .62, ep * .6, n - 1); }
+  };
+  branche(x, base, -Math.PI / 2 + (bruit(x) - .5) * .2, h * e, 2.6 * e, 4);
+}
+// Saule : masse sombre avec rameaux qui tombent
+function saule(x, base, e, couleur) {
+  ctx.fillStyle = couleur;
+  arrondi(x - 1.4 * e, base - 16 * e, 2.8 * e, 16 * e, 1); ctx.fill();
+  for (const [dx, dy, r] of [[0, -20, 9], [-7, -16, 7], [7, -16, 7], [-3, -24, 6], [4, -23, 6]]) rond(x + dx * e, base + dy * e, r * e);
+  ctx.strokeStyle = couleur; ctx.lineWidth = .7;
+  for (let k = -9; k <= 9; k += 1.5) { ctx.beginPath(); ctx.moveTo(x + k * e, base - 14 * e); ctx.quadraticCurveTo(x + k * 1.15 * e, base - 6 * e, x + k * 1.05 * e, base - (2 + bruit(k) * 4) * e); ctx.stroke(); }
+}
+
+function dessinerFond(t) {
+  // ciel : nuit bleu-vert en haut, horizon ambré
+  ctx.fillStyle = degrade(0, 130, "#14232c", "#2c4a50", "#7d6a4a", "#c4874c");
+  ctx.fillRect(0, 0, L, H);
+  // étoiles pâles
+  ctx.fillStyle = "rgba(230,235,220,.55)";
+  for (let k = 0; k < 24; k++) { const a = .3 + .3 * Math.sin(t / 20 + k); ctx.globalAlpha = a; rond(bruit(k) * L, bruit(k + 50) * 50, .35); }
+  ctx.globalAlpha = 1;
+  // lune basse, voilée
+  const lx = 182, ly = 74;
+  const halo = ctx.createRadialGradient(lx, ly, 4, lx, ly, 46);
+  halo.addColorStop(0, "rgba(255,226,170,.55)"); halo.addColorStop(1, "rgba(255,226,170,0)");
+  ctx.fillStyle = halo; ctx.fillRect(lx - 50, ly - 50, 100, 100);
+  ctx.fillStyle = "#f2dcae"; rond(lx, ly, 11);
+  ctx.fillStyle = "rgba(180,150,110,.25)"; rond(lx - 3, ly - 2, 2.5); rond(lx + 4, ly + 3, 1.8);
+  // arrière-plan lointain : colline et arbres en silhouette bleutée
+  ctx.fillStyle = "#30474b";
+  ctx.beginPath(); ctx.moveTo(0, 104);
+  ctx.bezierCurveTo(50, 92, 100, 100, 150, 98); ctx.bezierCurveTo(190, 96, 215, 90, 240, 96);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  for (const [x, h, e] of [[30, 26, 1], [96, 30, 1.1], [210, 24, .9]]) arbreMort(x, 102, h, e, "#30474b");
+  saule(150, 100, 1, "#30474b");
+  // brume lointaine
+  ctx.fillStyle = degrade(88, 112, "rgba(200,190,160,0)", "rgba(200,190,160,.22)", "rgba(200,190,160,0)");
+  ctx.fillRect(0, 88, L, 24);
+  // plan moyen
+  ctx.fillStyle = "#1f3234";
+  ctx.beginPath(); ctx.moveTo(0, 122);
+  ctx.bezierCurveTo(40, 112, 90, 120, 130, 120); ctx.bezierCurveTo(170, 120, 205, 110, 240, 116);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  saule(60, 120, 1.25, "#1f3234");
+  arbreMort(188, 118, 30, 1.2, "#1f3234");
+  // roseaux en silhouette, qui ondulent
+  for (let k = 0; k < 34; k++) {
+    const x = k * 7.3 + bruit(k) * 5, h = 10 + bruit(k + 9) * 14, b = Math.sin(t / 30 + x / 9) * 1.2;
+    ctx.strokeStyle = "#142224"; ctx.lineWidth = .7; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, 136); ctx.quadraticCurveTo(x + b / 2, 136 - h * .6, x + b, 136 - h); ctx.stroke();
+    if (k % 3 === 0) { ctx.fillStyle = "#2a1c14"; arrondi(x + b - .8, 134 - h - 3, 1.6, 4.2, .8); ctx.fill(); }
+  }
+  // nappes de brume qui dérivent
+  for (const [y, v, a] of [[128, .05, .16], [146, -.04, .12]]) {
+    const dx = (t * v) % 80;
+    for (let x = -80 + dx; x < L + 80; x += 80) {
+      const g = ctx.createRadialGradient(x + 40, y, 2, x + 40, y, 46);
+      g.addColorStop(0, `rgba(210,205,185,${a})`); g.addColorStop(1, "rgba(210,205,185,0)");
+      ctx.fillStyle = g; ctx.fillRect(x - 10, y - 20, 100, 40);
+    }
+  }
+}
+
+// Lucioles et voile sombre sur les bords : par-dessus le reste
+const LUCIOLES = Array.from({ length: 12 }, (_, k) => [bruit(k + 3) * L, 30 + bruit(k + 7) * 120, bruit(k + 11) * 6]);
+function dessinerAmbiance(t) {
+  for (const [x0, y0, ph] of LUCIOLES) {
+    const x = x0 + Math.sin(t / 40 + ph) * 8, y = y0 + Math.cos(t / 33 + ph * 2) * 5, a = .35 + .35 * Math.sin(t / 9 + ph * 3);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 3.5);
+    g.addColorStop(0, `rgba(255,232,140,${a})`); g.addColorStop(1, "rgba(255,232,140,0)");
+    ctx.fillStyle = g; ctx.fillRect(x - 4, y - 4, 8, 8);
+  }
+  const v = ctx.createRadialGradient(L / 2, H / 2, 70, L / 2, H / 2, 160);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(5,10,12,.45)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
+}
+
+// Sol épais : tourbe sombre, racines, mousse et herbes
+function terre(o) {
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#4a3a28", "#241a12");
+  arrondi(o.x, o.y, o.w, o.h, 1.5); ctx.fill();
+  ctx.strokeStyle = "rgba(20,12,6,.5)"; ctx.lineWidth = .5;
+  for (let x = o.x + 6; x < o.x + o.w - 4; x += 13) {
+    ctx.beginPath(); ctx.moveTo(x, o.y + 3); ctx.bezierCurveTo(x + 3, o.y + 7, x - 2, o.y + 10, x + 2, o.y + Math.min(o.h - 1, 16)); ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(140,120,90,.12)";
+  for (let k = 0; k < o.w / 4; k++) ovale(o.x + bruit(k + o.x) * o.w, o.y + 4 + bruit(k + o.y) * (o.h - 5), .8, .5);
+  ctx.fillStyle = degrade(o.y - 1.5, o.y + 2.5, "#7a9446", "#3d5228");
+  arrondi(o.x - .3, o.y - 1.2, o.w + .6, 3.6, 1.2); ctx.fill();
+  ctx.strokeStyle = "#6f8a3e"; ctx.lineWidth = .45;
+  for (let x = o.x + 1.5; x < o.x + o.w - 1; x += 2.6) {
+    const h = 1.2 + bruit(x) * 2.2;
+    ctx.beginPath(); ctx.moveTo(x, o.y); ctx.lineTo(x + (bruit(x + 1) - .5) * 1.4, o.y - h); ctx.stroke();
+  }
+}
+// Pilier : pierre ancienne, joints, fissures, mousse qui coule
+function pierre(o) {
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#5d666a", "#353c40");
+  arrondi(o.x, o.y, o.w, o.h, 1); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.06)"; ctx.fillRect(o.x + .5, o.y, 1.2, o.h);
+  ctx.strokeStyle = "rgba(15,20,22,.55)"; ctx.lineWidth = .4;
+  for (let y = o.y + 8, k = 0; y < o.y + o.h - 1; y += 9, k++) {
+    ctx.beginPath(); ctx.moveTo(o.x, y); ctx.lineTo(o.x + o.w, y); ctx.stroke();
+    const jx = o.x + (k % 2 ? o.w * .35 : o.w * .7);
+    ctx.beginPath(); ctx.moveTo(jx, y); ctx.lineTo(jx, y + 9); ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(15,20,22,.45)"; ctx.lineWidth = .3;
+  for (let y = o.y + 20; y < o.y + o.h - 10; y += 31) { ctx.beginPath(); ctx.moveTo(o.x + o.w * .3, y); ctx.lineTo(o.x + o.w * .55, y + 3); ctx.lineTo(o.x + o.w * .45, y + 6); ctx.stroke(); }
+  ctx.fillStyle = "#4f6a32";
+  arrondi(o.x - .2, o.y - .6, o.w + .4, 1.8, .6); ctx.fill();
+  for (let x = o.x + 1; x < o.x + o.w - .5; x += 2.2) { const h = 1.5 + bruit(x + o.y) * 5; arrondi(x - .4, o.y, .9, h, .45); ctx.fill(); }
+}
+// ---------- Le crapaud (d'or) : trapu, peau verruqueuse bronze-or, œil à pupille horizontale ----------
+function dessinerCrapaud(c, t) {
+  const cx = c.x + CRAPAUD_W / 2, bas = c.y + CRAPAUD_H, enVol = !c.auSol && c.etat !== "porte" && c.etat !== "ecrase";
+  if (!enVol) { ctx.fillStyle = "rgba(0,0,0,.4)"; ovale(cx, bas + .3, 6.4, 1.1); }
+  ctx.save();
+  ctx.translate(cx, bas);
+  ctx.scale(c.dir * (1 + c.ecrase * .45), 1 - c.ecrase * .7);
+  const respire = enVol ? 0 : Math.sin(t / 9) * .2;
+  const peauSombre = "#a2863a";   // pattes : dorées comme le corps, pour ressortir sur le fond sombre
+  // pose de saut : « lat » = 0 pour un saut sur place (sans flèche), 1 pour un bond vers la gauche ou la droite
+  const lat = enVol ? Math.min(1, Math.abs(c.vx) / 1.5) : 0;
+  // en bond, le corps s'incline : nez en l'air à la montée, vers le bas à la descente (droit pour un saut sur place)
+  if (enVol) { const k = Math.max(-1, Math.min(1, c.vy / 5)); ctx.translate(0, -4); ctx.rotate(k * .28 * lat); ctx.translate(0, 4); }
+  ctx.fillStyle = peauSombre;
+  // en saut : pattes arrière articulées, tendues à la montée (vers l'arrière en bond, vers le bas sur place),
+  // repliées sous le corps à la descente
+  const pli = enVol ? Math.max(0, Math.min(1, (c.vy + 2) / 5)) : 0;
+  const patte = (dx, dy, couleur, ep) => {
+    const m = (a, b) => a + (b - a) * pli;
+    const p = (bond, place) => place + (bond - place) * lat;
+    const hx = -3.6 + dx, hy = -2.4 + dy;
+    const gx = p(m(-7.4, -6.6), m(-6.4, -6.6)) + dx, gy = p(m(.4, .2), m(1, .2)) + dy;
+    const cx2 = p(m(-12, -3.8), m(-5.4, -3.8)) + dx, cy2 = p(m(1.2, 1.2), m(4.4, 1.2)) + dy;
+    const angle = p(m(Math.PI, 0), m(Math.PI / 2, 0));   // direction des doigts
+    ctx.strokeStyle = couleur; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = 3 * ep; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(gx, gy); ctx.stroke();
+    ctx.lineWidth = 1.7 * ep; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(cx2, cy2); ctx.stroke();
+    // liseré de lumière sur le dessus de la patte
+    ctx.strokeStyle = `rgba(255,230,160,${.55 * ep})`; ctx.lineWidth = .45;
+    ctx.beginPath(); ctx.moveTo(hx, hy - 1.2 * ep); ctx.lineTo(gx, gy - 1.3 * ep); ctx.lineTo(cx2, cy2 - .7 * ep); ctx.stroke();
+    ctx.strokeStyle = couleur;
+    // pied palmé : trois doigts en éventail
+    ctx.fillStyle = couleur; ctx.beginPath(); ctx.moveTo(cx2, cy2);
+    for (const a of [-.5, 0, .5]) ctx.lineTo(cx2 + 2.8 * Math.cos(angle + a), cy2 + 2.8 * Math.sin(angle + a));
+    ctx.closePath(); ctx.fill();
+    ctx.lineWidth = .5; ctx.beginPath();
+    for (const a of [-.5, 0, .5]) { ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + 3 * Math.cos(angle + a), cy2 + 3 * Math.sin(angle + a)); }
+    ctx.stroke();
+  };
+  if (enVol) { patte(1.2, -.5, "#7d6830", .85); patte(0, 0, peauSombre, 1); }
+  else { ovale(-4.2, -1.6, 3.4, 1.9, -.15); ovale(-5.6, -.3, 2.4, .8); }
+  // corps
+  const g = ctx.createRadialGradient(-1, -6.4, .5, 0, -3.6, 8);
+  g.addColorStop(0, "#d4b45a"); g.addColorStop(.55, "#9a7f34"); g.addColorStop(1, "#5b4b1f");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-6.4, -1.2);
+  ctx.bezierCurveTo(-6.8, -5.6 - respire, -2.6, -8 - respire, 1.6, -7.6 - respire);
+  ctx.bezierCurveTo(4.6, -7.3, 6.8, -5.4, 6.9, -3);
+  ctx.bezierCurveTo(7, -1.4, 5.6, -.6, 3.6, -.5);
+  ctx.lineTo(-5, -.5); ctx.closePath(); ctx.fill();
+  // ventre clair à peine visible, verrues
+  ctx.fillStyle = "rgba(225,205,150,.55)"; ovale(2.6, -1.4, 3.2, 1);
+  ctx.fillStyle = "rgba(60,45,15,.55)";
+  for (const [wx, wy, r] of [[-3.6, -4.6, .55], [-1.6, -6, .5], [-4.6, -2.8, .45], [.4, -5, .45], [-2.4, -3.2, .4], [2.2, -6.3, .35]]) rond(wx, wy, r);
+  ctx.fillStyle = "rgba(255,235,170,.4)";
+  for (const [wx, wy] of [[-3.8, -4.9], [-1.8, -6.3], [.2, -5.3]]) rond(wx, wy, .2);
+  // liseré de lumière sur le dos (détache le crapaud du fond sombre)
+  ctx.strokeStyle = "rgba(255,228,160,.55)"; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.moveTo(-5.6, -4); ctx.bezierCurveTo(-4.4, -6.6 - respire, -1.2, -7.8 - respire, 1.8, -7.5 - respire); ctx.stroke();
+  // pattes avant
+  ctx.fillStyle = peauSombre;
+  if (enVol) {
+    // pattes avant tendues vers le bas, prêtes à se poser
+    ctx.strokeStyle = peauSombre; ctx.lineCap = "round"; ctx.lineWidth = 1;
+    ctx.lineWidth = 1.3;
+    for (const [x0, x1, x2] of [[2.8, 6, 3.6], [1, 4, 1.6]]) { ctx.beginPath(); ctx.moveTo(x0, -1.8); ctx.lineTo(x2 + (x1 - x2) * lat, .2 + (1 - lat) * 1.4 - (1 - pli) * 1.2 * lat); ctx.stroke(); }
+  } else { ovale(3.2, -.6, 1.1, .7); ovale(1, -.5, 1, .6); }
+  // bouche : un trait large, sans sourire
+  ctx.strokeStyle = "#3b2f12"; ctx.lineWidth = .35; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(6.6, -2.9); ctx.quadraticCurveTo(4.4, -2.5, 2.2, -3.1); ctx.stroke();
+  // œil : bosse, iris doré, pupille horizontale, paupière
+  ctx.fillStyle = "#8a7130"; ovale(3.4, -6.9, 2.1, 1.7);
+  const iris = ctx.createRadialGradient(3.6, -7.1, .2, 3.6, -7.1, 1.4);
+  iris.addColorStop(0, "#f6d36a"); iris.addColorStop(1, "#b5801f");
+  ctx.fillStyle = iris; rond(3.7, -7, 1.3);
+  ctx.fillStyle = "#120d05"; ovale(3.8, -7, .85, .32);
+  ctx.fillStyle = "rgba(255,255,255,.75)"; rond(3.3, -7.5, .22);
+  ctx.strokeStyle = "#4e401a"; ctx.lineWidth = .45;
+  ctx.beginPath(); ctx.arc(3.7, -7, 1.4, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  // glande derrière l'œil
+  ctx.fillStyle = "rgba(70,55,20,.6)"; ovale(.9, -6.6, 1.2, .5, -.2);
+  ctx.restore();
+}
+
+// Eau du marais : sombre, reflet de lune, nénuphars ternes
+function dessinerEau(t) {
+  ctx.fillStyle = degrade(EAU_Y, H, "#2b4446", "#0d1a1c");
+  ctx.beginPath(); ctx.moveTo(0, H);
+  for (let x = 0; x <= L; x += 4) ctx.lineTo(x, EAU_Y + Math.sin(x / 9 + t / 12));
+  ctx.lineTo(L, H); ctx.fill();
+  ctx.strokeStyle = "rgba(242,220,174,.35)"; ctx.lineWidth = .6; ctx.lineCap = "round";
+  for (let k = 0; k < 4; k++) { const y = EAU_Y + 2.5 + k * 2.2, w = 9 - k * 1.6, x = 182 + Math.sin(t / 14 + k) * 1.5; ctx.beginPath(); ctx.moveTo(x - w / 2, y); ctx.lineTo(x + w / 2, y); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(200,210,200,.12)";
+  for (let x = 8; x < L; x += 23) { const y = EAU_Y + 5 + (x % 4); ctx.beginPath(); ctx.moveTo(x + Math.sin(t / 15 + x) * 2, y); ctx.lineTo(x + 6 + Math.sin(t / 15 + x) * 2, y); ctx.stroke(); }
+  for (const [x, y, e] of [[28, 174, 1], [168, 176, .8], [210, 173, 1.1]]) {
+    ctx.fillStyle = "#3d5a2c";
+    ctx.beginPath(); ctx.ellipse(x, y, 7 * e, 2.2 * e, 0, .25, Math.PI * 2 - .25); ctx.lineTo(x, y); ctx.fill();
+    ctx.strokeStyle = "rgba(20,35,15,.6)"; ctx.lineWidth = .3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 5 * e, y - .5); ctx.stroke();
+  }
+}
+
+// Planches de la trappe : bois sombre cerclé de fer ; elles pivotent vers le bas autour de leur charnière gauche
+function trappe() {
+  partie.ouverture.forEach((ouv, k) => {
+    if (ouv >= 1) return;
+    const x = TRAPPE_X + k * 8;
+    ctx.save();
+    ctx.translate(x, PLAFOND_Y);
+    ctx.rotate(ouv * Math.PI * .55);
+    ctx.globalAlpha = 1 - ouv * .6;
+    ctx.fillStyle = degrade(0, PLAFOND_H, "#7a5a3a", "#3e2a1a");
+    arrondi(.3, 0, 7.4, PLAFOND_H, .8); ctx.fill();
+    ctx.strokeStyle = "rgba(20,12,6,.5)"; ctx.lineWidth = .35;
+    ctx.beginPath(); ctx.moveTo(2.8, .8); ctx.lineTo(2.8, PLAFOND_H - .8); ctx.moveTo(5.2, .6); ctx.lineTo(5.2, PLAFOND_H - 1.2); ctx.stroke();
+    ctx.fillStyle = "#3a3f44"; ctx.fillRect(.3, 2, 7.4, .9); ctx.fillRect(.3, PLAFOND_H - 2.9, 7.4, .9);
+    ctx.fillStyle = "#9aa0a6"; rond(1.5, 2.45, .3); rond(6.5, 2.45, .3); rond(1.5, PLAFOND_H - 2.45, .3); rond(6.5, PLAFOND_H - 2.45, .3);
+    ctx.restore();
+  });
+}
+
+// L'ascenseur : plateau de bois sur un cadre de fer, suspendu à des chaînes
+function ascenseur() {
+  const y = asc.y;
+  ctx.strokeStyle = "#7d8287"; ctx.lineWidth = .6; ctx.setLineDash([.9, .6]);
+  for (const x of [ASC.x + 3, ASC.x + ASC.w - 3]) { ctx.beginPath(); ctx.moveTo(x, PLAFOND_Y + PLAFOND_H); ctx.lineTo(x, y); ctx.stroke(); }
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#2c3034";
+  for (const x of [ASC.x + 3, ASC.x + ASC.w - 3]) rond(x, PLAFOND_Y + PLAFOND_H + 1, 1.5);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; arrondi(ASC.x + .8, y + 1.2, ASC.w, ASC.h, 1); ctx.fill();
+  ctx.fillStyle = "#3a3f44"; arrondi(ASC.x, y + 2.4, ASC.w, ASC.h - 2.4, 1); ctx.fill();
+  ctx.fillStyle = degrade(y, y + 3, "#8f6e48", "#4e3824"); arrondi(ASC.x, y, ASC.w, 3, 1); ctx.fill();
+  ctx.strokeStyle = "rgba(20,12,6,.45)"; ctx.lineWidth = .3;
+  for (let x = ASC.x + 8; x < ASC.x + ASC.w - 2; x += 8) { ctx.beginPath(); ctx.moveTo(x, y + .3); ctx.lineTo(x, y + 2.7); ctx.stroke(); }
+  ctx.fillStyle = "#9aa0a6";
+  for (let x = ASC.x + 4; x < ASC.x + ASC.w - 2; x += 8) rond(x, y + 4.2, .4);
+}
+
+// Sortie en haut à droite : une lanterne sur un poteau
+function lanterne(t) {
+  const x = 226, y = PLAFOND_Y - 20, a = .45 + .12 * Math.sin(t / 8);
+  ctx.strokeStyle = "#2a2420"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, PLAFOND_Y); ctx.lineTo(x, y - 2); ctx.lineTo(x - 4, y - 2); ctx.stroke();
+  const g = ctx.createRadialGradient(x - 4, y + 2, .5, x - 4, y + 2, 16);
+  g.addColorStop(0, `rgba(255,205,110,${a})`); g.addColorStop(1, "rgba(255,205,110,0)");
+  ctx.fillStyle = g; ctx.fillRect(x - 22, y - 14, 36, 32);
+  ctx.fillStyle = "#2a2420"; arrondi(x - 6, y - 1, 4, 1, .4); ctx.fill(); arrondi(x - 6, y + 4, 4, 1, .4); ctx.fill();
+  ctx.fillStyle = "#ffd98a"; arrondi(x - 5.5, y, 3, 4, .6); ctx.fill();
+}
+
+function dessiner() {
+  ctx.setTransform(echelle, 0, 0, echelle, 0, 0);
+  const t = partie.image;
+  dessinerFond(t);
+  dessinerEau(t);
+
+  // rebord de départ, mur de droite, plafond (avec l'herbe dessus : c'est le chemin du haut)
+  terre(SOL_GAUCHE);
+  pierre(MUR_DROIT);
+  terre({ x: 0, y: PLAFOND_Y, w: TRAPPE_X, h: PLAFOND_H });
+  terre({ x: TRAPPE_X + TRAPPE_W, y: PLAFOND_Y, w: L - TRAPPE_X - TRAPPE_W, h: PLAFOND_H });
+  trappe();
+  lanterne(t);
+  ascenseur();
+  dessinerCrapaud(crapaud, t);
+
+  // danger : l'ascenseur approche du plafond, la trappe s'éclaire en rouge
+  if (asc.phase === "montee" && asc.y - ECRASE_Y < 18) {
+    ctx.fillStyle = `rgba(220,60,50,${.25 + .2 * Math.sin(t / 3)})`;
+    arrondi(TRAPPE_X - 2, PLAFOND_Y - 2, TRAPPE_W + 4, PLAFOND_H + 4, 3); ctx.fill();
+  }
+  dessinerAmbiance(t);
+}
+
+// ---------- Boucle : 30 images par seconde ----------
+let dernier = performance.now(), cumul = 0;
+function boucle(maintenant) {
+  cumul += Math.min(200, maintenant - dernier);
+  dernier = maintenant;
+  while (cumul >= 1000 / 30) { if (!document.body.classList.contains("sans-nom")) pas(); cumul -= 1000 / 30; }
+  dessiner();
+  requestAnimationFrame(boucle);
+}
+
+// La zone de jeu s'agrandit autant que possible, en gardant le format 4:3,
+// et le canevas suit la résolution réelle de l'écran (dessin net)
+new ResizeObserver(() => {
+  const r = $("cadreJeu").getBoundingClientRect();
+  const e = Math.max(1, Math.min(r.width / L, r.height / H));
+  const w = Math.floor(L * e), h = Math.floor(H * e), dpr = window.devicePixelRatio || 1;
+  cv.style.width = w + "px";
+  cv.style.height = h + "px";
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  echelle = cv.width / L;
+}).observe($("cadreJeu"));
+
+// ============================================================
+//  SONS rétro (oscillateur), coupables
+// ============================================================
+let sonActif = true, audio = null;
+function bip(freq, duree, type = "square", fin = freq, volume = .06, retard = 0) {
+  if (!sonActif) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime + retard;
+    o.type = type; o.frequency.setValueAtTime(freq, t0); o.frequency.exponentialRampToValueAtTime(fin, t0 + duree);
+    g.gain.setValueAtTime(volume, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + duree);
+    o.connect(g); g.connect(audio.destination); o.start(t0); o.stop(t0 + duree);
+  } catch (e) {}
+}
+function son(s) {
+  if (s === "saut") bip(300, .15, "square", 700);
+  if (s === "bon") { bip(660, .1); bip(880, .15, "square", 880, .06, .1); }
+  if (s === "faux") bip(200, .25, "sawtooth", 120);
+  if (s === "ascenseur") bip(120, .4, "triangle", 180, .08);
+  if (s === "plouf") bip(500, .4, "sine", 80, .1);
+  if (s === "ecrase") { bip(90, .5, "sawtooth", 50, .1); bip(70, .6, "square", 40, .08, .3); }
+  if (s === "arrivee") bip(440, .2, "triangle", 660);
+  if (s === "victoire") [523, 659, 784, 1047].forEach((f, k) => bip(f, .16, "square", f, .06, k * .14));
+}
+$("btnSon").onclick = () => { sonActif = !sonActif; $("btnSon").textContent = sonActif ? "🔊" : "🔇"; };
+
+// ============================================================
+//  EN-TÊTE, ACCUEIL
+// ============================================================
+function majEntete() {
+  $("eleveInfo").textContent = eleve.nom ? eleve.nom + " · " + eleve.trappes + " trappe" + (eleve.trappes > 1 ? "s" : "") + " ouverte" + (eleve.trappes > 1 ? "s" : "") : "";
+}
+
+function choisirEleve(nom) {
+  if (nom !== eleve.nom) {
+    eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, trappes: 0, reponses: 0, bonnes: 0 };
+    enregistre = eleve;
+    sauverEleve();
+  }
+  document.body.classList.remove("sans-nom");
+  majEntete();
+}
+function commencer() {
+  const champ = $("champNom");
+  const nom = champ.value.trim().replace(/\s+/g, " ");
+  if (nom.length < 2) { $("erreurNom").textContent = "Écris ton prénom et ton nom."; champ.focus(); return; }
+  choisirEleve(nom);
+}
+$("btnCommencer").onclick = commencer;
+$("champNom").addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+$("btnRecommencer").onclick = () => { recommencer(); $("cadreJeu").focus(); };
+$("vitesse").addEventListener("change", () => $("vitesse").blur());
+
+
+// ============================================================
+//  IMPRESSION : diplôme
+// ============================================================
+const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(210mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #2f5fd0;background:#2f5fd0;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-dessin{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:8px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:3mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 4mm;min-width:32mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-etoiles{font-size:12pt;letter-spacing:.5mm;color:#d9d2c3;}
+#overlayFiche .d-etoiles .pleine{color:#d4a62a;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#ficheCarte.large{width:min(297mm,100%);}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;font-size:5mm;line-height:1;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+  #overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}
+}`;
+
+function ouvrirOverlay(contenu, sens) {
+  let ov = $("overlayFiche");
+  if (!ov) {
+    const st = document.createElement("style");
+    st.textContent = FICHE_CSS;
+    document.head.append(st);
+    ov = document.createElement("div");
+    ov.id = "overlayFiche";
+    ov.addEventListener("click", e => { if (e.target === ov) fermerOverlay(); });
+    document.body.append(ov);
+  }
+  ov.innerHTML = `<div id="ficheCarte"${sens === "landscape" ? ' class="large"' : ""}>
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions"><button type="button" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong>.</p>
+    ${contenu}
+  </div>`;
+  $("btnFermerFiche").onclick = fermerOverlay;
+  $("btnImprimerFiche").onclick = () => window.print();
+  ov.classList.add("ouverte");
+  document.body.classList.add("fiche-ouverte");
+  let st = $("styleOrientation");
+  if (!st) { st = document.createElement("style"); st.id = "styleOrientation"; document.head.append(st); }
+  st.textContent = "@media print{@page{size:A4 " + sens + ";margin:" + (sens === "landscape" ? "10mm" : ".8cm") + ";}}";
+  return ov;
+}
+function fermerOverlay() {
+  const ov = $("overlayFiche");
+  if (ov) ov.classList.remove("ouverte");
+  document.body.classList.remove("fiche-ouverte");
+}
+
+function ouvrirDiplome() {
+  if (!eleve.nom) { document.body.classList.add("sans-nom"); return; }
+  // paliers : 1, 3, 5, 10 et 20 trappes ouvertes
+  const PALIERS = [1, 3, 5, 10, 20], n = eleve.trappes, ok = PALIERS.filter(p => n >= p).length, total = PALIERS.length;
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const medailles = PALIERS.map(p => `<div class="d-med${n >= p ? " complete" : ""}"><div class="d-med-nom">${p} trappe${p > 1 ? "s" : ""}</div><div class="d-med-pts">${n >= p ? "✓" : "—"}</div><div class="d-etoiles"><span class="${n >= p ? "pleine" : ""}">★</span></div></div>`).join("");
+  const festons = Array.from({ length: 48 }, (_, k) => {
+    const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+    return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+  }).join(" ") + "Z";
+  const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${n}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">trappe${n > 1 ? "s" : ""} ouverte${n > 1 ? "s" : ""}</text>
+  </svg>`;
+  // le crapaud, comme dans le jeu
+  const dessin = `<div class="d-dessin"><svg width="96" height="80" viewBox="-8 -12 16 13" aria-hidden="true">
+    <defs><radialGradient id="peau" cx=".4" cy=".2" r=".9"><stop offset="0" stop-color="#d4b45a"/><stop offset=".55" stop-color="#9a7f34"/><stop offset="1" stop-color="#5b4b1f"/></radialGradient></defs>
+    <ellipse cx="-4.2" cy="-1.6" rx="3.4" ry="1.9" fill="#5e4f22"/><ellipse cx="-5.6" cy="-.3" rx="2.4" ry=".8" fill="#5e4f22"/>
+    <path d="M-6.4 -1.2 C-6.8 -5.6 -2.6 -8 1.6 -7.6 C4.6 -7.3 6.8 -5.4 6.9 -3 C7 -1.4 5.6 -.6 3.6 -.5 L-5 -.5 Z" fill="url(#peau)"/>
+    <circle cx="-3.6" cy="-4.6" r=".55" fill="#5a4416" opacity=".6"/><circle cx="-1.6" cy="-6" r=".5" fill="#5a4416" opacity=".6"/><circle cx=".4" cy="-5" r=".45" fill="#5a4416" opacity=".6"/>
+    <ellipse cx="3.2" cy="-.6" rx="1.1" ry=".7" fill="#5e4f22"/><ellipse cx="1" cy="-.5" rx="1" ry=".6" fill="#5e4f22"/>
+    <path d="M6.6 -2.9 Q4.4 -2.5 2.2 -3.1" fill="none" stroke="#3b2f12" stroke-width=".35" stroke-linecap="round"/>
+    <ellipse cx="3.4" cy="-6.9" rx="2.1" ry="1.7" fill="#8a7130"/><circle cx="3.7" cy="-7" r="1.3" fill="#e0b23a"/><ellipse cx="3.8" cy="-7" rx=".85" ry=".32" fill="#120d05"/>
+  </svg></div>`;
+  const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+  const frise = Array.from({ length: 6 }, () => ["◆", "·"]).flat().map(e => `<span>${e}</span>`).join("");
+  const ov = ouvrirOverlay(`<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${dessin}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">de calcul astucieux · <b>Le crapaud et l'ascenseur</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${esc(eleve.nom || "……………………")}</div>
+        <div class="d-pour">pour avoir ouvert les trappes en repérant le facteur commun.</div>
+        <div class="d-pour"><b>${eleve.reponses}</b> question${eleve.reponses > 1 ? "s" : ""} répondue${eleve.reponses > 1 ? "s" : ""}, dont <b>${eleve.bonnes}</b> juste${eleve.bonnes > 1 ? "s" : ""}${eleve.reponses ? ` (${Math.round(100 * eleve.bonnes / eleve.reponses)} %)` : ""}.</div>
+        <div class="d-mention">${["Continue tes efforts", "Réussi", "Assez bien", "Bien", "Très bien", "Félicitations !"][ok]}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-meds">${medailles}</div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`, "landscape");
+  const d = ov.querySelector(".diplome");
+  const carte = getComputedStyle(d.parentElement);
+  const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+  const r = d.getBoundingClientRect();
+  const e = Math.min(1, place / r.width);
+  d.style.transform = "scale(" + e + ")";
+  d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+  d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+}
+$("btnDiplome").onclick = ouvrirDiplome;
+
+// Nouvel onglet : même nom
+$("btnOnglet").onclick = () => {
+  const url = new URL(location.href);
+  if (eleve.nom) url.searchParams.set("nom", eleve.nom);
+  window.open(url.toString(), "_blank");
+};
+
+// ---------- Démarrage ----------
+const params = new URLSearchParams(location.search);
+recommencer();
+if (params.get("nom")) choisirEleve(params.get("nom"));
+if (!eleve.nom) { document.body.classList.add("sans-nom"); setTimeout(() => $("champNom").focus(), 0); }
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>

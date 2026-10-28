@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le crapaud sur la balance</title>
+<!-- polices du diplôme, comme le Crapaud d'or -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* style sobre, comme le Crapaud d'or (pas de cartoon pour ce jeu) */
+  :root{
+    --bg:#f5f1e8; --panel:#fffdf8; --ink:#1f2430; --muted:#6b6f7a; --border:#d9d2c3; --accent:#2f5fd0;
+    --ko:#c0392b; --bois:#7a5a2e;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+  body{display:flex;flex-direction:column;}
+  /* en-tête : même mise en page que l'appli evaluation (titre à gauche, boutons à droite) */
+  header{display:flex;align-items:center;gap:14px;padding:0 20px;min-height:54px;flex:0 0 auto;
+    background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  #titre_appli{font-size:1.2rem;padding:10px 0;}
+  #titre_appli b{color:var(--bois);}
+  .header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;}
+  .filet-header{width:1px;height:22px;background:var(--border);flex-shrink:0;}
+  .btn-header, button.btn-header{background:transparent;border:.5px solid var(--border);height:34px;padding:0 14px;font-size:.82rem;font-weight:500;
+    border-radius:6px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap;font-family:inherit;}
+  .btn-header:hover{border-color:var(--ink);}
+  /* seul état coloré de l'en-tête : bordure et texte, pas de fond plein */
+  button.btn-header.active, .btn-header.active{background:transparent;border-color:var(--accent);color:var(--accent);font-weight:600;}
+  #app{display:flex;flex:1 1 auto;min-height:0;}
+  #sidebar{width:230px;min-width:230px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;}
+  button{font:inherit;font-size:15px;border:1px solid var(--border);background:#f7f3ea;color:var(--ink);border-radius:8px;padding:9px 10px;cursor:pointer;}
+  button:hover:not(:disabled){border-color:var(--accent);}
+  button.principal{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .choixCas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .choixCas button{padding:8px 4px;}
+  .choixCas button:last-child{grid-column:1 / -1;}
+  #choixNiveau button.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  #choixNiveau button:disabled{opacity:1;color:#9a9a9a;}
+  #choixNiveau button.active:disabled{opacity:.55;color:#e8e8e8;}
+  button:disabled{opacity:.45;cursor:default;}
+  .groupe-label{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:4px;}
+  .col{display:flex;flex-direction:column;gap:6px;}
+  .reglage{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+  select{font:inherit;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:#fff;}
+  #compteur{font-size:15px;}
+  #scoreBloc{font-size:15px;line-height:1.5;}
+  #droite{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #stage{flex:1 1 auto;min-height:0;position:relative;background:#1a272b;}
+  #scene{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;}
+  /* hauteur fixe : la scène ne change jamais de taille */
+  #zoneReponse{flex:0 0 104px;height:104px;overflow:hidden;display:flex;align-items:center;gap:16px;padding:10px 16px;
+    background:var(--panel);border-top:1px solid var(--border);}
+  #question{flex:1 1 auto;min-width:0;}
+  #consigne{font-size:17px;line-height:1.3;}
+  #ligne{display:flex;align-items:center;gap:12px;margin-top:8px;}
+  #saisie{display:none;align-items:center;gap:8px;}
+  #saisie.visible{display:flex;}
+  #saisie input{width:110px;font:inherit;font-size:20px;text-align:center;padding:7px 6px;border:1px solid var(--border);border-radius:8px;}
+  #saisie input:focus{outline:none;border-color:var(--accent);}
+  #saisie .unite{font-size:18px;}
+  #retour{font-size:16px;white-space:nowrap;}
+  #retour .ko{color:var(--ko);font-weight:600;}
+  /* ---------- Guide : overlay sur la zone de jeu ---------- */
+  #overlayGuide{display:none;position:absolute;inset:0;z-index:20;background:rgba(31,36,48,.35);backdrop-filter:blur(2px);
+    align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;}
+  #overlayGuide.visible{display:flex;}
+  #guideCarte{position:relative;background:#fff;max-width:640px;width:100%;border-radius:16px;border:2px solid var(--bois);
+    box-shadow:0 20px 60px rgba(0,0,0,.25);padding:24px 30px;}
+  #guideCarte h2{text-align:center;margin:0 0 14px;font-size:1.3em;color:var(--bois);}
+  #guideCarte h3{color:var(--bois);font-size:1em;margin:14px 0 6px;}
+  #guideCarte p, #guideCarte li{margin:0 0 4px;line-height:1.5;font-size:.95em;color:#333;}
+  #guideCarte ul{margin:0;padding-left:20px;}
+  #btnFermerGuide{position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;padding:0;font-size:20px;}
+  @media (max-width:760px){
+    html,body{overflow:auto;}
+    #app{flex-direction:column;}
+    #sidebar{width:auto;min-width:0;border-right:none;border-bottom:1px solid var(--border);}
+    #stage{flex:0 0 auto;height:62vw;min-height:240px;}
+    #zoneReponse{flex:0 0 auto;height:auto;flex-wrap:wrap;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <span id="titre_appli">Le crapaud sur la balance <b>Masses</b></span>
+  <div class="header-actions">
+    <button id="btnAtelier" class="btn-header active">Atelier</button>
+    <button id="btnQuiz" class="btn-header">Quiz</button>
+    <div class="filet-header"></div>
+    <button id="btnSon" class="btn-header" title="Couper ou remettre le son">🔊</button>
+    <a id="onglet" class="btn-header" target="_blank" rel="noopener" title="Ouvrir l’appli dans un nouvel onglet">Nouvel onglet</a>
+    <div class="filet-header"></div>
+    <button id="btnGuide" class="btn-header">Guide</button>
+  </div>
+</header>
+<div id="app">
+  <aside id="sidebar">
+    <div id="choixNiveau" class="col">
+      <div class="groupe-label">Cas</div>
+      <!-- on ne révèle pas aux élèves à quoi correspond chaque cas (voir tirer()) -->
+      <div class="choixCas">
+        <button data-n="1" class="active">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="0">Aléa</button>
+      </div>
+    </div>
+    <div id="quizSetup" class="col" style="display:none">
+      <label class="reglage">Prénom et nom (pour le diplôme) :
+        <input id="nomEleve" type="text" autocomplete="off" style="font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:6px;"></label>
+      <label class="reglage">Nombre de questions :
+        <select id="quizN"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></label>
+      <button id="btnDemarrer" class="principal">▶ Commencer le Quiz</button>
+    </div>
+    <div id="scoreBloc" class="col" style="display:none">
+      <div id="progression"></div>
+      <div id="score"></div>
+    </div>
+    <div class="col" id="blocAtelier">
+      <div class="groupe-label">Question en cours :</div>
+      <div id="compteur"></div>
+    </div>
+    <button id="btnRenoncer">Renoncer</button>
+  </aside>
+  <div id="droite">
+    <main id="stage">
+      <canvas id="scene" width="1200" height="900" aria-label="Le crapaud, deux balances, des escargots et des crapauds"></canvas>
+      <div id="overlayGuide"><div id="guideCarte">
+        <button id="btnFermerGuide" aria-label="Fermer">×</button>
+        <h2>Mode d'emploi</h2>
+        <h3>Objectif</h3>
+        <p>Deux balances portent des escargots et des crapauds. Celle de gauche affiche sa masse. Il faut trouver la masse sur la <b>balance de droite</b>, dont l'écran est caché. La question est posée dès le début : on peut répondre à tout moment, et la réponse attendue est ce qui est sur la balance à cet instant (avec notre crapaud s'il est dessus, sans lui sinon). Juste : la grille de droite se lève.</p>
+        <h3>Cas</h3>
+        <p>Le panneau propose les cas <b>1</b> à <b>4</b>, et <b>Aléa</b> (un cas au hasard à chaque manche).</p>        <h3>Commandes</h3>
+        <ul>
+          <li><b>Flèches</b> gauche et droite pour avancer, <b>Espace</b> (ou flèche du haut) pour sauter.</li>
+          <li>Le crapaud peut monter sur la <b>balance de gauche</b> : elle affiche alors aussi sa masse (il pèse autant qu'un crapaud de la balance).</li>
+        </ul>
+        <h3>Réponse</h3>
+        <p>On tape un nombre de grammes (530, 530 g ou 530g conviennent). Juste : la grille se lève. Faux : le crapaud perd, et de nouveaux nombres sont tirés.</p>
+        <h3>Atelier et Quiz</h3>
+        <p><b>Atelier</b> : manches sans fin, <b>Renoncer</b> passe à la suivante. <b>Quiz</b> : choisir le nombre de questions (5 par défaut) puis Commencer ; score à la fin.</p>
+        <p>D'après le Scratch « JDS Proportionnalité » (niveau des balances).</p>
+      </div></div>
+    </main>
+    <div id="zoneReponse">
+      <div id="question">
+        <div id="consigne"></div>
+        <div id="ligne">
+          <div id="saisie">
+            <input id="masse" type="text" inputmode="numeric" autocomplete="off" aria-label="Masse en grammes">
+            <span class="unite">g</span>
+            <button id="btnValider" class="principal">Valider</button>
+          </div>
+          <div id="retour"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+// ---------- dessin : mêmes unités que le Crapaud d'or (240 × 180), canevas 5 fois plus fin ----------
+const L = 240, H = 180, FIN = 5;
+const cv = $("scene"), ctx = cv.getContext("2d");
+const CRAPAUD_W = 12, CRAPAUD_H = 10;
+
+// ---------- décor et crapaud repris du Crapaud d'or (appli-maths/crapaudOr) ----------
+const arrondi = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+const degrade = (y1, y2, ...couleurs) => { const g = ctx.createLinearGradient(0, y1, 0, y2); couleurs.forEach((c, k) => g.addColorStop(k / (couleurs.length - 1), c)); return g; };
+const rond = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+const ovale = (x, y, rx, ry, a = 0) => { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx.fill(); };
+// pseudo-hasard fixe (décor identique d'une image à l'autre)
+const bruit = k => { const s = Math.sin(k * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+// Arbre mort : tronc tordu et branches nues
+function arbreMort(x, base, h, e, couleur) {
+  ctx.strokeStyle = couleur; ctx.lineCap = "round";
+  const branche = (x0, y0, ang, long, ep, n) => {
+    const x1 = x0 + Math.cos(ang) * long, y1 = y0 + Math.sin(ang) * long;
+    ctx.lineWidth = ep; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    if (n > 0) { branche(x1, y1, ang - .5 - bruit(x0 + n) * .3, long * .68, ep * .62, n - 1); branche(x1, y1, ang + .45 + bruit(y0 + n) * .3, long * .62, ep * .6, n - 1); }
+  };
+  branche(x, base, -Math.PI / 2 + (bruit(x) - .5) * .2, h * e, 2.6 * e, 4);
+}
+// Saule : masse sombre avec rameaux qui tombent
+function saule(x, base, e, couleur) {
+  ctx.fillStyle = couleur;
+  arrondi(x - 1.4 * e, base - 16 * e, 2.8 * e, 16 * e, 1); ctx.fill();
+  for (const [dx, dy, r] of [[0, -20, 9], [-7, -16, 7], [7, -16, 7], [-3, -24, 6], [4, -23, 6]]) rond(x + dx * e, base + dy * e, r * e);
+  ctx.strokeStyle = couleur; ctx.lineWidth = .7;
+  for (let k = -9; k <= 9; k += 1.5) { ctx.beginPath(); ctx.moveTo(x + k * e, base - 14 * e); ctx.quadraticCurveTo(x + k * 1.15 * e, base - 6 * e, x + k * 1.05 * e, base - (2 + bruit(k) * 4) * e); ctx.stroke(); }
+}
+
+function dessinerFond(t) {
+  // ciel : nuit bleu-vert en haut, horizon ambré
+  ctx.fillStyle = degrade(0, 130, "#14232c", "#2c4a50", "#7d6a4a", "#c4874c");
+  ctx.fillRect(0, 0, L, H);
+  // étoiles pâles
+  ctx.fillStyle = "rgba(230,235,220,.55)";
+  for (let k = 0; k < 24; k++) { const a = .3 + .3 * Math.sin(t / 20 + k); ctx.globalAlpha = a; rond(bruit(k) * L, bruit(k + 50) * 50, .35); }
+  ctx.globalAlpha = 1;
+  // lune basse, voilée
+  const lx = 182, ly = 74;
+  const halo = ctx.createRadialGradient(lx, ly, 4, lx, ly, 46);
+  halo.addColorStop(0, "rgba(255,226,170,.55)"); halo.addColorStop(1, "rgba(255,226,170,0)");
+  ctx.fillStyle = halo; ctx.fillRect(lx - 50, ly - 50, 100, 100);
+  ctx.fillStyle = "#f2dcae"; rond(lx, ly, 11);
+  ctx.fillStyle = "rgba(180,150,110,.25)"; rond(lx - 3, ly - 2, 2.5); rond(lx + 4, ly + 3, 1.8);
+  // arrière-plan lointain : colline et arbres en silhouette bleutée
+  ctx.fillStyle = "#30474b";
+  ctx.beginPath(); ctx.moveTo(0, 104);
+  ctx.bezierCurveTo(50, 92, 100, 100, 150, 98); ctx.bezierCurveTo(190, 96, 215, 90, 240, 96);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  for (const [x, h, e] of [[30, 26, 1], [96, 30, 1.1], [210, 24, .9]]) arbreMort(x, 102, h, e, "#30474b");
+  saule(150, 100, 1, "#30474b");
+  // brume lointaine
+  ctx.fillStyle = degrade(88, 112, "rgba(200,190,160,0)", "rgba(200,190,160,.22)", "rgba(200,190,160,0)");
+  ctx.fillRect(0, 88, L, 24);
+  // plan moyen
+  ctx.fillStyle = "#1f3234";
+  ctx.beginPath(); ctx.moveTo(0, 122);
+  ctx.bezierCurveTo(40, 112, 90, 120, 130, 120); ctx.bezierCurveTo(170, 120, 205, 110, 240, 116);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  saule(60, 120, 1.25, "#1f3234");
+  arbreMort(188, 118, 30, 1.2, "#1f3234");
+  // roseaux en silhouette, qui ondulent
+  for (let k = 0; k < 34; k++) {
+    const x = k * 7.3 + bruit(k) * 5, h = 10 + bruit(k + 9) * 14, b = Math.sin(t / 30 + x / 9) * 1.2;
+    ctx.strokeStyle = "#142224"; ctx.lineWidth = .7; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, 136); ctx.quadraticCurveTo(x + b / 2, 136 - h * .6, x + b, 136 - h); ctx.stroke();
+    if (k % 3 === 0) { ctx.fillStyle = "#2a1c14"; arrondi(x + b - .8, 134 - h - 3, 1.6, 4.2, .8); ctx.fill(); }
+  }
+  // nappes de brume qui dérivent
+  for (const [y, v, a] of [[128, .05, .16], [146, -.04, .12]]) {
+    const dx = (t * v) % 80;
+    for (let x = -80 + dx; x < L + 80; x += 80) {
+      const g = ctx.createRadialGradient(x + 40, y, 2, x + 40, y, 46);
+      g.addColorStop(0, `rgba(210,205,185,${a})`); g.addColorStop(1, "rgba(210,205,185,0)");
+      ctx.fillStyle = g; ctx.fillRect(x - 10, y - 20, 100, 40);
+    }
+  }
+}
+
+// Lucioles et voile sombre sur les bords : par-dessus le reste
+const LUCIOLES = Array.from({ length: 12 }, (_, k) => [bruit(k + 3) * L, 30 + bruit(k + 7) * 120, bruit(k + 11) * 6]);
+function dessinerAmbiance(t) {
+  for (const [x0, y0, ph] of LUCIOLES) {
+    const x = x0 + Math.sin(t / 40 + ph) * 8, y = y0 + Math.cos(t / 33 + ph * 2) * 5, a = .35 + .35 * Math.sin(t / 9 + ph * 3);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 3.5);
+    g.addColorStop(0, `rgba(255,232,140,${a})`); g.addColorStop(1, "rgba(255,232,140,0)");
+    ctx.fillStyle = g; ctx.fillRect(x - 4, y - 4, 8, 8);
+  }
+  const v = ctx.createRadialGradient(L / 2, H / 2, 70, L / 2, H / 2, 160);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(5,10,12,.45)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
+}
+
+// Sol épais : tourbe sombre, racines, mousse et herbes
+function terre(o, herbe = true) {
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#4a3a28", "#241a12");
+  arrondi(o.x, o.y, o.w, o.h, 1.5); ctx.fill();
+  ctx.strokeStyle = "rgba(20,12,6,.5)"; ctx.lineWidth = .5;
+  for (let x = o.x + 6; x < o.x + o.w - 4; x += 13) {
+    ctx.beginPath(); ctx.moveTo(x, o.y + 3); ctx.bezierCurveTo(x + 3, o.y + 7, x - 2, o.y + 10, x + 2, o.y + Math.min(o.h - 1, 16)); ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(140,120,90,.12)";
+  for (let k = 0; k < o.w / 4; k++) ovale(o.x + bruit(k + o.x) * o.w, o.y + 4 + bruit(k + o.y) * (o.h - 5), .8, .5);
+  if (!herbe) return;
+  ctx.fillStyle = degrade(o.y - 1.5, o.y + 2.5, "#7a9446", "#3d5228");
+  arrondi(o.x - .3, o.y - 1.2, o.w + .6, 3.6, 1.2); ctx.fill();
+  ctx.strokeStyle = "#6f8a3e"; ctx.lineWidth = .45;
+  for (let x = o.x + 1.5; x < o.x + o.w - 1; x += 2.6) {
+    const h = 1.2 + bruit(x) * 2.2;
+    ctx.beginPath(); ctx.moveTo(x, o.y); ctx.lineTo(x + (bruit(x + 1) - .5) * 1.4, o.y - h); ctx.stroke();
+  }
+}
+// Plate-forme fine : planche de bois patiné, clous, un peu de mousse
+function planche(o) {
+  ctx.fillStyle = "rgba(0,0,0,.25)"; arrondi(o.x + .6, o.y + .8, o.w, o.h, 1); ctx.fill();
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#8a6a46", "#4f3824");
+  arrondi(o.x, o.y, o.w, o.h, Math.min(1.2, o.h / 2)); ctx.fill();
+  ctx.strokeStyle = "rgba(30,18,8,.45)"; ctx.lineWidth = .35;
+  for (let x = o.x + 8 + bruit(o.x) * 4; x < o.x + o.w - 3; x += 9 + bruit(x) * 4) { ctx.beginPath(); ctx.moveTo(x, o.y + .3); ctx.lineTo(x, o.y + o.h - .3); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(200,170,120,.18)"; ctx.lineWidth = .3;
+  ctx.beginPath(); ctx.moveTo(o.x + 1, o.y + .7); ctx.lineTo(o.x + o.w - 1, o.y + .7); ctx.stroke();
+  ctx.fillStyle = "#2b2624";
+  for (let x = o.x + 2; x < o.x + o.w - 1; x += 9) rond(x, o.y + o.h / 2, .35);
+  ctx.fillStyle = "rgba(110,140,60,.8)";
+  arrondi(o.x + bruit(o.y) * o.w * .5, o.y - .5, Math.min(o.w * .4, 10), 1.1, .5); ctx.fill();
+}
+// Pilier : pierre ancienne, joints, fissures, mousse qui coule
+function pierre(o) {
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#5d666a", "#353c40");
+  arrondi(o.x, o.y, o.w, o.h, 1); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.06)"; ctx.fillRect(o.x + .5, o.y, 1.2, o.h);
+  ctx.strokeStyle = "rgba(15,20,22,.55)"; ctx.lineWidth = .4;
+  for (let y = o.y + 8, k = 0; y < o.y + o.h - 1; y += 9, k++) {
+    ctx.beginPath(); ctx.moveTo(o.x, y); ctx.lineTo(o.x + o.w, y); ctx.stroke();
+    // joints verticaux décalés d'une rangée à l'autre (deux pierres par rangée sur un pilier, davantage sur un bloc large)
+    const joints = o.w > 34 ? Array.from({ length: Math.floor(o.w / 14) }, (_, i) => o.x + (k % 2 ? 7 : 14) + i * 14).filter(j => j < o.x + o.w - 3)
+                            : [o.x + (k % 2 ? o.w * .35 : o.w * .7)];
+    for (const jx of joints) { ctx.beginPath(); ctx.moveTo(jx, y); ctx.lineTo(jx, Math.min(y + 9, o.y + o.h)); ctx.stroke(); }
+  }
+  ctx.strokeStyle = "rgba(15,20,22,.45)"; ctx.lineWidth = .3;
+  for (let y = o.y + 20; y < o.y + o.h - 10; y += 31) { ctx.beginPath(); ctx.moveTo(o.x + o.w * .3, y); ctx.lineTo(o.x + o.w * .55, y + 3); ctx.lineTo(o.x + o.w * .45, y + 6); ctx.stroke(); }
+  ctx.fillStyle = "#4f6a32";
+  arrondi(o.x - .2, o.y - .6, o.w + .4, 1.8, .6); ctx.fill();
+  for (let x = o.x + 1; x < o.x + o.w - .5; x += 2.2) { const h = 1.5 + bruit(x + o.y) * 5; arrondi(x - .4, o.y, .9, h, .45); ctx.fill(); }
+}
+// ---------- Le crapaud (d'or) : trapu, peau verruqueuse bronze-or, œil à pupille horizontale ----------
+function dessinerCrapaud(c, t) {
+  const cx = c.x + CRAPAUD_W / 2, bas = c.y + CRAPAUD_H, enVol = !c.auSol && c.etat !== "mort";
+  if (!enVol) { ctx.fillStyle = "rgba(0,0,0,.4)"; ovale(cx, bas + .3, 6.4, 1.1); }
+  ctx.save();
+  ctx.translate(cx, bas);
+  ctx.scale(c.dir * (1 + c.mort * .45), 1 - c.mort * .7);
+  const respire = enVol ? 0 : Math.sin(t / 9) * .2;
+  const peauSombre = "#a2863a";   // pattes : dorées comme le corps, pour ressortir sur le fond sombre
+  // pose de saut : « lat » = 0 pour un saut sur place (sans flèche), 1 pour un bond vers la gauche ou la droite
+  const lat = enVol ? Math.min(1, Math.abs(c.vx) / 1.5) : 0;
+  // en bond, le corps s'incline : nez en l'air à la montée, vers le bas à la descente (droit pour un saut sur place)
+  if (enVol) { const k = Math.max(-1, Math.min(1, c.vy / 5)); ctx.translate(0, -4); ctx.rotate(k * .28 * lat); ctx.translate(0, 4); }
+  ctx.fillStyle = peauSombre;
+  // en saut : pattes arrière articulées, tendues à la montée (vers l'arrière en bond, vers le bas sur place),
+  // repliées sous le corps à la descente
+  const pli = enVol ? Math.max(0, Math.min(1, (c.vy + 2) / 5)) : 0;
+  const patte = (dx, dy, couleur, ep) => {
+    const m = (a, b) => a + (b - a) * pli;
+    const p = (bond, place) => place + (bond - place) * lat;
+    const hx = -3.6 + dx, hy = -2.4 + dy;
+    const gx = p(m(-7.4, -6.6), m(-6.4, -6.6)) + dx, gy = p(m(.4, .2), m(1, .2)) + dy;
+    const cx2 = p(m(-12, -3.8), m(-5.4, -3.8)) + dx, cy2 = p(m(1.2, 1.2), m(4.4, 1.2)) + dy;
+    const angle = p(m(Math.PI, 0), m(Math.PI / 2, 0));   // direction des doigts
+    ctx.strokeStyle = couleur; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = 3 * ep; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(gx, gy); ctx.stroke();
+    ctx.lineWidth = 1.7 * ep; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(cx2, cy2); ctx.stroke();
+    // liseré de lumière sur le dessus de la patte
+    ctx.strokeStyle = `rgba(255,230,160,${.55 * ep})`; ctx.lineWidth = .45;
+    ctx.beginPath(); ctx.moveTo(hx, hy - 1.2 * ep); ctx.lineTo(gx, gy - 1.3 * ep); ctx.lineTo(cx2, cy2 - .7 * ep); ctx.stroke();
+    ctx.strokeStyle = couleur;
+    // pied palmé : trois doigts en éventail
+    ctx.fillStyle = couleur; ctx.beginPath(); ctx.moveTo(cx2, cy2);
+    for (const a of [-.5, 0, .5]) ctx.lineTo(cx2 + 2.8 * Math.cos(angle + a), cy2 + 2.8 * Math.sin(angle + a));
+    ctx.closePath(); ctx.fill();
+    ctx.lineWidth = .5; ctx.beginPath();
+    for (const a of [-.5, 0, .5]) { ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + 3 * Math.cos(angle + a), cy2 + 3 * Math.sin(angle + a)); }
+    ctx.stroke();
+  };
+  if (enVol) { patte(1.2, -.5, "#7d6830", .85); patte(0, 0, peauSombre, 1); }
+  else { ovale(-4.2, -1.6, 3.4, 1.9, -.15); ovale(-5.6, -.3, 2.4, .8); }
+  // corps
+  const g = ctx.createRadialGradient(-1, -6.4, .5, 0, -3.6, 8);
+  g.addColorStop(0, "#d4b45a"); g.addColorStop(.55, "#9a7f34"); g.addColorStop(1, "#5b4b1f");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-6.4, -1.2);
+  ctx.bezierCurveTo(-6.8, -5.6 - respire, -2.6, -8 - respire, 1.6, -7.6 - respire);
+  ctx.bezierCurveTo(4.6, -7.3, 6.8, -5.4, 6.9, -3);
+  ctx.bezierCurveTo(7, -1.4, 5.6, -.6, 3.6, -.5);
+  ctx.lineTo(-5, -.5); ctx.closePath(); ctx.fill();
+  // ventre clair à peine visible, verrues
+  ctx.fillStyle = "rgba(225,205,150,.55)"; ovale(2.6, -1.4, 3.2, 1);
+  ctx.fillStyle = "rgba(60,45,15,.55)";
+  for (const [wx, wy, r] of [[-3.6, -4.6, .55], [-1.6, -6, .5], [-4.6, -2.8, .45], [.4, -5, .45], [-2.4, -3.2, .4], [2.2, -6.3, .35]]) rond(wx, wy, r);
+  ctx.fillStyle = "rgba(255,235,170,.4)";
+  for (const [wx, wy] of [[-3.8, -4.9], [-1.8, -6.3], [.2, -5.3]]) rond(wx, wy, .2);
+  // liseré de lumière sur le dos (détache le crapaud du fond sombre)
+  ctx.strokeStyle = "rgba(255,228,160,.55)"; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.moveTo(-5.6, -4); ctx.bezierCurveTo(-4.4, -6.6 - respire, -1.2, -7.8 - respire, 1.8, -7.5 - respire); ctx.stroke();
+  // pattes avant
+  ctx.fillStyle = peauSombre;
+  if (enVol) {
+    // pattes avant tendues vers le bas, prêtes à se poser
+    ctx.strokeStyle = peauSombre; ctx.lineCap = "round"; ctx.lineWidth = 1;
+    ctx.lineWidth = 1.3;
+    for (const [x0, x1, x2] of [[2.8, 6, 3.6], [1, 4, 1.6]]) { ctx.beginPath(); ctx.moveTo(x0, -1.8); ctx.lineTo(x2 + (x1 - x2) * lat, .2 + (1 - lat) * 1.4 - (1 - pli) * 1.2 * lat); ctx.stroke(); }
+  } else { ovale(3.2, -.6, 1.1, .7); ovale(1, -.5, 1, .6); }
+  // bouche : un trait large, sans sourire
+  ctx.strokeStyle = "#3b2f12"; ctx.lineWidth = .35; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(6.6, -2.9); ctx.quadraticCurveTo(4.4, -2.5, 2.2, -3.1); ctx.stroke();
+  // œil : bosse, iris doré, pupille horizontale, paupière
+  ctx.fillStyle = "#8a7130"; ovale(3.4, -6.9, 2.1, 1.7);
+  const iris = ctx.createRadialGradient(3.6, -7.1, .2, 3.6, -7.1, 1.4);
+  iris.addColorStop(0, "#f6d36a"); iris.addColorStop(1, "#b5801f");
+  ctx.fillStyle = iris; rond(3.7, -7, 1.3);
+  ctx.fillStyle = "#120d05"; ovale(3.8, -7, .85, .32);
+  ctx.fillStyle = "rgba(255,255,255,.75)"; rond(3.3, -7.5, .22);
+  ctx.strokeStyle = "#4e401a"; ctx.lineWidth = .45;
+  ctx.beginPath(); ctx.arc(3.7, -7, 1.4, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  // glande derrière l'œil
+  ctx.fillStyle = "rgba(70,55,20,.6)"; ovale(.9, -6.6, 1.2, .5, -.2);
+  ctx.restore();
+}
+
+// ---------- marais de jour (demande du prof), dans le style du Crapaud d'or ----------
+function dessinerFondJour(t) {
+  // ciel clair, un peu voilé près de l'horizon
+  ctx.fillStyle = degrade(0, 125, "#7fa9c4", "#a9c6d3", "#d6e1d6");
+  ctx.fillRect(0, 0, L, H);
+  // soleil pâle derrière un voile de nuages
+  const halo = ctx.createRadialGradient(176, 34, 4, 176, 34, 40);
+  halo.addColorStop(0, "rgba(255,250,225,.75)"); halo.addColorStop(1, "rgba(255,250,225,0)");
+  ctx.fillStyle = halo; ctx.fillRect(130, -10, 95, 90);
+  ctx.fillStyle = "#fffbe6"; rond(176, 34, 7);
+  // nuages étirés qui dérivent lentement
+  ctx.fillStyle = "rgba(255,255,255,.55)";
+  for (const [x0, y, w, v] of [[20, 22, 46, 1], [110, 14, 60, .7], [190, 44, 40, 1.2]]) {
+    const x = ((x0 + t * .01 * v) % (L + 80)) - 40;
+    ovale(x, y, w / 2, 3.2); ovale(x + w * .2, y - 2, w / 3, 2.6);
+  }
+  // collines lointaines, bleutées
+  ctx.fillStyle = "#8fa9a6";
+  ctx.beginPath(); ctx.moveTo(0, 104);
+  ctx.bezierCurveTo(50, 92, 100, 100, 150, 97); ctx.bezierCurveTo(190, 95, 215, 90, 240, 95);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  for (const [x, h, e] of [[30, 24, 1], [210, 22, .9]]) arbreMort(x, 102, h, e, "#7d9592");
+  saule(150, 99, 1, "#7d9592");
+  // plan moyen : rive verte, saules
+  ctx.fillStyle = "#5f7d55";
+  ctx.beginPath(); ctx.moveTo(0, 120);
+  ctx.bezierCurveTo(40, 111, 90, 118, 130, 118); ctx.bezierCurveTo(170, 118, 205, 110, 240, 115);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  saule(60, 119, 1.25, "#4e6a45");
+  saule(196, 116, 1.05, "#4e6a45");
+  // eau calme avec reflets du ciel
+  ctx.fillStyle = degrade(126, 142, "#9dbac4", "#6f8f97");
+  ctx.fillRect(0, 126, L, 18);
+  ctx.strokeStyle = "rgba(255,255,255,.45)"; ctx.lineWidth = .35; ctx.lineCap = "round";
+  for (let k = 0; k < 22; k++) {
+    const x = (bruit(k) * L + t * .05 * (k % 3 + 1)) % L, y = 128 + bruit(k + 40) * 13, w = 3 + bruit(k + 9) * 6;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.stroke();
+  }
+  // roseaux et massettes, verts, qui ondulent
+  for (let k = 0; k < 34; k++) {
+    const x = k * 7.3 + bruit(k) * 5, h = 10 + bruit(k + 9) * 14, b = Math.sin(t / 30 + x / 9) * 1.2;
+    ctx.strokeStyle = "#4f6b3a"; ctx.lineWidth = .7;
+    ctx.beginPath(); ctx.moveTo(x, 140); ctx.quadraticCurveTo(x + b / 2, 140 - h * .6, x + b, 140 - h); ctx.stroke();
+    if (k % 3 === 0) { ctx.fillStyle = "#6b4a2b"; arrondi(x + b - .8, 138 - h - 3, 1.6, 4.2, .8); ctx.fill(); }
+  }
+  // légère brume au ras de l'eau
+  ctx.fillStyle = degrade(118, 136, "rgba(235,240,235,0)", "rgba(235,240,235,.28)", "rgba(235,240,235,0)");
+  ctx.fillRect(0, 118, L, 18);
+}
+// de jour : pas de lucioles, juste un voile très léger sur les bords
+function dessinerAmbianceJour() {
+  const v = ctx.createRadialGradient(L / 2, H / 2, 80, L / 2, H / 2, 170);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(20,30,25,.22)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
+}
+
+// ---------- géométrie (unités 240 × 180) ----------
+const SOL = 150;                                  // dessus du sol
+const PORTE = { x: 231, w: 9 };                  // grille à droite, sur toute la hauteur : fermée tant que la réponse n'est pas juste
+// balances : leur plateau est une plate-forme ; celle de droite, plus bas sous le bord de celle de gauche,
+// est assez basse pour y sauter depuis le sol (on peut aussi s'y laisser tomber depuis la balance de gauche).
+// Plateaux larges : jusqu'à 8 animaux de la taille du crapaud, plus une place libre pour notre crapaud.
+const BG = { x1: 60, x2: 172, y: 68 };
+const BD = { x1: 126, x2: 230, y: 124 };
+// planches pour monter jusqu'à la balance de gauche (on les traverse par en dessous)
+const ETAGERES = [
+  { x1: 20, x2: 50, y: 128 },
+  { x1: 0, x2: 28, y: 108 },
+  { x1: 22, x2: 54, y: 89 },
+];
+
+// ---------- état ----------
+let mode = "atelier", quiz = null, m = null, compteurAtelier = 0, temps = 0;
+// le « cas » choisi (non révélé aux élèves) : 1 mêmes escargots ; 2 escargots en nombre multiple ou diviseur ;
+// 3 crapaud compris, multiple ou diviseur ; 4 cas général ; 0 aléa (un cas au hasard à chaque manche)
+let niveau = 1;
+const touches = { g: false, d: false, saut: false };
+
+// ---------- sons (Web Audio, comme le Crapaud d'or) ----------
+let sonActif = true, audio = null;
+const FICHIERS_SONS = ["croak", "juste", "pop"];
+const tampons = {};
+function contexteAudio() {
+  if (audio) return audio;
+  try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  for (const nom of FICHIERS_SONS)
+    fetch(`sons/${nom}.wav`).then(r => r.arrayBuffer()).then(d => audio.decodeAudioData(d)).then(t => { tampons[nom] = t; }).catch(() => {});
+  return audio;
+}
+function jouer(nom, { vitesse = 1, volume = .8, retard = 0 } = {}) {
+  if (!sonActif || !contexteAudio() || !tampons[nom]) return null;
+  const src = audio.createBufferSource(), g = audio.createGain();
+  src.buffer = tampons[nom]; src.playbackRate.value = vitesse; g.gain.value = volume;
+  src.connect(g); g.connect(audio.destination); src.start(audio.currentTime + retard);
+  return src;
+}
+$("btnSon").onclick = () => { sonActif = !sonActif; $("btnSon").textContent = sonActif ? "🔊" : "🔇"; };
+
+// ---------- tirage ----------
+// À gauche : des escargots (les pieuvres du Scratch) et 1 à 3 crapauds ; masses de 80 à 150 g (dizaines).
+// Le crapaud du joueur pèse autant qu'un crapaud.
+// Cas 1 : autant d'escargots à droite, et un crapaud de plus.
+// Cas 2 : à droite, seulement des escargots, en nombre multiple ou diviseur de celui de gauche (2 → 6, 6 → 3…).
+// Cas 3 : notre crapaud sur la balance de droite, celle-ci porte k fois (ou k fois moins d')escargots et de crapauds
+//         que celle de gauche : sa masse est alors un multiple ou un diviseur de la masse de gauche.
+// Cas 4 (général) : à droite, un nombre quelconque d'escargots (1 à 6) et de crapauds (0 à 3), sans lien avec la gauche.
+// Au plus 8 animaux par balance (plus la place libre de notre crapaud).
+const hasard = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const choisir = t => t[Math.floor(Math.random() * t.length)];
+function tirer() {
+  const mp = 10 * hasard(8, 15), mc = 10 * hasard(8, 15);
+  const cas = niveau || hasard(1, 4);
+  let np, nc, npD, ncD;
+  if (cas === 4) {
+    do {
+      np = hasard(2, 5); nc = hasard(1, 3); npD = hasard(1, 6); ncD = hasard(0, 3);
+    } while (np + nc > 8 || npD + ncD > 8 || (npD === np && ncD === nc));
+  } else if (cas === 1) {
+    do { np = hasard(3, 5); nc = hasard(1, 3); } while (np + nc + 1 > 8);
+    npD = np; ncD = nc + 1;
+  } else if (cas === 3) {
+    // compositions possibles : à gauche (np, nc) ; à droite, avec notre crapaud, (k·np, k·nc) ou (np/k, nc/k)
+    const possibles = [];
+    for (let a = 1; a <= 6; a++) for (let c = 1; c <= 3; c++) {
+      if (a + c > 8) continue;
+      for (const k of [2, 3, 4]) {
+        if (k * a + k * c - 1 <= 8) possibles.push([a, c, k * a, k * c - 1]);
+        if (a % k === 0 && c % k === 0) possibles.push([a, c, a / k, c / k - 1]);
+      }
+    }
+    [np, nc, npD, ncD] = choisir(possibles);
+  } else {
+    for (;;) {
+      np = hasard(2, 6); nc = hasard(1, 3);
+      if (np + nc > 8) continue;
+      const multiples = [2, 3, 4].map(k => k * np).filter(n => n <= 8);
+      const diviseurs = [];
+      for (let d = 1; d < np; d++) if (np % d === 0) diviseurs.push(d);
+      const sortes = [multiples, diviseurs].filter(t => t.length);
+      if (!sortes.length) continue;
+      npD = choisir(choisir(sortes)); ncD = 0;
+      break;
+    }
+  }
+  return {
+    np, nc, npD, ncD, mp, mc,
+    masseG: np * mp + nc * mc,
+    masseD: npD * mp + ncD * mc,        // sans notre crapaud ; il compte s'il est dessus au moment de valider
+    phase: "jeu", porte: 0, cas,
+  };
+}
+
+// ---------- dessin des balances, des escargots et des petits crapauds ----------
+// balance de cuisine : plateau d'acier, boîtier métallique, écran à cristaux liquides ; posée sur un pilier de pierre
+function dessinerBalance(B, texte, enfonce) {
+  const xm = (B.x1 + B.x2) / 2, y = B.y + enfonce;
+  pierre({ x: xm - 8, y: B.y + 17, w: 16, h: SOL - B.y - 17 });
+  ctx.fillStyle = "rgba(0,0,0,.3)"; arrondi(B.x1 + 6.5, y + 4, B.x2 - B.x1 - 11, 14, 2.5); ctx.fill();
+  ctx.fillStyle = degrade(y + 3, y + 17, "#8b969b", "#4a5458"); arrondi(B.x1 + 6, y + 3, B.x2 - B.x1 - 12, 14, 2.5); ctx.fill();
+  ctx.fillStyle = "#3a4245"; ctx.fillRect(xm - 4, y + 1.5, 8, 2);
+  // écran
+  ctx.fillStyle = "#1c2a22"; arrondi(xm - 17, y + 6, 34, 8.5, 1.2); ctx.fill();
+  ctx.fillStyle = "#b8f0a2"; ctx.font = "bold 6.4px ui-monospace, Menlo, Consolas, monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(texte, xm, y + 10.4);
+  // plateau
+  ctx.fillStyle = degrade(y - 1.5, y + 1.5, "#d6dcdf", "#7d878b"); arrondi(B.x1, y - 1.5, B.x2 - B.x1, 3, 1); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(B.x1 + 1, y - 1.2, B.x2 - B.x1 - 2, .5);
+}
+
+// un escargot des marais : coquille ambrée en spirale, corps grisâtre et deux cornes ; (0,0) = sous le pied, au milieu
+function dessinerEscargot(x, bas, e, t, k) {
+  ctx.save(); ctx.translate(x, bas); ctx.scale(e, e);
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(0, .2, 6, .9);
+  // pied et tête, tournés vers la droite ; les cornes bougent un peu
+  const b = Math.sin(t / 30 + k) * .35;
+  ctx.fillStyle = degrade(-3.4, 0, "#9b9480", "#5d5848");
+  ctx.beginPath(); ctx.moveTo(-6, 0); ctx.quadraticCurveTo(-5.6, -2.2, 0, -2.4); ctx.lineTo(4, -2.6);
+  ctx.quadraticCurveTo(6.6, -3.2, 6.4, -1); ctx.quadraticCurveTo(6.2, 0, 4.6, 0); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#5d5848"; ctx.lineCap = "round"; ctx.lineWidth = .55;
+  for (const [x0, x1] of [[4.6, 6.4], [5.4, 7.6]]) { ctx.beginPath(); ctx.moveTo(x0, -2.6); ctx.lineTo(x1 + b, -6.2 + Math.abs(b)); ctx.stroke(); }
+  ctx.fillStyle = "#2a2618"; rond(6.4 + b, -6.2, .45); rond(7.6 + b, -6.2, .45);
+  // coquille
+  const g = ctx.createRadialGradient(-1.6, -6.6, .4, -.8, -5.4, 5.2);
+  g.addColorStop(0, "#e2b066"); g.addColorStop(.55, "#a8692c"); g.addColorStop(1, "#5a3414");
+  ctx.fillStyle = g; rond(-.8, -5.4, 4.4);
+  ctx.strokeStyle = "rgba(60,32,10,.8)"; ctx.lineWidth = .45;
+  ctx.beginPath();
+  for (let a = 0; a < Math.PI * 4.2; a += .2) {
+    const r = .3 + a * .3;
+    const px = -.8 + Math.cos(a) * r, py = -5.4 + Math.sin(a) * r;
+    if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,235,180,.35)"; ovale(-2.4, -7.4, 1.2, .6, -.5);
+  ctx.restore();
+}
+// un petit crapaud posé sur une balance (même dessin que le joueur, plus petit)
+function petitCrapaud(x, bas, e, t) {
+  ctx.save(); ctx.translate(x, bas); ctx.scale(e, e);
+  dessinerCrapaud({ x: -CRAPAUD_W / 2, y: -CRAPAUD_H, dir: 1, auSol: true, etat: "libre", mort: 0, vx: 0, vy: 0 }, t);
+  ctx.restore();
+}
+// sur chaque plateau : une place libre à gauche pour notre crapaud, puis les escargots et les crapauds côte à côte,
+// tous de la taille du crapaud du joueur (la masse ne change pas la taille)
+// largeur d'une place : celle d'un animal, réduite seulement s'ils sont nombreux (ils restent serrés, à partir de la gauche)
+const placeDe = B => Math.min(12.6, (B.x2 - B.x1 - 4) / (B === BG ? m.np + m.nc + 1 : m.npD + m.ncD + 1));
+const placeLibre = B => B.x1 + 2 + .5 * placeDe(B);
+function poser(B, np, nc, enfonce, t) {
+  const place = placeDe(B);
+  for (let k = 0; k < np + nc; k++) {
+    const x = B.x1 + 2 + (k + 1.5) * place, y = B.y - 1.5 + enfonce;
+    if (k < np) dessinerEscargot(x, y, .95, t, k); else petitCrapaud(x, y, .95, t + k * 7);
+  }
+}
+// grille de fer sur toute la hauteur, au bord droit : elle bloque le passage, même en sautant ;
+// quand la réponse est juste, elle se lève un peu : juste assez pour que le crapaud passe dessous
+function dessinerPorte() {
+  const dy = -16 * m.porte;
+  ctx.save(); ctx.translate(0, dy);
+  ctx.lineCap = "round";
+  for (let x = PORTE.x + 1; x <= PORTE.x + PORTE.w; x += 2.6) {
+    ctx.strokeStyle = "#1d2124"; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(x, -2); ctx.lineTo(x, SOL); ctx.stroke();
+    ctx.strokeStyle = "rgba(170,180,185,.35)"; ctx.lineWidth = .3;
+    ctx.beginPath(); ctx.moveTo(x - .3, -2); ctx.lineTo(x - .3, SOL); ctx.stroke();
+    ctx.fillStyle = "#1d2124"; ctx.beginPath(); ctx.moveTo(x - .8, SOL); ctx.lineTo(x, SOL + 2); ctx.lineTo(x + .8, SOL); ctx.fill();   // pointes
+  }
+  for (let y = 18; y < SOL; y += 30) { ctx.fillStyle = "#2b3134"; ctx.fillRect(PORTE.x, y, PORTE.w + 1, 1.4); }
+  ctx.restore();
+}
+
+// ---------- moteur de plateforme (unités 240 × 180, 60 images par seconde) ----------
+const J = { x: 14, y: SOL, vx: 0, vy: 0, sol: true, dir: 1, gele: false, perdu: false, mort: 0, sur: null };
+const GRAV = .17, SAUT = -3.3, VITESSE = 1;
+function plates() {
+  return [
+    ...ETAGERES.map(E => ({ ...E, nom: null })),
+    { x1: BG.x1, x2: BG.x2, y: BG.y - 1.5, nom: "G" },
+    { x1: BD.x1, x2: BD.x2, y: BD.y - 1.5, nom: "D" },
+  ];
+}
+function pas() {
+  if (!m) return;
+  if (!J.gele && !J.perdu) {
+    const dir = (touches.d ? 1 : 0) - (touches.g ? 1 : 0);
+    if (dir) { J.vx = dir * (J.sol ? VITESSE : .8); J.dir = dir; }
+    else J.vx *= J.sol ? .6 : .9;
+    if (touches.saut && J.sol) { J.vy = SAUT; J.sol = false; jouer("pop", { volume: .35, vitesse: 1.3 }); }
+  } else J.vx = 0;
+  if (J.perdu) J.mort = Math.min(1, J.mort + .04);
+  const avantY = J.y;
+  J.vy = Math.min(J.vy + GRAV, 4);
+  J.x += J.vx;
+  J.y += J.vy;
+  const limite = m.porte >= 1 ? 260 : PORTE.x - CRAPAUD_W / 2;
+  J.x = Math.max(CRAPAUD_W / 2, Math.min(limite, J.x));
+  // atterrissage sur le sol, les planches et les plateaux (on traverse par en dessous)
+  J.sol = false; J.sur = null;
+  if (J.y >= SOL) { J.y = SOL; J.vy = 0; J.sol = true; }
+  for (const P of plates())
+    if (J.vy >= 0 && avantY <= P.y + .05 && J.y >= P.y && J.x > P.x1 - 3 && J.x < P.x2 + 3) {
+      J.y = P.y; J.vy = 0; J.sol = true; J.sur = P.nom;
+    }
+  // sur une balance, sans flèche enfoncée (ou figé par la question), il glisse jusqu'à sa place libre
+  const B = J.sur === "G" ? BG : J.sur === "D" ? BD : null;
+  if (B && !J.perdu && (J.gele || !(touches.g || touches.d))) {
+    const dx = placeLibre(B) - J.x;
+    if (Math.abs(dx) > .5) { J.x += Math.sign(dx) * .8; J.dir = Math.sign(dx); }
+  }
+  // sortie sous la grille levée : manche gagnée
+  if (m.phase === "sortie" && J.x > 246) { m.phase = "fini"; suivante(); }
+}
+
+function dessiner() {
+  if (!m) return;
+  ctx.setTransform(FIN, 0, 0, FIN, 0, 0);
+  dessinerFondJour(temps);
+  terre({ x: -2, y: SOL, w: L + 4, h: H - SOL + 2 });
+  for (const E of ETAGERES) planche({ x: E.x1, y: E.y, w: E.x2 - E.x1, h: 3 });
+  dessinerPorte();
+  // les balances s'enfoncent un peu quand le crapaud est dessus ; celle de gauche ajoute alors sa masse
+  const surG = J.sur === "G" ? .6 : 0, surD = J.sur === "D" ? .6 : 0;
+  dessinerBalance(BG, `${m.masseG + (surG ? m.mc : 0)} g`, surG);
+  // à droite, « ? » tant que la réponse n'est pas trouvée ; ensuite sa vraie masse, avec notre crapaud s'il est dessus
+  dessinerBalance(BD, m.phase === "sortie" || m.phase === "fini" ? `${m.masseD + (surD ? m.mc : 0)} g` : "? g", surD);
+  poser(BG, m.np, m.nc, surG, temps);
+  poser(BD, m.npD, m.ncD, surD, temps);
+  dessinerCrapaud({ x: J.x - CRAPAUD_W / 2, y: J.y - CRAPAUD_H, dir: J.dir, auSol: J.sol, etat: J.perdu ? "mort" : "libre",
+    mort: J.mort, vx: J.vx * 1.5, vy: J.vy * 1.8 }, temps);
+  dessinerAmbianceJour();
+}
+function boucle() { temps++; pas(); dessiner(); requestAnimationFrame(boucle); }
+
+// ---------- question, porte, défaite ----------
+// la question est posée dès le début : on peut répondre à tout moment, sans monter sur la balance de droite
+function afficher() {
+  const jeu = m.phase === "jeu";
+  $("consigne").textContent = jeu ? "Quelle masse affiche la balance de droite en ce moment ?"
+    : m.phase === "perdu" ? "Raté ! Nouveaux nombres…"
+    : m.phase === "sortie" ? "La grille est levée."
+    : "";
+  $("saisie").classList.toggle("visible", jeu);
+  $("btnRenoncer").disabled = !jeu;
+}
+// lecture de la réponse : un entier, avec ou sans « g » (« 530 », « 530 g », « 530g »)
+function lireMasse(txt) {
+  const t = txt.trim().replace(/\s/g, "").replace(/g$/i, "");
+  return /^\d+$/.test(t) ? Number(t) : null;
+}
+function valider() {
+  if (m.phase !== "jeu" || (mode === "quiz" && !quiz)) return;
+  const v = lireMasse($("masse").value);
+  if (v === null) { $("retour").innerHTML = `<span class="ko">Écris un nombre de grammes.</span>`; return; }
+  $("retour").innerHTML = "";
+  // on valide sur ce qui est sur la balance de droite à cet instant : avec notre crapaud s'il y est, sans lui sinon
+  const attendu = m.masseD + (J.sur === "D" && J.sol ? m.mc : 0);
+  if (v === attendu) reussite(); else defaite();
+}
+$("btnValider").onclick = valider;
+$("masse").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); valider(); } e.stopPropagation(); });
+
+// juste : pas de message, le son et la grille qui se lève (règle du prof) ; le crapaud sort à droite
+function reussite() {
+  if (quiz) quiz.score++;
+  jouer("juste", { volume: .7 });
+  m.phase = "sortie";
+  J.gele = false;
+  afficher();
+  const t0 = performance.now(), manche = m;
+  (function ouvrir() {
+    if (m !== manche) return;
+    m.porte = Math.min(1, (performance.now() - t0) / 700);
+    if (m.porte < 1) requestAnimationFrame(ouvrir);
+  })();
+}
+// faux : comme le Scratch, le crapaud perd (il croasse de plus en plus grave), puis nouveaux nombres
+function defaite() {
+  m.phase = "perdu";
+  J.perdu = true;
+  afficher();
+  [1, .85, .7, .55].forEach((v, k) => jouer("croak", { vitesse: v, retard: .4 * k }));
+  const manche = m;
+  setTimeout(() => { if (m === manche) suivante(); }, 2200);
+}
+$("btnRenoncer").onclick = () => { if (m.phase === "jeu") suivante(); };
+// un clic sur la scène quitte la case de réponse : les flèches pilotent de nouveau le crapaud
+cv.addEventListener("pointerdown", () => $("masse").blur());
+
+function nouvelleManche() {
+  m = tirer();
+  Object.assign(J, { x: 14, y: SOL, vx: 0, vy: 0, sol: true, dir: 1, gele: false, perdu: false, mort: 0, sur: null });
+  $("retour").innerHTML = "";
+  $("masse").value = "";
+  if (mode === "atelier") { compteurAtelier++; $("compteur").textContent = `Manche ${compteurAtelier}`; }
+  majScore();
+  afficher();
+}
+function suivante() {
+  if (quiz) {
+    quiz.k++;
+    if (quiz.k >= quiz.n) return finQuiz();
+  }
+  nouvelleManche();
+}
+
+// ---------- clavier ----------
+const CLES = { ArrowLeft: "g", ArrowRight: "d", ArrowUp: "saut", " ": "saut" };
+addEventListener("keydown", e => {
+  const k = CLES[e.key];
+  if (!k || document.activeElement.tagName === "INPUT") return;
+  e.preventDefault();
+  contexteAudio();
+  touches[k] = true;
+});
+addEventListener("keyup", e => { const k = CLES[e.key]; if (k) touches[k] = false; });
+
+// ---------- Atelier / Quiz ----------
+function majScore() {
+  $("scoreBloc").style.display = quiz ? "" : "none";
+  $("blocAtelier").style.display = mode === "atelier" ? "" : "none";
+  if (quiz) { $("progression").textContent = `Question ${Math.min(quiz.k + 1, quiz.n)}/${quiz.n}`; $("score").textContent = `Score : ${quiz.score}`; }
+}
+function passerMode(nouveau) {
+  mode = nouveau; quiz = null;
+  $("btnAtelier").classList.toggle("active", mode === "atelier");
+  $("btnQuiz").classList.toggle("active", mode === "quiz");
+  $("quizSetup").style.display = mode === "quiz" ? "" : "none";
+  $("quizN").disabled = false;
+  for (const b of $("choixNiveau").querySelectorAll("button")) b.disabled = false;
+  compteurAtelier = 0;
+  nouvelleManche();
+  if (mode === "quiz") attenteQuiz();
+}
+// avant le départ du quiz, la scène est visible mais le crapaud ne bouge pas
+function attenteQuiz() {
+  J.gele = true;
+  $("consigne").textContent = "Choisis le nombre de questions, puis Commencer le Quiz.";
+  $("saisie").classList.remove("visible");
+  $("btnRenoncer").disabled = true;
+}
+$("btnAtelier").onclick = () => passerMode("atelier");
+$("btnQuiz").onclick = () => passerMode("quiz");
+$("btnDemarrer").onclick = () => {
+  contexteAudio();
+  quiz = { n: Number($("quizN").value), k: 0, score: 0 };
+  $("quizSetup").style.display = "none";
+  $("quizN").disabled = true;
+  for (const b of $("choixNiveau").querySelectorAll("button")) b.disabled = true;
+  nouvelleManche();
+};
+function finQuiz() {
+  const q = quiz;
+  quiz = null;
+  majScore();
+  $("scoreBloc").style.display = "";
+  $("progression").textContent = "Quiz terminé";
+  $("score").textContent = `Score : ${q.score} / ${q.n}`;
+  m.phase = "fini"; J.gele = true;
+  $("consigne").textContent = `Quiz terminé : ${q.score} / ${q.n}.`;
+  $("saisie").classList.remove("visible");
+  $("retour").innerHTML = `<button id="btnRejouer" class="principal">Recommencer</button> <button id="btnDiplome">🎓 Diplôme</button>`;
+  $("btnRejouer").onclick = () => passerMode("quiz");
+  $("btnDiplome").onclick = () => ouvrirDiplome(q);
+  $("btnRenoncer").disabled = true;
+  for (const b of $("choixNiveau").querySelectorAll("button")) b.disabled = false;
+}
+
+$("choixNiveau").onclick = e => {
+  const btn = e.target.closest("button");
+  if (!btn || btn.disabled) return;
+  for (const x of $("choixNiveau").querySelectorAll("button")) x.classList.toggle("active", x === btn);
+  niveau = Number(btn.dataset.n);
+  nouvelleManche();
+  if (mode === "quiz" && !quiz) attenteQuiz();
+};
+
+// ---------- diplôme (repris du Crapaud d'or) ----------
+const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(297mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #2f5fd0;background:#2f5fd0;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-dessin{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-taux{display:inline-block;margin-top:3mm;padding:1.5mm 5mm;border:1.5px solid #c9a227;border-radius:3mm;font-size:13pt;color:#1d3b8f;background:#fffaf0;}
+#overlayFiche .d-taux b{font-size:20pt;font-family:'Playfair Display',serif;margin-left:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:8px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:3mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 4mm;min-width:32mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;font-size:5mm;line-height:1;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+  #overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}
+}`;
+
+function ouvrirOverlay(contenu) {
+  let ov = $("overlayFiche");
+  if (!ov) {
+    const st = document.createElement("style");
+    st.textContent = FICHE_CSS + "@media print{@page{size:A4 landscape;margin:10mm;}}";
+    document.head.append(st);
+    ov = document.createElement("div");
+    ov.id = "overlayFiche";
+    ov.addEventListener("click", e => { if (e.target === ov) fermerOverlay(); });
+    document.body.append(ov);
+  }
+  ov.innerHTML = `<div id="ficheCarte">
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions"><button type="button" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong>.</p>
+    ${contenu}
+  </div>`;
+  $("btnFermerFiche").onclick = fermerOverlay;
+  $("btnImprimerFiche").onclick = () => window.print();
+  ov.classList.add("ouverte");
+  document.body.classList.add("fiche-ouverte");
+  return ov;
+}
+function fermerOverlay() {
+  const ov = $("overlayFiche");
+  if (ov) ov.classList.remove("ouverte");
+  document.body.classList.remove("fiche-ouverte");
+}
+
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+// diplôme de fin de quiz (même présentation que le Crapaud d'or) ; sans nom, une ligne reste à remplir à la main
+function ouvrirDiplome(q) {
+  const nom = $("nomEleve").value.trim();
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const taux = q.n ? Math.round(100 * q.score / q.n) : 0;
+  // mention selon le taux : moins de 50 %, 50 à 74 %, 75 à 99 %, 100 %
+  const mention = taux === 100 ? "Félicitations !" : taux >= 75 ? "Très bien" : taux >= 50 ? "Bien" : "Continue tes efforts";
+  const festons = Array.from({ length: 48 }, (_, k) => {
+    const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+    return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+  }).join(" ") + "Z";
+  const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${q.score} / ${q.n}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">pesée${q.score > 1 ? "s" : ""} juste${q.score > 1 ? "s" : ""}</text>
+  </svg>`;
+  // le crapaud bronze-or du jeu, en petit
+  const dessin = `<div class="d-dessin"><svg width="96" height="80" viewBox="-8 -12 16 13" aria-hidden="true">
+    <defs><radialGradient id="peau" cx=".4" cy=".2" r=".9"><stop offset="0" stop-color="#d4b45a"/><stop offset=".55" stop-color="#9a7f34"/><stop offset="1" stop-color="#5b4b1f"/></radialGradient></defs>
+    <ellipse cx="-4.2" cy="-1.6" rx="3.4" ry="1.9" fill="#5e4f22"/><ellipse cx="-5.6" cy="-.3" rx="2.4" ry=".8" fill="#5e4f22"/>
+    <path d="M-6.4 -1.2 C-6.8 -5.6 -2.6 -8 1.6 -7.6 C4.6 -7.3 6.8 -5.4 6.9 -3 C7 -1.4 5.6 -.6 3.6 -.5 L-5 -.5 Z" fill="url(#peau)"/>
+    <circle cx="-3.6" cy="-4.6" r=".55" fill="#5a4416" opacity=".6"/><circle cx="-1.6" cy="-6" r=".5" fill="#5a4416" opacity=".6"/><circle cx=".4" cy="-5" r=".45" fill="#5a4416" opacity=".6"/>
+    <ellipse cx="3.2" cy="-.6" rx="1.1" ry=".7" fill="#5e4f22"/><ellipse cx="1" cy="-.5" rx="1" ry=".6" fill="#5e4f22"/>
+    <path d="M6.6 -2.9 Q4.4 -2.5 2.2 -3.1" fill="none" stroke="#3b2f12" stroke-width=".35" stroke-linecap="round"/>
+    <ellipse cx="3.4" cy="-6.9" rx="2.1" ry="1.7" fill="#8a7130"/><circle cx="3.7" cy="-7" r="1.3" fill="#e0b23a"/><ellipse cx="3.8" cy="-7" rx=".85" ry=".32" fill="#120d05"/>
+  </svg></div>`;
+  const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+  const frise = Array.from({ length: 6 }, () => ["◆", "·"]).flat().map(e => `<span>${e}</span>`).join("");
+  const ov = ouvrirOverlay(`<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${dessin}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">de la pesée · <b>Le crapaud sur la balance</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${nom ? esc(nom) : "&nbsp;"}</div>
+        <div class="d-pour">pour avoir trouvé la masse des balances du marais.</div>
+        <div class="d-pour"><b>${q.n}</b> question${q.n > 1 ? "s" : ""}, dont <b>${q.score}</b> juste${q.score > 1 ? "s" : ""}.</div>
+        <div class="d-taux">Taux de réponses justes :<b>${taux} %</b></div>
+        <div class="d-mention">${mention}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`);
+  // mise à l'échelle de l'aperçu à l'écran (l'impression garde la taille réelle)
+  const d = ov.querySelector(".diplome");
+  const carte = getComputedStyle(d.parentElement);
+  const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+  const r = d.getBoundingClientRect();
+  const e = Math.min(1, place / r.width);
+  d.style.transform = "scale(" + e + ")";
+  d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+  d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+}
+
+// ---------- Guide et nouvel onglet ----------
+$("btnGuide").onclick = () => $("overlayGuide").classList.toggle("visible");
+$("btnFermerGuide").onclick = () => $("overlayGuide").classList.remove("visible");
+$("onglet").href = location.href;
+
+nouvelleManche();
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>

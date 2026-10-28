@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coup de foudre chez les Fish</title>
+<!-- KaTeX (comme pyramide et cycleEquation) : chargé sans defer, le script de la page s'en sert dès le départ -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<!-- polices « bande dessinée » : titre en Bangers, texte en Baloo 2 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Baloo+2:wght@500;700&display=swap">
+<style>
+  :root{
+    --bg:#eef0ee; --panel:#fbfcfb; --border:#cfd6d4; --text:#25302f; --muted:#6b7775;
+    --accent:#2d6f7e; --ok:#2e8a57; --ko:#c2452f; --laiton:#9a7a3c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+  body{display:flex;flex-direction:column;}
+  /* en-tête : même mise en page que l'appli evaluation (titre à gauche, boutons à droite) */
+  header{display:flex;align-items:center;gap:14px;padding:0 20px;min-height:54px;flex:0 0 auto;
+    background:#e3ebe9;border-bottom:1px solid #b9c8c5;flex-wrap:wrap;}
+  #titre_appli{font-size:1.2rem;padding:10px 0;}
+  #titre_appli b{color:var(--accent);}
+  .header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;}
+  .filet-header{width:1px;height:22px;background:#b9c8c5;flex-shrink:0;}
+  .btn-header, button.btn-header{background:transparent;border:.5px solid #b9c8c5;height:34px;padding:0 14px;font-size:.82rem;font-weight:500;
+    border-radius:6px;cursor:pointer;color:#2f4a4f;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap;}
+  .btn-header:hover{border-color:#2f4a4f;color:#16282b;}
+  button.btn-header.active, .btn-header.active{background:transparent;border-color:var(--accent);color:var(--accent);font-weight:600;}
+  #app{display:flex;flex:1 1 auto;min-height:0;}
+  #sidebar{width:260px;min-width:260px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;}
+  button{font:inherit;font-size:15px;border:1px solid var(--border);background:#f3f6f5;color:var(--text);
+    border-radius:8px;padding:9px 10px;cursor:pointer;}
+  button:hover{border-color:var(--accent);}
+  button.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  button:disabled{opacity:.45;cursor:default;}
+  button.principal{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+  .groupe-label{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:4px;}
+  .choix3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .choix3 button{padding:8px 4px;font-size:14px;}
+  #atelierChoix button:disabled{cursor:default;opacity:1;color:#9a9a9a;}
+  #atelierChoix button.active:disabled{opacity:.55;color:#e8e8e8;}
+  .col{display:flex;flex-direction:column;gap:6px;}
+  .reglage{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+  #scoreBloc{font-size:15px;line-height:1.5;}
+  #compteur{font-size:14px;color:var(--muted);}
+  #droite{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #stage{flex:1 1 auto;min-height:0;position:relative;background:#1c2427;}
+  #scene{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  #scene .fleche{cursor:grab;touch-action:none;}
+  #scene .fleche.tenue{cursor:grabbing;}
+  /* zone de réponse sous la scène : consigne | saisie | aide | retour à droite */
+  /* hauteur fixe : l'aquarium ne change jamais de taille quand le tableau, l'aide ou « Manche suivante » apparaissent */
+  #zoneReponse{flex:0 0 168px;height:168px;overflow:hidden;display:flex;align-items:center;gap:16px;padding:10px 16px;flex-wrap:wrap;
+    background:var(--panel);border-top:1px solid var(--border);}
+  #question{flex:1 1 300px;min-width:260px;}
+  #ligneDebit{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;}
+  #consigne{font-size:17px;line-height:1.35;}
+  /* tableau de proportionnalité à remplir (non corrigé) */
+  #tableau{border-collapse:collapse;font-size:15px;margin-left:auto;flex:0 0 auto;width:auto;}
+  #tableau td:not(.donne){width:66px;}
+  #tableau th,#tableau td{border:1px solid var(--border);padding:3px 6px;text-align:center;height:34px;}
+  #tableau th{font-weight:500;text-align:left;background:#f3f6f5;white-space:nowrap;}
+  #tableau td.donne{font-weight:600;color:var(--accent);min-width:46px;}
+  #tableau input{width:58px;font-size:16px;text-align:center;border:none;background:transparent;padding:2px;}
+  #tableau input:focus{outline:2px solid var(--accent);border-radius:4px;}
+  #tableau .rendu{display:inline-block;min-width:58px;cursor:text;}
+  #tableau [hidden]{display:none !important;}   /* sinon display:inline-block l'emporte sur l'attribut hidden */
+  /* colonne qui n'est pas proportionnelle à la première (1 s → débit) */
+  #tableau td.faux{background:#f3c9c1;}
+  #tableau td.donne .katex{color:var(--accent);}
+  #saisie{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  /* la saisie de la durée : un cadre à part, bien distinct du débit « En 1 s : … » */
+  #saisie.cadre{background:#fff;border:2px solid var(--encre);border-radius:14px;padding:6px 10px;box-shadow:3px 3px 0 var(--encre);}
+  #labelDuree{font-size:17px;font-weight:700;}
+  #saisie input{width:90px;font-size:20px;text-align:center;padding:8px 6px;border:1px solid var(--border);border-radius:8px;}
+  #saisie .unite{font-size:18px;}
+  #boutonsAide{display:flex;gap:8px;}
+  #boutonsAide button{flex:1;}
+  #retour{font-size:16px;line-height:1.4;white-space:nowrap;}
+  #indice{font-size:15px;line-height:1.35;font-weight:600;}
+  #indice:empty{display:none;}
+  #retour:empty{display:none;}
+  #retour .suite{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;}
+  #retour .ko{color:var(--ko);font-weight:600;}
+  #retour .ligne{white-space:nowrap;}
+  #retour button{margin-top:6px;}
+  .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1;font-size:.9em;margin:0 2px;}
+  .frac span:first-child{border-bottom:1.5px solid currentColor;padding:0 3px 1px;}
+  .frac span:last-child{padding:1px 3px 0;}
+  /* ---------- Guide : overlay sur la zone de jeu ---------- */
+  #overlayGuide{display:none;position:absolute;inset:0;z-index:20;background:rgba(20,40,45,.35);
+    backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;}
+  #overlayGuide.visible{display:flex;}
+  #guideCarte{position:relative;background:#fff;color:#222;max-width:640px;width:100%;
+    border-radius:16px;border:2px solid var(--accent);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:24px 30px;}
+  #guideCarte h2{text-align:center;margin:0 0 14px;font-size:1.3em;color:var(--accent);}
+  #guideCarte h3{color:var(--accent);font-size:1em;margin:14px 0 6px;}
+  #guideCarte p, #guideCarte li{margin:0 0 4px;line-height:1.5;font-size:.95em;color:#333;}
+  #guideCarte ul{margin:0;padding-left:20px;}
+  #btnFermerGuide{position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;padding:0;font-size:20px;}
+
+  /* ---------- habillage cartoon (l'histoire des fish n'est pas « scientifique ») ----------
+     contours noirs épais, ombres décalées, boutons qui s'enfoncent au clic ; couleurs franches, pas de pastel */
+  :root{
+    --encre:#1d2326; --creme:#fbf1dc; --papier:#fffaf0; --violet:#8e3fb0; --violet-clair:#ead6f3; --bleu:#1b9aaa; --corail:#f0603f;
+    --bg:var(--creme); --panel:var(--papier); --border:var(--encre); --text:var(--encre); --muted:#5a5148; --accent:var(--bleu);
+  }
+  html,body{font-family:"Baloo 2",-apple-system,"Segoe UI",Roboto,sans-serif;}
+  /* thème violet, la couleur de la pieuvre (le jaune ne plaisait pas) */
+  header{background:var(--violet);border-bottom:3px solid var(--encre);}
+  #titre_appli{font-family:Bangers,"Baloo 2",sans-serif;font-size:1.9rem;letter-spacing:.04em;color:#fff;
+    text-shadow:2px 2px 0 var(--encre);}
+  #titre_appli b{font-family:"Baloo 2",sans-serif;font-size:1rem;letter-spacing:0;font-weight:700;color:#fff;
+    text-shadow:none;margin-left:6px;}
+  .filet-header{background:#fff;width:2px;opacity:.7;}
+  .btn-header, button.btn-header{background:#fff;border:2px solid var(--encre);border-radius:10px;color:var(--encre);
+    font-weight:700;box-shadow:2px 2px 0 var(--encre);}
+  .btn-header:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--encre);color:var(--encre);}
+  /* convention des en-têtes du prof : actif = bordure et texte colorés, sans fond plein */
+  button.btn-header.active, .btn-header.active{background:#fff;border-color:var(--bleu);color:var(--bleu);box-shadow:2px 2px 0 var(--bleu);}
+  #sidebar{background:var(--papier);border-right:3px solid var(--encre);}
+  .groupe-label{color:var(--encre);font-weight:700;letter-spacing:.06em;}
+  #compteur{color:var(--encre);font-weight:700;font-size:16px;}
+  button{border:2px solid var(--encre);background:#fff;color:var(--encre);border-radius:12px;font-weight:700;
+    box-shadow:3px 3px 0 var(--encre);transition:transform .06s, box-shadow .06s;}
+  button:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--encre);border-color:var(--encre);}
+  button:active:not(:disabled){transform:translate(3px,3px);box-shadow:0 0 0 var(--encre);}
+  button.active, button.principal{background:var(--bleu);border-color:var(--encre);color:#fff;}
+  button:disabled{opacity:.4;box-shadow:1px 1px 0 var(--encre);}
+  #btnRenoncer{background:#fff;}
+  #stage{background:#1c2427;}
+  #zoneReponse{background:var(--papier);border-top:3px solid var(--encre);}
+  #consigne{font-size:18px;font-weight:700;}
+  #saisie input{border:2px solid var(--encre);border-radius:12px;box-shadow:inset 2px 2px 0 rgba(0,0,0,.08);font-family:inherit;font-weight:700;}
+  #saisie input:focus{outline:3px solid var(--violet-clair);}
+  #tableau{border:2px solid var(--encre);border-radius:10px;border-collapse:separate;border-spacing:0;overflow:hidden;
+    box-shadow:3px 3px 0 var(--encre);background:#fff;}
+  #tableau th,#tableau td{border:0;border-right:2px solid var(--encre);border-bottom:2px solid var(--encre);}
+  #tableau tr:last-child th,#tableau tr:last-child td{border-bottom:0;}
+  #tableau tr > :last-child{border-right:0;}
+  #tableau th{background:var(--violet-clair);font-weight:700;}
+  #tableau input{font-family:inherit;font-weight:700;}
+  #tableau input:focus{outline:3px solid var(--violet-clair);}
+  #tableau td.faux{background:#ff9d87;}
+  #overlayGuide{background:rgba(29,35,38,.45);}
+  #guideCarte{border:3px solid var(--encre);border-radius:18px;box-shadow:6px 6px 0 var(--encre);background:var(--papier);}
+  #guideCarte h2{font-family:Bangers,"Baloo 2",sans-serif;font-size:2em;letter-spacing:.04em;color:var(--encre);}
+  #guideCarte h3{color:var(--bleu);}
+  #guideCarte p, #guideCarte li{color:var(--encre);}
+  select{font:inherit;font-weight:700;border:2px solid var(--encre);border-radius:10px;padding:4px 6px;background:#fff;}
+  @media (max-width:760px){
+    html,body{overflow:auto;}
+    #app{flex-direction:column;}
+    #sidebar{width:auto;min-width:0;border-right:none;border-bottom:3px solid var(--encre);}
+    #stage{flex:0 0 auto;height:62vw;min-height:240px;}
+    #zoneReponse{flex:0 0 auto;height:auto;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <span id="titre_appli">Coup de foudre chez les Fish <b>Débit et proportionnalité</b></span>
+  <div class="header-actions">
+    <button id="btnAtelier" class="btn-header active">Atelier</button>
+    <button id="btnQuiz" class="btn-header">Quiz</button>
+    <div class="filet-header"></div>
+    <button id="btnSon" class="btn-header" title="Couper ou remettre le son">🔊</button>
+    <a id="onglet" class="btn-header" target="_blank" rel="noopener" title="Ouvrir l’appli dans un nouvel onglet">Nouvel onglet</a>
+    <div class="filet-header"></div>
+    <button id="btnGuide" class="btn-header">Guide</button>
+  </div>
+</header>
+<div id="app">
+  <aside id="sidebar">
+    <div id="atelierChoix" class="col">
+      <div class="groupe-label">Graduations</div>
+      <div class="choix3" id="choixGrad">
+        <button data-g="3">Tiers</button><button data-g="4">Quarts</button><button data-g="0" class="active">Les deux</button>
+      </div>
+      <div class="groupe-label">Ouvertures</div>
+      <div class="choix3" id="choixOuv">
+        <button data-o="2" class="active">2</button><button data-o="3">3</button><button data-o="0">Libre</button>
+      </div>
+    </div>
+    <div id="quizSetup" class="col" style="display:none">
+      <label class="reglage">Nombre de questions :
+        <select id="quizN"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></label>
+      <button id="btnDemarrer" class="principal">▶ Commencer le Quiz</button>
+    </div>
+    <div id="scoreBloc" class="col" style="display:none">
+      <div id="progression"></div>
+      <div id="score"></div>
+    </div>
+    <div class="col" id="blocAtelier">
+      <div class="groupe-label">Question en cours :</div>
+      <div id="compteur"></div>
+    </div>
+    <!-- Aide et Renoncer dans le panneau : la ligne de saisie, sous l'aquarium, reste sur une seule ligne -->
+    <div id="boutonsAide">
+      <button id="btnAide">🙋 Aide</button>
+      <button id="btnRenoncer">Renoncer</button>
+    </div>
+    <div id="indice"></div>
+  </aside>
+  <div id="droite">
+    <main id="stage">
+      <svg id="scene" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" aria-label="Robinet, aquarium à deux bassins et fil électrique"></svg>
+      <div id="overlayGuide"><div id="guideCarte">
+        <button id="btnFermerGuide" aria-label="Fermer">×</button>
+        <h2>Mode d'emploi</h2>
+        <h3>Objectif</h3>
+        <p>Deux bassins séparés par une paroi qui s'arrête à 4 L : le poisson ne peut passer que par cette <b>ouverture</b>, entre 4 L et 5 L. Il faut que l'eau monte <b>jusqu'en haut</b> (5 L) : l'ouverture est pleine et le poisson de gauche passe rejoindre celui de droite.</p>
+        <p>L'eau remplit d'abord la gauche, déborde dans le bassin de droite, puis monte dans les deux. Attention au <b>fil électrique</b> qui pend juste au-dessus de l'aquarium : une bande de trop, et l'eau qui déborde touche le fil ; les poissons grillent.</p>
+        <h3>Déroulement</h3>
+        <ul>
+          <li><b>Ouvrir 1 s</b> : le robinet coule pendant 1 seconde. On lit le volume versé. Le débit change d'une manche à l'autre, mais <b>reste le même à chaque ouverture d'une même manche</b>.</li>
+          <li>Au départ, les niveaux tombent pile sur une ligne du carrelage : on mesure ce qui manque, on retire l'eau versée pendant l'essai, puis on calcule la durée. On l'écrit en nombre décimal (par exemple 2,5) et on clique sur <b>Ouvrir</b>.</li>
+          <li>Un <b>tableau de proportionnalité</b> à remplir aide au calcul : durée en secondes, volume en litres (en fraction, par exemple 5/4). La première colonne (1 s) est donnée par l'essai, les autres sont libres et ne sont pas vérifiées.</li>
+          <li>Pas assez d'eau : le poisson bute contre la paroi et on redonne une durée, l'eau repart du niveau atteint. Trop d'eau : elle touche le fil et les poissons grillent.</li>
+          <li>Les <b>flèches orange</b> marquent le niveau de départ de chaque bassin ; on peut les faire glisser pour prévoir un niveau (elles s'aimantent sur les lignes du carrelage).</li>
+          <li><b>Ouvertures</b> (réglage : 2, 3 ou Libre, essai d'1 s compris) : les ronds du compteur se remplissent à chaque ouverture. Quand il n'en reste plus et que ce n'est pas plein, la pieuvre va tirer le fil jusqu'à l'eau.</li>
+        </ul>
+        <h3>Carrelage</h3>
+        <p>Le carrelage est fait de rectangles aussi larges qu'un bassin : <b>un rectangle vaut 1 L</b> (repères sur les côtés). Les rectangles sont partagés en 3 ou en 4 bandes : une bande vaut un <b>tiers</b> ou un <b>quart</b> de litre. Le débit est écrit sous forme simplifiée dans le tableau (par exemple 1/2 L ou 1 L).</p>
+        <h3>Atelier et Quiz</h3>
+        <p><b>Atelier</b> : manches sans fin, <b>Aide</b> donne un indice, <b>Renoncer</b> passe à la manche suivante. <b>Quiz</b> : choisir le nombre de questions (5 par défaut) puis Commencer ; les choix sont verrouillés jusqu'au score final.</p>
+        <p>D'après le Scratch « JDS Proportionnalité » (niveau « Coup de foudre chez les Fish »).</p>
+      </div></div>
+    </main>
+    <div id="zoneReponse">
+      <!-- à gauche : consigne, puis la saisie ; à droite : le tableau (dont la 1re colonne donne le débit) -->
+      <div id="question">
+        <div id="consigne"></div>
+        <div id="ligneDebit">
+          <div id="saisie">
+            <button id="btnTest" class="principal">Ouvrir 1 s</button>
+            <span id="labelDuree" style="display:none">Ouvrir pendant</span>
+            <input id="duree" type="text" inputmode="decimal" autocomplete="off" aria-label="Durée en secondes" style="display:none">
+            <span class="unite" id="uniteS" style="display:none">s</span>
+            <button id="btnOuvrir" class="principal" style="display:none">Ouvrir</button>
+          </div>
+          <div id="retour"></div>
+        </div>
+      </div>
+      <table id="tableau" aria-label="Tableau de proportionnalité"></table>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+
+// ---------- géométrie de la scène (unités du viewBox) ----------
+const FOND = 500;          // fond des bassins
+const PX_L = 62;           // hauteur d'un litre
+const CAP = 5;             // contenance (en litres) affichée par les graduations
+const REBORD = 3;          // le cadre de l'aquarium ne dépasse la ligne des 5 L que de 3 unités
+const G = { x1: 250, x2: 509 };   // bassin de gauche
+const D = { x1: 515, x2: 774 };   // bassin de droite
+const MUR = { x1: 509, x2: 515 }; // paroi commune, fine : le volume au-dessus d'elle est négligeable
+const BEC = { x: 318, y: 132 };   // bec du robinet
+
+// ---------- état ----------
+let mode = "atelier", gradChoisie = 0;
+let ouverturesMax = 2;     // ouvertures permises, essai d'1 s compris (0 : libre) ; 2 comme dans le Scratch
+let quiz = null;           // { n, k, score }
+let m = null;              // manche en cours
+let compteurAtelier = 0;
+let animation = null;      // écoulement en cours
+
+// ---------- sons (Web Audio, comme le Crapaud d'or) ----------
+let sonActif = true, audio = null;
+const FICHIERS_SONS = ["juste", "goutte", "plouf", "grille", "eau"];
+const tampons = {};
+function contexteAudio() {
+  if (audio) return audio;
+  try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  for (const nom of FICHIERS_SONS)
+    fetch(`sons/${nom}.wav`).then(r => r.arrayBuffer()).then(d => audio.decodeAudioData(d)).then(t => { tampons[nom] = t; }).catch(() => {});
+  return audio;
+}
+function jouer(nom, { vitesse = 1, volume = .8, boucle = false } = {}) {
+  if (!sonActif || !contexteAudio() || !tampons[nom]) return null;
+  const src = audio.createBufferSource(), g = audio.createGain();
+  src.buffer = tampons[nom]; src.playbackRate.value = vitesse; src.loop = boucle; g.gain.value = volume;
+  src.connect(g); g.connect(audio.destination); src.start();
+  return src;
+}
+$("btnSon").onclick = () => { sonActif = !sonActif; $("btnSon").textContent = sonActif ? "🔊" : "🔇"; };
+
+// ---------- nombres ----------
+const pgcd = (a, b) => b ? pgcd(b, a % b) : a;
+const hasard = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const choisir = t => t[Math.floor(Math.random() * t.length)];
+// m/a s'écrit-il en nombre décimal ?
+function decimal(num, den) { den /= pgcd(num, den); while (den % 2 === 0) den /= 2; while (den % 5 === 0) den /= 5; return den === 1; }
+// affichage en LaTeX (KaTeX) ; sans KaTeX (hors ligne), on garde le texte tel quel
+function tex(code) {
+  try { return katex.renderToString(code, { throwOnError: false }); } catch (e) { return code; }
+}
+const frac = (n, d) => tex(`\\dfrac{${n}}{${d}}`);
+// le débit a/b L écrit sous forme simplifiée : fraction irréductible, ou entier
+function debitSimplifie(a, b) {
+  const g = pgcd(a, b);
+  return b / g === 1 ? tex(`${a / g}`) : frac(a / g, b / g);
+}
+// lecture d'un décimal tapé (virgule ou point) → {num, den} exact, ou null
+function lireDecimal(txt) {
+  const t = txt.trim().replace(/\s*s$/i, "").replace(/\s/g, "").replace(",", ".");
+  if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t)) return null;
+  const [e, f = ""] = t.split(".");
+  return { num: Number((e || "0") + f), den: 10 ** f.length, val: Number(t) };
+}
+
+// ---------- tirage d'une manche ----------
+// Le fond est carrelé de rectangles aussi larges qu'un bassin : un rectangle vaut 1 L et il est partagé en b bandes.
+// Une bande sur toute la largeur d'un bassin vaut donc 1/b L (un tiers ou un quart de litre).
+// Les volumes sont comptés en bandes : un bassin monte d'une bande pour une bande versée.
+// a : débit (bandes par seconde) ; S0, R0 : niveaux de départ à gauche et à droite, pile sur une ligne de bande ;
+// W : haut de la paroi, toujours un rectangle sous le bord : l'ouverture du haut est le seul passage du poisson.
+// T : 5 L, le haut de l'aquarium : il faut que l'eau y monte (ouverture pleine). Le fil pend au-dessus du bord,
+// une demi-bande au-dessus du bord : une bande versée de trop (une demi dans chaque bassin) le touche.
+// total = (W − S0) + (W − R0) + ouverture (2 rectangles de 1 L) ; l'essai d'1 s verse a bandes dans l'aquarium,
+// il reste donc manque = total − a (choix du prof : niveaux sur une ligne au départ, l'élève retire l'essai).
+function tirer() {
+  const b = gradChoisie || choisir([3, 4]);
+  // débits en bandes par seconde (pas 1 bande/s : division trop simple) ; entiers et fractions à simplifier permis,
+  // le tableau affiche la valeur simplifiée (2/4 → 1/2, 3/3 → 1)
+  const debits = b === 3 ? [2, 3, 4, 5, 6, 7, 8] : [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const W = (CAP - 1) * b, T = CAP * b;                    // en bandes
+  // on tire d'abord le débit, puis des niveaux qui lui conviennent : tous les débits sortent aussi souvent
+  const a = choisir(debits);
+  for (let essai = 0; ; essai++) {
+    // niveaux de départ pile sur une ligne de bande, au moins un demi-litre d'eau ; l'essai ne déborde pas
+    const S0 = hasard(Math.ceil(b / 2), W - 1);
+    const R0 = hasard(Math.ceil(b / 2), W - 1);
+    if (S0 + a >= W) continue;
+    const total = (W - S0) + (W - R0) + 2 * (T - W), manque = total - a;
+    const d = manque / a;
+    if (!decimal(manque, a) || d < 2 || d > 12) continue;
+    if (manque % a === 0 && essai < 200 && Math.random() < .75) continue;   // de préférence une durée non entière
+    // reste : ce qu'il faut encore verser, en fraction exacte de bandes (rn / rd) ; il diminue si l'élève n'ouvre pas assez
+    return { b, a, S0, S1: S0 + a, total, R0, W, T, fil: T + .5, bord: T + REBORD / PX_L * b, manque, rn: manque, rd: 1,
+      V: 0, lv: { g: S0, d: R0 }, etape: "test", aide: false, ouvertures: 0 };
+  }
+}
+// niveaux (gauche g, droite d), en bandes versées par bassin, quand on a versé V bandes depuis le début de la manche ;
+// brut : sans tenir compte du bord (sert à savoir si l'eau versée en trop atteint le fil)
+function niveaux(V, brut = false) {
+  const g = m.S0 + V;
+  if (g <= m.W) return { g, d: m.R0 };
+  const x = g - m.W;
+  if (x <= m.W - m.R0) return { g: m.W, d: m.R0 + x };
+  const h = m.W + (x - (m.W - m.R0)) / 2;
+  if (brut) return { g: h, d: h };
+  return { g: Math.min(m.bord, h), d: Math.min(m.bord, h) };   // au-delà du bord, l'eau déborde
+  return { g: h, d: h };
+}
+
+// ---------- dessin ----------
+const svg = $("scene");
+function el(nom, attrs = {}, parent = svg) {
+  const e = document.createElementNS(NS, nom);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e);
+  return e;
+}
+const yNiv = v => FOND - v / m.b * PX_L;   // v : bandes versées dans un bassin
+const FIL_X = D.x1 + 120;
+
+// un poisson sobre (carpe), dessiné tourné vers la droite autour de (0,0)
+// la pieuvre du Scratch, posée sur le tuyau : tentacules épais enroulés autour du tuyau, avec ventouses ;
+// un tentacule tient la manivelle du robinet
+function pieuvre() {
+  const VIOLET = "#a24fc0", FONCE = "#7a3496", VENTOUSE = "#f1c7ec";
+  const g = R.pieuvre = el("g");
+  const tentacule = (d, w = 10, ventouses = true) => {
+    el("path", { d, fill: "none", stroke: ENCRE, "stroke-width": w + 5, "stroke-linecap": "round", "stroke-linejoin": "round" }, g);
+    const c = el("path", { d, fill: "none", stroke: VIOLET, "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round" }, g);
+    if (!ventouses) return;
+    const L = c.getTotalLength();
+    for (const f of [.3, .45, .6, .74]) {
+      const q = c.getPointAtLength(L * f);
+      el("circle", { cx: q.x, cy: q.y, r: 2.2, fill: VENTOUSE, stroke: ENCRE, "stroke-width": .9 }, g);
+    }
+  };
+  // tentacules : deux s'étalent sur le tuyau, trois pendent en s'enroulant au bout
+  tentacule("M234 46 Q214 54 198 50 Q184 46 188 36 Q194 30 200 37");
+  tentacule("M240 50 Q224 70 212 76 Q200 84 206 94 Q214 99 218 90");
+  tentacule("M249 52 Q248 76 242 88 Q238 100 248 103 Q256 101 252 94");
+  tentacule("M258 51 Q266 76 276 86 Q286 95 293 88 Q295 81 288 80");
+  tentacule("M265 48 Q284 56 298 52", 9, false);
+  // le tentacule qui tient la manivelle (il s'agite pendant que l'eau coule)
+  R.brasPieuvre = el("g", {}, g);
+  for (const [c, w] of [[ENCRE, 14], [VIOLET, 9]])
+    el("path", { d: `M266 40 Q290 18 ${BEC.x - 5} 33`, fill: "none", stroke: c, "stroke-width": w, "stroke-linecap": "round" }, R.brasPieuvre);
+  el("path", { d: `M${BEC.x - 9} 27 Q${BEC.x + 2} 30 ${BEC.x - 3} 40`, fill: "none", stroke: ENCRE, "stroke-width": 9, "stroke-linecap": "round" }, R.brasPieuvre);
+  el("path", { d: `M${BEC.x - 9} 27 Q${BEC.x + 2} 30 ${BEC.x - 3} 40`, fill: "none", stroke: VIOLET, "stroke-width": 5, "stroke-linecap": "round" }, R.brasPieuvre);
+  // la tête en sac, penchée en arrière, avec ses taches et son siphon
+  el("path", { d: "M234 48 C218 40 212 16 226 4 C240 -6 266 0 272 18 C276 32 272 44 264 50 Q250 56 234 48 Z", fill: VIOLET, stroke: ENCRE, "stroke-width": 3, "stroke-linejoin": "round" }, g);
+  for (const [x, y, r] of [[230, 14, 3.5], [246, 8, 2.5], [222, 26, 2.2], [258, 12, 2]]) el("circle", { cx: x, cy: y, r, fill: FONCE }, g);
+  el("path", { d: "M226 40 Q216 42 214 50", fill: "none", stroke: ENCRE, "stroke-width": 6, "stroke-linecap": "round" }, g);
+  el("path", { d: "M226 40 Q216 42 214 50", fill: "none", stroke: FONCE, "stroke-width": 3, "stroke-linecap": "round" }, g);
+  // yeux mi-clos, sur le côté, tournés vers la manivelle
+  for (const x of [248, 264]) {
+    el("circle", { cx: x, cy: 36, r: 6.5, fill: "#fff", stroke: ENCRE, "stroke-width": 2.2 }, g);
+    el("circle", { cx: x + 2.5, cy: 37, r: 3, fill: ENCRE }, g);
+    el("path", { d: `M${x - 7} 34 Q${x} 27 ${x + 7} 34`, fill: VIOLET, stroke: ENCRE, "stroke-width": 2.2, "stroke-linejoin": "round" }, g);
+  }
+}
+
+// un poisson de dessin animé (contour noir épais, couleurs franches), tourné vers la droite autour de (0,0)
+const ENCRE = "#1d2326";
+function poisson(parent, coul) {
+  const g = el("g", {}, parent);
+  const trait = { stroke: ENCRE, "stroke-width": 2.6, "stroke-linejoin": "round", "stroke-linecap": "round" };
+  const chair = el("g", {}, g);
+  el("path", { d: "M-28 0 L-49 -17 Q-42 0 -49 17 Z", fill: coul.nageoire, ...trait }, chair);
+  el("path", { d: "M-14 -12 Q-2 -28 14 -13 Z", fill: coul.nageoire, ...trait }, chair);
+  el("path", { d: "M-33 0 Q-17 -19 8 -17 Q31 -13 35 0 Q31 13 8 17 Q-17 19 -33 0 Z", fill: coul.corps, ...trait }, chair);
+  el("path", { d: "M-24 5 Q2 16 28 6 Q4 20 -24 5 Z", fill: coul.ventre }, chair);
+  el("path", { d: "M14 -10 Q8 0 14 10", fill: "none", ...trait, "stroke-width": 2 }, chair);
+  el("path", { d: "M-2 4 Q4 16 14 9 Z", fill: coul.nageoire, ...trait, "stroke-width": 2 }, chair);
+  el("circle", { cx: 22, cy: -4, r: 5.5, fill: "#fff", ...trait, "stroke-width": 2 }, chair);
+  el("circle", { cx: 23.5, cy: -3.5, r: 2.6, fill: ENCRE }, chair);
+  el("path", { d: "M16.5 -6.5 Q22 -11 27.5 -6.5", fill: "none", ...trait, "stroke-width": 2.2 }, chair);   // paupière lourde
+  el("path", { d: "M33 4 L27 5", fill: "none", ...trait, "stroke-width": 2 }, chair);
+  // l'arête (tête, colonne, côtes, queue), cachée : elle apparaît quand le poisson grille
+  const arete = el("g", { display: "none" }, g);
+  const os = (d, w) => {
+    el("path", { d, fill: "none", stroke: ENCRE, "stroke-width": w + 2.6, "stroke-linecap": "round", "stroke-linejoin": "round" }, arete);
+    el("path", { d, fill: "none", stroke: "#fffaf0", "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round" }, arete);
+  };
+  os("M14 -10 Q30 -9 33 0 Q30 9 14 10 Q10 0 14 -10 Z", 2);
+  os("M14 0 H-32", 2.6);
+  for (let x = 8; x >= -24; x -= 6) {
+    const h = 11 - Math.abs(x + 6) * .22;
+    os(`M${x} 0 Q${x - 3} ${-h / 2} ${x - 5} ${-h} M${x} 0 Q${x - 3} ${h / 2} ${x - 5} ${h}`, 1.6);
+  }
+  os("M-32 0 L-45 -12 M-32 0 L-46 -4 M-32 0 L-46 4 M-32 0 L-45 12", 1.6);
+  el("circle", { cx: 23, cy: -3, r: 3, fill: ENCRE }, arete);
+  // effet radio des dessins animés : on voit tour à tour la chair et l'arête
+  g.radio = enOs => { chair.setAttribute("display", enOs ? "none" : ""); arete.setAttribute("display", enOs ? "" : "none"); };
+  g.griller = () => g.radio(true);
+  return g;
+}
+
+let R = {};   // éléments à animer
+function construireScene() {
+  svg.innerHTML = "";
+  const trait = (w = 3) => ({ stroke: ENCRE, "stroke-width": w, "stroke-linejoin": "round", "stroke-linecap": "round" });
+  // mur du fond, uni (pas de quadrillage)
+  el("rect", { x: 0, y: 0, width: 900, height: 540, fill: "#3d5b66" });
+  // meuble
+  el("rect", { x: 220, y: FOND + 4, width: 584, height: 40, rx: 6, fill: "#9a6235", ...trait(4) });
+  el("line", { x1: 228, y1: FOND + 14, x2: 796, y2: FOND + 14, stroke: "#b97c48", "stroke-width": 4 });
+
+  // tuyau et robinet
+  const tuyau = `M-10 64 H${BEC.x + 10} V${BEC.y - 26}`;
+  el("path", { d: tuyau, fill: "none", stroke: ENCRE, "stroke-width": 22, "stroke-linejoin": "round" });
+  el("path", { d: tuyau, fill: "none", stroke: "#b9c3c7", "stroke-width": 14, "stroke-linejoin": "round" });
+  el("rect", { x: BEC.x - 3, y: BEC.y - 31, width: 26, height: 23, rx: 5, fill: "#b9c3c7", ...trait(3) });
+  el("path", { d: `M${BEC.x + 3} ${BEC.y - 9} H${BEC.x + 17} L${BEC.x + 15} ${BEC.y} H${BEC.x + 5} Z`, fill: "#9aa5aa", ...trait(3) });
+  R.vanne = el("g", { transform: `translate(${BEC.x + 10} 42)` });
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 22, stroke: ENCRE, "stroke-width": 7 }, R.vanne);
+  R.volant = el("g", {}, R.vanne);
+  el("circle", { cx: 0, cy: 0, r: 15, fill: "none", stroke: ENCRE, "stroke-width": 8 }, R.volant);
+  el("circle", { cx: 0, cy: 0, r: 15, fill: "none", stroke: "#e2472c", "stroke-width": 4 }, R.volant);
+  for (const ang of [0, 60, 120]) {
+    el("line", { x1: -14, y1: 0, x2: 14, y2: 0, stroke: ENCRE, "stroke-width": 6, transform: `rotate(${ang})` }, R.volant);
+    el("line", { x1: -14, y1: 0, x2: 14, y2: 0, stroke: "#e2472c", "stroke-width": 2.5, transform: `rotate(${ang})` }, R.volant);
+  }
+  el("circle", { cx: 0, cy: 0, r: 5, fill: "#e2472c", ...trait(2.5) }, R.volant);
+  R.filet = el("rect", { x: BEC.x + 6, y: BEC.y, width: 8, height: 0, fill: "#7fd8ec", stroke: ENCRE, "stroke-width": 2, opacity: 0 });
+  pieuvre();
+
+  // fond de l'aquarium carrelé : un rectangle de la largeur du bassin par litre, partagé en tiers ou en quarts (on compte les bandes)
+  for (const B of [G, D]) {
+    const l = B.x2 - B.x1;
+    for (let r = 0; r < CAP; r++) {
+      const x = B.x1, y = FOND - (r + 1) * PX_L;
+      el("rect", { x: x + 3, y: y + 2, width: l - 6, height: PX_L - 4, rx: 4, fill: "#fff3d6" }, svg);
+      for (let k = 0; k < m.b; k++) if (k % 2)
+        el("rect", { x: x + 3, y: y + k * PX_L / m.b, width: l - 6, height: PX_L / m.b, fill: "#ecd3a0" });   // pas de bleu : on ne confond pas avec l'eau
+      for (let k = 1; k < m.b; k++)
+        el("line", { x1: x + 3, y1: y + k * PX_L / m.b, x2: x + l - 3, y2: y + k * PX_L / m.b, stroke: ENCRE, "stroke-width": 1.2, opacity: .45 });
+      el("rect", { x: x + 3, y: y + 2, width: l - 6, height: PX_L - 4, rx: 4, fill: "none", ...trait(2.5) });
+    }
+  }
+
+  // eau des deux bassins, l'eau au-dessus de la paroi, et la cascade quand la gauche déborde
+  const eau = { fill: "#25a9d0", "fill-opacity": .55 };
+  R.eauG = el("rect", { x: G.x1, width: G.x2 - G.x1, ...eau });
+  R.surfG = el("line", { x1: G.x1, x2: G.x2, stroke: "#e9fbff", "stroke-width": 3.5 });
+  R.eauD = el("rect", { x: D.x1, width: D.x2 - D.x1, ...eau });
+  R.surfD = el("line", { x1: D.x1, x2: D.x2, stroke: "#e9fbff", "stroke-width": 3.5 });
+  R.eauMur = el("rect", { x: MUR.x1, width: MUR.x2 - MUR.x1, ...eau, height: 0 });
+  R.cascade = el("rect", { x: MUR.x2, width: 6, fill: "#7fd8ec", stroke: ENCRE, "stroke-width": 1.5, opacity: 0, height: 0 });
+  svg.appendChild(R.filet);   // le filet du robinet passe devant le carrelage et l'eau
+
+  // poissons
+  R.p1 = poisson(el("g"), { corps: "#f28a1e", nageoire: "#c4520f", ventre: "#ffc36b" });
+  R.p2 = poisson(el("g"), { corps: "#6f9fd0", nageoire: "#3f6aa0", ventre: "#c5dcf1" });
+  R.coeurs = el("g");   // les cœurs du coup de foudre (bonne réponse)
+  coeurs.length = 0;
+
+  // verre (un peu au-dessus de 5 L) et paroi commune, cernés de noir
+  const haut = FOND - CAP * PX_L - REBORD;
+  el("rect", { x: G.x1, y: haut, width: D.x2 - G.x1, height: FOND - haut, fill: "#d8f3fa", "fill-opacity": .08, ...trait(5) });
+  el("rect", { x: MUR.x1, y: yNiv(m.W), width: MUR.x2 - MUR.x1, height: FOND - yNiv(m.W), fill: "#e9f7fb", ...trait(2) });
+  // l'eau qui déborde par-dessus les bords quand on continue de verser
+  R.debord = el("g", { fill: "#7fd8ec", stroke: ENCRE, "stroke-width": 2, opacity: 0 });
+  el("rect", { x: G.x1 - 9, y: haut - 4, width: 7, height: FOND - haut + 4, rx: 3 }, R.debord);
+  el("rect", { x: D.x2 + 2, y: haut - 4, width: 7, height: FOND - haut + 4, rx: 3 }, R.debord);
+
+  // le fil électrique : il pend du plafond, bout dénudé une demi-bande au-dessus de 5 L
+  // tout le fil est dans un groupe : la pieuvre peut le tirer vers le bas (il part de très haut pour rester accroché au plafond)
+  const yFil = yNiv(m.fil);
+  R.filGroupe = el("g");
+  const fil = `M${FIL_X - 30} -400 V-5 C${FIL_X - 30} 60 ${FIL_X} 50 ${FIL_X} 110 V${yFil - 24}`;
+  el("path", { d: fil, fill: "none", stroke: ENCRE, "stroke-width": 11, "stroke-linecap": "round" }, R.filGroupe);
+  el("path", { d: fil, fill: "none", stroke: "#4b5357", "stroke-width": 5, "stroke-linecap": "round" }, R.filGroupe);
+  // deux brins dénudés écartés : l'arc saute de l'un à l'autre
+  const cuivre = `M${FIL_X - 3} ${yFil - 24} Q${FIL_X - 5} ${yFil - 10} ${FIL_X - 17} ${yFil} M${FIL_X + 3} ${yFil - 24} Q${FIL_X + 5} ${yFil - 10} ${FIL_X + 17} ${yFil}`;
+  el("path", { d: cuivre, fill: "none", stroke: ENCRE, "stroke-width": 7, "stroke-linecap": "round" }, R.filGroupe);
+  el("path", { d: cuivre, fill: "none", stroke: "#f0a04b", "stroke-width": 3.5, "stroke-linecap": "round" }, R.filGroupe);
+  // l'arc électrique qui crépite entre les deux brins dénudés (redessiné sans cesse dans majScene)
+  R.arc = el("g", { fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round" }, R.filGroupe);
+  R.arcNoir = el("polyline", { stroke: ENCRE, "stroke-width": 7 }, R.arc);
+  R.arcJaune = el("polyline", { stroke: "#ffe14a", "stroke-width": 3.5 }, R.arc);
+  R.arcY = yFil - 2; R.arcT = 0;
+  R.eclair = el("g", { fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round", opacity: 0 });
+  R.flash = el("rect", { x: G.x1, width: D.x2 - G.x1, fill: "#fff3a0", opacity: 0 });
+  // la pieuvre passe devant l'aquarium et le fil quand elle va tirer le fil
+  svg.appendChild(R.pieuvre);
+
+  // compteur d'ouvertures : un rond par ouverture permise, qui se remplit à chaque ouverture
+  R.compteur = el("g", { transform: "translate(34 128)" });
+  el("text", { x: 0, y: -16, fill: "#fff3d6", stroke: ENCRE, "stroke-width": 4, "paint-order": "stroke", "font-size": 16,
+    "font-family": "'Baloo 2', sans-serif", "font-weight": 700 }, R.compteur).textContent = "Ouvertures";
+  R.ronds = [];
+  for (let k = 0; k < (ouverturesMax || 0); k++)
+    R.ronds.push(el("circle", { cx: 12 + k * 32, cy: 4, r: 11, fill: "#fff3d6", stroke: ENCRE, "stroke-width": 3 }, R.compteur));
+  if (!ouverturesMax) R.compteur.setAttribute("display", "none");
+
+  // un rectangle = 1 L, repéré sur les côtés (les bandes se comptent sur le carrelage)
+  const texte = { fill: "#fff3d6", stroke: ENCRE, "stroke-width": 4, "paint-order": "stroke", "font-size": 18,
+    "font-family": "'Baloo 2', sans-serif", "font-weight": 700 };
+  for (const [x, sens] of [[G.x1 - 6, -1], [D.x2 + 6, 1]])
+    for (let L = 0; L <= CAP; L++) {
+      const y = FOND - L * PX_L;
+      el("line", { x1: x, y1: y, x2: x + sens * 14, y2: y, stroke: ENCRE, "stroke-width": 6, "stroke-linecap": "round" });
+      el("line", { x1: x, y1: y, x2: x + sens * 14, y2: y, stroke: "#fff3d6", "stroke-width": 2.5, "stroke-linecap": "round" });
+      el("text", { x: x + sens * 46, y: y + 6, ...texte, "text-anchor": sens < 0 ? "end" : "start" }).textContent = `${L} L`;
+    }
+  // une flèche indique le niveau de départ dans chaque bassin ; on peut la faire glisser pour prévoir un niveau
+  // (elle s'aimante sur les lignes du carrelage)
+  for (const [x, v, sens] of [[G.x1 - 4, m.S0, 1], [D.x2 + 4, m.R0, -1]]) {
+    const g = el("g", { class: "fleche", transform: `translate(0 ${yNiv(v)})` });
+    el("rect", { x: Math.min(x, x - sens * 42), y: -14, width: 46, height: 28, fill: "transparent" }, g);   // prise plus large
+    el("path", { d: `M${x} 0 L${x - sens * 16} -9 L${x - sens * 16} -4 L${x - sens * 38} -4 L${x - sens * 38} 4 L${x - sens * 16} 4 L${x - sens * 16} 9 Z`,
+      fill: "#ff8a3d", ...trait(2.2) }, g);
+    deplacable(g);
+  }
+}
+
+// faire glisser une flèche verticalement, aimantée sur les lignes de bande (de 0 à 5 L)
+function deplacable(g) {
+  const versBande = clientY => {
+    const p = svg.createSVGPoint(); p.x = 0; p.y = clientY;
+    const y = p.matrixTransform(svg.getScreenCTM().inverse()).y;
+    return Math.max(0, Math.min(CAP * m.b, Math.round((FOND - y) / (PX_L / m.b))));
+  };
+  g.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    g.setPointerCapture(e.pointerId);
+    g.classList.add("tenue");
+    const bouger = ev => g.setAttribute("transform", `translate(0 ${yNiv(versBande(ev.clientY))})`);
+    const lacher = () => { g.classList.remove("tenue"); g.removeEventListener("pointermove", bouger); g.removeEventListener("pointerup", lacher); };
+    g.addEventListener("pointermove", bouger);
+    g.addEventListener("pointerup", lacher);
+  });
+}
+
+// ---------- poissons ----------
+const p1 = { bassin: G }, p2 = { bassin: D };
+function placerPoissons() {
+  Object.assign(p1, { x: 340, y: FOND - 24, dir: 1, move: null, fixe: false, mort: false, tremble: false });
+  Object.assign(p2, { x: 680, y: FOND - 24, dir: -1, move: null, fixe: false, mort: false, tremble: false });
+}
+function aller(p, x, y, v = 2.2) { return new Promise(res => { p.move = { x, y, v, res }; }); }
+const attendre = ms => new Promise(res => setTimeout(res, ms));
+
+function bougerPoisson(p, t, ySurf, vitesse) {
+  const mv = p.move;
+  if (mv) {
+    const dx = mv.x - p.x, dy = mv.y - p.y, d = Math.hypot(dx, dy);
+    if (d > mv.v) { p.x += dx / d * mv.v; p.y += dy / d * mv.v; if (Math.abs(dx) > 1) p.dir = dx > 0 ? 1 : -1; }
+    else { p.x = mv.x; p.y = mv.y; p.move = null; mv.res(); }
+  } else if (p.mort) {
+    // il n'en reste que l'arête, qui flotte sous la surface
+    p.y += (ySurf + 18 - p.y) * .006;
+  } else if (!p.fixe) {
+    p.x += p.dir * vitesse;
+    if (p.x > p.bassin.x2 - 46) p.dir = -1;
+    if (p.x < p.bassin.x1 + 46) p.dir = 1;
+    const cible = Math.min(FOND - 16, Math.max(ySurf + 16, (ySurf + FOND) / 2 + 8 * Math.sin(t / 1500 + (p === p1 ? 0 : 2))));
+    p.y += (cible - p.y) * .05;
+  }
+}
+
+function majScene(t) {
+  if (!m) return;
+  const yG = yNiv(m.lv.g), yD = yNiv(m.lv.d), yW = yNiv(m.W);
+  R.eauG.setAttribute("y", yG); R.eauG.setAttribute("height", FOND - yG);
+  R.surfG.setAttribute("y1", yG); R.surfG.setAttribute("y2", yG);
+  R.eauD.setAttribute("y", yD); R.eauD.setAttribute("height", FOND - yD);
+  R.surfD.setAttribute("y1", yD); R.surfD.setAttribute("y2", yD);
+  R.eauMur.setAttribute("y", yG); R.eauMur.setAttribute("height", Math.max(0, Math.min(yW - yG, yW - yD)));
+  // la cascade : la gauche est pleine jusqu'à la paroi et l'eau tombe à droite
+  const cascade = animation && m.lv.g >= m.W && m.lv.d < m.W;
+  R.cascade.setAttribute("opacity", cascade ? .85 : 0);
+  R.cascade.setAttribute("y", yW); R.cascade.setAttribute("height", Math.max(0, yD - yW));
+  R.flash.setAttribute("y", Math.min(yG, yD)); R.flash.setAttribute("height", FOND - Math.min(yG, yD));
+  R.filet.setAttribute("opacity", animation ? .85 : 0);
+  R.debord.setAttribute("opacity", animation && m.lv.g >= m.bord ? .75 : 0);
+  R.filet.setAttribute("height", Math.max(0, yG - BEC.y));
+  R.volant.setAttribute("transform", `rotate(${m.rotation || 0})`);
+  // la pieuvre tourne la manivelle : son bras s'agite tant que l'eau coule
+  R.brasPieuvre.setAttribute("transform", animation ? `rotate(${6 * Math.sin(t / 90)} 266 40)` : "");
+  // un poisson passé à droite nage sous la surface de droite
+  bougerPoisson(p1, t, p1.x > MUR.x2 ? yD : yG, .5);
+  bougerPoisson(p2, t, yD, .4);
+  const ondule = 1.5 * Math.sin(t / 220);
+  for (const [p, r, s] of [[p1, R.p1, 1], [p2, R.p2, -1]]) {
+    const o = p.mort || p.move ? 0 : s * ondule;
+    // pendant l'électrocution, il tremble
+    const tx = p.tremble ? (Math.random() - .5) * 8 : 0, ty = p.tremble ? (Math.random() - .5) * 8 : 0;
+    r.setAttribute("transform", `translate(${p.x + tx} ${p.y + o + ty}) scale(${p.dir * .8} .8)`);
+  }
+}
+// l'arc électrique : un zigzag au hasard entre les deux brins, redessiné toutes les 70 ms
+function crepiter(t) {
+  if (t - R.arcT < 70) return;
+  R.arcT = t;
+  const pts = [];
+  for (let k = 0; k <= 6; k++) pts.push(`${FIL_X - 17 + k * 34 / 6},${R.arcY + (k && k < 6 ? (Math.random() - .5) * 20 : 0)}`);
+  R.arcNoir.setAttribute("points", pts.join(" "));
+  R.arcJaune.setAttribute("points", pts.join(" "));
+  R.arc.setAttribute("opacity", Math.random() < .15 ? 0 : .7 + Math.random() * .3);
+}
+// cœurs de dessin animé quand les deux poissons se retrouvent : ils montent en ondulant, grossissent puis s'effacent
+const coeurs = [];
+function lancerCoeurs(x, y) {
+  for (let k = 0; k < 6; k++) {
+    const g = el("g", { opacity: 0 }, R.coeurs);
+    el("path", { d: "M0 7 C-14 -2 -10 -14 0 -7 C10 -14 14 -2 0 7 Z", fill: "#e8384f", stroke: ENCRE, "stroke-width": 2.4, "stroke-linejoin": "round" }, g);
+    el("path", { d: "M-6 -6 Q-8 -3 -6 0", fill: "none", stroke: "#fff", "stroke-width": 1.8, "stroke-linecap": "round" }, g);
+    coeurs.push({ g, x: x + (Math.random() - .5) * 30, y, t0: performance.now() + k * 260, phase: Math.random() * 6 });
+  }
+}
+function animerCoeurs(t) {
+  for (let i = coeurs.length - 1; i >= 0; i--) {
+    const c = coeurs[i], u = (t - c.t0) / 2400;
+    if (u < 0) continue;
+    if (u >= 1) { c.g.remove(); coeurs.splice(i, 1); continue; }
+    const x = c.x + 12 * Math.sin(c.phase + u * 9), y = c.y - 120 * u, e = .9 + .9 * Math.min(1, u * 3);
+    c.g.setAttribute("transform", `translate(${x} ${y}) scale(${e})`);
+    c.g.setAttribute("opacity", u < .7 ? 1 : (1 - u) / .3);
+  }
+}
+function boucle(t) { majScene(t); if (m) { crepiter(t); animerCoeurs(t); } requestAnimationFrame(boucle); }
+
+// ---------- écoulement ----------
+// verse pendant `duree` secondes (temps réel, accéléré au-delà de 8 s) ; s'arrête net si l'eau touche le fil
+function couler(duree, fin, toucher) {
+  const depart = m.V, debut = performance.now(), manche = m;
+  const reel = Math.min(duree, 8) * 1000;
+  jouer("goutte", { volume: .6 });
+  const bruit = jouer("eau", { volume: .5, boucle: true });
+  const couper = () => { if (bruit) try { bruit.stop(); } catch (e) {} };
+  let touche = false;
+  animation = true;
+  (function pas() {
+    if (m !== manche) return couper();
+    const u = Math.min(1, (performance.now() - debut) / reel);
+    m.V = depart + m.a * duree * u;
+    m.lv = niveaux(m.V);
+    m.rotation = (m.rotation || 0) + 6;
+    // assez d'eau en trop pour atteindre le fil (une bande versée de trop) : les poissons grillent,
+    // mais le robinet reste ouvert et l'aquarium déborde
+    if (niveaux(m.V, true).g >= m.fil) {
+      if (!touche) { touche = true; if (toucher) toucher(); }
+    }
+    if (u < 1) return requestAnimationFrame(pas);
+    couper();
+    animation = false;
+    jouer("goutte", { volume: .4, vitesse: .8 });
+    fin(touche);
+  })();
+}
+
+// ---------- interface ----------
+function afficherEtape() {
+  const test = m.etape === "test", saisie = m.etape === "saisie";
+  $("consigne").innerHTML = test
+    ? "Mesure les niveaux, puis ouvre le robinet pendant 1 s."
+    : m.puni ? "Plus d'ouverture possible : la pieuvre s'en mêle…"
+    // on insiste : le robinet coule toujours au même débit, à chaque ouverture
+    : m.encore ? "Pas encore plein. <b>Même débit qu'avant</b> : combien de secondes faut-il encore ouvrir ?"
+    : "<b>Le débit restera le même.</b> Combien de secondes faut-il ouvrir pour que l'eau monte jusqu'en haut ?";
+  // le débit n'est plus écrit à part : il est dans la première colonne du tableau
+  $("btnTest").style.display = test ? "" : "none";
+  $("btnTest").disabled = !test || animation;
+  for (const id of ["labelDuree", "duree", "uniteS", "btnOuvrir"]) $(id).style.display = test ? "none" : "";
+  $("saisie").classList.toggle("cadre", !test);
+  $("labelDuree").textContent = "Ouvrir pendant";   // « encore » est dit dans la consigne
+  $("duree").disabled = !saisie; $("btnOuvrir").disabled = !saisie;
+  $("btnAide").disabled = !saisie || m.aide;
+  $("btnRenoncer").disabled = !saisie;
+  $("boutonsAide").style.display = m.etape === "fin" ? "none" : "";
+  // en fin de manche, « Manche suivante » prend la place du cadre de saisie (la zone garde sa hauteur)
+  $("saisie").style.display = m.etape === "fin" ? "none" : "";
+  // le tableau : la première colonne est donnée par l'essai d'1 s
+  // le tableau n'apparaît qu'après l'essai d'1 s
+  $("tableau").style.display = test ? "none" : "";
+  $("tabVolume1").innerHTML = test ? "" : debitSimplifie(m.a, m.b);
+  verifierTableau();   // des cases validées avant l'essai sont vérifiées dès que le débit est connu
+}
+
+function nouvelleManche() {
+  m = tirer();
+  animation = false;
+  placerPoissons();
+  construireScene();
+  construireTableau();
+  $("duree").value = "";
+  $("retour").innerHTML = "";
+  $("indice").textContent = "";
+  if (mode === "atelier") { compteurAtelier++; $("compteur").textContent = `Manche ${compteurAtelier}`; }
+  majScore();
+  afficherEtape();
+}
+
+// les ronds du compteur se remplissent de violet, un par ouverture déjà faite
+function majCompteur() {
+  R.ronds.forEach((r, k) => r.setAttribute("fill", k < m.ouvertures ? "#a24fc0" : "#fff3d6"));
+}
+
+$("btnTest").onclick = () => {
+  contexteAudio();
+  if (m.etape !== "test" || animation) return;
+  $("btnTest").disabled = true;
+  m.ouvertures = 1; majCompteur();
+  couler(1, () => { m.etape = "saisie"; afficherEtape(); $("duree").focus(); });
+};
+
+$("btnOuvrir").onclick = valider;
+$("duree").addEventListener("keydown", e => { if (e.key === "Enter") valider(); });
+
+function valider() {
+  if (m.etape !== "saisie" || animation) return;
+  const r = lireDecimal($("duree").value);
+  if (!r || r.val <= 0) { $("retour").innerHTML = `<span class="ko">Écris un nombre décimal.</span>`; return; }
+  if (r.val > 60) { $("retour").innerHTML = `<span class="ko">C'est beaucoup trop long.</span>`; return; }
+  m.etape = "eau"; m.reponse = r;
+  m.ouvertures++; majCompteur();
+  $("retour").innerHTML = "";
+  afficherEtape();
+  // calcul exact : on compare l'eau versée (r.num × a / r.den bandes) à ce qu'il reste à verser (rn / rd bandes).
+  // Juste si l'eau arrive en haut sans toucher le fil (au-dessus de la paroi elle se partage :
+  // une bande versée en plus = une demi-bande dans chaque bassin = le fil).
+  const verseN = r.num * m.a * m.rd, besoinN = m.rn * r.den, den = m.rd * r.den;
+  const verse = r.num * m.a;
+  const verdict = verseN < besoinN ? "peu" : verseN - besoinN >= den ? "foudre" : "juste";
+  if (verdict === "peu") {   // ce qu'il restera à verser, en fraction réduite
+    const n = besoinN - verseN, q = pgcd(n, den);
+    m.rn = n / q; m.rd = den / q;
+  }
+  const depart = m.V, manche = m;
+  // trop d'eau : l'électrocution part dès que l'eau touche le fil, et l'eau continue de couler (elle déborde)
+  couler(r.val, () => {
+    if (m !== manche || verdict === "foudre") return;
+    m.V = depart + verse / r.den; m.lv = niveaux(m.V);
+    if (verdict === "juste") reussite(manche);
+    else tropPeu(manche);
+  }, () => { if (verdict === "foudre") foudre(manche); });
+}
+
+// juste : pas de message, seulement le son et le poisson qui passe par-dessus la paroi (règle du prof)
+async function reussite(manche) {
+  if (quiz) quiz.score++;
+  // il passe par l'ouverture du haut, au milieu du rectangle
+  const yS = (yNiv(m.W) + yNiv(m.T)) / 2;
+  p2.fixe = true;
+  await aller(p1, MUR.x1 - 40, yS, 2.4);
+  await aller(p1, MUR.x2 + 40, yS, 2);
+  if (m !== manche) return;
+  jouer("juste", { volume: .7 });
+  p1.fixe = true;
+  // rendez-vous à droite, loin du fil, pour qu'on voie bien les cœurs
+  await aller(p2, D.x2 - 45, Math.min(p2.y, yS + 40), 1.5);
+  p2.dir = -1;
+  await aller(p1, p2.x - 60, p2.y, 1.8);
+  p1.dir = 1;
+  if (m !== manche) return;
+  lancerCoeurs(p2.x - 30, p2.y - 18);
+  await attendre(3200);
+  if (m === manche) suivante();
+}
+
+// pas assez d'eau : le poisson bute contre la paroi (l'ouverture n'est pas pleine)
+// pas assez d'eau : le poisson bute contre la paroi, puis on demande une nouvelle durée (l'eau repart d'où elle est)
+async function tropPeu(manche) {
+  m.encore = true;
+  const y = Math.min(FOND - 20, Math.max(yNiv(m.W) + 16, yNiv(m.lv.g) + 16));
+  await aller(p1, MUR.x1 - 30, y, 2.6);
+  if (m !== manche) return;
+  jouer("plouf", { volume: .3, vitesse: 1.4 });
+  await aller(p1, MUR.x1 - 70, y + 4, 1.2);
+  p1.move = null;
+  if (m !== manche) return;
+  if (ouverturesMax && m.ouvertures >= ouverturesMax) return punition(manche);
+  m.etape = "saisie";
+  $("duree").value = "";
+  afficherEtape();
+  $("duree").focus();
+}
+
+// plus d'ouverture permise et l'aquarium n'est pas plein : la pieuvre glisse jusqu'au fil, s'y accroche
+// et le tire vers le bas jusqu'à l'eau… les poissons grillent
+function glisser(dureeMs, maj) {
+  return new Promise(res => {
+    const t0 = performance.now();
+    (function pas() {
+      const u = Math.min(1, (performance.now() - t0) / dureeMs);
+      maj(u < .5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u));   // départ et arrivée en douceur
+      if (u < 1) requestAnimationFrame(pas); else res();
+    })();
+  });
+}
+async function punition(manche) {
+  m.etape = "eau"; m.puni = true;
+  afficherEtape();
+  const dx = FIL_X - 30 - 250, dy = 70;          // de son tuyau jusqu'à côté du fil
+  await glisser(1600, u => R.pieuvre.setAttribute("transform", `translate(${dx * u} ${dy * u - 40 * Math.sin(Math.PI * u)})`));
+  if (m !== manche) return;
+  jouer("plouf", { volume: .3, vitesse: 1.6 });
+  await attendre(300);
+  // elle s'accroche et descend avec le fil jusqu'à ce que les brins touchent l'eau
+  const descente = yNiv(m.lv.g) - yNiv(m.fil) + 4;
+  await glisser(1500, u => {
+    R.pieuvre.setAttribute("transform", `translate(${dx} ${dy + descente * u})`);
+    R.filGroupe.setAttribute("transform", `translate(0 ${descente * u})`);
+  });
+  if (m !== manche) return;
+  m.filDescente = descente;
+  foudre(manche);
+}
+
+// trop d'eau : elle touche le fil, les deux poissons grillent
+// zigzag d'un point à un autre (éclair de dessin animé)
+function zigzag(x1, y1, x2, y2) {
+  const pts = [], n = 7;
+  for (let k = 0; k <= n; k++) {
+    const u = k / n, ecart = k && k < n ? (Math.random() - .5) * 22 : 0;
+    pts.push(`${x1 + (x2 - x1) * u + ecart},${y1 + (y2 - y1) * u + ecart * .4}`);
+  }
+  return pts.join(" ");
+}
+// trop d'eau : elle touche le fil, les deux poissons grillent (effet cartoon : tremblement, radio, arêtes)
+async function foudre(manche) {
+  const xF = FIL_X, yF = yNiv(m.fil) + (m.filDescente || 0);   // le fil a pu être tiré vers le bas par la pieuvre
+  const poissons = [[p1, R.p1], [p2, R.p2]];
+  for (const [p] of poissons) { p.move = null; p.fixe = true; p.tremble = true; }
+  jouer("grille", { volume: .8 });
+  // environ 3 s : chaque éclat dure 0,2 s, puis 0,14 s d'obscurité
+  for (let k = 0; k < 9; k++) {
+    R.eclair.innerHTML = "";
+    for (const [p] of poissons) {
+      const pts = zigzag(xF, yF, p.x, p.y);
+      el("polyline", { points: pts, stroke: ENCRE, "stroke-width": 8 }, R.eclair);
+      el("polyline", { points: pts, stroke: "#ffe14a", "stroke-width": 3.5 }, R.eclair);
+    }
+    R.eclair.setAttribute("opacity", 1);
+    R.flash.setAttribute("opacity", k % 2 ? .1 : .35);
+    for (const [, r] of poissons) r.radio(k % 2 === 0);
+    await attendre(200);
+    R.eclair.setAttribute("opacity", 0); R.flash.setAttribute("opacity", 0);
+    await attendre(140);
+    if (k === 3 || k === 6) jouer("grille", { volume: .6, vitesse: .8 });
+  }
+  if (m !== manche) return;
+  for (const [p, r] of poissons) { p.tremble = false; p.mort = true; r.griller(); }
+  correction();
+}
+
+// fin de manche ratée ou abandonnée : pas de correction (choix du prof), seulement la manche suivante
+function correction() {
+  $("retour").innerHTML = `<button id="btnSuite" class="principal">Manche suivante</button>`;
+  $("btnSuite").onclick = suivante;
+  m.etape = "fin";
+  afficherEtape();
+}
+
+// tableau de proportionnalité que l'élève remplit librement (rien n'est vérifié)
+// le volume est en litres, écrit en fraction (on tape 5/4 dans les cases libres)
+function construireTableau() {
+  // une case : on tape en texte simple (10/4, 2,5) ; Entrée valide : la case s'affiche alors en LaTeX au même endroit
+  // et la colonne est vérifiée. Un clic sur une case validée la remet en saisie.
+  const libres = n => Array.from({ length: n }, () =>
+    `<td><input type="text" autocomplete="off" aria-label="case du tableau"><span class="rendu" hidden></span></td>`).join("");
+  $("tableau").innerHTML =
+    `<tr><th>Durée (s)</th><td class="donne">${tex("1")}</td>${libres(3)}</tr>` +
+    `<tr><th>Volume (L)</th><td class="donne" id="tabVolume1"></td>${libres(3)}</tr>`;
+  for (const td of $("tableau").querySelectorAll("td:not(.donne)")) {
+    const champ = td.querySelector("input"), rendu = td.querySelector(".rendu");
+    champ.addEventListener("keydown", e => {
+      if (e.key !== "Enter") return;
+      const v = valeurTexte(champ.value);
+      if (v === null) return;   // vide ou illisible : rien ne se passe
+      td.dataset.valeur = v;
+      rendu.innerHTML = tex(versTex(champ.value));
+      champ.hidden = true; rendu.hidden = false;
+      verifierTableau();
+    });
+    rendu.addEventListener("click", () => {
+      delete td.dataset.valeur;
+      rendu.hidden = true; champ.hidden = false; champ.focus();
+      verifierTableau();
+    });
+  }
+}
+
+// ce que l'élève tape (10/4, 2,5, 3×2, 7:2) → valeur, ou null si vide ou illisible
+function valeurTexte(txt) {
+  const t = txt.replace(/\s/g, "").replace(/,/g, ".").replace(/[×x*]/g, "*").replace(/[:÷]/g, "/");
+  if (!t || !/^[\d.+\-*/()]+$/.test(t)) return null;
+  try { const v = Function(`"use strict"; return (${t});`)(); return Number.isFinite(v) ? v : null; } catch (e) { return null; }
+}
+// … et en code LaTeX pour l'affichage
+function versTex(txt) {
+  return txt.replace(/\s+/g, "")
+    .replace(/(\d+(?:[.,]\d+)?)\/(\d+(?:[.,]\d+)?)/g, "\\dfrac{$1}{$2}")
+    .replace(/[.,]/g, "{,}").replace(/[×x*]/g, "\\times ").replace(/[:÷]/g, "\\div ");
+}
+// une colonne remplie doit garder le rapport de la première : volume = durée × a/b ; sinon fond rouge (juste : rien)
+function verifierTableau() {
+  if (m.etape === "test") return;
+  const lignes = $("tableau").rows, nb = lignes[0].cells.length;
+  for (let c = 2; c < nb; c++) {
+    const cDuree = lignes[0].cells[c], cVolume = lignes[1].cells[c];
+    // seules les cases validées (Entrée) comptent
+    const d = cDuree.dataset.valeur, v = cVolume.dataset.valeur;
+    const faux = d !== undefined && v !== undefined && Math.abs(v * m.b - d * m.a) > 1e-9 * Math.max(1, Math.abs(d * m.a));
+    cDuree.classList.toggle("faux", faux); cVolume.classList.toggle("faux", faux);
+  }
+}
+
+$("btnAide").onclick = () => {
+  if (m.etape !== "saisie") return;
+  m.aide = true;
+  // l'indice s'affiche dans le panneau, sous le bouton Aide (la zone sous l'aquarium a une hauteur fixe)
+  $("indice").textContent = "Un rectangle vaut 1 L. Compte ce qui manquait au départ jusqu'à la paroi, ajoute l'ouverture, puis retire l'eau de l'essai.";
+  afficherEtape();
+};
+$("btnRenoncer").onclick = () => {
+  if (m.etape !== "saisie") return;
+  m.reponse = null;
+  correction();
+};
+
+function suivante() {
+  if (quiz) {
+    quiz.k++;
+    if (quiz.k >= quiz.n) return finQuiz();
+  }
+  nouvelleManche();
+}
+
+// ---------- Atelier / Quiz ----------
+function majScore() {
+  $("scoreBloc").style.display = quiz ? "" : "none";
+  $("blocAtelier").style.display = mode === "atelier" ? "" : "none";
+  if (quiz) { $("progression").textContent = `Question ${Math.min(quiz.k + 1, quiz.n)}/${quiz.n}`; $("score").textContent = `Score : ${quiz.score}`; }
+}
+function verrouiller(v) {
+  for (const btn of [...$("choixGrad").children, ...$("choixOuv").children]) btn.disabled = v;
+  $("quizN").disabled = v;
+}
+function passerMode(nouveau) {
+  mode = nouveau; quiz = null;
+  $("btnAtelier").classList.toggle("active", mode === "atelier");
+  $("btnQuiz").classList.toggle("active", mode === "quiz");
+  $("quizSetup").style.display = mode === "quiz" ? "" : "none";
+  verrouiller(false);
+  compteurAtelier = 0;
+  nouvelleManche();
+  if (mode === "quiz") attenteQuiz();
+}
+// avant le départ du quiz, la manche est visible mais on ne peut pas jouer
+function attenteQuiz() {
+  for (const id of ["btnTest", "btnAide", "btnRenoncer"]) $(id).disabled = true;
+  $("consigne").textContent = "Choisis le nombre de questions, puis Commencer le Quiz.";
+}
+$("btnAtelier").onclick = () => passerMode("atelier");
+$("btnQuiz").onclick = () => passerMode("quiz");
+$("btnDemarrer").onclick = () => {
+  contexteAudio();
+  quiz = { n: Number($("quizN").value), k: 0, score: 0 };
+  $("quizSetup").style.display = "none";
+  verrouiller(true);
+  nouvelleManche();
+};
+function finQuiz() {
+  const q = quiz;
+  quiz = null;
+  majScore();
+  $("scoreBloc").style.display = "";
+  $("progression").textContent = "Quiz terminé";
+  $("score").textContent = `Score : ${q.score} / ${q.n}`;
+  $("retour").innerHTML = `<div>Score : <b>${q.score} / ${q.n}</b></div><button id="btnRejouer" class="principal">Recommencer</button>`;
+  $("btnRejouer").onclick = () => passerMode("quiz");
+  m.etape = "fin";
+  afficherEtape();
+  $("consigne").textContent = "Quiz terminé.";
+  verrouiller(false);
+}
+$("choixGrad").onclick = e => {
+  const btn = e.target.closest("button");
+  if (!btn || btn.disabled) return;
+  for (const x of $("choixGrad").children) x.classList.toggle("active", x === btn);
+  gradChoisie = Number(btn.dataset.g);
+  if (!animation) nouvelleManche();
+  if (mode === "quiz" && !quiz) attenteQuiz();
+};
+
+$("choixOuv").onclick = e => {
+  const btn = e.target.closest("button");
+  if (!btn || btn.disabled) return;
+  for (const x of $("choixOuv").children) x.classList.toggle("active", x === btn);
+  ouverturesMax = Number(btn.dataset.o);
+  if (!animation) nouvelleManche();
+  if (mode === "quiz" && !quiz) attenteQuiz();
+};
+
+// ---------- Guide et nouvel onglet ----------
+$("btnGuide").onclick = () => $("overlayGuide").classList.toggle("visible");
+$("btnFermerGuide").onclick = () => $("overlayGuide").classList.remove("visible");
+$("onglet").href = location.href;
+
+nouvelleManche();
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>
