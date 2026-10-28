@@ -1,0 +1,2749 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le crapaud d'or</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f1e8;
+    --panel:#fffdf8;
+    --ink:#1f2430;
+    --muted:#6b6f7a;
+    --border:#d9d2c3;
+    --accent:#2f5fd0;
+    --ok:#1f8a4c;     --ok-bg:#e3f4e8;
+    --ko:#c0392b;     --ko-bg:#fbe6e3;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;height:100vh;display:flex;flex-direction:column;
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  button{font:inherit;cursor:pointer;}
+
+  /* En-tête */
+  header{
+    flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+    padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);
+  }
+  header h1{font-size:1.2rem;margin:0;margin-right:auto;}
+  #eleveInfo{font-size:.85rem;font-weight:600;}
+  .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--accent);}
+  @media (max-width:1200px){ header .txt{display:none;} main{grid-template-columns:minmax(0,1fr) 380px;} }
+
+  main{
+    flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:20px;
+    padding:20px;grid-template-rows:minmax(0,1fr);
+  }
+  .scene{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:0;}
+  .entete h2{margin:0;font-size:1.25rem;}
+  .entete .titre{font-weight:400;color:var(--muted);font-size:1rem;}
+
+  /* La zone de jeu : illustration agrandie au maximum, format 4:3 */
+  #cadreJeu{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;background:#1a272b;border-radius:12px;overflow:hidden;}
+  #jeu{display:block;border-radius:10px;box-shadow:0 4px 18px rgba(31,36,48,.15);}
+  #ecranJeu{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(31,36,48,.35);backdrop-filter:blur(2px);}
+  #ecranJeu.visible{display:flex;}
+  .carte-jeu{background:#fffdf8;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:22px 28px;max-width:440px;text-align:center;}
+  .carte-jeu h3{font-size:1.5rem;margin:0 0 10px;}
+  .carte-jeu p{margin:6px 0;}
+
+  .aide-touches{font-size:.8rem;color:var(--muted);text-align:center;}
+
+  /* Colonne de droite */
+  .colonne{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto;}
+  aside{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  aside h3{margin:0 0 10px;font-size:1rem;}
+  .calcul{font-size:1.45rem;font-weight:700;line-height:1.4;background:#eef6ff;border:2px solid #c9dcf7;color:var(--ink);padding:16px 12px;border-radius:12px;text-align:center;min-height:76px;}
+  .calcul.bilan{font-size:.95rem;font-weight:400;text-align:left;background:#fbf6e8;border-color:#e2cf9a;}
+  .calcul.bilan ol{margin:8px 0 10px;padding-left:22px;}
+  .calcul.bilan li{margin:3px 0;}
+  .calcul.bilan .score{font-size:1.15rem;font-weight:700;margin:0 0 4px;}
+  .calcul.bilan .boutons{display:flex;gap:8px;flex-wrap:wrap;}
+  .calcul.attente{color:var(--muted);font-weight:400;font-size:.9rem;background:var(--bg);border-color:var(--border);}
+  .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.1;margin:0 .1em;}
+  .frac > span:first-child{border-bottom:2px solid currentColor;padding:0 .15em;}
+  .reponse{display:flex;gap:8px;margin-top:10px;}
+  .reponse input{flex:1;min-width:0;font:inherit;font-size:1.4rem;padding:10px 12px;border:2px solid var(--border);border-radius:10px;text-align:center;}
+  .reponse input:focus{outline:none;border-color:var(--accent);}
+  /* réponses à choisir (plateau 5) : quatre fractions, au clic (les touches 1 à 4 marchent aussi, sans être affichées) */
+  .choix{display:none;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;}
+  .choix.visible{display:grid;}
+  .choix button{position:relative;font:inherit;font-size:1.5rem;font-weight:700;padding:10px 4px;border:2px solid var(--border);border-radius:10px;background:#fff;color:var(--ink);}
+  .choix button:hover{border-color:var(--accent);background:#eef6ff;}
+  .suite{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:600;}
+  .suite:disabled{background:var(--border);color:var(--muted);cursor:default;}
+  .second{width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:9px;color:var(--ink);font-size:.92rem;}
+  .second:hover{border-color:var(--accent);color:var(--accent);}
+  #btnPasser{display:none;margin-top:12px;border-style:dashed;}
+  body.mode-test #btnPasser{display:block;}
+  body.mode-test .plateaux span[data-k]{cursor:pointer;}
+  body.mode-test .plateaux span[data-k]:hover{border-color:var(--accent);}
+  .aide-test{display:none;font-size:.8rem;color:var(--muted);margin:8px 0 0;}
+  body.mode-test .aide-test{display:block;}
+  #retour{margin-top:12px;font-size:1.1rem;border-radius:10px;padding:10px 12px;}
+  #retour.ok{background:var(--ok-bg);border-left:5px solid var(--ok);}
+  #retour.ko{background:var(--ko-bg);border-left:5px solid var(--ko);}
+  #retour.vide{display:none;}
+  #retour.aide{background:#fff6d6;border-left:5px solid #c9a227;font-size:1rem;}
+  .compteur{display:flex;gap:6px;margin-top:12px;align-items:center;font-size:.85rem;color:var(--muted);}
+  .compteur span{width:22px;height:22px;border-radius:50%;border:2px solid #d9c4a6;}
+  .compteur span.juste{background:#b78f3f;border-color:#8a6a2a;}
+  .plateaux{display:flex;flex-wrap:wrap;gap:6px;font-size:.9rem;}
+  .plateaux span{flex:1 0 64px;text-align:center;border:1px solid var(--border);border-radius:8px;padding:6px 4px;color:var(--muted);}
+  .plateaux span.actuel{border-color:var(--accent);color:var(--accent);font-weight:600;}
+  .plateaux span.fait{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);}
+
+  /* Accueil (nom de l'élève), dans la page : l'en-tête reste visible */
+  .accueil{display:none;grid-column:1 / -1;max-width:760px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;align-self:start;}
+  body.sans-nom .accueil{display:block;}
+  body.sans-nom main > .scene, body.sans-nom .colonne{display:none;}
+  .accueil h2{margin:0 0 12px;}
+  .accueil p{margin:6px 0;font-size:1.05rem;}
+  .accueil label{display:block;margin-top:18px;font-weight:600;}
+  #champNom{display:block;width:100%;max-width:420px;font:inherit;padding:10px 12px;margin-top:6px;border:2px solid var(--border);border-radius:10px;}
+  #champNom:focus{outline:none;border-color:var(--accent);}
+  #erreurNom{color:var(--ko);font-size:.85rem;min-height:1.3em;margin:4px 0;}
+  .accueil .actions{display:flex;justify-content:flex-end;}
+
+  @media (max-width:900px){
+    body{height:auto;min-height:100vh;}
+    main{grid-template-columns:1fr;grid-template-rows:none;}
+    #cadreJeu{height:62vw;flex:none;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Le crapaud d'or</h1>
+  <span id="eleveInfo"></span>
+  <button class="onglet" id="btnSon" title="Couper ou remettre le son et la musique">🔊</button>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
+  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+</header>
+<main>
+  <section class="accueil" id="accueil">
+    <h2>Le crapaud d'or</h2>
+    <p>Aide le crapaud à traverser le marais, plateau après plateau.</p>
+    <p>Sur chaque plateau, un serpent garde le passage. Va le toucher : il te pose ses questions. Réponds juste et il t'aidera à passer…</p>
+    <p>Sors de chaque plateau par la droite.</p>
+    <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
+    <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+    <div id="erreurNom"></div>
+    <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+  </section>
+  <section class="scene">
+    <div class="entete"><h2 id="titreNiveau">Plateau 1</h2></div>
+    <div id="cadreJeu">
+      <canvas id="jeu" width="240" height="180"></canvas>
+      <div id="ecranJeu"><div class="carte-jeu" id="carteJeu"></div></div>
+    </div>
+    <div class="aide-touches">Clavier : ← → pour marcher, espace ou ↑ pour sauter (flèche + espace : saut en avançant).</div>
+  </section>
+  <div class="colonne">
+    <aside>
+      <h3 id="titreQuestions">Le serpent</h3>
+      <div class="calcul attente" id="calcul"></div>
+      <form class="reponse" id="formReponse" autocomplete="off">
+        <input id="champReponse" type="text" placeholder="Ta réponse" disabled>
+        <button class="suite" id="btnValider" disabled>Valider</button>
+      </form>
+      <div class="choix" id="choix"></div>
+      <div id="retour" class="vide"></div>
+      <div class="compteur" id="compteur"></div>
+      <button class="second" id="btnPasser" title="Mode test (adresse avec ?test) : le serpent fait le pont, sans compter de réponses">⏭ Passer les questions (test)</button>
+    </aside>
+    <aside>
+      <h3>Plateaux</h3>
+      <div class="plateaux" id="plateaux"></div>
+      <p class="aide-test">Mode test : clique sur un plateau pour y aller.</p>
+      <p style="margin:12px 0 0"><button class="second" id="btnRecommencer">↺ Recommencer le plateau</button></p>
+    </aside>
+  </div>
+</main>
+
+<script>
+// ============================================================
+//  Le crapaud d'or — d'après le jeu Scratch du professeur (« JDScrapaudsimplifié », plateaux 1 et 2)
+//  Monde : 240 × 180 (y vers le bas) = la scène Scratch à l'échelle 1/2. 30 images/s, comme Scratch.
+// ============================================================
+const L = 240, H = 180;
+const $ = id => document.getElementById(id);
+const fr = s => s.replace(/ ([?!:;»])/g, " $1");
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+// ---------- Hasard ----------
+const alea = () => Math.random();
+const hasard = n => Math.floor(alea() * n);
+const entier = (a, b) => a + hasard(b - a + 1);
+const pgcd = (a, b) => b ? pgcd(b, a % b) : a;
+const frac = (n, d) => `<span class="frac"><span>${n}</span><span>${d}</span></span>`;
+const melanger = t => { t = [...t]; for (let k = t.length - 1; k > 0; k--) { const j = hasard(k + 1); [t[k], t[j]] = [t[j], t[k]]; } return t; };
+
+// ---------- Les questions des serpents ----------
+// Plateau 1 : les quatre opérations, le résultat est toujours entier (a est un multiple de b)
+function questionOperation() {
+  const sorte = hasard(4);
+  if (sorte === 3) {
+    const b = entier(3, 10), a = b * entier(3, 10);
+    return { html: `Quel est le produit de ${a} et ${b} ?`, r: a * b, correction: `${a} × ${b} = ${a * b}`, lire: lireEntier };
+  }
+  const b = entier(7, 15), a = b * entier(7, 15);
+  if (sorte === 0) return { html: `Quelle est la somme de ${a} et ${b} ?`, r: a + b, correction: `${a} + ${b} = ${a + b}`, lire: lireEntier };
+  if (sorte === 1) return { html: `Quelle est la différence de ${a} et ${b} ?`, r: a - b, correction: `${a} − ${b} = ${a - b}`, lire: lireEntier };
+  return { html: `Quel est le quotient de ${a} par ${b} ?`, r: a / b, correction: `${a} : ${b} = ${a / b}`, lire: lireEntier };
+}
+// Plateau 2 : une fraction à écrire sous forme mixte, 17/5 = 3 + 2/5 (la fraction donnée est irréductible)
+function questionMixte() {
+  let b = entier(3, 10), d = entier(1, b - 1);
+  const c = entier(1, 10), u = pgcd(b, d);
+  b /= u; d /= u;
+  const a = b * c + d;
+  return {
+    html: `Écris ${frac(a, b)} sous forme mixte.`,
+    r: [c, d, b],
+    correction: `${a}/${b} = ${c} + ${d}/${b}  (car ${c} × ${b} = ${c * b} et ${a} − ${c * b} = ${d})`,
+    lire: lireMixte, aide: "Écris la forme mixte, par exemple 2 + 3/4."
+  };
+}
+// Plateau 3 : une fraction d'heure à écrire en h et min (comme l'appli Durée mentale : 7/4 h = 1 h + 45 min)
+// fraction irréductible plus grande que 1, dénominateur diviseur de 60 : pas de décimaux
+const hm = t => { const h = Math.floor(t / 60), m = t % 60; return !h ? `${m} min` : m ? `${h} h + ${m} min` : `${h} h`; };
+function questionDuree() {
+  const d = [2, 3, 4, 5, 6, 10][hasard(6)];
+  let n; do n = entier(1, 3) * d + entier(1, d - 1); while (pgcd(n, d) !== 1);
+  const min = n * 60 / d;
+  return {
+    html: `Écris ${frac(n, d)} h en h et min.`,
+    r: min,                              // en minutes : toute écriture de cette durée est juste
+    correction: `${n}/${d} h = ${hm(min)}  (car 1/${d} h = ${60 / d} min, donc ${n}/${d} h = ${n} × ${60 / d} min = ${min} min)`,
+    lire: lireDuree, aide: "Écris la durée avec un +, par exemple 1 h + 45 min (pas 1h45).",
+    presque: "la durée est juste, mais écris-la en h et min."
+  };
+}
+// Plateau 4 : la fraction d'un nombre (2/3 × 240 = 160), le résultat est entier
+function questionFractionNombre() {
+  const d = [2, 3, 4, 5, 6, 8, 10][hasard(7)];
+  let n; do n = entier(1, d - 1); while (pgcd(n, d) !== 1);
+  const k = entier(Math.ceil(12 / d), Math.floor(300 / d)), N = d * k;
+  return {
+    html: `Calcule ${frac(n, d)} × ${N}.`,
+    r: n * k,
+    correction: n === 1 ? `1/${d} × ${N} = ${N} : ${d} = ${k}` : `${n}/${d} × ${N} = (${N} : ${d}) × ${n} = ${k} × ${n} = ${n * k}`,
+    lire: lireEntier, aide: "Écris un nombre entier."
+  };
+}
+// Plateau 5 : la fraction qui manque (… × 40 = 30 → 3/4) ; elle vaut (b − 1)/b et on multiplie un multiple de 10
+function questionFractionManquante() {
+  const b = entier(2, 6), a = b - 1, d = 10 * entier(1, 10), c = b * d;
+  return {
+    html: `Complète par la bonne fraction :<br>… × ${c} = ${a * d}`,
+    r: [a, b],
+    correction: a === 1 ? `1/${b} × ${c} = ${c} : ${b} = ${d}` : `${a}/${b} × ${c} = (${c} : ${b}) × ${a} = ${d} × ${a} = ${a * d}`,
+    lire: lireFraction, aide: "Écris une fraction, par exemple 3/4.",
+    presque: "c'est la bonne valeur, mais simplifie la fraction.",
+    // quatre fractions à choisir parmi celles du projet Scratch (1/2, 2/3, 3/4, 4/5, 5/6) : la bonne et trois autres
+    choix: melanger([[a, b], ...melanger([2, 3, 4, 5, 6].filter(x => x !== b)).slice(0, 3).map(x => [x - 1, x])])
+  };
+}
+// Plateau 6 : une somme entier + fraction à écrire comme une seule fraction (3 + 2/5 = 17/5) ; la fraction est irréductible
+function questionSommeFraction() {
+  const a = entier(1, 10), b = entier(2, 10);
+  let c; do c = entier(1, b - 1); while (pgcd(b, c) !== 1);
+  const n = a * b + c;
+  return {
+    html: `Écris cette somme comme une fraction :<br>${a} + ${frac(c, b)}`,
+    r: [n, b],
+    correction: `${a} + ${c}/${b} = (${a * b} + ${c}) : ${b} = ${n}/${b}  (car ${a} = ${a * b} : ${b})`,
+    lire: lireFraction, aide: "Écris une seule fraction, par exemple 17/5.",
+    presque: "c'est la bonne valeur, mais simplifie la fraction."
+  };
+}
+// Plateau 7 : l'abscisse du hérisson sur la droite graduée (unité partagée en d) ; elle vaut n/d, jamais un entier
+// on accepte 7/4, 1 + 3/4, et toute écriture de la même valeur (6/4 = 3/2) : c'est une lecture de graduation
+function questionAbscisse() {
+  const { n, d } = partie.grue.hg, e = Math.floor(n / d);
+  return {
+    html: "À quelle abscisse le hérisson s'est-il mis en boule ?",
+    r: n / d,
+    correction: `${n}/${d}${e ? ` = ${e} + ${n % d}/${d}` : ""}  (l'unité est partagée en ${d} : le hérisson est à ${n} graduation${n > 1 ? "s" : ""} de 0)`,
+    lire: lireAbscisse, aide: "Écris une fraction, par exemple 7/4 ou 1 + 3/4."
+  };
+}
+function lireAbscisse(t, r) {
+  const x = t.replace(/\s/g, ""); let m, v;
+  if ((m = x.match(/^(\d+)\/(\d+)$/)) && +m[2]) v = m[1] / m[2];
+  else if ((m = x.match(/^(\d+)\+(\d+)\/(\d+)$/)) && +m[3]) v = +m[1] + m[2] / m[3];
+  else if (/^\d+$/.test(x)) v = +x;
+  else return null;
+  // en dehors de la droite : pas compté, un rappel (choix du prof) ; la grue ne bouge pas
+  if (v > niv.grue.max) return { aide: `Le hérisson est entre 0 et ${niv.grue.max} : relis la droite graduée.` };
+  return { ok: Math.abs(v - r) < 1e-9, v };
+}
+// Plateau 8 : l'escalier de révision, une marche par plateau, dans l'ordre du jeu
+const MARCHES = [
+  { question: questionOperation, placeholder: "Ta réponse" },
+  { question: questionMixte, placeholder: "ex. 2 + 3/4" },
+  { question: questionDuree, placeholder: "ex. 1 h + 45 min" },
+  { question: questionFractionNombre, placeholder: "Ta réponse" },
+  { question: questionFractionManquante, placeholder: "ex. 3/4" },
+  { question: questionSommeFraction, placeholder: "ex. 17/5" }
+];
+// la 7e marche : pas de droite graduée (demande du prof) ; le serpent tire une notion au hasard parmi les six autres
+function questionEscalier() {
+  const k = partie.escalier.k, m = MARCHES[k < MARCHES.length ? k : hasard(MARCHES.length)];
+  return { ...m.question(), placeholder: m.placeholder };
+}
+// Réponses de l'élève : espaces ignorés
+function lireEntier(t, r) { const s = t.replace(/\s/g, ""); return /^-?\d+$/.test(s) ? { ok: parseInt(s, 10) === r } : null; }
+// Une durée : une somme de termes « N h » ou « N min » reliés par + (3 h ; 105 min ; 1 h + 45 min ; 45 min + 1 h…).
+// Les écritures collées « 1h45 » ou « 1h45min » sont illisibles : il faut le +.
+// Seule l'écriture en h et min est validée : au plus un terme en h, au plus un en min, moins de 60 min (ordre libre).
+// « 105 min » ou « 1 h + 30 min + 15 min » donnent la bonne durée mais sont comptés faux (presque juste).
+function lireDuree(t, r) {
+  const termes = t.replace(/\s/g, "").toLowerCase().split("+");
+  let minutes = 0, nh = 0, nm = 0, horsFormat = false;
+  for (const terme of termes) {
+    const m = terme.match(/^(\d+)(h|min|mn)$/);
+    if (!m) return null;
+    if (m[2] === "h") { minutes += +m[1] * 60; nh++; }
+    else { minutes += +m[1]; nm++; if (+m[1] >= 60) horsFormat = true; }
+  }
+  if (nh > 1 || nm > 1) horsFormat = true;
+  const bonneDuree = minutes === r;
+  return { ok: bonneDuree && !horsFormat, presque: bonneDuree && horsFormat };
+}
+// une fraction n/d ; égale mais pas simplifiée (6/8 pour 3/4) : presque juste, compté faux
+function lireFraction(t, r) {
+  const m = t.replace(/\s/g, "").match(/^(\d+)\/(\d+)$/);
+  if (!m || +m[2] === 0) return null;
+  const n = +m[1], d = +m[2], ok = n === r[0] && d === r[1];
+  return { ok, presque: !ok && n * r[1] === d * r[0] };
+}
+function lireMixte(t, r) {
+  const m = t.replace(/\s/g, "").match(/^(\d+)\+(\d+)\/(\d+)$/);
+  if (!m) return null;
+  return { ok: +m[1] === r[0] && +m[2] === r[1] && +m[3] === r[2] };
+}
+
+// ============================================================
+//  LES PLATEAUX (coordonnées relevées dans le projet Scratch, divisées par 2)
+//  blocs : [x, y, largeur, hauteur]
+// ============================================================
+const NIVEAUX = [
+  {
+    titre: "Plateau 1", consigne: "touche le serpent : 5 bonnes réponses d'affilée",
+    depart: [8, 115],
+    blocs: [[0, 137.3, 245, 43], [-3, -50, 7.5, 187.3], [4.9, 125.4, 18, 11.9],
+      [7.7, 55, 18, 3], [18.2, 101, 90.3, 2.7], [18.3, 97.2, 4, 3.8], [104.4, 97.4, 4, 3.6],
+      [44.1, 73.9, 28.4, 3.2], [52.5, 33.4, 18, 3.1], [98.2, 26.4, 17.8, 3.8],
+      [116.5, 85.9, 45.2, 3.5], [131, 87.7, 7.5, 26.7], [131, 114.2, 51, 5.6],
+      [193.8, 49.4, 24.5, 5.3], [209.8, 52.2, 6.5, 85.1], [237.5, -70, 7, 181.3]],
+    ascenseurs: [],
+    piege: null,
+    serpent: { x: 150, y: 114.2, dir: 1 },          // y = sol sous le serpent
+    pont: { x: 115, y: 27, w: 81 },                 // le serpent allongé : passage vers la droite
+    repousse: { x: 165, vx: 9, vy: -3, ejecte: 60 },     // éjecté de l'étagère jusqu'au sol (chez le crabe), sans commande pendant 2 s
+    // crabes : ils tombent, marchent tout droit, font demi-tour contre un mur ; les toucher fait perdre le plateau
+    crabes: [{ x: 64, y: 22, v: 1.5, taille: 1 }, { x: 130, y: 26, v: 2.5, taille: .8 }],
+    bonnes: 5, affilee: true, question: questionOperation, sortieY: 124
+  },
+  {
+    titre: "Plateau 2", consigne: "touche le serpent : 3 bonnes réponses",
+    depart: [6, 147.8],
+    blocs: [[0, 157.8, 198.3, 22.2], [15.8, -45, 7, 182.3],
+      [19.8, 42.5, 79, 6.4], [22.8, 71.4, 51.5, 5.9], [59.8, 17.9, 59, 5.9], [103.2, 101.4, 17.5, 5.9],
+      [120.8, 35.4, 17.5, 5.9], [120.8, 43.8, 6.5, 89.5], [154.8, 35.4, 17.5, 5.9], [161.8, 129.8, 33.5, 5],
+      [198.8, 61.2, 6.5, 118.8], [225.8, 103.4, 20, 5.9], [233.8, -5, 8, 108.4], [233.8, 124.9, 8, 5.9], [233.8, 130.8, 8, 49.2]],
+    // plates-formes qui montent et descendent : x, largeur, haut, bas, vitesse, pause aux extrémités (images)
+    ascenseurs: [{ x: 132.9, w: 26.1, haut: 34.3, bas: 108.3, v: .5, pause: 20 },
+                 { x: 74.3, w: 23.8, haut: 70.3, bas: 134, v: .5, pause: 40 }],
+    piege: { x: 205.3, y: 166, w: 28.5, h: 14 },     // fond du trou : piège
+    serpent: { x: 34, y: 71.4, dir: 1 },
+    pont: { x: 205.3, y: 124.9, w: 28.5 },
+    repousse: { x: 60, vx: 3, vy: -3 },
+    bonnes: 3, affilee: false, question: questionMixte, placeholder: "ex. 2 + 3/4", sortieY: 117
+  },
+  {
+    titre: "Plateau 3", consigne: "trouve le levier, puis 5 bonnes réponses d'affilée au serpent",
+    depart: [7.5, 113.9],
+    blocs: [[0, 123.9, 54.8, 5.9], [0, 102.9, 27.7, 5.9], [0, 129.4, 78.6, 5], [45.6, 155.3, 135.2, 24.7],
+      [48.2, 78.9, 30.5, 6], [48.2, 84.9, 6.5, 44], [101.8, 49.9, 23.5, 5.9], [101.8, 58.8, 7, 42.6],
+      [133.2, 108.4, 41, 6], [133.2, 132.4, 16.5, 5.5], [133.2, 137.9, 6.5, 17], [147.8, 86, 25.9, 7.3],
+      [173.8, 25.1, 7, 113.1], [173.8, 155.6, 7, 24.4], [197.8, -10, 7, 42.9], [197.8, 57.4, 19.5, 7],
+      [197.8, 57.6, 7, 122.4], [204.8, 104.4, 13, 6], [204.8, 155.9, 40, 24.1], [223.3, 132.4, 20, 6],
+      [225.9, 81.9, 20, 7], [236.2, -10, 7, 141.9]],
+    ascenseurs: [],
+    piege: { x: 2, y: 165, w: 26, h: 15 },          // fosse à pieux en bas à gauche
+    // tapis roulants : sur un tapis, le crapaud ne se commande plus et il est emporté vers la gauche
+    tapis: [{ x: 27.5, y: 155.3, w: 64, h: 10.7, v: -2.5 }, { x: 138.5, y: -3.3, w: 64, h: 11.3, v: -2.5, suspendu: true }],
+    // porte de la salle du serpent : elle bascule vers la gauche autour de sa charnière et devient un pont
+    porte: { x: 129.8, y: 107.6, w: 5.2, h: 31.1, px: 130.5, py: 136.9, pont: { x: 101.2, y: 132.4, w: 32.1, h: 5.2 } },
+    levier: { x: 166.7, y: 76, w: 4.5, h: 10 },
+    ressort: { x: 181, y: 166, w: 15, h: 12, v: -13 },     // il lance le crapaud jusqu'au tapis du haut (sauf s'il file dans la fente)
+    serpent: { x: 143.5, y: 132.4, dir: -1, peau: "albinos" },      // un serpent albinos (choix du prof)
+    apres: { x: 154, y: 145.3 },                     // après les 5 bonnes réponses : le crapaud passe derrière le serpent
+    repousse: { x: 105, vx: -17.5, vy: 0, ejecte: 60 },   // comme dans Scratch : éjecté loin, sans commande pendant 2 s
+    bonnes: 5, affilee: true, question: questionDuree, placeholder: "ex. 1 h + 45 min", sortieY: 147
+  },
+  {
+    titre: "Plateau 4", consigne: "va voir l'aigle : à chaque bonne réponse, il porte une pierre dans le panier ; derrière lui, le pylône te vise",
+    depart: [13, 120.4],
+    blocs: [[0, 130.4, 245, 49.6], [28.9, 111.8, 54.6, 18.6], [154.2, 73, 90, 57.4, "roche"]],   // le massif du pylône : de la roche
+    ascenseurs: [],
+    piege: null,
+    serpent: null,
+    // tas de pierres sur le bloc : tant que le crapaud s'y tient, les questions s'enchaînent
+    tas: { x: 33, y: 101.8, w: 12, h: 10 },
+    // l'aigle, posé sur le bloc à côté du tas : on le touche et il questionne comme un serpent ; il porte les pierres
+    aigle: { x: 53, sol: 111.8, repousse: { x: 17, vx: -4, vy: -3 } },
+    // plate-forme suspendue entre le bloc et le massif, posée sur le sol au départ ; un contrepoids (panier) la soulève :
+    // 10 de plus par pierre ; à chaque cran on y monte depuis le bloc, il faut 3 crans pour sauter sur le massif
+    passerelle: { x: 83.7, w: 70.5, depart: 126.4, pas: 10, marches: 4 },
+    // potence : deux poulies, la corde va de la plate-forme au panier suspendu au-dessus du bloc
+    potence: { poulieG: { x: 60, y: 16 }, poulieD: { x: 119, y: 16 }, panierY: 40 },
+    // tir : un pylône dressé sur le massif lance de son sommet un projectile vers le bas à gauche (angle de 220° à 250°), un à la fois
+    tireur: { x: 177.5, y: 14, v: 2.5, sol: 73 },
+    // sortie : par le bord droit du massif
+    sortieY: 63, sortieVisible: true,
+    question: questionFractionNombre
+  },
+  {
+    titre: "Plateau 5", consigne: "5 bonnes réponses d'affilée au serpent, puis le levier",
+    depart: [2, 70.5],                               // posé sur le bloc de gauche, comme en arrivant du plateau 4
+    // le bloc central est creusé d'une niche à sa base (côté droit) : pour les collisions, il est découpé en deux morceaux
+    blocs: [[0, 80.5, 30.8, 56.1], [0, 173.3, 245, 6.7], [68.3, 81.3, 62.4, 38.7, "cache"], [68.3, 120, 47.7, 17.4, "cache"], [70.8, 136.3, 174.2, 6.6],
+      [156.7, 44.4, 18.5, 7.5], [191.2, 107.9, 20.5, 8.5], [196.7, 61.4, 18.5, 7.5], [217.7, 90.9, 22.3, 9], [235.7, 1.9, 8.5, 134.5]],
+    ascenseurs: [],
+    piege: null,
+    // le bloc central, d'un seul tenant, entaillé en bas à droite (la niche) ; et la même planche que l'étage, à gauche du passage :
+    // l'interruption de la ligne de planches marque l'endroit du conduit sans le montrer
+    decor: [[68.3, 81.3, 62.4, 56.1, "entaille"], [0, 136.3, 30.8, 6.6]],
+    niche: { x: 116, y: 120, w: 14.7, h: 16.3 },     // creusée dans la terre ; le levier est dedans
+    serpent: { x: 141, y: 136.3, dir: -1, peau: "jaune" },          // il garde l'entrée de la niche ; un serpent jaune (choix du prof)
+    serpentDisparait: true,
+    // une erreur : le serpent éjecte le crapaud vers la droite, le long de l'étage, sans commande pendant 2 s
+    repousse: { x: 160, vx: 9, vy: -3, ejecte: 60 },
+    // le levier ne marche qu'une fois le serpent parti ; il soulève la trappe qui bouche le puits (charnière sur son bord gauche)
+    levier: { x: 121, y: 126.3, w: 5, h: 10 }, levierApresSerpent: true,
+    gardien: { x: 30.8, y: 81.3, w: 37.5, h: 4.5, glisse: -38 },
+    // le conduit sous la trappe est caché par un mur de pierre, dans le prolongement du bloc de gauche :
+    // le crapaud y tombe à l'aveugle et ne réapparaît que dans le couloir du bas
+    masque: { x: 30.8, y: 85.8, w: 40, h: 50.8, alignY: 80.5, alignH: 56.1 },
+    // deux petits crabes dans le couloir du bas, qui mène à la sortie
+    crabes: [{ x: 104, y: 158, v: 2, taille: .6 }, { x: 189, y: 158, v: 2, taille: .6 }],
+    bonnes: 5, affilee: true, question: questionFractionManquante, placeholder: "ex. 3/4", sortieY: 160
+  },
+  {
+    titre: "Plateau 6", consigne: "3 bonnes réponses d'affilée à la sorcière font rapetisser le hérisson ; saute par-dessus, tire le levier et sors par le pont-levis",
+    depart: [14, 151.9],                             // au sol, en bas à gauche, comme en sortant du couloir du plateau 5
+    blocs: [[0, 161.9, 245, 18.1], [236.9, 28.9, 8.1, 133], [97.4, 146.9, 8, 15], [82.9, 140.9, 37, 6],
+      [19.4, 74.9, 68.6, 6.1], [94, 50, 24, 6], [232, 28.9, 4.9, 4, "roche"]],   // (la console de pierre de la charnière)
+    ascenseurs: [],
+    // nacelles qui vont et viennent sur un câble : x de la gauche, bornes, vitesse
+    navettes: [{ x: 117, y: 112, w: 16, gauche: 117, droite: 212, v: .75 }, { x: 150, y: 84, w: 16, gauche: 89, droite: 212, v: .75 }],
+    piege: null,
+    // pont-levis : charnière en haut du mur de droite ; dressé au départ, le levier l'abaisse (3 s)
+    // jusqu'à la plate-forme haute ; son dessus est au niveau du haut du mur
+    pontLevis: { px: 232, py: 32.9, long: 105.4, ep: 4 },
+    levier: { x: 229, y: 151.9, w: 5, h: 10 },
+    // la sorcière questionne comme un serpent ; une erreur hypnotise le crapaud, qui flotte jusqu'au départ
+    serpent: { x: 34, y: 74.9, dir: 1 }, sorciere: true,
+    hypnose: { x: 39, y: 151.9, par: [[96, 60], [96, 118], [60, 125]] },     // au-dessus de la planche, à droite, puis au-dessus de la table
+    // le hérisson patrouille au sol entre la table et le mur ; chaque bonne réponse le fait rapetisser
+    // (taille selon le nombre de bonnes réponses d'affilée : la baisse se voit à chaque réponse ; il se saute bien après la 3e,
+    //  un élève adroit peut tenter avant — le prof l'accepte)
+    // il ne va pas plus à gauche que x = 142 : le bord de la table (et le sol juste au pied) reste un abri
+    herisson: { x: 190, sol: 161.9, w: 46, h: 30, v: 1, gauche: 142, tailles: [1, .85, .7, .5] },
+    bonnes: 3, affilee: true, question: questionSommeFraction, placeholder: "ex. 17/5", sortieY: 16
+  },
+  {
+    titre: "Plateau 7", consigne: "au pupitre, donne l'abscisse du hérisson : la grue l'emporte en cage (3 hérissons), puis sors par le tunnel",
+    depart: [2, 50],                                 // en haut à gauche, comme en sortant du pont-levis du plateau 6
+    // la tour du pupitre, le sol de l'arène, le rocher du tunnel de sortie (la cage est posée dessus)
+    blocs: [[0, 60, 34, 92], [0, 150, 245, 30], [214, 70, 31, 48, "roche"]],
+    ascenseurs: [], piege: null, serpent: null,
+    // la grue : droite graduée au sol, de 0 (x0) à 3, unité u ; rail en haut ; pupitre sur la tour ; herse du tunnel ; cage
+    grue: { x0: 44, u: 55, max: 3, sol: 150, rail: 12, cage: 226, pupitre: { x: 23, y: 46, w: 9, h: 14 }, herse: { x: 214, y: 118, w: 3, h: 32 }, taille: .5 },
+    bonnes: 3, question: questionAbscisse, placeholder: "ex. 7/4 ou 1 + 3/4", sortieY: 140
+  },
+  {
+    titre: "Plateau 8", consigne: "le grand serpent garde le crapaud d'or : à chaque bonne réponse, une marche sort de terre ; une erreur, et la marche du haut s'effondre",
+    depart: [4, 140],                                // en bas à gauche, comme en sortant du tunnel du plateau 7
+    blocs: [[0, 150, 245, 30], [150, 40, 95, 110]],  // le sol, le grand rocher (l'autel et le crapaud d'or sont dessus)
+    ascenseurs: [], piege: null, serpent: null,
+    // 7 marches qui sortent de terre au pied du rocher : x = x0 + k × l, dessus à 150 − (k + 1) × dh
+    // dh : la 7e marche arrive pile au niveau du haut du rocher
+    escalier: { x0: 30, l: 17, dh: 110 / 7, sol: 150, depart: { x: 30, y: 128, w: 17, h: 22 },
+      statue: { x: 200, y: 22, w: 18, h: 18 } },
+    bonnes: 7, question: questionEscalier, sortieY: 30
+  }
+];
+// Tableau final : le crapaud se promène entre les socles de pierre, un par plateau, chacun avec sa créature ;
+// le panneau donne le bilan (notion de chaque plateau, réponses justes)
+const SOCLES = [
+  { x: 2, notion: "les quatre opérations (le serpent, les crabes)" },
+  { x: 27, notion: "une fraction sous forme mixte (17/5 = 3 + 2/5)" },
+  { x: 52, notion: "une fraction d'heure en h et min (7/4 h = 1 h + 45 min)" },
+  { x: 77, notion: "la fraction d'un nombre (2/3 × 240 = 160) avec l'aigle" },
+  { x: 137, notion: "la fraction qui manque (… × 80 = 60 → 3/4)" },
+  { x: 162, notion: "une somme en une seule fraction (3 + 2/5 = 17/5) avec la sorcière" },
+  { x: 187, notion: "l'abscisse d'un point sur une droite graduée (7/4) avec la grue" },
+  { x: 212, notion: "la révision de tout : l'escalier du grand serpent" }
+];
+const LARGEUR_SOCLE = 23;
+const FINAL = {
+  titre: "Tableau final", consigne: "le crapaud d'or, c'est toi", final: true,
+  depart: [113, 132],
+  blocs: [[0, 152, 245, 28], ...SOCLES.map(o => [o.x, 128, LARGEUR_SOCLE, 24, "roche"])],
+  // le socle du crapaud sort de terre et s'élève selon son score : 8 de haut à 0 %, 60 à 100 %
+  // c'est l'autel du rocher : le crapaud, qui a touché la statue, est devenu d'or
+  estrade: { x: 105, w: 28, sol: 152, min: 8, max: 60 },
+  ascenseurs: [], piege: null, serpent: null, sortieY: 0
+};
+const CRAPAUD_W = 12, CRAPAUD_H = 10;
+
+// ---------- Élève ----------
+const CLE_ELEVE = "crapaudOr.eleve";
+let eleve = { nom: "", plateaux: 0, record: 0, reponses: 0, bonnes: 0 };
+let enregistre = null;
+function empreinte(e) {
+  const t = "crapaudOr✦" + [e.nom, e.plateaux, e.record, e.reponses, e.bonnes].join("✦");
+  let h = 2166136261;
+  for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(36);
+}
+try {
+  const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
+  if (e && typeof e.nom === "string" && e.cle === empreinte(e))
+    enregistre = { nom: e.nom, plateaux: e.plateaux | 0, record: e.record | 0, reponses: e.reponses | 0, bonnes: e.bonnes | 0 };
+} catch (e) {}
+const sauverEleve = () => { try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ ...eleve, cle: empreinte(eleve) })); } catch (e) {} };
+const prenom = () => eleve.nom.split(" ")[0];
+
+// ============================================================
+//  ÉTAT DE LA PARTIE
+// ============================================================
+let niv, crapaud, ascs, crabes, serpent, partie = { image: 0, fin: null }, question = null;
+// le score du parcours en cours (depuis le plateau 1) : il fait monter le socle du tableau final
+let parcours = { reponses: 0, bonnes: 0 };
+const tauxParcours = () => parcours.reponses ? parcours.bonnes / parcours.reponses : 0;
+
+function chargerNiveau(n) {
+  partie.niveau = n;
+  if (n === 0) parcours = { reponses: 0, bonnes: 0 };
+  partie.fin = null;
+  niv = NIVEAUX[n] || FINAL;
+  const [x, y] = niv.depart;
+  crapaud = { x, y, vx: 0, vy: 0, auSol: false, support: null, dir: 1, etat: "libre", mort: 0 };
+  ascs = niv.ascenseurs.map(a => ({ ...a, y: a.bas, sens: -1, attente: 0, dy: 0 }));
+  crabes = (niv.crabes || []).map(k => ({ ...k, w: 13 * k.taille, h: 6.5 * k.taille, vy: 0, dir: 1, auSol: false }));
+  // serpent : attend → questions → glisse → pont
+  serpent = { etat: "attend", justes: 0, boude: false, t: 0 };     // (plateau 3 : attend → questions → fini)
+  partie.levier = false; partie.porte = 0; partie.ressort = 0;
+  partie.tir = null; partie.tirAttente = 45; partie.aigle = { vol: false, t: 0, sens: 1, boude: false, depart: false, parti: false }; partie.pierres = []; partie.sortie = null; partie.glisse = 0;
+  // nacelles : traversables par-dessous, on s'y pose en retombant dessus
+  if (niv.estrade) {
+    const e = niv.estrade, haut = e.min + (e.max - e.min) * tauxParcours();
+    ascs.push({ x: e.x, w: e.w, y: e.sol - 2, h: 2, cible: e.sol - haut, v: .4, dy: 0, passerelle: true, estrade: true });
+  }
+  partie.escalier = niv.escalier ? { haut: Array(7).fill(niv.escalier.sol), cible: Array(7).fill(niv.escalier.sol), k: 0, actif: false, fini: false, etape: null } : null;
+  partie.grue = niv.grue ? { x: niv.grue.x0, y: 36, etat: "attente", attente: 30, pris: 0, hg: null, d: 4, herse: 0, auPupitre: false, liberes: [] } : null;
+  for (const a of niv.navettes || []) ascs.push({ ...a, h: 4, sens: 1, dx: 0, dy: 0, horiz: true, traversable: true });
+  // plateau 6 : le hérisson est petit au départ ; la sorcière le fait grossir d'une boule magique dès le début
+  partie.herisson = niv.herisson ? { cx: niv.herisson.x, dir: -1, s: .5, cible: .5, boule: 0, impact: 0 } : null;
+  partie.sorciere = { tourne: 0, lance: 0, debut: niv.sorciere ? 15 : 0 };
+  partie.boules = []; partie.pontLevis = 0;
+  if (niv.passerelle) { const p = niv.passerelle; ascs.push({ x: p.x, w: p.w, y: p.depart, h: 4, cible: p.depart, v: .35, dy: 0, passerelle: true, traversable: true }); }
+  question = null;
+  fermerEcran();
+  afficherQuestion();
+  $("retour").className = "vide";
+  majPanneau();
+  majMusique();
+  if (niv.final) son("final");
+}
+
+// ---------- Contrôles : clavier ----------
+const touches = { gauche: false, droite: false, saut: false };
+const CLAVIER = { ArrowLeft: "gauche", ArrowRight: "droite", ArrowUp: "saut", " ": "saut", Spacebar: "saut" };
+addEventListener("keydown", e => {
+  if (question && question.choix && /^[1-4]$/.test(e.key)) { choisir(+e.key - 1); e.preventDefault(); return; }
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  const t = CLAVIER[e.key];
+  if (t) { touches[t] = true; e.preventDefault(); }
+});
+addEventListener("keyup", e => { const t = CLAVIER[e.key]; if (t) touches[t] = false; });
+// un bouton cliqué perd le focus : sinon la barre d'espace (saut) le réactiverait
+document.addEventListener("click", e => { const b = e.target.closest("header button, aside button"); if (b) b.blur(); });
+
+// ---------- Collisions ----------
+const recouvre = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+const boiteSerpent = () => !niv.serpent ? { x: -99, y: -99, w: 0, h: 0 }
+  : niv.sorciere ? { x: niv.serpent.x - 7, y: niv.serpent.y - 18, w: 14, h: 18 }
+  : { x: niv.serpent.x - 8, y: niv.serpent.y - 10, w: 16, h: 10 };
+// le hérisson : sa boîte (posée au sol, centrée sur cx) et la partie qui pique (un peu plus petite que le dessin)
+function boiteHerisson(cx = partie.herisson.cx) {
+  const d = niv.herisson, s = partie.herisson.s;
+  return { x: cx - d.w * s / 2, y: d.sol - d.h * s, w: d.w * s, h: d.h * s };
+}
+function piqueHerisson() { const b = boiteHerisson(); return { x: b.x + b.w * .1, y: b.y + b.h * .15, w: b.w * .8, h: b.h * .85 }; }
+function obstacles() {
+  const o = niv.blocs.map(([x, y, w, h]) => ({ x, y, w, h }));
+  for (const a of ascs) o.push({ x: a.x, y: a.y, w: a.w, h: a.h || 4, asc: a, traversable: a.traversable });
+  if (serpent.etat === "pont") o.push({ x: niv.pont.x, y: niv.pont.y, w: niv.pont.w, h: 4 });
+  for (const t of niv.tapis || []) o.push(t);
+  // la porte : fermée, c'est un mur ; basculée, c'est un pont ; pendant qu'elle tourne, une chaîne de petits blocs
+  if (niv.porte) o.push(...boitesPorte());
+  if (niv.gardien && !partie.levier) o.push(niv.gardien);
+  if (niv.grue && partie.grue.pris < 3) o.push(niv.grue.herse);
+  if (niv.escalier) partie.escalier.haut.forEach((h, k) => { if (h < niv.escalier.sol) o.push({ x: xMarche(k), y: h, w: niv.escalier.l, h: niv.escalier.sol - h }); });
+  if (niv.pontLevis && partie.pontLevis >= 1) { const p = niv.pontLevis; o.push({ x: p.px - p.long, y: p.py - p.ep, w: p.long, h: p.ep }); }
+  return o;
+}
+function boitesPorte() {
+  const p = niv.porte;
+  if (partie.porte === 0) return [p];
+  if (partie.porte >= 1) return [p.pont];
+  // on suit l'axe de la porte (de la charnière vers le haut), tourné comme dans le dessin
+  const a = partie.porte * Math.PI / 2, ep = p.w, cx = p.x - p.px + ep / 2, b = [];
+  for (let yr = p.y + p.h - p.py - ep / 2; yr >= p.y - p.py + ep / 2 - .01; yr -= 2.5) {
+    const x = p.px + cx * Math.cos(a) + yr * Math.sin(a), y = p.py - cx * Math.sin(a) + yr * Math.cos(a);
+    b.push({ x: x - ep / 2, y: y - ep / 2, w: ep, h: ep, tourne: true });
+  }
+  return b;
+}
+
+// ---------- Une image de jeu (1/30 s) ----------
+function pas() {
+  partie.image++;
+  const c = crapaud;
+  if (c.etat === "mort") c.mort = Math.min(1, c.mort + .05);
+  if (partie.fin) return;
+
+  // plates-formes mobiles
+  for (const a of ascs) {
+    if (a.horiz) {                       // nacelle : aller-retour horizontal
+      const av = a.x;
+      a.x += a.sens * a.v;
+      if (a.x <= a.gauche) { a.x = a.gauche; a.sens = 1; }
+      if (a.x >= a.droite) { a.x = a.droite; a.sens = -1; }
+      a.dx = a.x - av;
+      continue;
+    }
+    const avant = a.y;
+    if (a.passerelle) { const d = a.cible - a.y; a.y += Math.sign(d) * Math.min(Math.abs(d), a.v); if (a.estrade) a.h = niv.estrade.sol - a.y; }
+    else if (a.attente > 0) a.attente--;
+    else {
+      a.y += a.sens * a.v;
+      if (a.y <= a.haut) { a.y = a.haut; a.sens = 1; a.attente = a.pause; }
+      if (a.y >= a.bas) { a.y = a.bas; a.sens = -1; a.attente = a.pause; }
+    }
+    a.dy = a.y - avant;
+  }
+
+  // le serpent glisse jusqu'à sa place de pont
+  if (serpent.etat === "glisse") {
+    serpent.t = Math.min(1, serpent.t + 1 / 60);
+    if (serpent.t === 1) { serpent.etat = "pont"; son("pont"); }
+  }
+
+  // la porte bascule (environ 3 s) une fois le levier tiré
+  if (partie.levier && partie.porte < 1) partie.porte = Math.min(1, partie.porte + 1 / 90);
+  if (partie.ressort > 0) partie.ressort--;
+  if (niv.gardien && partie.levier) partie.glisse = Math.max(niv.gardien.glisse, partie.glisse - .5);
+  if (niv.pontLevis && partie.levier && partie.pontLevis < 1) {
+    partie.pontLevis = Math.min(1, partie.pontLevis + 1 / 90);
+    if (partie.pontLevis === 1) son("pontLevis");
+  }
+  if (partie.pierres) partie.pierres = partie.pierres.filter(p => ++p.t < 24);
+  if (partie.sorciere.tourne > 0) partie.sorciere.tourne--;
+  if (partie.sorciere.lance > 0) partie.sorciere.lance--;
+  if (partie.sorciere.debut > 0 && --partie.sorciere.debut === 0) lancerBoule(1, false);
+  if (niv.herisson) bougerBoules();
+  if (niv.escalier) bougerEscalier();
+
+  // hypnotisé par la sorcière : le crapaud flotte, sans commande, jusqu'au départ ;
+  // plateau 8 : il saute d'une marche à l'autre (même trajet scripté, sans balancement)
+  if (c.etat === "hypnose" || c.etat === "saute") {
+    // trajet par étapes (il contourne les planches : niv.hypnose.par), avec un léger balancement
+    const h = c.hyp, u = Math.min(1, ++h.t / h.duree), pts = h.pts, n = pts.length - 1;
+    const i = Math.min(n - 1, Math.floor(u * n)), v = u * n - i, e = v * v * (3 - 2 * v);
+    c.x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * e + (c.etat === "hypnose" ? Math.sin(h.t / 5) * 2 * (1 - u) : 0);
+    c.y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * e;
+    c.vx = c.vy = 0; c.auSol = false; c.support = null;
+    if (u >= 1) { c.etat = h.apres || "libre"; if (h.apres) c.auSol = true; }
+    if (niv.herisson) bougerHerisson(obstacles());
+    return;
+  }
+
+  // le crapaud est emporté par la plate-forme sur laquelle il se tient
+  const porteX = c.auSol && c.support ? c.support.dx || 0 : 0;
+  if (c.auSol && c.support) { c.y += c.support.dy; c.x += porteX; }
+
+  // sur un tapis roulant, il ne se commande plus : le tapis l'emporte
+  const tapis = (niv.tapis || []).find(t => recouvre({ x: c.x, y: c.y - 1, w: CRAPAUD_W, h: CRAPAUD_H + 2 }, t));
+  const fige = c.etat !== "libre";
+  const vMarche = c.auSol ? 3.5 : 2;
+  // éjecté par le serpent : il glisse sans commande, l'élan se perd peu à peu
+  if (c.etat === "ejecte") { c.vx *= .8; if (--c.ejecte <= 0) c.etat = "libre"; }
+  if (tapis && (!fige || c.etat === "ejecte")) c.vx = tapis.v;
+  else if (c.etat === "ejecte") {}
+  else if (!fige) {
+    if (touches.saut && c.auSol) { c.vy = -6; c.auSol = false; son("saut"); }
+    if (touches.gauche) { c.vx = -vMarche; c.dir = -1; }
+    else if (touches.droite) { c.vx = vMarche; c.dir = 1; }
+    else c.vx *= c.auSol ? .6 : .8;      // sans flèche, l'élan se perd (aussi en l'air, comme dans Scratch)
+  } else if (c.auSol) c.vx = 0;
+  c.vy = Math.min(c.vy + .5, 7);
+  // accroché sous un tapis suspendu : il ne tombe pas tant que le tapis l'emporte
+  if (tapis && tapis.suspendu) { c.vy = 0; c.y = tapis.y + tapis.h; }
+
+  // déplacement horizontal puis vertical, en repoussant hors des obstacles
+  const obs = obstacles();
+  const boite = () => ({ x: c.x, y: c.y, w: CRAPAUD_W, h: CRAPAUD_H });
+  // la porte qui tourne vient d'arriver sur le crapaud : elle le soulève (ou le repousse vers le bas), jamais de côté
+  for (const o of obs) if (o.tourne && recouvre(boite(), o)) {
+    if (c.y + CRAPAUD_H / 2 < o.y + o.h / 2) { c.y = o.y - CRAPAUD_H; if (c.vy > 0) c.vy = 0; }
+    else { c.y = o.y + o.h; if (c.vy < 0) c.vy = 0; }
+  }
+  c.x += c.vx;
+  // repoussé du côté d'où il vient (mouvement propre + nacelle) ; sans mouvement net, du côté de son centre
+  for (const o of obs) if (!o.traversable && recouvre(boite(), o)) {
+    const mv = c.vx + porteX, aGauche = Math.abs(mv) > .05 ? mv > 0 : c.x + CRAPAUD_W / 2 < o.x + o.w / 2;
+    c.x = aGauche ? o.x - CRAPAUD_W : o.x + o.w; c.vx = 0;
+  }
+  if (c.x < 0) c.x = 0;
+  const basAvant = c.y + CRAPAUD_H;
+  c.y += c.vy;
+  c.auSol = false; c.support = null;
+  for (const o of obs) if (recouvre(boite(), o)) {
+    // plate-forme traversable : on passe à travers par-dessous, on ne s'y pose qu'en retombant dessus
+    if (o.traversable) {
+      if (c.vy >= 0 && basAvant <= o.y - Math.min(0, o.asc.dy) + 1) { c.y = o.y - CRAPAUD_H; c.vy = 0; c.auSol = true; c.support = o.asc; }
+      continue;
+    }
+    if (c.vy >= 0 || (o.asc && o.asc.dy < 0 && c.y + CRAPAUD_H - o.y < 6)) { c.y = o.y - CRAPAUD_H; c.vy = 0; c.auSol = true; c.support = o.asc || null; }
+    else { c.y = o.y + o.h; c.vy = 0; }
+  }
+
+  // l'aigle posé : le crapaud ne le traverse pas et ne se pose pas dessus ; il est repoussé sur le côté le plus proche
+  if (niv.aigle && !partie.aigle.vol && !partie.aigle.parti) {
+    const E = boiteAigle();
+    if (recouvre(boite(), E)) { c.x = c.x + CRAPAUD_W / 2 < E.x + E.w / 2 ? E.x - CRAPAUD_W : E.x + E.w; c.vx = 0; }
+  }
+
+  // le ressort renvoie le crapaud vers le haut
+  const ress = niv.ressort;
+  if (ress && c.vy >= 0 && recouvre(boite(), ress)) { c.y = ress.y - CRAPAUD_H; c.vy = ress.v; c.auSol = false; partie.ressort = 8; son("ressort"); }
+  // le levier ouvre la porte de la salle du serpent
+  if (niv.levier && !partie.levier && recouvre(boite(), niv.levier) && (!niv.levierApresSerpent || serpent.etat === "fini")) {
+    partie.levier = true; son("levier"); son(niv.porte ? "porte" : niv.gardien ? "trappe" : niv.pontLevis ? "treuil" : "");
+    if (!question) afficherQuestion();
+  }
+
+  // le serpent : on le touche → questions
+  const touche = recouvre(boite(), boiteSerpent());
+  if (!touche) serpent.boude = false;
+  if (touche && serpent.etat === "attend" && !serpent.boude && c.etat === "libre") commencerQuestions();
+  // plateau 4 : l'aigle. On le touche : il questionne ; à chaque bonne réponse il porte une pierre du tas au panier,
+  // puis pose la question suivante ; à une erreur il reprend une pierre du panier et la remet sur le tas
+  if (niv.aigle) {
+    const A = partie.aigle;
+    if (A.vol) {
+      A.t++;
+      const p = niv.passerelle, a = ascs.find(x => x.passerelle), V = volAigle(A.sens, A.depart);
+      if (A.sens > 0 && A.t === V.lache) {
+        a.cible = Math.max(p.depart - p.pas * p.marches, a.cible - p.pas); son("pierre");
+        if (panierPlein()) { A.depart = true; son("panierPlein"); }     // la 4e pierre est posée : l'aigle s'en va, il ne revient pas
+      }
+      if (A.sens < 0 && A.t === V.prend) { a.cible = Math.min(p.depart, a.cible + p.pas); son("pierre"); }
+      if (A.t >= volAigle(A.sens, A.depart).fin) {
+        A.vol = false;
+        if (A.depart) A.parti = true;
+        if (A.sens > 0 && c.etat === "fige") { if (panierPlein()) { c.etat = "libre"; afficherQuestion(); } else poserQuestion(); }
+      }
+    }
+    const E = boiteAigle(), devant = !A.vol && !A.parti && c.auSol && Math.abs(c.x + CRAPAUD_W - E.x) < 1.5 && Math.abs(c.y + CRAPAUD_H - niv.aigle.sol) < 2;
+    if (!devant) A.boude = false;
+    else if (!A.boude && c.etat === "libre" && !question && !panierPlein()) { c.dir = 1; $("retour").className = "vide"; commencerQuestions(); }
+  }
+  // plateau 4 : le tir (en pause pendant les questions)
+  if (niv.tireur) {
+    const T = niv.tireur;
+    if (!partie.tir) {
+      const derriere = !niv.aigle || c.x + CRAPAUD_W / 2 > niv.aigle.x;
+      if (!question && c.etat !== "fige" && derriere && --partie.tirAttente <= 0) {
+        // le tir vise le crapaud là où il est au moment du tir
+        const dx = c.x + CRAPAUD_W / 2 - T.x, dy = c.y + CRAPAUD_H / 2 - T.y, n = Math.hypot(dx, dy) || 1;
+        partie.tir = { x: T.x, y: T.y, vx: T.v * dx / n, vy: T.v * dy / n };
+        son("tir");
+      }
+    } else {
+      const t = partie.tir;
+      t.x += t.vx; t.y += t.vy;
+      const bt = { x: t.x - 1.2, y: t.y - 1.2, w: 2.4, h: 2.4 };
+      if (recouvre(boite(), bt)) { partie.tir = null; mourir("tir"); return; }
+      if (t.x < 0 || t.y > H || obs.some(o => recouvre(bt, o))) { partie.tir = null; partie.tirAttente = 12; }
+    }
+  }
+  // plateau 4 : la sortie
+
+  // les crabes ; un crabe qui pince le crapaud fait perdre le plateau (même pendant les questions)
+  bougerCrabes(obs);
+  if (crabes.some(k => recouvre(boite(), k))) { mourir("crabe"); return; }
+  // plateau 6 : le hérisson pique
+  if (niv.herisson) { bougerHerisson(obs); if (recouvre(boite(), piqueHerisson())) { mourir("herisson"); return; } }
+  // plateau 8 : on s'approche du grand serpent (les questions commencent) ; en haut, on touche le crapaud d'or
+  if (niv.escalier) {
+    const E = partie.escalier, e = niv.escalier;
+    if (!E.actif && c.etat === "libre" && recouvre(boite(), e.depart)) {
+      E.actif = true; Object.assign(c, { etat: "fige", vx: 0, dir: 1 }); son("serpent"); $("retour").className = "vide"; afficherQuestion();
+    }
+    if (E.fini && c.etat === "libre" && recouvre(boite(), e.statue)) { plateauFranchi("statue"); return; }
+  }
+  // plateau 7 : le pupitre de la grue, la grue, le hérisson de l'arène
+  if (niv.grue) {
+    const G = partie.grue;
+    if (c.etat === "libre" && G.pris < 3 && recouvre(boite(), niv.grue.pupitre)) {
+      Object.assign(c, { etat: "fige", vx: 0, dir: 1 }); G.auPupitre = true; $("retour").className = "vide"; afficherQuestion();
+    }
+    bougerGrue();
+    const P = piqueHerissonGrue();
+    if (P && recouvre(boite(), P)) { mourir("herisson"); return; }
+  }
+
+  // piège au fond du trou, ou chute hors de l'écran
+  if ((niv.piege && recouvre(boite(), niv.piege)) || c.y > H - 6) mourir();
+  // sortie à droite (le tableau final n'en a pas : le crapaud reste dans le cadre)
+  if (niv.final) c.x = Math.min(c.x, L - CRAPAUD_W);
+  else if (c.x > L - 2) plateauFranchi();
+}
+
+// Crabes : chute, marche tout droit, demi-tour contre un obstacle (mur, poteau) ou le bord ; ils tombent au bout des plates-formes
+function bougerCrabes(obs) {
+  for (const k of crabes) {
+    k.vy = Math.min(k.vy + .5, 7);
+    k.y += k.vy;
+    k.auSol = false;
+    for (const o of obs) if (recouvre(k, o)) {
+      if (k.vy >= 0) { k.y = o.y - k.h; k.auSol = true; } else k.y = o.y + o.h;
+      k.vy = 0;
+    }
+    if (k.auSol) {
+      k.x += k.dir * k.v;
+      if (k.x < 0 || k.x + k.w > L || obs.some(o => recouvre(k, o))) { k.x -= k.dir * k.v; k.dir = -k.dir; }
+    }
+    if (k.y > H) { const d = niv.crabes[crabes.indexOf(k)]; Object.assign(k, { x: d.x, y: d.y, vy: 0 }); }
+  }
+}
+
+// Hérisson : il marche au sol et fait demi-tour à sa borne de gauche ou contre un obstacle (le mur) ;
+// il change de taille peu à peu, centré, et se roule en boule un instant à chaque bonne réponse
+function bougerHerisson(obs) {
+  const H = partie.herisson, d = niv.herisson;
+  H.s += Math.sign(H.cible - H.s) * Math.min(Math.abs(H.cible - H.s), H.cible > H.s ? .02 : .012);
+  if (H.impact > 0) H.impact--;
+  const gene = cx => { const b = boiteHerisson(cx); return b.x < d.gauche || b.x + b.w > L || obs.some(o => !o.traversable && recouvre(b, o)); };
+  // en grossissant contre un obstacle, il s'en écarte
+  if (gene(H.cx)) for (let k = 1; k < 60; k++) { if (!gene(H.cx + k)) { H.cx += k; break; } if (!gene(H.cx - k)) { H.cx -= k; break; } }
+  if (H.boule > 0) { H.boule--; return; }
+  H.cx += H.dir * d.v;
+  if (gene(H.cx)) { H.cx -= H.dir * d.v; H.dir = -H.dir; }
+}
+
+// Boules magiques de la sorcière : lancées du bout de son bâton, elles filent en arc vers le hérisson (qu'elles suivent) ;
+// à l'impact, le hérisson prend la taille « cible » (et se roule en boule si « boule »)
+const boutBaton = () => ({ x: niv.serpent.x + 6.3, y: niv.serpent.y - 19.5 });
+// voix : l'enregistrement « boulet » du Scratch, seulement après une erreur (comme dans le Scratch) ;
+// les autres lancers (le premier, qui fait grossir le hérisson, et les bonnes réponses) font un simple bruit de sort
+function lancerBoule(cible, boule, voix = false) {
+  const b = boutBaton();
+  partie.boules.push({ t: 0, duree: 36, x0: b.x, y0: b.y, x: b.x, y: b.y, cible, boule, trace: [] });
+  partie.sorciere.lance = 18;
+  son(voix ? "magie" : "sort");
+}
+function bougerBoules() {
+  const H = partie.herisson;
+  partie.boules = partie.boules.filter(b => {
+    const h = boiteHerisson(), tx = H.cx, ty = h.y + h.h / 2, u = ++b.t / b.duree;
+    b.trace.unshift({ x: b.x, y: b.y }); b.trace.length = Math.min(b.trace.length, 6);
+    b.x = b.x0 + (tx - b.x0) * u; b.y = b.y0 + (ty - b.y0) * u - Math.sin(u * Math.PI) * 30;
+    if (u < 1) return true;
+    H.cible = b.cible; H.impact = 20;
+    if (b.boule) H.boule = 40;
+    son(b.cible < H.s ? "herisson" : "grossit");
+    return false;
+  });
+}
+
+// ---------- Plateau 8 : l'escalier du grand serpent ----------
+const xMarche = k => niv.escalier.x0 + niv.escalier.l * k;
+const yMarche = k => niv.escalier.sol - niv.escalier.dh * (k + 1);
+// le crapaud saute (trajet scripté en arc) sur la marche k, ou au sol (k < 0)
+function sauterSurMarche(k) {
+  const c = crapaud, x = k < 0 ? 14 : xMarche(k) + 2.5, y = (k < 0 ? niv.escalier.sol : yMarche(k)) - CRAPAUD_H;
+  c.etat = "saute"; c.dir = x >= c.x ? 1 : -1;
+  c.hyp = { t: 0, duree: 22, pts: [[c.x, c.y], [(c.x + x) / 2, Math.min(c.y, y) - 14], [x, y]], apres: "fige" };
+  son("saut");
+}
+function bougerEscalier() {
+  const E = partie.escalier, c = crapaud;
+  // les marches montent doucement, s'effondrent vite
+  E.haut = E.haut.map((h, k) => { const d = E.cible[k] - h; return h + Math.sign(d) * Math.min(Math.abs(d), d < 0 ? 1.5 : 4); });
+  // la marche est sortie : le crapaud y saute
+  if (E.etape === "monte" && E.haut[E.k] === E.cible[E.k]) { sauterSurMarche(E.k); E.k++; E.etape = "saut"; }
+  // le saut est fini : question suivante, ou en haut (le serpent s'endort)
+  if (E.etape === "saut" && c.etat === "fige") {
+    E.etape = null;
+    if (E.k >= 7) { E.fini = true; c.etat = "libre"; son("pont"); afficherQuestion(); }
+  }
+  if (E.actif && !E.fini && !E.etape && c.etat === "fige" && !question) poserQuestion();
+}
+
+// ---------- Plateau 7 : la grue ----------
+// abscisse → x du monde ; une nouvelle place pour le hérisson (dénominateur de 2 à 6, jamais un entier, pas la même)
+const xAbscisse = v => niv.grue.x0 + niv.grue.u * v;
+function placeHerisson(ancienne) {
+  let d, n;
+  do { d = entier(2, 6); n = entier(1, niv.grue.max * d - 1); } while (n % d === 0 || n / d === ancienne);
+  return { d, n, cible: xAbscisse(n / d) };
+}
+// boîte qui pique : le hérisson qui marche, ou la boule posée au sol
+function piqueHerissonGrue() {
+  const H = partie.grue.hg, S = niv.grue.taille, sol = niv.grue.sol;
+  if (!H || (H.etat !== "marche" && H.etat !== "boule")) return null;
+  if (H.etat === "boule") return { x: H.cx - 10 * S, y: sol - 25 * S, w: 20 * S, h: 24 * S };
+  const w = 46 * S, h = 30 * S;
+  return { x: H.cx - w / 2 + w * .1, y: sol - h * .85, w: w * .8, h: h * .85 };
+}
+function bougerGrue() {
+  const G = partie.grue, g = niv.grue, H = G.hg, S = g.taille, bas = g.sol - 13 * S - 7.5 * S, haut = 36;     // la pince serre le haut de la boule
+  const vers = (cible, v) => { const d = cible - G.x; G.x += Math.sign(d) * Math.min(Math.abs(d), v); return G.x === cible; };
+  // un hérisson sort du tunnel (la herse se lève), marche jusqu'à sa place et se met en boule
+  if (G.attente > 0 && --G.attente === 0) { G.hg = { cx: 236, dir: -1, etat: "marche", ...placeHerisson() }; G.d = G.hg.d; afficherQuestion(); }
+  if (H && H.etat === "marche") {
+    const d = H.cible - H.cx;
+    if (d) H.dir = Math.sign(d);
+    H.cx += Math.sign(d) * Math.min(Math.abs(d), 1.2);
+    if (H.cx === H.cible) { H.etat = "boule"; afficherQuestion(); }       // sans son (demande du prof)
+  }
+  // les hérissons libérés : vers le bord du rocher, chute, puis retour au tunnel
+  for (const L of G.liberes) {
+    if (L.etat === "sort") { L.x -= 1; if (L.x < g.herse.x - 4) L.etat = "tombe"; }
+    else if (L.etat === "tombe") { L.vy = Math.min(L.vy + .5, 7); L.y += L.vy; if (L.y >= g.sol) { L.y = g.sol; L.etat = "rentre"; L.dir = 1; } }
+    else L.x += 1.2;
+  }
+  G.liberes = G.liberes.filter(L => L.x < 246);
+  const ouvrir = G.pris >= 3 || (H && H.etat === "marche" && H.cx > 206) || G.liberes.some(L => L.etat === "rentre");
+  G.herse = Math.max(0, Math.min(1, G.herse + (ouvrir ? .06 : -.06)));
+  // au pupitre : une question dès que le hérisson est en boule et que la grue est revenue
+  if (G.auPupitre && G.etat === "attente" && H && H.etat === "boule" && !question) poserQuestion();
+  if (G.etat === "va") { if (vers(G.cible, 1.5)) G.etat = "descend"; }
+  else if (G.etat === "descend") { G.y = Math.min(bas, G.y + 2); if (G.y === bas) { G.etat = "ferme"; G.t = 0; son("pince"); } }
+  else if (G.etat === "ferme") {
+    if (++G.t >= 12) {
+      // la pince tient le hérisson, ou s'est refermée sur le vide : il se déroule et va se mettre ailleurs
+      if (G.reussi) H.etat = "porte";
+      else if (H) {
+        Object.assign(H, { etat: "marche", ...placeHerisson(H.n / H.d) }); G.d = H.d;
+        // et ceux de la cage sont libérés (demande du prof) : ils descendent du rocher et rentrent dans le tunnel
+        for (let k = 0; k < G.pris; k++) G.liberes.push({ x: g.cage - 6 + k * 6, y: 70, vy: 0, etat: "sort", dir: -1 });
+        G.pris = 0; majCompteur(); afficherQuestion();
+      }
+      G.etat = "remonte";
+    }
+  }
+  else if (G.etat === "remonte") {
+    G.y = Math.max(haut, G.y - 2);
+    if (G.y === haut) { G.etat = G.reussi ? "emporte" : "retour"; son("treuil"); }
+  }
+  else if (G.etat === "emporte") {
+    if (vers(g.cage, 1.5)) {
+      G.pris++; G.hg = null; son("pierre");
+      G.etat = "retour";
+      if (G.pris >= 3) { son("pont"); crapaud.etat = "libre"; G.auPupitre = false; afficherQuestion(); }
+    }
+  }
+  else if (G.etat === "retour") {
+    if (vers(g.x0, 1.5)) { G.etat = "attente"; if (G.pris < 3 && !G.hg) G.attente = 20; }
+  }
+  if (G.hg && G.hg.etat === "porte") G.hg.cx = G.x;
+}
+
+function mourir(cause = "piege") {
+  if (partie.fin) return;
+  partie.cause = cause;
+  partie.fin = "mort";
+  crapaud.etat = "mort";
+  son("piege");
+  terminerQuestions();
+  const p = partie.niveau;
+  setTimeout(() => { if (partie.fin === "mort" && partie.niveau === p) montrerEcran("mort"); }, 900);
+}
+
+function plateauFranchi(sortie = "droite") {
+  partie.fin = "franchi";
+  partie.sortie = sortie;
+  son("victoire");
+  eleve.plateaux++;
+  eleve.record = Math.max(eleve.record, partie.niveau + 1);
+  sauverEleve();
+  majEntete();
+  setTimeout(() => { if (partie.fin === "franchi") partie.niveau + 1 < NIVEAUX.length ? montrerEcran("suivant") : chargerNiveau(NIVEAUX.length); }, 300);
+}
+
+// ---------- Questions ----------
+function commencerQuestions() {
+  crapaud.etat = "fige";
+  if (niv.aigle) { son("aigle"); poserQuestion(); return; }
+  serpent.etat = "questions";
+  if (niv.affilee) serpent.justes = 0;
+  $("retour").className = "vide";      // on retouche le serpent : l'ancienne correction s'efface
+  son("serpent");
+  poserQuestion();
+}
+function poserQuestion() {
+  question = niv.question();
+  afficherQuestion();
+}
+function afficherQuestion() {
+  const zone = $("calcul"), champ = $("champReponse");
+  if (niv.final) { afficherBilan(); return; }
+  $("compteur").style.display = $("btnPasser").style.display = "";
+  majCompteur();
+  if (!question) {
+    zone.className = "calcul attente";
+    const G = partie.grue, E = partie.escalier;
+    zone.textContent = niv.escalier ? (E.fini ? "Le grand serpent s'est endormi : monte sur le rocher et touche le crapaud d'or."
+        : !E.actif ? "Approche-toi du grand serpent, au pied du rocher." : "…")
+      : niv.grue ? (G.pris >= 3 ? "Les hérissons sont en cage : descends et sors par le tunnel."
+        : !G.auPupitre ? "Va au pupitre de la grue, en haut de la tour."
+        : G.etat !== "attente" ? "La grue est en route…"
+        : !G.hg || G.hg.etat !== "boule" ? "Attends que le hérisson se mette en boule…"
+        : "")
+      : niv.sorciere ? (serpent.etat !== "fini" ? "Va voir la sorcière : 3 bonnes réponses d'affilée font rapetisser le hérisson."
+        : !partie.levier ? "Le hérisson est tout petit : saute par-dessus et va tirer le levier."
+        : "Le pont-levis s'est abaissé : rejoins-le et sors par la droite.")
+      : serpent.etat === "pont" || serpent.etat === "glisse" ? "Le serpent te fait un pont. Sors par la droite."
+      : serpent.etat === "fini" && niv.levierApresSerpent && !partie.levier ? "Le serpent est parti : va tirer le levier."
+      : serpent.etat === "fini" && niv.gardien ? "Un passage secret s'est ouvert. Trouve la sortie !"
+      : serpent.etat === "fini" ? "Le serpent te laisse passer. Trouve la sortie !"
+      : niv.porte && !partie.levier ? "La porte du serpent est fermée : trouve le levier."
+      : niv.aigle && partie.aigle.vol && partie.aigle.sens > 0 ? "L'aigle porte une pierre dans le panier…"
+      : niv.aigle && panierPlein() ? "Le panier est plein : saute sur la plate-forme, puis sur le massif !"
+      : niv.aigle ? "Va voir l'aigle : à chaque bonne réponse, il porte une pierre dans le panier."
+      : "Va toucher le serpent : il te posera ses questions.";
+    champ.disabled = true; $("btnValider").disabled = true; champ.value = "";
+    champ.blur();
+    $("formReponse").style.display = ""; $("choix").className = "choix"; $("choix").replaceChildren();
+    return;
+  }
+  zone.className = "calcul";
+  zone.innerHTML = fr(question.html);
+  if (question.choix) {
+    // réponses à choisir : pas de saisie
+    $("formReponse").style.display = "none";
+    champ.blur(); champ.value = "";
+    $("choix").className = "choix visible";
+    $("choix").innerHTML = question.choix.map(([n, d], k) => `<button type="button" data-k="${k}">${frac(n, d)}</button>`).join("");
+    return;
+  }
+  $("formReponse").style.display = ""; $("choix").className = "choix"; $("choix").replaceChildren();
+  champ.placeholder = question.placeholder || niv.placeholder || "Ta réponse";
+  champ.disabled = false; $("btnValider").disabled = false;
+  champ.value = "";
+  champ.focus();
+}
+// une fraction choisie (clic ou touche 1 à 4) : elle est envoyée comme une réponse écrite
+function choisir(k) {
+  if (!question || !question.choix || !question.choix[k]) return;
+  const [n, d] = question.choix[k];
+  $("champReponse").value = `${n}/${d}`;
+  $("formReponse").requestSubmit();
+}
+$("choix").addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (b) { b.blur(); choisir(+b.dataset.k); } });
+function terminerQuestions() {
+  question = null;
+  afficherQuestion();
+}
+
+$("formReponse").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const q = question;
+  if (!q || partie.fin) return;
+  const lu = q.lire($("champReponse").value, q.r);
+  // réponse illisible : on dit comment écrire, sans compter de réponse
+  // réponse illisible (ou à côté de la question : lu.aide) : on dit quoi faire, sans compter de réponse
+  if (!lu || lu.aide) { const r = $("retour"); r.className = "aide"; r.textContent = (lu && lu.aide) || q.aide || "Écris un nombre entier."; $("champReponse").focus(); return; }
+  // compteurs de l'élève (pour le diplôme), enregistrés à chaque réponse
+  eleve.reponses++; parcours.reponses++;
+  if (lu.ok) { eleve.bonnes++; parcours.bonnes++; }
+  sauverEleve();
+  const r = $("retour");
+  if (niv.escalier) {
+    // plateau 8 : juste → une marche sort de terre et le crapaud y saute ; faux → la marche du haut s'effondre
+    const E = partie.escalier;
+    r.className = lu.ok ? "vide" : "ko";
+    son(lu.ok ? "bon" : "faux");
+    if (lu.ok) { E.cible[E.k] = yMarche(E.k); E.etape = "monte"; son("pontLevis"); }
+    else {
+      const presque = lu.presque ? `${$("champReponse").value.trim()} : ${q.presque} ` : "";
+      r.textContent = fr("❌ " + presque + q.correction + (E.k ? " — La marche s'effondre : refais-la." : " — Le grand serpent attend : une autre question."));
+      if (E.k) { E.k--; E.cible[E.k] = niv.escalier.sol; sauterSurMarche(E.k - 1); E.etape = "saut"; son("pontLevis"); }
+    }
+    terminerQuestions();
+    return;
+  }
+  if (niv.grue) {
+    // plateau 7 : la grue va à l'abscisse donnée (juste ou fausse) et descend sa pince
+    const G = partie.grue, g = niv.grue;
+    r.className = lu.ok ? "vide" : "ko";
+    if (!lu.ok) r.textContent = fr("❌ " + q.correction + " — La pince se referme sur le vide : le hérisson va se mettre ailleurs" + (G.pris ? ", et ceux de la cage sont libérés." : "."));
+    son(lu.ok ? "bon" : "faux"); son("treuil");
+    Object.assign(G, { etat: "va", reussi: lu.ok, cible: xAbscisse(Math.max(-.2, Math.min(g.max + .3, lu.v))) });
+    terminerQuestions();
+    return;
+  }
+  if (niv.aigle) {
+    // plateau 4 : l'aigle porte une pierre au panier (bonne réponse) ou en reprend une et repousse le crapaud (erreur)
+    const A = partie.aigle, p = niv.passerelle, a = ascs.find(x => x.passerelle);
+    const presque = lu.presque ? `${$("champReponse").value.trim()} : ${q.presque} ` : "";
+    // réponse juste : pas de message (la règle des applis) ; erreur : la correction
+    r.className = lu.ok ? "vide" : "ko";
+    if (!lu.ok) r.textContent = fr("❌ " + presque + q.correction + " — L'aigle reprend une pierre et te repousse.");
+    son(lu.ok ? "bon" : "faux");
+    if (lu.ok) { Object.assign(A, { vol: true, t: 0, sens: 1 }); terminerQuestions(); }      // le crapaud attend la question suivante
+    else {
+      if (a.cible < p.depart) Object.assign(A, { vol: true, t: 0, sens: -1 });
+      A.boude = true;
+      const R = niv.aigle.repousse;
+      Object.assign(crapaud, { etat: "libre", x: R.x, vx: R.vx, vy: R.vy, auSol: false, dir: -1 });
+      terminerQuestions();
+    }
+    return;
+  }
+  if (lu.ok) {
+    serpent.justes++;
+    r.className = "vide";                 // réponse juste : pas de message (la règle des applis)
+    son("bon");
+    // plateau 6 : la sorcière lance une boule magique, le hérisson se roule en boule et rapetisse
+    if (niv.herisson) lancerBoule(niv.herisson.tailles[Math.min(serpent.justes, 3)], true);
+    if (serpent.justes >= niv.bonnes) {
+      serpentFaitLePont();
+    } else poserQuestion();
+  } else {
+    r.className = "ko";
+    const presque = lu.presque ? `${$("champReponse").value.trim()} : ${q.presque} ` : "";
+    if (niv.hypnose) {
+      // plateau 6 : la sorcière tourne sur elle-même et ricane ; le crapaud, hypnotisé, flotte jusqu'au départ ;
+      // le hérisson reprend sa taille, la série repart de zéro
+      r.textContent = fr("❌ " + presque + q.correction + " — La sorcière t'a hypnotisé : retour au départ, et sa boule magique a fait regrossir le hérisson.");
+      son("faux"); son("ricane"); son("hypnose");
+      serpent.justes = 0; serpent.etat = "attend"; serpent.boude = true;
+      lancerBoule(1, false, true);
+      partie.sorciere.tourne = 45;
+      const c = crapaud;
+      const hy = niv.hypnose;
+      c.etat = "hypnose"; c.hyp = { t: 0, duree: 100, pts: [[c.x, c.y], [c.x, c.y - 12], ...hy.par.map(([x, y]) => [x, y]), [hy.x, hy.y]] };
+      terminerQuestions();
+      return;
+    }
+    if (niv.erreurMortelle) {
+      r.textContent = fr("❌ " + presque + q.correction);
+      son("faux");
+      serpent.justes = 0;
+      mourir("serpent");
+      return;
+    }
+    r.textContent = fr("❌ " + presque + q.correction + (niv.affilee ? " — Le serpent te repousse : retouche-le pour recommencer la série." : " — Le serpent te repousse : retouche-le."));
+    son("faux");
+    if (niv.affilee) serpent.justes = 0;
+    serpent.etat = "attend"; serpent.boude = true;
+    // le crapaud est repoussé
+    const p = niv.repousse, c = crapaud;
+    c.etat = p.ejecte ? "ejecte" : "libre"; c.ejecte = p.ejecte || 0;
+    c.x = p.x; c.vx = p.vx; c.vy = p.vy; c.auSol = false; c.dir = p.vx < 0 ? -1 : 1;
+    terminerQuestions();
+  }
+});
+
+function serpentFaitLePont() {
+  serpent.justes = niv.bonnes;
+  if (crapaud.etat === "fige") crapaud.etat = "libre";
+  if (niv.apres) {
+    // plateau 3 : le serpent fait passer le crapaud de l'autre côté
+    serpent.etat = "fini"; son("pont");
+    Object.assign(crapaud, { x: niv.apres.x, y: niv.apres.y, vx: 0, vy: 0, dir: 1 });
+  } else if (niv.serpentDisparait || niv.sorciere) {
+    serpent.etat = "fini"; son("pont");
+    // (mode test : une seule boule le fait rapetisser d'un coup ; après la 3e bonne réponse, elle est déjà lancée)
+    const petit = niv.herisson && niv.herisson.tailles[3];
+    partie.sorciere.debut = 0; partie.boules = partie.boules.filter(b => b.cible !== 1);   // le sort « grossir » du départ est annulé
+    if (niv.herisson && !partie.boules.some(b => b.cible === petit)) lancerBoule(petit, true);
+  }
+  else { serpent.etat = "glisse"; serpent.t = 0; }
+  terminerQuestions();
+}
+// Mode test (adresse avec ?test) : toutes les questions réussies d'un coup, sans compter pour le diplôme
+$("btnPasser").onclick = () => {
+  if (niv.escalier) {
+    // mode test : tout l'escalier sorti, le crapaud en haut
+    const E = partie.escalier;
+    E.cible = E.cible.map((_, k) => yMarche(k)); E.haut = [...E.cible];
+    Object.assign(E, { k: 7, actif: true, fini: true, etape: null });
+    Object.assign(crapaud, { x: xMarche(6) + 2.5, y: yMarche(6) - CRAPAUD_H, vx: 0, vy: 0, etat: "libre" });
+    question = null; $("retour").className = "vide"; son("pont"); afficherQuestion(); $("champReponse").blur(); return;
+  }
+  if (niv.grue) {
+    // mode test : les trois hérissons sont en cage d'un coup
+    Object.assign(partie.grue, { pris: 3, hg: null, etat: "attente", attente: 0, auPupitre: false, liberes: [] });
+    question = null; if (crapaud.etat === "fige") crapaud.etat = "libre"; $("retour").className = "vide"; son("pont"); afficherQuestion(); $("champReponse").blur(); return;
+  }
+  if (niv.passerelle) {
+    const p = niv.passerelle; ascs.find(x => x.passerelle).cible = p.depart - p.pas * p.marches;
+    // mode test : l'aigle s'envole comme après la 4e pierre
+    if (partie.aigle && !partie.aigle.parti) Object.assign(partie.aigle, { vol: true, t: volAigle(1).lache + 1, sens: 1, depart: true });
+    question = null; if (crapaud.etat === "fige") crapaud.etat = "libre"; $("retour").className = "vide"; son("bon"); afficherQuestion(); $("champReponse").blur(); return;
+  }
+  if (partie.fin || ["glisse", "pont", "fini"].includes(serpent.etat)) return;
+  $("retour").className = "vide";
+  son("bon");
+  serpentFaitLePont();
+};
+
+// Le bilan du tableau final : les notions des plateaux et les réponses justes ; rejouer, diplôme
+function afficherBilan() {
+  const zone = $("calcul");
+  zone.className = "calcul bilan";
+  const qui = prenom() ? `, ${esc(prenom())}` : "";
+  zone.innerHTML = `<p class="score">Bravo${qui} !</p>
+    <p>Réponses justes : <b>${parcours.bonnes}</b> sur ${parcours.reponses}${parcours.reponses ? ` (${Math.round(100 * tauxParcours())} %)` : ""}.
+    Plus tu as répondu juste, plus ton socle s'élève.</p>
+    <ol>${SOCLES.map(o => `<li>${esc(o.notion)}</li>`).join("")}</ol>
+    <div class="boutons"><button type="button" class="suite" id="btnRejouer">↺ Rejouer</button>
+    <button type="button" class="second" id="btnBilanDiplome" style="width:auto">🎓 Diplôme</button></div>`;
+  $("btnRejouer").onclick = () => chargerNiveau(0);
+  $("btnBilanDiplome").onclick = ouvrirDiplome;
+  $("formReponse").style.display = "none"; $("choix").className = "choix"; $("choix").replaceChildren();
+  $("compteur").style.display = $("btnPasser").style.display = "none";
+}
+function majCompteur() {
+  if (niv.escalier) {
+    const n = partie.escalier ? partie.escalier.k : 0;
+    $("compteur").replaceChildren(document.createTextNode("Marches :"),
+      ...Array.from({ length: 7 }, (_, k) => { const s = document.createElement("span"); if (k < n) s.className = "juste"; return s; }));
+    return;
+  }
+  if (niv.grue) {
+    const n = partie.grue ? partie.grue.pris : 0;
+    $("compteur").replaceChildren(document.createTextNode("Hérissons en cage :"),
+      ...Array.from({ length: 3 }, (_, k) => { const s = document.createElement("span"); if (k < n) s.className = "juste"; return s; }));
+    return;
+  }
+  if (niv.passerelle) {
+    const p = niv.passerelle, a = ascs.find(x => x.passerelle), n = a ? Math.round((p.depart - a.cible) / p.pas) : 0;
+    $("compteur").replaceChildren(document.createTextNode("Pierres dans le panier :"),
+      ...Array.from({ length: p.marches }, (_, k) => { const s = document.createElement("span"); if (k < n) s.className = "juste"; return s; }));
+    return;
+  }
+  const n = serpent ? serpent.justes : 0;
+  $("compteur").replaceChildren(document.createTextNode(niv.affilee ? "D'affilée :" : "Bonnes réponses :"),
+    ...Array.from({ length: niv.bonnes }, (_, k) => { const s = document.createElement("span"); if (k < n) s.className = "juste"; return s; }));
+}
+function majPanneau() {
+  $("titreQuestions").textContent = niv.final ? "Bilan" : niv.escalier ? "Le grand serpent" : niv.grue ? "La grue" : niv.aigle ? "L'aigle" : niv.sorciere ? "La sorcière" : "Le serpent";
+  $("titreNiveau").innerHTML = `${niv.titre} <span class="titre">— ${niv.consigne}</span>`;
+  $("plateaux").innerHTML = NIVEAUX.map((n, k) => `<span data-k="${k}" class="${k < partie.niveau ? "fait" : k === partie.niveau ? "actuel" : ""}">${k < partie.niveau ? "✓ " : ""}${n.titre}</span>`).join("")
+    + `<span data-k="${NIVEAUX.length}" class="${niv.final ? "actuel" : ""}">Final</span>`;
+}
+// Mode test : un clic sur un plateau y emmène directement
+$("plateaux").addEventListener("click", e => {
+  const p = e.target.closest("[data-k]");
+  if (p && document.body.classList.contains("mode-test")) chargerNiveau(+p.dataset.k);
+});
+
+// ---------- Écrans (par-dessus le jeu) ----------
+function montrerEcran(sorte) {
+  const c = $("carteJeu");
+  if (sorte === "suivant") {
+    c.innerHTML = `<h3>${niv.titre} franchi !</h3><p>En route vers le ${NIVEAUX[partie.niveau + 1].titre.toLowerCase()}.</p>
+      <p><button class="suite" id="btnSuite">Continuer →</button></p>`;
+    $("btnSuite").onclick = () => chargerNiveau(partie.niveau + 1);
+  } else {
+    c.innerHTML = `<h3>AÏE !</h3><p>${partie.cause === "crabe" ? "Un crabe a pincé le crapaud." : partie.cause === "tir" ? "Un projectile a touché le crapaud." : partie.cause === "serpent" ? "Mauvaise réponse : le serpent t'a eu." : partie.cause === "herisson" ? "Le hérisson a piqué le crapaud." : "Le crapaud est tombé dans le piège."}</p>
+      <p><button class="suite" id="btnSuite">↺ Recommencer le plateau</button></p>`;
+    $("btnSuite").onclick = () => chargerNiveau(partie.niveau);
+  }
+  $("ecranJeu").classList.add("visible");
+  setTimeout(() => { const b = c.querySelector("button"); if (b) b.focus(); }, 0);
+}
+function fermerEcran() { $("ecranJeu").classList.remove("visible"); }
+
+// ============================================================
+//  DESSIN : marais au crépuscule (illustration vectorielle, couleurs sourdes, brume)
+//  On dessine dans le monde 240 × 180 ; le canevas est à la résolution réelle de l'écran.
+// ============================================================
+const cv = $("jeu"), ctx = cv.getContext("2d");
+let echelle = 1;
+
+const arrondi = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+const degrade = (y1, y2, ...couleurs) => { const g = ctx.createLinearGradient(0, y1, 0, y2); couleurs.forEach((c, k) => g.addColorStop(k / (couleurs.length - 1), c)); return g; };
+const rond = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+const ovale = (x, y, rx, ry, a = 0) => { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, a, 0, Math.PI * 2); ctx.fill(); };
+// pseudo-hasard fixe (décor identique d'une image à l'autre)
+const bruit = k => { const s = Math.sin(k * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+// Arbre mort : tronc tordu et branches nues
+function arbreMort(x, base, h, e, couleur) {
+  ctx.strokeStyle = couleur; ctx.lineCap = "round";
+  const branche = (x0, y0, ang, long, ep, n) => {
+    const x1 = x0 + Math.cos(ang) * long, y1 = y0 + Math.sin(ang) * long;
+    ctx.lineWidth = ep; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    if (n > 0) { branche(x1, y1, ang - .5 - bruit(x0 + n) * .3, long * .68, ep * .62, n - 1); branche(x1, y1, ang + .45 + bruit(y0 + n) * .3, long * .62, ep * .6, n - 1); }
+  };
+  branche(x, base, -Math.PI / 2 + (bruit(x) - .5) * .2, h * e, 2.6 * e, 4);
+}
+// Saule : masse sombre avec rameaux qui tombent
+function saule(x, base, e, couleur) {
+  ctx.fillStyle = couleur;
+  arrondi(x - 1.4 * e, base - 16 * e, 2.8 * e, 16 * e, 1); ctx.fill();
+  for (const [dx, dy, r] of [[0, -20, 9], [-7, -16, 7], [7, -16, 7], [-3, -24, 6], [4, -23, 6]]) rond(x + dx * e, base + dy * e, r * e);
+  ctx.strokeStyle = couleur; ctx.lineWidth = .7;
+  for (let k = -9; k <= 9; k += 1.5) { ctx.beginPath(); ctx.moveTo(x + k * e, base - 14 * e); ctx.quadraticCurveTo(x + k * 1.15 * e, base - 6 * e, x + k * 1.05 * e, base - (2 + bruit(k) * 4) * e); ctx.stroke(); }
+}
+
+function dessinerFond(t) {
+  // ciel : nuit bleu-vert en haut, horizon ambré
+  ctx.fillStyle = degrade(0, 130, "#14232c", "#2c4a50", "#7d6a4a", "#c4874c");
+  ctx.fillRect(0, 0, L, H);
+  // étoiles pâles
+  ctx.fillStyle = "rgba(230,235,220,.55)";
+  for (let k = 0; k < 24; k++) { const a = .3 + .3 * Math.sin(t / 20 + k); ctx.globalAlpha = a; rond(bruit(k) * L, bruit(k + 50) * 50, .35); }
+  ctx.globalAlpha = 1;
+  // lune basse, voilée
+  const lx = 182, ly = 74;
+  const halo = ctx.createRadialGradient(lx, ly, 4, lx, ly, 46);
+  halo.addColorStop(0, "rgba(255,226,170,.55)"); halo.addColorStop(1, "rgba(255,226,170,0)");
+  ctx.fillStyle = halo; ctx.fillRect(lx - 50, ly - 50, 100, 100);
+  ctx.fillStyle = "#f2dcae"; rond(lx, ly, 11);
+  ctx.fillStyle = "rgba(180,150,110,.25)"; rond(lx - 3, ly - 2, 2.5); rond(lx + 4, ly + 3, 1.8);
+  // arrière-plan lointain : colline et arbres en silhouette bleutée
+  ctx.fillStyle = "#30474b";
+  ctx.beginPath(); ctx.moveTo(0, 104);
+  ctx.bezierCurveTo(50, 92, 100, 100, 150, 98); ctx.bezierCurveTo(190, 96, 215, 90, 240, 96);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  for (const [x, h, e] of [[30, 26, 1], [96, 30, 1.1], [210, 24, .9]]) arbreMort(x, 102, h, e, "#30474b");
+  saule(150, 100, 1, "#30474b");
+  // brume lointaine
+  ctx.fillStyle = degrade(88, 112, "rgba(200,190,160,0)", "rgba(200,190,160,.22)", "rgba(200,190,160,0)");
+  ctx.fillRect(0, 88, L, 24);
+  // plan moyen
+  ctx.fillStyle = "#1f3234";
+  ctx.beginPath(); ctx.moveTo(0, 122);
+  ctx.bezierCurveTo(40, 112, 90, 120, 130, 120); ctx.bezierCurveTo(170, 120, 205, 110, 240, 116);
+  ctx.lineTo(240, 180); ctx.lineTo(0, 180); ctx.fill();
+  saule(60, 120, 1.25, "#1f3234");
+  arbreMort(188, 118, 30, 1.2, "#1f3234");
+  // roseaux en silhouette, qui ondulent
+  for (let k = 0; k < 34; k++) {
+    const x = k * 7.3 + bruit(k) * 5, h = 10 + bruit(k + 9) * 14, b = Math.sin(t / 30 + x / 9) * 1.2;
+    ctx.strokeStyle = "#142224"; ctx.lineWidth = .7; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, 136); ctx.quadraticCurveTo(x + b / 2, 136 - h * .6, x + b, 136 - h); ctx.stroke();
+    if (k % 3 === 0) { ctx.fillStyle = "#2a1c14"; arrondi(x + b - .8, 134 - h - 3, 1.6, 4.2, .8); ctx.fill(); }
+  }
+  // nappes de brume qui dérivent
+  for (const [y, v, a] of [[128, .05, .16], [146, -.04, .12]]) {
+    const dx = (t * v) % 80;
+    for (let x = -80 + dx; x < L + 80; x += 80) {
+      const g = ctx.createRadialGradient(x + 40, y, 2, x + 40, y, 46);
+      g.addColorStop(0, `rgba(210,205,185,${a})`); g.addColorStop(1, "rgba(210,205,185,0)");
+      ctx.fillStyle = g; ctx.fillRect(x - 10, y - 20, 100, 40);
+    }
+  }
+}
+
+// Lucioles et voile sombre sur les bords : par-dessus le reste
+const LUCIOLES = Array.from({ length: 12 }, (_, k) => [bruit(k + 3) * L, 30 + bruit(k + 7) * 120, bruit(k + 11) * 6]);
+function dessinerAmbiance(t) {
+  for (const [x0, y0, ph] of LUCIOLES) {
+    const x = x0 + Math.sin(t / 40 + ph) * 8, y = y0 + Math.cos(t / 33 + ph * 2) * 5, a = .35 + .35 * Math.sin(t / 9 + ph * 3);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 3.5);
+    g.addColorStop(0, `rgba(255,232,140,${a})`); g.addColorStop(1, "rgba(255,232,140,0)");
+    ctx.fillStyle = g; ctx.fillRect(x - 4, y - 4, 8, 8);
+  }
+  const v = ctx.createRadialGradient(L / 2, H / 2, 70, L / 2, H / 2, 160);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(5,10,12,.45)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
+}
+
+// Sol épais : tourbe sombre, racines, mousse et herbes
+function terre(o, herbe = true) {
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#4a3a28", "#241a12");
+  arrondi(o.x, o.y, o.w, o.h, 1.5); ctx.fill();
+  ctx.strokeStyle = "rgba(20,12,6,.5)"; ctx.lineWidth = .5;
+  for (let x = o.x + 6; x < o.x + o.w - 4; x += 13) {
+    ctx.beginPath(); ctx.moveTo(x, o.y + 3); ctx.bezierCurveTo(x + 3, o.y + 7, x - 2, o.y + 10, x + 2, o.y + Math.min(o.h - 1, 16)); ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(140,120,90,.12)";
+  for (let k = 0; k < o.w / 4; k++) ovale(o.x + bruit(k + o.x) * o.w, o.y + 4 + bruit(k + o.y) * (o.h - 5), .8, .5);
+  if (!herbe) return;
+  ctx.fillStyle = degrade(o.y - 1.5, o.y + 2.5, "#7a9446", "#3d5228");
+  arrondi(o.x - .3, o.y - 1.2, o.w + .6, 3.6, 1.2); ctx.fill();
+  ctx.strokeStyle = "#6f8a3e"; ctx.lineWidth = .45;
+  for (let x = o.x + 1.5; x < o.x + o.w - 1; x += 2.6) {
+    const h = 1.2 + bruit(x) * 2.2;
+    ctx.beginPath(); ctx.moveTo(x, o.y); ctx.lineTo(x + (bruit(x + 1) - .5) * 1.4, o.y - h); ctx.stroke();
+  }
+}
+// Plate-forme fine : planche de bois patiné, clous, un peu de mousse
+function planche(o) {
+  ctx.fillStyle = "rgba(0,0,0,.25)"; arrondi(o.x + .6, o.y + .8, o.w, o.h, 1); ctx.fill();
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#8a6a46", "#4f3824");
+  arrondi(o.x, o.y, o.w, o.h, Math.min(1.2, o.h / 2)); ctx.fill();
+  ctx.strokeStyle = "rgba(30,18,8,.45)"; ctx.lineWidth = .35;
+  for (let x = o.x + 8 + bruit(o.x) * 4; x < o.x + o.w - 3; x += 9 + bruit(x) * 4) { ctx.beginPath(); ctx.moveTo(x, o.y + .3); ctx.lineTo(x, o.y + o.h - .3); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(200,170,120,.18)"; ctx.lineWidth = .3;
+  ctx.beginPath(); ctx.moveTo(o.x + 1, o.y + .7); ctx.lineTo(o.x + o.w - 1, o.y + .7); ctx.stroke();
+  ctx.fillStyle = "#2b2624";
+  for (let x = o.x + 2; x < o.x + o.w - 1; x += 9) rond(x, o.y + o.h / 2, .35);
+  ctx.fillStyle = "rgba(110,140,60,.8)";
+  arrondi(o.x + bruit(o.y) * o.w * .5, o.y - .5, Math.min(o.w * .4, 10), 1.1, .5); ctx.fill();
+}
+// Pilier : pierre ancienne, joints, fissures, mousse qui coule
+function pierre(o) {
+  ctx.fillStyle = degrade(o.y, o.y + o.h, "#5d666a", "#353c40");
+  arrondi(o.x, o.y, o.w, o.h, 1); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.06)"; ctx.fillRect(o.x + .5, o.y, 1.2, o.h);
+  ctx.strokeStyle = "rgba(15,20,22,.55)"; ctx.lineWidth = .4;
+  for (let y = o.y + 8, k = 0; y < o.y + o.h - 1; y += 9, k++) {
+    ctx.beginPath(); ctx.moveTo(o.x, y); ctx.lineTo(o.x + o.w, y); ctx.stroke();
+    // joints verticaux décalés d'une rangée à l'autre (deux pierres par rangée sur un pilier, davantage sur un bloc large)
+    const joints = o.w > 34 ? Array.from({ length: Math.floor(o.w / 14) }, (_, i) => o.x + (k % 2 ? 7 : 14) + i * 14).filter(j => j < o.x + o.w - 3)
+                            : [o.x + (k % 2 ? o.w * .35 : o.w * .7)];
+    for (const jx of joints) { ctx.beginPath(); ctx.moveTo(jx, y); ctx.lineTo(jx, Math.min(y + 9, o.y + o.h)); ctx.stroke(); }
+  }
+  ctx.strokeStyle = "rgba(15,20,22,.45)"; ctx.lineWidth = .3;
+  for (let y = o.y + 20; y < o.y + o.h - 10; y += 31) { ctx.beginPath(); ctx.moveTo(o.x + o.w * .3, y); ctx.lineTo(o.x + o.w * .55, y + 3); ctx.lineTo(o.x + o.w * .45, y + 6); ctx.stroke(); }
+  ctx.fillStyle = "#4f6a32";
+  arrondi(o.x - .2, o.y - .6, o.w + .4, 1.8, .6); ctx.fill();
+  for (let x = o.x + 1; x < o.x + o.w - .5; x += 2.2) { const h = 1.5 + bruit(x + o.y) * 5; arrondi(x - .4, o.y, .9, h, .45); ctx.fill(); }
+}
+function dessinerBloc([x, y, w, h, matiere]) {
+  const o = { x, y, w, h };
+  if (matiere === "cache") return;                 // morceau de collision seulement (le dessin est dans « decor »)
+  if (matiere === "entaille") {                    // bloc de terre dont on découpe la niche (on voit le paysage à travers)
+    const n = niv.niche;
+    ctx.save(); ctx.beginPath(); ctx.rect(x - 3, y - 6, w + 6, h + 12); ctx.rect(n.x, n.y + .6, n.w + 3, n.h + 3); ctx.clip("evenodd");
+    terre(o); ctx.restore(); return;
+  }
+  if (matiere === "roche" || h > w) pierre(o); else if (h > 8) terre(o); else planche(o);
+}
+
+// Plate-forme mobile : plateau de bois suspendu à deux chaînes
+function dessinerAscenseur(a) {
+  ctx.strokeStyle = "#7d8287"; ctx.lineWidth = .55; ctx.setLineDash([.9, .6]);
+  for (const x of [a.x + 2.5, a.x + a.w - 2.5]) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, a.y); ctx.stroke(); }
+  ctx.setLineDash([]);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; arrondi(a.x + .6, a.y + 1, a.w, 3, .8); ctx.fill();
+  ctx.fillStyle = degrade(a.y, a.y + 3, "#8f6e48", "#4e3824"); arrondi(a.x, a.y, a.w, 3, .8); ctx.fill();
+  ctx.fillStyle = "#3a3f44"; arrondi(a.x - .3, a.y + 2.4, a.w + .6, 1, .4); ctx.fill();
+  ctx.fillStyle = "#9aa0a6"; rond(a.x + 2.5, a.y + .8, .5); rond(a.x + a.w - 2.5, a.y + .8, .5);
+}
+
+// Nacelle : plateau de bois pendu à un chariot qui roule sur un câble tendu
+function dessinerNavette(a) {
+  const cy = a.y - 10, x0 = a.gauche - 4, x1 = a.droite + a.w + 4;
+  ctx.strokeStyle = "#5d646a"; ctx.lineWidth = .5;
+  ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, cy); ctx.stroke();
+  ctx.fillStyle = "#3a3f44"; rond(x0, cy, .9); rond(x1, cy, .9);
+  ctx.strokeStyle = "#7d8287"; ctx.lineWidth = .45;
+  ctx.beginPath(); ctx.moveTo(a.x + a.w / 2, cy + 1); ctx.lineTo(a.x + 2.5, a.y); ctx.moveTo(a.x + a.w / 2, cy + 1); ctx.lineTo(a.x + a.w - 2.5, a.y); ctx.stroke();
+  ctx.fillStyle = "#2b3035"; arrondi(a.x + a.w / 2 - 2.6, cy - .6, 5.2, 2, .6); ctx.fill();
+  ctx.fillStyle = "#8a9196"; rond(a.x + a.w / 2 - 1.4, cy - .6, .6); rond(a.x + a.w / 2 + 1.4, cy - .6, .6);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; arrondi(a.x + .6, a.y + 1, a.w, 3, .8); ctx.fill();
+  ctx.fillStyle = degrade(a.y, a.y + 3, "#8f6e48", "#4e3824"); arrondi(a.x, a.y, a.w, 3, .8); ctx.fill();
+  ctx.fillStyle = "#3a3f44"; arrondi(a.x - .3, a.y + 2.4, a.w + .6, 1, .4); ctx.fill();
+}
+
+// ---------- Le hérisson : piquants bruns à pointes claires, museau fauve, œil noir ----------
+const PIQUANTS = Array.from({ length: 46 }, (_, k) => [bruit(k + 200), bruit(k + 300), bruit(k + 400)]);
+function dessinerHerisson(t) {
+  const H = partie.herisson, d = niv.herisson, b = boiteHerisson(), s = H.s, boule = H.boule > 0;
+  if (!H.enLAir) { ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(H.cx, d.sol + .3, b.w * .45, 1.4 * s); }
+  ctx.save(); ctx.translate(H.cx, d.sol); ctx.scale(H.dir * s, s);
+  // les dimensions du dessin : 46 × 30 à la taille 1
+  const piquant = (x, y, ang, long, k) => {
+    const [r1, r2] = PIQUANTS[k % PIQUANTS.length];
+    const l = long * (.8 + r1 * .4), a = ang + (r2 - .5) * .25, px = -Math.sin(a) * .6, py = Math.cos(a) * .6;
+    ctx.fillStyle = k % 3 ? "#3a2e22" : "#4d3e2d";
+    ctx.beginPath(); ctx.moveTo(x + px, y + py); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); ctx.lineTo(x - px, y - py); ctx.fill();
+    ctx.strokeStyle = "rgba(205,190,150,.7)"; ctx.lineWidth = .5;
+    ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * l * .72, y + Math.sin(a) * l * .72); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); ctx.stroke();
+  };
+  if (boule) {
+    // roulé en boule : une sphère de piquants, le museau rentré
+    const r = 12, cy = -r - 1;
+    ctx.fillStyle = "#2a2018"; rond(0, cy, r);
+    for (let k = 0; k < 40; k++) { const a = k / 40 * Math.PI * 2; piquant(Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4), a, 8, k); }
+    ctx.fillStyle = "#6e5a44"; ovale(r * .45, cy + r * .35, 3, 2.2, .5);
+    ctx.fillStyle = "#111"; rond(r * .62, cy + r * .48, .7);
+  } else {
+    const pas = Math.sin(t / 3 + H.cx) * 1.2;
+    // pattes courtes et sombres
+    ctx.strokeStyle = "#2a2018"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+    for (const [x, ph] of [[-12, 1], [-6, -1], [8, 1], [13, -1]]) { ctx.beginPath(); ctx.moveTo(x, -5); ctx.lineTo(x + pas * ph, -.8); ctx.stroke(); }
+    // ventre et flancs de poil fauve
+    ctx.fillStyle = "#6e5a44"; ovale(1, -8, 18, 6.5);
+    // dôme de piquants peignés vers l'arrière : des rangs de l'intérieur vers le bord, les pointes dépassent de la silhouette
+    ctx.fillStyle = "#33281e"; ovale(-2, -13, 17, 11);
+    let k = 0;
+    for (let rang = 4; rang >= 0; rang--) {
+      const f = 1 - rang * .17, n = 16 + rang * 2;
+      for (let i = 0; i <= n; i++, k++) {
+        const a = Math.PI * (1.05 - (i + (rang % 2) * .5) / n * .92);  // de l'arrière (en bas) au front
+        const x = -2 + Math.cos(a) * 16 * f, y = -13 - Math.sin(a) * 10.5 * f;
+        const normale = Math.atan2(-Math.sin(a) / 10.5, Math.cos(a) / 16);
+        piquant(x, y, normale - .5, 6.5 + (rang === 0 ? 1 : 0), k);
+      }
+    }
+    // tête : museau pointu fauve, truffe noire, œil noir brillant, oreille ronde
+    ctx.fillStyle = "#7d664c";
+    ctx.beginPath(); ctx.moveTo(10, -16); ctx.quadraticCurveTo(18, -15, 23.5, -8.2); ctx.quadraticCurveTo(19, -4, 11, -4.5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(230,210,170,.25)"; ovale(16, -7, 5, 1.6, .25);
+    ctx.fillStyle = "#111"; rond(23.4, -8.4, 1.2);
+    ctx.fillStyle = "#111"; rond(16.4, -11.6, 1.1);
+    ctx.fillStyle = "rgba(255,255,255,.7)"; rond(16.1, -12, .3);
+    ctx.fillStyle = "#4a3b2c"; ovale(12.6, -15.2, 1.6, 1.3);
+    ctx.strokeStyle = "rgba(242,220,174,.3)"; ctx.lineWidth = .4;
+    ctx.beginPath(); ctx.ellipse(-2, -14, 19, 12.5, 0, Math.PI * 1.15, Math.PI * 1.75); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- La sorcière : voûtée, cape sombre, chapeau tordu, nez crochu, bâton noueux ----------
+function dessinerSorciere(x, sol, dir, t) {
+  const tourne = partie.sorciere.tourne, k = tourne > 0 ? Math.cos((1 - tourne / 45) * Math.PI * 6) : 1;
+  const souffle = Math.sin(t / 14) * .25;
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(x, sol + .3, 6.5, 1.1);
+  ctx.save(); ctx.translate(x, sol); ctx.scale(dir * k, 1);
+  // bâton noueux, tenu devant elle
+  ctx.strokeStyle = "#4a3828"; ctx.lineWidth = 1; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(6.2, 0); ctx.quadraticCurveTo(7.2, -9, 6.4, -19); ctx.stroke();
+  ctx.fillStyle = "#4a3828"; ovale(6.3, -19.5, 1.3, 1);
+  // cape : dos voûté, bas déchiqueté
+  ctx.fillStyle = degrade(-14, 0, "#3b3242", "#1b161f");
+  ctx.beginPath(); ctx.moveTo(-5.5, 0);
+  ctx.bezierCurveTo(-7, -6, -6.4, -11.5 - souffle, -2.5, -12.6 - souffle);
+  ctx.quadraticCurveTo(2.5, -13 - souffle, 3.6, -9.5);
+  ctx.quadraticCurveTo(4.8, -5, 5, 0);
+  for (let i = 0; i < 6; i++) ctx.lineTo(5 - (i + .5) * 1.75, i % 2 ? 0 : -1.3);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "rgba(242,220,174,.22)"; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.moveTo(-6, -4); ctx.bezierCurveTo(-6.6, -9, -5.4, -12 - souffle, -2.5, -12.6 - souffle); ctx.stroke();
+  // bras et main osseuse sur le bâton
+  ctx.strokeStyle = "#2a2230"; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(1.5, -10); ctx.quadraticCurveTo(4, -8.5, 6, -9.4); ctx.stroke();
+  ctx.fillStyle = "#7e8a6e"; ovale(6.4, -9.6, 1, .8);
+  // cheveux gris, en mèches
+  ctx.strokeStyle = "#8f8f86"; ctx.lineWidth = .4;
+  for (const dx of [-2.8, -2.1, -1.4]) { ctx.beginPath(); ctx.moveTo(dx + .8, -15); ctx.quadraticCurveTo(dx - .6, -13, dx - .2, -10.5); ctx.stroke(); }
+  // visage de profil : teint gris-vert, nez long et crochu, menton en galoche
+  ctx.fillStyle = "#7e8a6e";
+  ctx.beginPath(); ctx.moveTo(-.6, -15.2); ctx.quadraticCurveTo(2.6, -16, 3, -14.2);
+  ctx.quadraticCurveTo(5.6, -13.4, 5.2, -12.1); ctx.quadraticCurveTo(4.2, -12.7, 3.3, -12.6);
+  ctx.quadraticCurveTo(3.6, -11.2, 2.8, -10.6); ctx.quadraticCurveTo(.6, -10.6, -.6, -12); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#111"; rond(2, -13.9, .35);
+  ctx.fillStyle = "#c9b44a"; rond(2.05, -13.95, .14);
+  ctx.strokeStyle = "#3f4636"; ctx.lineWidth = .3;
+  ctx.beginPath(); ctx.moveTo(2.2, -11.6); ctx.lineTo(3.1, -11.8); ctx.stroke();
+  // chapeau : large bord, cône tordu vers l'arrière, ruban
+  ctx.fillStyle = "#211a25"; ovale(1.2, -15.4, 5.6, 1);
+  ctx.beginPath(); ctx.moveTo(-2.2, -15.6); ctx.quadraticCurveTo(-.4, -20, -1.6, -23.5); ctx.quadraticCurveTo(-3.4, -24.5, -5.4, -22.6);
+  ctx.quadraticCurveTo(-2.6, -22.4, -.6, -21.6); ctx.quadraticCurveTo(1.4, -19, 3.2, -15.6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#4a3a2a"; arrondi(-2, -16.8, 5, .9, .3); ctx.fill();
+  ctx.restore();
+}
+// Pont-levis : tablier de planches cerclées de fer, charnière sur le mur ; une chaîne le relie au haut d'un poteau
+function dessinerPontLevis(p) {
+  const a = (1 - partie.pontLevis) * Math.PI / 2;               // 0 : abaissé ; π/2 : dressé
+  const bout = { x: p.px - p.long * Math.cos(a), y: p.py - p.long * Math.sin(a) };
+  // poteau sur le mur, chaîne jusqu'au bout du tablier
+  ctx.fillStyle = degrade(0, 30, "#6a4c32", "#3e2a1a"); arrondi(237.8, 2, 3, p.py - p.ep - 2, .6); ctx.fill();
+  ctx.fillStyle = "#3a3f44"; rond(239.3, 4, 1.2);
+  ctx.strokeStyle = "#8a9196"; ctx.lineWidth = .5; ctx.setLineDash([.9, .5]);
+  ctx.beginPath(); ctx.moveTo(239.3, 4); ctx.lineTo(bout.x, bout.y - p.ep / 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.save(); ctx.translate(p.px, p.py); ctx.rotate(a);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.fillRect(-p.long + .6, -p.ep + .8, p.long, p.ep);
+  ctx.fillStyle = degrade(-p.ep, 0, "#8a6a46", "#4f3824"); ctx.fillRect(-p.long, -p.ep, p.long, p.ep);
+  ctx.strokeStyle = "rgba(30,18,8,.5)"; ctx.lineWidth = .35;
+  for (let x = -p.long + 6; x < -1; x += 6) { ctx.beginPath(); ctx.moveTo(x, -p.ep + .3); ctx.lineTo(x, -.3); ctx.stroke(); }
+  ctx.fillStyle = "#3a3f44";
+  for (const x of [-p.long + 2, -p.long * .66, -p.long * .33, -3]) ctx.fillRect(x, -p.ep, 1.2, p.ep);
+  ctx.restore();
+  ctx.fillStyle = "#2c3034"; rond(p.px, p.py - p.ep / 2, 1.1);       // la charnière
+}
+// Tableau final : bannière, numéros gravés sur les socles, et sur chacun la créature de son plateau
+function dessinerFinal(t) {
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "rgba(10,16,18,.55)"; ctx.fillRect(40, 12, 160, 40);
+  ctx.strokeStyle = "rgba(201,162,39,.7)"; ctx.lineWidth = .5; ctx.strokeRect(42, 14, 156, 36);
+  ctx.fillStyle = "#e3c26a"; ctx.font = "700 12px 'Playfair Display', serif";
+  ctx.fillText("Le crapaud d'or, c'est toi !", 120, 32);
+  ctx.fillStyle = "rgba(235,225,200,.85)"; ctx.font = "5px system-ui, sans-serif";
+  ctx.fillText(`${prenom() ? `Bravo, ${prenom()} : tu` : "Bravo : tu"} as traversé tout le marais.`, 120, 44);
+  const sol = 128, mx = o => o.x + LARGEUR_SOCLE / 2;
+  // le socle du crapaud, qui s'élève selon le score ; le pourcentage gravé dessus
+  const E = ascs.find(a => a.estrade);
+  pierre({ x: E.x, y: E.y, w: E.w, h: niv.estrade.sol - E.y });
+  pierre({ x: E.x - 2, y: E.y, w: E.w + 4, h: 3.5 });               // la table de l'autel
+  ctx.strokeStyle = "rgba(201,162,39,.75)"; ctx.lineWidth = .6;
+  ctx.beginPath(); ctx.moveTo(E.x + .5, E.y + 2.2); ctx.lineTo(E.x + E.w - .5, E.y + 2.2); ctx.stroke();
+  if (niv.estrade.sol - E.y > 14 && parcours.reponses) {
+    ctx.font = "700 6px 'Playfair Display', serif";
+    ctx.fillStyle = "rgba(15,20,22,.6)"; ctx.fillText(`${Math.round(100 * tauxParcours())} %`, E.x + E.w / 2, E.y + 11);
+    ctx.fillStyle = "rgba(227,194,106,.8)"; ctx.fillText(`${Math.round(100 * tauxParcours())} %`, E.x + E.w / 2 - .4, E.y + 10.6);
+  }
+  SOCLES.forEach((o, k) => {
+    ctx.fillStyle = "rgba(15,20,22,.6)"; ctx.font = "700 7px 'Playfair Display', serif";
+    ctx.fillText(k + 1, mx(o), 144);
+    ctx.fillStyle = "rgba(200,190,160,.35)"; ctx.fillText(k + 1, mx(o) - .4, 143.6);
+  });
+  // 1 : un crabe
+  dessinerCrabe({ x: mx(SOCLES[0]) - 6.5, y: sol - 6.5, w: 13, h: 6.5, taille: 1, auSol: true }, t);
+  // 2 : le serpent enroulé
+  serpentEnroule(mx(SOCLES[1]), sol, 1, t);
+  // 3 : le serpent albinos
+  peauSerpent("albinos"); serpentEnroule(mx(SOCLES[2]), sol, -1, t); peauSerpent();
+  // 4 : l'aigle posé
+  const sauvNiv = niv, sauvAigle = partie.aigle;
+  niv = { aigle: { x: mx(SOCLES[3]), sol } }; partie.aigle = { vol: false, parti: false };
+  dessinerAigle(t);
+  niv = sauvNiv; partie.aigle = sauvAigle;
+  // 5 : le serpent jaune et le levier tiré
+  peauSerpent("jaune"); serpentEnroule(mx(SOCLES[4]) - 4, sol, 1, t); peauSerpent();
+  dessinerLevier({ x: SOCLES[4].x + 16, y: sol - 10, w: 5, h: 10 }, true);
+  // 6 : la sorcière et le hérisson tout petit
+  partie.sorciere = partie.sorciere || {}; partie.sorciere.tourne = 0;
+  dessinerSorciere(mx(SOCLES[5]) - 4, sol, 1, t);
+  const sauvH = partie.herisson;
+  niv = { herisson: { sol, w: 46, h: 30 } }; partie.herisson = { cx: mx(SOCLES[5]) + 7, dir: -1, s: .3, boule: 0 };
+  dessinerHerisson(t);
+  niv = sauvNiv; partie.herisson = sauvH;
+  // 7 : un hérisson en boule, pendu à la pince de la grue
+  const g7 = mx(SOCLES[6]);
+  ctx.strokeStyle = "#5d646a"; ctx.lineWidth = .5; ctx.beginPath(); ctx.moveTo(g7, sol - 30); ctx.lineTo(g7, sol - 22); ctx.stroke();
+  dessinerPince(g7, sol - 18, false, .55);
+  dessinerHerissonA(g7, sol - 18 + 4 + 13 * .5, .5, 1, true, t, true);
+  // 8 : le grand serpent, endormi sur ses anneaux
+  ctx.save(); ctx.translate(mx(SOCLES[7]), sol); ctx.scale(.36, .36);
+  dessinerGrandSerpent(0, 0, -28, -30, true, t);
+  ctx.restore();
+}
+// ---------- Plateau 8 : l'escalier du grand serpent ----------
+function dessinerEscalier(t) {
+  const E = partie.escalier, e = niv.escalier;
+  // les marches : colonnes de pierre sorties de terre
+  E.haut.forEach((h, k) => { if (h < e.sol - .5) pierre({ x: xMarche(k), y: h, w: e.l, h: e.sol - h }); });
+  // l'autel et le crapaud d'or (statue)
+  const S = e.statue;
+  pierre({ x: S.x - 2, y: S.y + S.h - 5, w: S.w + 4, h: 5 });
+  ctx.save(); ctx.translate(S.x + S.w / 2, S.y + S.h - 5); ctx.scale(1.5, 1.5);
+  ctx.filter = "saturate(1.7) brightness(1.2)";        // or pur, plus vif que le crapaud du joueur
+  dessinerCrapaud({ x: -CRAPAUD_W / 2, y: -CRAPAUD_H, dir: -1, auSol: true, etat: "statue", vx: 0, vy: 0, mort: 0 }, 0);
+  ctx.restore();
+  // le grand serpent, enroulé au pied du rocher ; sa tête se dresse là où sortira la prochaine marche ; endormi à la fin
+  const k = Math.min(E.k, 6), dort = E.fini;
+  const hx = dort ? 186 : xMarche(k) + e.l / 2 + 10, hy = dort ? e.sol - 30 : yMarche(k) - 14 + Math.sin(t / 14) * 1.2;
+  dessinerGrandSerpent(214, e.sol, hx, hy, dort, t);
+}
+// Le grand serpent : un seul corps continu, de la queue (fine, dehors, en bas) aux anneaux qui montent en spirale,
+// puis le cou qui se dresse jusqu'à la tête. Les morceaux de l'arrière de la spirale sont dessinés d'abord (profondeur),
+// avec un contour sombre, un reflet sur le dos, le ventre clair et le motif ocre en losanges des autres serpents.
+function dessinerGrandSerpent(bx, sol, hx, hy, dort, t) {
+  const tours = 2, TH = tours * 2 * Math.PI, pts = [];
+  for (let i = 0; i <= 90; i++) {
+    const u = i / 90, th = u * TH, R = 27 - 11 * u;
+    pts.push({ x: bx + R * Math.cos(th), y: sol - 4.5 - 17 * u + R * .2 * Math.sin(th), w: 3 + 6.5 * Math.min(1, u / .15), z: Math.sin(th) });
+  }
+  // le cou : il monte le long du rocher, puis s'incline vers la tête (un peu plus fin vers la tête)
+  const p0 = pts[pts.length - 1], c1 = { x: p0.x + 4, y: p0.y - 60 }, c2 = { x: hx + 30, y: Math.min(hy, p0.y) - 25 }, p3 = { x: hx + 6, y: hy + 1 };
+  for (let i = 1; i <= 40; i++) {
+    const u = i / 40, v = 1 - u;
+    pts.push({ x: v ** 3 * p0.x + 3 * v * v * u * c1.x + 3 * v * u * u * c2.x + u ** 3 * p3.x,
+               y: v ** 3 * p0.y + 3 * v * v * u * c1.y + 3 * v * u * u * c2.y + u ** 3 * p3.y, w: 9.5 - 4 * u, z: 1 });
+  }
+  const segs = pts.slice(1).map((b, i) => ({ a: pts[i], b, w: (pts[i].w + b.w) / 2, z: (pts[i].z + b.z) / 2 }));
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(bx, sol + .3, 31, 2.6);
+  ctx.lineCap = "round";
+  const passe = (liste, couleur, ep, dy = 0) => {
+    ctx.strokeStyle = couleur;
+    for (const g of liste) { ctx.lineWidth = Math.max(.4, g.w * ep); ctx.beginPath(); ctx.moveTo(g.a.x, g.a.y + dy * g.w); ctx.lineTo(g.b.x, g.b.y + dy * g.w); ctx.stroke(); }
+  };
+  for (const liste of [segs.filter(g => g.z < 0), segs.filter(g => g.z >= 0)]) {
+    passe(liste, ECAILLE2, 1.18);                                  // contour
+    passe(liste, ECAILLE, 1);                                      // corps
+    passe(liste, "rgba(139,138,92,.55)", .3, .28);                 // ventre clair (dessous)
+    passe(liste, "rgba(150,170,110,.35)", .22, -.27);              // reflet sur le dos
+    // motif ocre : un losange tous les quelques morceaux, couché le long du corps
+    ctx.fillStyle = MOTIF;
+    liste.forEach((g, i) => {
+      if (i % 3) return;
+      const ang = Math.atan2(g.b.y - g.a.y, g.b.x - g.a.x), r = g.w * .26;
+      ctx.save(); ctx.translate((g.a.x + g.b.x) / 2, (g.a.y + g.b.y) / 2 - g.w * .08); ctx.rotate(ang);
+      ctx.beginPath(); ctx.moveTo(-r * 1.4, 0); ctx.lineTo(0, -r * .7); ctx.lineTo(r * 1.4, 0); ctx.lineTo(0, r * .7); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+  }
+  // la tête, à l'échelle du cou ; endormie : posée de biais, langue rentrée
+  ctx.save(); ctx.translate(hx, hy); ctx.scale(3, 3);
+  teteSerpent(0, 0, -1, dort ? 0 : t, dort ? .35 : 0);
+  if (dort) {
+    // paupière fermée : on recouvre l'œil d'écailles et on trace la fente
+    ctx.scale(-1, 1); ctx.rotate(.35);
+    ctx.fillStyle = ECAILLE; rond(1.6, -.6, .9);
+    ctx.strokeStyle = ECAILLE2; ctx.lineWidth = .3; ctx.beginPath(); ctx.moveTo(.9, -.5); ctx.quadraticCurveTo(1.6, -.2, 2.4, -.5); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- Plateau 7 : la grue ----------
+// un hérisson dessiné ailleurs que celui du plateau 6 (même dessin, autre place, autre taille)
+function dessinerHerissonA(cx, sol, s, dir, boule, t, enLAir = false) {
+  const sn = niv, sh = partie.herisson;
+  niv = { herisson: { sol, w: 46, h: 30 } }; partie.herisson = { cx, dir, s, boule: boule ? 1 : 0, impact: 0, enLAir };
+  dessinerHerisson(t);
+  niv = sn; partie.herisson = sh;
+}
+// la pince : moyeu et deux griffes, ouvertes ou refermées ; y = bas des griffes
+function dessinerPince(x, y, ouverte, e0 = 1) {
+  const e = (ouverte ? 11 : 8.5) * e0;
+  ctx.fillStyle = "#3a3f44"; arrondi(x - 4.5 * e0, y - 12 * e0, 9 * e0, 3.5 * e0, .8); ctx.fill();
+  ctx.strokeStyle = "#a3a9ae"; ctx.lineWidth = 1.4 * e0; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 3 * e0, y - 8.5 * e0); ctx.lineTo(x + s * e, y - 4 * e0); ctx.lineTo(x + s * (e - 3.5 * e0), y + 2 * e0); ctx.stroke(); }
+}
+function dessinerGrue(t) {
+  const G = partie.grue, g = niv.grue, d = G.d, S = g.taille;
+  // la droite graduée, tracée sur le bord du sol de l'arène : graduations de 0 à 3, unité partagée en d
+  const y0 = g.sol + .4;
+  ctx.strokeStyle = "#cdb978"; ctx.lineWidth = .6;
+  ctx.beginPath(); ctx.moveTo(xAbscisse(0) - 4, y0); ctx.lineTo(xAbscisse(g.max) + 4, y0); ctx.stroke();
+  ctx.textAlign = "center"; ctx.font = "700 6px 'Playfair Display', serif";
+  for (let k = 0; k <= g.max * d; k++) {
+    const x = xAbscisse(k / d), entier = k % d === 0;
+    ctx.lineWidth = entier ? .7 : .45;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + (entier ? 6 : 3.5)); ctx.stroke();
+    if (entier) { ctx.fillStyle = "#e3d3a6"; ctx.fillText(k / d, x, y0 + 13); }
+  }
+  // le rail, accroché en haut, le chariot, le câble, la pince
+  ctx.fillStyle = "#3a3f44";
+  for (const x of [40, 130, 222]) ctx.fillRect(x - .6, 0, 1.2, g.rail);
+  ctx.fillStyle = degrade(g.rail, g.rail + 3, "#7d848a", "#41474b"); ctx.fillRect(30, g.rail, 210, 3);
+  ctx.fillStyle = "#2b3035"; arrondi(G.x - 5, g.rail + 2, 10, 5, 1); ctx.fill();
+  ctx.fillStyle = "#8a9196"; rond(G.x - 3, g.rail + 1.6, 1.1); rond(G.x + 3, g.rail + 1.6, 1.1);
+  ctx.strokeStyle = "#5d646a"; ctx.lineWidth = .5;
+  const e0 = S * 1.25;                       // la pince est à la taille des hérissons
+  ctx.beginPath(); ctx.moveTo(G.x, g.rail + 7); ctx.lineTo(G.x, G.y - 12 * e0); ctx.stroke();
+  const tient = G.hg && G.hg.etat === "porte";
+  // le hérisson tenu est dessiné sous la pince : les griffes le serrent
+  if (tient) dessinerHerissonA(G.x, G.y + 7.5 * S + 13 * S, S, G.hg.dir, true, t, true);
+  dessinerPince(G.x, G.y, !tient && G.etat !== "ferme", e0);
+  // le pupitre sur la tour : socle de fer et manette ; une lueur discrète tant qu'il attend le crapaud
+  const P = g.pupitre;
+  if (!G.auPupitre && G.pris < 3) {
+    const a = .2 + .12 * Math.sin(t / 10), gl = ctx.createRadialGradient(P.x + 4.5, P.y + 10, 1, P.x + 4.5, P.y + 10, 12);
+    gl.addColorStop(0, `rgba(255,205,110,${a})`); gl.addColorStop(1, "rgba(255,205,110,0)");
+    ctx.fillStyle = gl; ctx.fillRect(P.x - 9, P.y - 4, 27, 20);
+  }
+  ctx.fillStyle = "#2b3035"; ctx.fillRect(P.x + 3, P.y + 5, 3, 9);
+  ctx.beginPath(); ctx.moveTo(P.x, P.y + 5); ctx.lineTo(P.x + 9, P.y + 3); ctx.lineTo(P.x + 9, P.y + 6); ctx.lineTo(P.x, P.y + 7); ctx.fill();
+  ctx.strokeStyle = "#5a5f64"; ctx.lineWidth = .7; ctx.beginPath(); ctx.moveTo(P.x + 6, P.y + 4); ctx.lineTo(P.x + 7.5, P.y); ctx.stroke();
+  ctx.fillStyle = "#b0412c"; rond(P.x + 7.5, P.y, .9);
+  // la cage sur le rocher, avec les hérissons pris
+  const cx = g.cage, cy = 70;
+  for (let k = 0; k < G.pris; k++) dessinerHerissonA(cx - 6 + k * 6, cy, .42, k % 2 ? 1 : -1, true, t);
+  ctx.strokeStyle = "#4a4f54"; ctx.lineWidth = .55;
+  for (let x = cx - 10; x <= cx + 10; x += 2.5) { ctx.beginPath(); ctx.moveTo(x, cy - 16); ctx.lineTo(x, cy); ctx.stroke(); }
+  ctx.fillStyle = "#3a3f44"; ctx.fillRect(cx - 11, cy - 17, 22, 1.6); ctx.fillRect(cx - 11, cy - 1, 22, 1.2);
+  // la herse du tunnel : elle se lève pour laisser sortir un hérisson, et pour de bon après le 3e
+  const h = g.herse, lev = G.herse * (h.h - 4);
+  ctx.save(); ctx.beginPath(); ctx.rect(h.x - 2, h.y, h.w + 4, h.h); ctx.clip();
+  ctx.strokeStyle = "#4a4f54"; ctx.lineWidth = .8;
+  for (const x of [h.x, h.x + 1.5, h.x + 3]) { ctx.beginPath(); ctx.moveTo(x, h.y - lev); ctx.lineTo(x, h.y + h.h - lev); ctx.stroke(); }
+  for (let y = h.y + 4; y < h.y + h.h; y += 6) { ctx.beginPath(); ctx.moveTo(h.x - .5, y - lev); ctx.lineTo(h.x + 3.5, y - lev); ctx.stroke(); }
+  ctx.restore();
+  // le hérisson de l'arène : qui marche, en boule, ou dans la pince
+  const H = G.hg;
+  if (H && H.etat !== "porte") dessinerHerissonA(H.cx, g.sol, S, H.dir, H.etat !== "marche", t);
+  for (const L of G.liberes) dessinerHerissonA(L.x, L.y, .42, L.dir, L.etat === "tombe", t, L.etat === "tombe");
+  if (G.pris >= 3) sortie(t);
+}
+// Boule magique : petite sphère violet pâle, traînée qui s'efface ; à l'impact, un anneau qui s'élargit autour du hérisson
+function dessinerBoules(t) {
+  for (const b of partie.boules) {
+    b.trace.forEach((p, k) => { ctx.fillStyle = `rgba(185,160,220,${.35 - k * .05})`; rond(p.x, p.y, 1.8 - k * .2); });
+    const g = ctx.createRadialGradient(b.x, b.y, .3, b.x, b.y, 4.5);
+    g.addColorStop(0, "rgba(225,210,250,.9)"); g.addColorStop(.4, "rgba(150,120,200,.55)"); g.addColorStop(1, "rgba(150,120,200,0)");
+    ctx.fillStyle = g; ctx.fillRect(b.x - 5, b.y - 5, 10, 10);
+    ctx.fillStyle = "#efe6ff"; rond(b.x, b.y, 1.1);
+  }
+  const H = partie.herisson;
+  if (H.impact > 0) {
+    const h = boiteHerisson(), u = 1 - H.impact / 20;
+    ctx.strokeStyle = `rgba(200,180,235,${.6 * (1 - u)})`; ctx.lineWidth = .7;
+    ctx.beginPath(); ctx.ellipse(H.cx, h.y + h.h / 2, h.w / 2 + 3 + u * 8, h.h / 2 + 2 + u * 6, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+// Hypnose : des volutes pâles tournent autour du crapaud qui flotte
+function dessinerHypnose(c, t) {
+  const cx = c.x + CRAPAUD_W / 2, cy = c.y + CRAPAUD_H / 2;
+  ctx.strokeStyle = "rgba(190,175,215,.45)"; ctx.lineWidth = .45;
+  for (let k = 0; k < 3; k++) {
+    const a = t / 6 + k * 2.1;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 9 + k * 1.5, 4 + k, 0, a, a + 1.6); ctx.stroke();
+  }
+}
+
+// Piège : fosse sombre hérissée de pieux de fer rouillés
+function dessinerPiege(p) {
+  ctx.fillStyle = degrade(p.y - 40, H, "rgba(10,8,7,0)", "#0d0a08");
+  ctx.fillRect(p.x, p.y - 40, p.w, H - p.y + 40);
+  for (let x = p.x + .5; x < p.x + p.w - 1; x += 3.4) {
+    const h = 6 + bruit(x) * 2.5;
+    ctx.fillStyle = degrade(p.y + 6 - h, p.y + 8, "#b9bec2", "#5a4a3c");
+    ctx.beginPath(); ctx.moveTo(x, p.y + 8); ctx.lineTo(x + 1.3, p.y + 8 - h); ctx.lineTo(x + 2.6, p.y + 8); ctx.fill();
+  }
+}
+
+// ---------- Le serpent : écailles sombres, motif ocre, pupille fendue ----------
+let ECAILLE, ECAILLE2, MOTIF, VENTRE, OEIL, REFLET;
+// les peaux : le serpent du marais (écailles sombres, motif ocre, œil jaune), l'albinos du plateau 3
+// (écailles ivoire, motif paille à peine visible, œil rouge) et le serpent jaune du plateau 5 (motif brun, œil ambré)
+const PEAUX = {
+  marais: ["#33402c", "#1f2a1c", "#b78f3f", "#8b8a5c", "#e3bf3c", "#4a5a3e"],
+  albinos: ["#e4dccb", "#9d907b", "#e8cf9a", "#f4eee2", "#c8303f", "#fbf7ee"],
+  jaune: ["#c9a128", "#5e4610", "#6e4614", "#ead88f", "#d9772a", "#e8cc62"]
+};
+function peauSerpent(sorte = "marais") {
+  [ECAILLE, ECAILLE2, MOTIF, VENTRE, OEIL, REFLET] = PEAUX[sorte] || PEAUX.marais;
+}
+peauSerpent();
+function teteSerpent(x, y, dir, t, incline = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(dir, 1); ctx.rotate(incline);
+  // langue fourchue, par intermittence
+  if (Math.sin(t / 6) > .55) {
+    ctx.strokeStyle = "#b02a3a"; ctx.lineWidth = .35; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(3.6, .6); ctx.lineTo(6.2, .6); ctx.lineTo(7.2, -.2); ctx.moveTo(6.2, .6); ctx.lineTo(7.2, 1.3); ctx.stroke();
+  }
+  // tête triangulaire
+  ctx.fillStyle = ECAILLE;
+  ctx.beginPath(); ctx.moveTo(-2.4, -1.6); ctx.quadraticCurveTo(1.5, -2.6, 3.9, -.4); ctx.quadraticCurveTo(4.2, .7, 3.4, 1.2);
+  ctx.quadraticCurveTo(.5, 2.2, -2.4, 1.6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = MOTIF; ovale(-.4, -1.2, 1.6, .45, -.1);
+  ctx.fillStyle = VENTRE; ovale(1.2, 1.25, 2, .45);
+  // œil jaune à pupille verticale, sous une arcade
+  ctx.fillStyle = OEIL; rond(1.6, -.6, .78);
+  ctx.fillStyle = "#111"; ovale(1.7, -.6, .2, .66);
+  ctx.strokeStyle = ECAILLE2; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.moveTo(.6, -1.4); ctx.lineTo(2.6, -1.2); ctx.stroke();
+  ctx.fillStyle = "#111"; rond(3.4, -.3, .18);
+  ctx.restore();
+}
+function anneau(x, y, rx, ry) {
+  ctx.fillStyle = ECAILLE2; ovale(x, y + .5, rx + .3, ry + .4);
+  ctx.fillStyle = degrade(y - ry, y + ry, REFLET, ECAILLE);
+  ovale(x, y, rx, ry);
+  ctx.fillStyle = MOTIF;
+  for (let a = -2.4; a <= 2.4; a += .8) {
+    const px = x + Math.sin(a) * rx * .82, py = y - Math.cos(a) * ry * .2;
+    ctx.beginPath(); ctx.moveTo(px - .8, py); ctx.lineTo(px, py - .55); ctx.lineTo(px + .8, py); ctx.lineTo(px, py + .55); ctx.fill();
+  }
+}
+function serpentEnroule(x, sol, dir, t) {
+  const souffle = Math.sin(t / 12) * .25;
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(x, sol + .2, 8.5, 1.3);
+  anneau(x, sol - 2, 7.6, 2.3);
+  anneau(x - dir * .5, sol - 4.6 - souffle, 6.2, 2.1);
+  anneau(x, sol - 6.9 - souffle, 4.6, 1.9);
+  // cou dressé en S
+  const nx = x + dir * 1.5, ny = sol - 8;
+  ctx.strokeStyle = ECAILLE2; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(nx, ny); ctx.bezierCurveTo(nx - dir * 2, ny - 3, nx + dir * 3, ny - 5, nx + dir * 3.4, ny - 7.4 - souffle); ctx.stroke();
+  ctx.strokeStyle = ECAILLE; ctx.lineWidth = 1.9;
+  ctx.beginPath(); ctx.moveTo(nx, ny); ctx.bezierCurveTo(nx - dir * 2, ny - 3, nx + dir * 3, ny - 5, nx + dir * 3.4, ny - 7.4 - souffle); ctx.stroke();
+  teteSerpent(nx + dir * 3.6, ny - 8.2 - souffle, dir, t);
+}
+// Le serpent qui se déplace : déroulé, il ondule en lacet le long de son trajet (droit, sans bond) jusqu'au pont.
+// La tête suit le trajet ; le corps reprend les positions déjà parcourues, avec une ondulation qui court vers la queue.
+function serpentRampant(s, t) {
+  const a = niv.serpent, p = niv.pont, ex = p.x + p.w / 2, ey = p.y + 2, sens = ex > a.x ? 1 : -1;
+  // avant le départ (u < 0), le reste du corps est encore couché sur son étagère, derrière lui
+  const P = u => u >= 0 ? { x: a.x + (ex - a.x) * u, y: a.y + (ey - a.y) * u } : { x: a.x + sens * u * 60, y: a.y };
+  let long = 0;
+  for (let i = 1; i <= 30; i++) { const q0 = P((i - 1) / 30), q1 = P(i / 30); long += Math.hypot(q1.x - q0.x, q1.y - q0.y); }
+  const N = 28, du = 1.3 / long, pts = [];
+  for (let k = 0; k <= N; k++) {
+    const u = s - k * du, c = P(u), d1 = P(u + .002), d0 = P(u - .002);
+    let tx = d1.x - d0.x, ty = d1.y - d0.y; const n = Math.hypot(tx, ty) || 1; tx /= n; ty /= n;
+    const ond = Math.sin(k * .55 - t * .35) * 2.4 * Math.min(1, k / 6);
+    pts.push({ x: c.x - ty * ond, y: c.y - 1.6 + tx * ond, w: 3.6 - 2.6 * k / N, tx, ty });
+  }
+  ctx.lineCap = "round";
+  const passe = (couleur, plus, dy = 0) => {
+    ctx.strokeStyle = couleur;
+    for (let k = N; k > 0; k--) { const q0 = pts[k], q1 = pts[k - 1]; ctx.lineWidth = Math.max(.3, (q0.w + q1.w) / 2 + plus); ctx.beginPath(); ctx.moveTo(q0.x, q0.y + dy); ctx.lineTo(q1.x, q1.y + dy); ctx.stroke(); }
+  };
+  passe(ECAILLE2, .9); passe(ECAILLE, 0); passe(VENTRE, -2.4, .9);
+  ctx.fillStyle = MOTIF;
+  for (let k = 3; k < N - 2; k += 3) {
+    const q = pts[k], ang = Math.atan2(q.ty, q.tx), r = q.w * .3;
+    ctx.save(); ctx.translate(q.x, q.y - .3); ctx.rotate(ang);
+    ctx.beginPath(); ctx.moveTo(-r * 1.5, 0); ctx.lineTo(0, -r * .7); ctx.lineTo(r * 1.5, 0); ctx.lineTo(0, r * .7); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // la tête, dans le sens du trajet
+  const h = pts[0], dir = h.tx >= 0 ? 1 : -1;
+  teteSerpent(h.x, h.y - .4, dir, t, Math.atan2(h.ty, h.tx * dir));
+}
+function serpentPont(p, t) {
+  const y = p.y + 2, ond = x => Math.sin(x / 4.5 + t / 14) * .3;
+  const corps = (couleur, ep) => {
+    ctx.strokeStyle = couleur; ctx.lineWidth = ep; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(p.x + .5, y + ond(p.x));
+    for (let x = p.x + .5; x <= p.x + p.w - 4; x += 1.5) ctx.lineTo(x, y + ond(x));
+    ctx.stroke();
+  };
+  corps(ECAILLE2, 4.6); corps(ECAILLE, 3.6);
+  ctx.strokeStyle = VENTRE; ctx.lineWidth = .7;
+  ctx.beginPath(); ctx.moveTo(p.x + 1, y + 1.4); ctx.lineTo(p.x + p.w - 5, y + 1.4); ctx.stroke();
+  ctx.fillStyle = MOTIF;
+  for (let x = p.x + 3; x < p.x + p.w - 6; x += 3.6) { const yy = y - .5 + ond(x); ctx.beginPath(); ctx.moveTo(x - 1.1, yy); ctx.lineTo(x, yy - .8); ctx.lineTo(x + 1.1, yy); ctx.lineTo(x, yy + .8); ctx.fill(); }
+  teteSerpent(p.x + p.w - 2.2, y - 1.6, 1, t, -.25);
+}
+
+// ---------- Le crapaud (d'or) : trapu, peau verruqueuse bronze-or, œil à pupille horizontale ----------
+function dessinerCrapaud(c, t) {
+  const cx = c.x + CRAPAUD_W / 2, bas = c.y + CRAPAUD_H, enVol = !c.auSol && c.etat !== "mort";
+  if (!enVol) { ctx.fillStyle = "rgba(0,0,0,.4)"; ovale(cx, bas + .3, 6.4, 1.1); }
+  ctx.save();
+  ctx.translate(cx, bas);
+  ctx.scale(c.dir * (1 + c.mort * .45), 1 - c.mort * .7);
+  const respire = enVol ? 0 : Math.sin(t / 9) * .2;
+  const peauSombre = "#a2863a";   // pattes : dorées comme le corps, pour ressortir sur le fond sombre
+  // pose de saut : « lat » = 0 pour un saut sur place (sans flèche), 1 pour un bond vers la gauche ou la droite
+  const lat = enVol ? Math.min(1, Math.abs(c.vx) / 1.5) : 0;
+  // en bond, le corps s'incline : nez en l'air à la montée, vers le bas à la descente (droit pour un saut sur place)
+  if (enVol) { const k = Math.max(-1, Math.min(1, c.vy / 5)); ctx.translate(0, -4); ctx.rotate(k * .28 * lat); ctx.translate(0, 4); }
+  ctx.fillStyle = peauSombre;
+  // en saut : pattes arrière articulées, tendues à la montée (vers l'arrière en bond, vers le bas sur place),
+  // repliées sous le corps à la descente
+  const pli = enVol ? Math.max(0, Math.min(1, (c.vy + 2) / 5)) : 0;
+  const patte = (dx, dy, couleur, ep) => {
+    const m = (a, b) => a + (b - a) * pli;
+    const p = (bond, place) => place + (bond - place) * lat;
+    const hx = -3.6 + dx, hy = -2.4 + dy;
+    const gx = p(m(-7.4, -6.6), m(-6.4, -6.6)) + dx, gy = p(m(.4, .2), m(1, .2)) + dy;
+    const cx2 = p(m(-12, -3.8), m(-5.4, -3.8)) + dx, cy2 = p(m(1.2, 1.2), m(4.4, 1.2)) + dy;
+    const angle = p(m(Math.PI, 0), m(Math.PI / 2, 0));   // direction des doigts
+    ctx.strokeStyle = couleur; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = 3 * ep; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(gx, gy); ctx.stroke();
+    ctx.lineWidth = 1.7 * ep; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(cx2, cy2); ctx.stroke();
+    // liseré de lumière sur le dessus de la patte
+    ctx.strokeStyle = `rgba(255,230,160,${.55 * ep})`; ctx.lineWidth = .45;
+    ctx.beginPath(); ctx.moveTo(hx, hy - 1.2 * ep); ctx.lineTo(gx, gy - 1.3 * ep); ctx.lineTo(cx2, cy2 - .7 * ep); ctx.stroke();
+    ctx.strokeStyle = couleur;
+    // pied palmé : trois doigts en éventail
+    ctx.fillStyle = couleur; ctx.beginPath(); ctx.moveTo(cx2, cy2);
+    for (const a of [-.5, 0, .5]) ctx.lineTo(cx2 + 2.8 * Math.cos(angle + a), cy2 + 2.8 * Math.sin(angle + a));
+    ctx.closePath(); ctx.fill();
+    ctx.lineWidth = .5; ctx.beginPath();
+    for (const a of [-.5, 0, .5]) { ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + 3 * Math.cos(angle + a), cy2 + 3 * Math.sin(angle + a)); }
+    ctx.stroke();
+  };
+  if (enVol) { patte(1.2, -.5, "#7d6830", .85); patte(0, 0, peauSombre, 1); }
+  else { ovale(-4.2, -1.6, 3.4, 1.9, -.15); ovale(-5.6, -.3, 2.4, .8); }
+  // corps
+  const g = ctx.createRadialGradient(-1, -6.4, .5, 0, -3.6, 8);
+  g.addColorStop(0, "#d4b45a"); g.addColorStop(.55, "#9a7f34"); g.addColorStop(1, "#5b4b1f");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-6.4, -1.2);
+  ctx.bezierCurveTo(-6.8, -5.6 - respire, -2.6, -8 - respire, 1.6, -7.6 - respire);
+  ctx.bezierCurveTo(4.6, -7.3, 6.8, -5.4, 6.9, -3);
+  ctx.bezierCurveTo(7, -1.4, 5.6, -.6, 3.6, -.5);
+  ctx.lineTo(-5, -.5); ctx.closePath(); ctx.fill();
+  // ventre clair à peine visible, verrues
+  ctx.fillStyle = "rgba(225,205,150,.55)"; ovale(2.6, -1.4, 3.2, 1);
+  ctx.fillStyle = "rgba(60,45,15,.55)";
+  for (const [wx, wy, r] of [[-3.6, -4.6, .55], [-1.6, -6, .5], [-4.6, -2.8, .45], [.4, -5, .45], [-2.4, -3.2, .4], [2.2, -6.3, .35]]) rond(wx, wy, r);
+  ctx.fillStyle = "rgba(255,235,170,.4)";
+  for (const [wx, wy] of [[-3.8, -4.9], [-1.8, -6.3], [.2, -5.3]]) rond(wx, wy, .2);
+  // liseré de lumière sur le dos (détache le crapaud du fond sombre)
+  ctx.strokeStyle = "rgba(255,228,160,.55)"; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.moveTo(-5.6, -4); ctx.bezierCurveTo(-4.4, -6.6 - respire, -1.2, -7.8 - respire, 1.8, -7.5 - respire); ctx.stroke();
+  // pattes avant
+  ctx.fillStyle = peauSombre;
+  if (enVol) {
+    // pattes avant tendues vers le bas, prêtes à se poser
+    ctx.strokeStyle = peauSombre; ctx.lineCap = "round"; ctx.lineWidth = 1;
+    ctx.lineWidth = 1.3;
+    for (const [x0, x1, x2] of [[2.8, 6, 3.6], [1, 4, 1.6]]) { ctx.beginPath(); ctx.moveTo(x0, -1.8); ctx.lineTo(x2 + (x1 - x2) * lat, .2 + (1 - lat) * 1.4 - (1 - pli) * 1.2 * lat); ctx.stroke(); }
+  } else { ovale(3.2, -.6, 1.1, .7); ovale(1, -.5, 1, .6); }
+  // bouche : un trait large, sans sourire
+  ctx.strokeStyle = "#3b2f12"; ctx.lineWidth = .35; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(6.6, -2.9); ctx.quadraticCurveTo(4.4, -2.5, 2.2, -3.1); ctx.stroke();
+  // œil : bosse, iris doré, pupille horizontale, paupière
+  ctx.fillStyle = "#8a7130"; ovale(3.4, -6.9, 2.1, 1.7);
+  const iris = ctx.createRadialGradient(3.6, -7.1, .2, 3.6, -7.1, 1.4);
+  iris.addColorStop(0, "#f6d36a"); iris.addColorStop(1, "#b5801f");
+  ctx.fillStyle = iris; rond(3.7, -7, 1.3);
+  ctx.fillStyle = "#120d05"; ovale(3.8, -7, .85, .32);
+  ctx.fillStyle = "rgba(255,255,255,.75)"; rond(3.3, -7.5, .22);
+  ctx.strokeStyle = "#4e401a"; ctx.lineWidth = .45;
+  ctx.beginPath(); ctx.arc(3.7, -7, 1.4, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  // glande derrière l'œil
+  ctx.fillStyle = "rgba(70,55,20,.6)"; ovale(.9, -6.6, 1.2, .5, -.2);
+  ctx.restore();
+}
+
+// Crabe, vu de face : carapace large et plate orange-rouge, deux grosses pinces levées qui s'ouvrent et se ferment,
+// quatre pattes pointues de chaque côté, yeux noirs au bout de pédoncules
+function dessinerCrabe(k, t) {
+  const e = k.taille, cx = k.x + k.w / 2, bas = k.y + k.h, trot = k.auSol ? t / 2.2 + k.x : 0;
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(cx, bas + .2, 7.5 * e, 1 * e);
+  ctx.save(); ctx.translate(cx, bas); ctx.scale(e, e);
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  // pattes : 4 de chaque côté, coudées, pointe au sol ; elles trottinent en alternance
+  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const lev = k.auSol ? Math.max(0, Math.sin(trot + i * 1.6 + (s > 0 ? Math.PI : 0))) * .9 : 0;
+    const x0 = s * (3.2 + i * .5), y0 = -3 + i * .35;
+    const xg = s * (5.4 + i * .9), yg = -5 + i * .7 - lev;
+    const xp = s * (6.4 + i * 1), yp = -lev * .6;
+    ctx.strokeStyle = "#7a2614"; ctx.lineWidth = .9;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xg, yg); ctx.lineTo(xp, yp); ctx.stroke();
+    ctx.strokeStyle = "#d65a34"; ctx.lineWidth = .45;
+    ctx.beginPath(); ctx.moveTo(x0, y0 - .15); ctx.lineTo(xg, yg - .2); ctx.stroke();
+  }
+  // bras et grosses pinces levées au-dessus de la carapace
+  const ouvre = (Math.sin(t / 5 + k.x) + 1) / 2;          // 0 = fermée, 1 = ouverte
+  for (const s of [-1, 1]) {
+    ctx.strokeStyle = "#8c2e18"; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(s * 3.4, -4.4); ctx.lineTo(s * 6.2, -6.6); ctx.lineTo(s * 5.4, -8.6); ctx.stroke();
+    ctx.save(); ctx.translate(s * 5, -9.6); ctx.scale(s, 1);
+    // paume
+    const g = ctx.createRadialGradient(-.4, -.6, .2, 0, 0, 2.4);
+    g.addColorStop(0, "#ff9a66"); g.addColorStop(1, "#c4442a");
+    ctx.fillStyle = g; ovale(0, 0, 2.1, 1.6, -.5);
+    // doigt fixe (au-dessus) et doigt mobile (dessous), pointes sombres
+    ctx.fillStyle = "#d4502f";
+    ctx.beginPath(); ctx.moveTo(-.6, -1.2); ctx.quadraticCurveTo(-2.6, -2.6, -3.6, -1.6); ctx.quadraticCurveTo(-2.4, -1.4, -1.4, -.2); ctx.fill();
+    ctx.save(); ctx.translate(-1.2, .4); ctx.rotate(ouvre * .55);
+    ctx.beginPath(); ctx.moveTo(.4, .3); ctx.quadraticCurveTo(-1.6, .6, -2.6, -.6); ctx.quadraticCurveTo(-1.2, -.6, .2, -.6); ctx.fill();
+    ctx.fillStyle = "#3a1208"; rond(-2.5, -.55, .3);
+    ctx.restore();
+    ctx.fillStyle = "#3a1208"; rond(-3.5, -1.6, .3);
+    ctx.strokeStyle = "rgba(255,210,170,.6)"; ctx.lineWidth = .3;
+    ctx.beginPath(); ctx.arc(0, 0, 1.5, Math.PI * 1.05, Math.PI * 1.6); ctx.stroke();
+    ctx.restore();
+  }
+  // yeux noirs brillants sur pédoncules
+  for (const s of [-1, 1]) {
+    ctx.strokeStyle = "#8c2e18"; ctx.lineWidth = .55;
+    ctx.beginPath(); ctx.moveTo(s * 1.1, -5.6); ctx.lineTo(s * 1.5, -8); ctx.stroke();
+    ctx.fillStyle = "#111"; rond(s * 1.5, -8.3, .7);
+    ctx.fillStyle = "rgba(255,255,255,.85)"; rond(s * 1.5 - .25, -8.55, .22);
+  }
+  // carapace : large, plate, bord avant festonné
+  const g = ctx.createRadialGradient(-1.2, -5, .4, 0, -3.6, 6.5);
+  g.addColorStop(0, "#ff8a55"); g.addColorStop(.5, "#d4502f"); g.addColorStop(1, "#7a2614");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(-5.6, -3.2);
+  for (let i = 0; i <= 8; i++) { const a = Math.PI + i * Math.PI / 8; ctx.lineTo(Math.cos(a) * (5.6 + (i % 2) * .35), -3.2 + Math.sin(a) * (2.6 + (i % 2) * .3)); }
+  ctx.quadraticCurveTo(3.6, -1.2, 0, -1.2); ctx.quadraticCurveTo(-3.6, -1.2, -5.6, -3.2); ctx.fill();
+  ctx.strokeStyle = "rgba(255,215,180,.6)"; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.ellipse(0, -3.4, 4.2, 1.8, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  ctx.fillStyle = "rgba(90,20,8,.45)"; rond(-2, -3.6, .4); rond(2, -3.6, .4); rond(0, -4.6, .35);
+  ctx.restore();
+}
+
+// Tapis roulant : bande de caoutchouc sur deux rouleaux, chevrons qui défilent vers la gauche
+function dessinerTapis(b, t) {
+  const r = b.h / 2, cy = b.y + r;
+  ctx.fillStyle = "rgba(0,0,0,.3)"; arrondi(b.x + .8, b.y + 1, b.w, b.h, r); ctx.fill();
+  ctx.fillStyle = degrade(b.y, b.y + b.h, "#3b3f44", "#1d2023"); arrondi(b.x, b.y, b.w, b.h, r); ctx.fill();
+  ctx.save(); arrondi(b.x + r * .4, b.y + .5, b.w - r * .8, 2.6, 1.2); ctx.clip();
+  ctx.fillStyle = "#4b5056"; ctx.fillRect(b.x, b.y, b.w, 3.2);
+  ctx.strokeStyle = "#c9a227"; ctx.lineWidth = .6;
+  const dec = (t * Math.abs(b.v)) % 6;
+  for (let x = b.x - 6 + (6 - dec); x < b.x + b.w + 6; x += 6) { ctx.beginPath(); ctx.moveTo(x + 1.6, b.y + .9); ctx.lineTo(x, b.y + 1.8); ctx.lineTo(x + 1.6, b.y + 2.7); ctx.stroke(); }
+  ctx.restore();
+  for (const x of [b.x + r, b.x + b.w - r]) {
+    ctx.fillStyle = "#6f777e"; rond(x, cy, r * .62);
+    ctx.strokeStyle = "#2a2e32"; ctx.lineWidth = .5;
+    for (let k = 0; k < 3; k++) { const a = -t * Math.abs(b.v) / (r * .62) + k * 2.1; ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x + Math.cos(a) * r * .55, cy + Math.sin(a) * r * .55); ctx.stroke(); }
+    ctx.fillStyle = "#aab0b5"; rond(x, cy, .7);
+  }
+}
+// Porte de la salle du serpent : planches cerclées de fer ; elle bascule vers la gauche autour de sa charnière
+function dessinerPorte(p) {
+  ctx.save();
+  ctx.translate(p.px, p.py);
+  ctx.rotate(-partie.porte * Math.PI / 2);
+  const x0 = p.x - p.px, y0 = p.y - p.py;
+  ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.fillRect(x0 + .7, y0 + .7, p.w, p.h);
+  ctx.fillStyle = degrade(y0, y0 + p.h, "#7a5a3a", "#3e2a1a"); ctx.fillRect(x0, y0, p.w, p.h);
+  ctx.strokeStyle = "rgba(20,12,6,.5)"; ctx.lineWidth = .35;
+  ctx.beginPath(); ctx.moveTo(x0 + p.w / 2, y0 + .5); ctx.lineTo(x0 + p.w / 2, y0 + p.h - .5); ctx.stroke();
+  ctx.fillStyle = "#3a3f44";
+  for (const yy of [y0 + 3, y0 + p.h / 2, y0 + p.h - 4]) ctx.fillRect(x0, yy, p.w, 1);
+  ctx.fillStyle = "#9aa0a6";
+  for (const yy of [y0 + 3.5, y0 + p.h / 2 + .5, y0 + p.h - 3.5]) { rond(x0 + 1, yy, .3); rond(x0 + p.w - 1, yy, .3); }
+  ctx.restore();
+  ctx.fillStyle = "#2c3034"; rond(p.px, p.py, 1.1);
+}
+// Levier : socle de fer, manche qui bascule quand on le tire
+function dessinerLevier(l, tire, bloque = false) {
+  const bx = l.x + l.w / 2, by = l.y + l.h;
+  const a = tire ? -.7 : .7;
+  ctx.strokeStyle = "#5a5f64"; ctx.lineWidth = 1; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(bx, by - 1.5); ctx.lineTo(bx + Math.sin(a) * 8, by - 1.5 - Math.cos(a) * 8); ctx.stroke();
+  ctx.fillStyle = tire ? "#6f8a3e" : bloque ? "#6b6f74" : "#b0412c"; rond(bx + Math.sin(a) * 8, by - 1.5 - Math.cos(a) * 8, 1.4);
+  ctx.fillStyle = "#3a3f44"; arrondi(bx - 2.6, by - 2.2, 5.2, 2.2, .8); ctx.fill();
+  if (!tire && !bloque) {
+    const g = ctx.createRadialGradient(bx, by - 6, .5, bx, by - 6, 9);
+    g.addColorStop(0, `rgba(255,205,110,${.22 + .12 * Math.sin(partie.image / 9)})`); g.addColorStop(1, "rgba(255,205,110,0)");
+    ctx.fillStyle = g; ctx.fillRect(bx - 10, by - 16, 20, 18);
+  }
+}
+// Ressort : spirale de métal sur un socle ; il s'écrase un instant quand il renvoie le crapaud
+function dessinerRessort(r) {
+  const bas = 178, haut = r.y + (partie.ressort > 0 ? 4 : 0), cx = r.x + r.w / 2;
+  ctx.fillStyle = "#3a3f44"; arrondi(r.x - 1, bas - 1.5, r.w + 2, 2.5, .8); ctx.fill();
+  ctx.strokeStyle = "#b9bec2"; ctx.lineWidth = .8; ctx.lineJoin = "round";
+  ctx.beginPath(); ctx.moveTo(cx, bas - 1.5);
+  const n = 7;
+  for (let k = 1; k <= n; k++) ctx.lineTo(cx + (k % 2 ? -1 : 1) * (r.w / 2 - 1.5), bas - 1.5 - (bas - 1.5 - haut - 1.2) * k / n);
+  ctx.stroke();
+  ctx.fillStyle = degrade(haut, haut + 1.6, "#c9cfd4", "#6f777e"); arrondi(r.x, haut, r.w, 1.8, .8); ctx.fill();
+}
+
+// Plate-forme suspendue, potence à deux poulies et panier de contrepoids : la corde relie la plate-forme au panier,
+// qui descend quand la plate-forme monte. Les pierres volent du tas au panier (ou en tombent).
+const panierPlein = () => { const p = niv.passerelle, a = ascs.find(x => x.passerelle); return !!a && a.cible <= p.depart - p.pas * p.marches + .01; };
+function positionPanier(P) {
+  const a = ascs.find(x => x.passerelle), p = niv.passerelle;
+  return { x: P.poulieG.x, y: P.panierY + (p.depart - a.y) };
+}
+function dessinerPotence(P, t) {
+  const a = ascs.find(x => x.passerelle), p = niv.passerelle, pan = positionPanier(P);
+  const gx = P.poulieG.x, dx = P.poulieD.x, py = P.poulieG.y;
+  // poteau planté dans le bloc, poutre, jambe de force
+  ctx.fillStyle = degrade(py, 112, "#7a5a3a", "#4a3422");
+  arrondi(gx + 6, py - 2, 2.6, 113.8 - py, .8); ctx.fill();
+  arrondi(gx - 4, py - 3.5, dx - gx + 9, 2.6, .8); ctx.fill();
+  ctx.strokeStyle = "#5a4028"; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(gx + 7.3, py + 14); ctx.lineTo(gx + 20, py - 1); ctx.stroke();
+  // cordes : de la plate-forme (deux brins) à la poulie de droite, le long de la poutre, puis vers le panier
+  const ax = a.x + a.w / 2;
+  ctx.strokeStyle = "#b8a27a"; ctx.lineWidth = .55;
+  ctx.beginPath();
+  ctx.moveTo(a.x + 4, a.y); ctx.lineTo(dx, py + 1.6);
+  ctx.moveTo(a.x + a.w - 4, a.y); ctx.lineTo(dx, py + 1.6);
+  ctx.moveTo(dx, py - 1.6); ctx.lineTo(gx, py - 1.6);
+  ctx.moveTo(gx - 1.6, py); ctx.lineTo(pan.x - 1.6, pan.y);
+  ctx.stroke();
+  // poulies
+  for (const x of [gx, dx]) {
+    ctx.fillStyle = "#3a3f44"; rond(x, py, 2.2);
+    ctx.strokeStyle = "#8a9196"; ctx.lineWidth = .4;
+    const r = t / 8 * (a.dy ? 1 : 0);
+    ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x + Math.cos(r) * 1.8, py + Math.sin(r) * 1.8); ctx.stroke();
+    ctx.fillStyle = "#9aa0a6"; rond(x, py, .5);
+  }
+  // la plate-forme, bien visible : planche épaisse, bords clairs, anneaux des cordes
+  ctx.fillStyle = "rgba(0,0,0,.35)"; arrondi(a.x + 1, a.y + 1.2, a.w, 4, 1); ctx.fill();
+  ctx.fillStyle = degrade(a.y, a.y + 4, "#c79a62", "#7a5430"); arrondi(a.x, a.y, a.w, 4, 1); ctx.fill();
+  ctx.strokeStyle = "rgba(255,225,170,.6)"; ctx.lineWidth = .4;
+  ctx.beginPath(); ctx.moveTo(a.x + 1, a.y + .4); ctx.lineTo(a.x + a.w - 1, a.y + .4); ctx.stroke();
+  ctx.strokeStyle = "rgba(40,25,10,.5)"; ctx.lineWidth = .3;
+  for (let x = a.x + 10; x < a.x + a.w - 3; x += 10) { ctx.beginPath(); ctx.moveTo(x, a.y + .5); ctx.lineTo(x, a.y + 3.6); ctx.stroke(); }
+  ctx.fillStyle = "#3a3f44"; rond(a.x + 4, a.y, .9); rond(a.x + a.w - 4, a.y, .9);
+  // le panier et ses pierres (une par cran)
+  const n = Math.round((p.depart - a.cible) / p.pas);
+  ctx.save(); ctx.translate(pan.x - 1.6, pan.y);
+  ctx.strokeStyle = "#b8a27a"; ctx.lineWidth = .45;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-5, 3); ctx.moveTo(0, 0); ctx.lineTo(5, 3); ctx.stroke();
+  for (let k = 0; k < n; k++) { ctx.fillStyle = k % 2 ? "#8b9096" : "#a3a8ad"; ovale(-3 + (k % 2) * 3.5 + (k > 1 ? 1.5 : 0), 3.6 - (k > 1 ? 1.6 : 0), 1.8, 1.3); }
+  ctx.fillStyle = degrade(3, 9, "#9a7444", "#5e4224");
+  ctx.beginPath(); ctx.moveTo(-5.5, 3.2); ctx.lineTo(5.5, 3.2); ctx.lineTo(4.2, 9); ctx.lineTo(-4.2, 9); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "rgba(40,25,10,.55)"; ctx.lineWidth = .3;
+  for (const y of [5, 7]) { ctx.beginPath(); ctx.moveTo(-5.2 + (y - 3) * .22, y); ctx.lineTo(5.2 - (y - 3) * .22, y); ctx.stroke(); }
+  ctx.restore();
+  // pierres en vol : du tas vers le panier, ou du panier vers le sol
+  const tas = niv.tas;
+  for (const pi of partie.pierres) {
+    const u = pi.t / 24;
+    const [x0, y0, x1, y1] = pi.entre ? [tas.x + tas.w / 2, tas.y + 4, pan.x - 1.6, pan.y + 4] : [pan.x - 1.6, pan.y + 6, pan.x + 6, 110];
+    const x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u - (pi.entre ? Math.sin(u * Math.PI) * 18 : 0);
+    ctx.fillStyle = "#a3a8ad"; ovale(x, y, 1.8, 1.3);
+  }
+}
+// Le tas de pierres, sur le bloc : l'aigle y prend ses pierres
+function dessinerTas(T, t) {
+  const cx = T.x + T.w / 2, sol = T.y + T.h;
+  for (const [dx, dy, r, c] of [[-3.5, -1.3, 2.2, "#7d848a"], [0, -1.4, 2.4, "#959ba1"], [3.6, -1.2, 2.1, "#868c92"], [-1.6, -3.4, 2, "#a3a8ad"], [2, -3.5, 1.9, "#8b9096"], [.2, -5.2, 1.7, "#b0b5ba"]]) {
+    ctx.fillStyle = c; ovale(cx + dx, sol + dy, r, r * .78);
+  }
+}
+// ---------- L'aigle ----------
+// boîte pour le toucher (posé sur le bloc) et déroulé d'un vol : aller prendre, porter, lâcher, revenir
+const boiteAigle = () => ({ x: niv.aigle.x - 6, y: niv.aigle.sol - 15, w: 12, h: 15 });
+const volAigle = (sens, depart) => sens > 0 ? { prend: 18, lache: 42, fin: depart ? 80 : 60 } : { prend: 18, lache: 40, fin: 58 };
+function positionAigle() {
+  const A = partie.aigle, ag = niv.aigle, perche = { x: ag.x, y: ag.sol };
+  if (!A.vol) return { ...perche, vole: false, pierre: false, dir: crapaud.x + 6 < ag.x ? -1 : 1 };
+  const T = niv.tas, pan = positionPanier(niv.potence), V = volAigle(A.sens, A.depart);
+  const tas = { x: T.x + T.w / 2, y: T.y + 4 }, panier = { x: pan.x - 1.6, y: pan.y - 1 };
+  const loin = { x: -30, y: -40 };              // après la 4e pierre, il s'envole hors de l'écran
+  const etapes = A.sens > 0 ? [[perche, tas, 0, V.prend], [tas, panier, V.prend, V.lache], [panier, A.depart ? loin : perche, V.lache, V.fin]]
+                            : [[perche, panier, 0, V.prend], [panier, tas, V.prend, V.lache], [tas, perche, V.lache, V.fin]];
+  const [a, b, t0, t1] = etapes.find(e => A.t <= e[3]) || etapes[2];
+  const u = Math.min(1, Math.max(0, (A.t - t0) / (t1 - t0)));
+  const x = a.x + (b.x - a.x) * u, y = a.y + (b.y - a.y) * u - Math.sin(u * Math.PI) * 14;
+  const porte = A.sens > 0 ? A.t > V.prend && A.t <= V.lache : A.t > V.prend && A.t <= V.lache;
+  return { x, y, vole: true, pierre: porte, dir: b.x >= a.x ? 1 : -1 };
+}
+// L'aigle royal : brun sombre, nuque dorée, bec crochu jaune, serres jaunes ; posé, ou en vol, ailes battantes
+function dessinerAigle(t) {
+  if (partie.aigle.parti) return;
+  const P = positionAigle();
+  ctx.save(); ctx.translate(P.x, P.y); ctx.scale(P.dir, 1);
+  const brun = "#2e2117", brun2 = "#4a3524", or = "#b98a3e", jaune = "#e2ad34";
+  if (!P.vole) {
+    ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(0, .3, 5, .9);
+    // queue
+    ctx.fillStyle = brun; ctx.beginPath(); ctx.moveTo(-2.5, -5); ctx.lineTo(-6.5, -.5); ctx.lineTo(-4.2, .2); ctx.lineTo(-.8, -4); ctx.fill();
+    // serres
+    ctx.strokeStyle = jaune; ctx.lineWidth = .7; ctx.lineCap = "round";
+    for (const x of [-.6, 1.2]) { ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x, -.3); ctx.moveTo(x - .9, 0); ctx.lineTo(x + .9, 0); ctx.stroke(); }
+    // corps
+    const g = ctx.createRadialGradient(.5, -10, .5, 0, -8, 7);
+    g.addColorStop(0, brun2); g.addColorStop(1, brun);
+    ctx.fillStyle = g; ovale(.3, -7.8, 3.8, 5.6, .12);
+    // aile repliée, plumes
+    ctx.fillStyle = "#24190f"; ovale(-.9, -7.2, 3, 5.2, .25);
+    ctx.strokeStyle = "rgba(120,90,60,.5)"; ctx.lineWidth = .3;
+    for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(-2.6 + k * .8, -10 + k * 1.2); ctx.lineTo(-3.4 + k * .7, -3.5 + k * .3); ctx.stroke(); }
+    // tête et nuque dorée
+    const tg = ctx.createRadialGradient(1, -14.6, .3, 1.4, -13.8, 3.2);
+    tg.addColorStop(0, or); tg.addColorStop(1, brun2);
+    ctx.fillStyle = tg; ovale(1.6, -13.8, 2.6, 2.4);
+    // bec crochu
+    ctx.fillStyle = jaune; ctx.beginPath(); ctx.moveTo(3.6, -14.6); ctx.quadraticCurveTo(6.2, -14.4, 5.6, -12.4); ctx.quadraticCurveTo(5, -13.3, 3.6, -13.2); ctx.fill();
+    ctx.fillStyle = "#2a2014"; rond(5.55, -12.5, .3);
+    // œil ambré sous l'arcade
+    ctx.fillStyle = "#e09a2a"; rond(2.7, -14.3, .6); ctx.fillStyle = "#111"; rond(2.85, -14.3, .3);
+    ctx.strokeStyle = brun; ctx.lineWidth = .45; ctx.beginPath(); ctx.moveTo(1.8, -15.1); ctx.lineTo(3.6, -14.9); ctx.stroke();
+    // liseré de lune
+    ctx.strokeStyle = "rgba(242,220,174,.35)"; ctx.lineWidth = .35;
+    ctx.beginPath(); ctx.arc(.4, -8, 4, -1.4, .2); ctx.stroke();
+  } else {
+    const battement = Math.sin(t / 2.2);
+    // aile du fond
+    // aile : bord d'attaque arrondi, rémiges écartées en « doigts » au bout, bord de fuite dentelé
+    const aile = (dy, couleur) => {
+      ctx.fillStyle = couleur; ctx.beginPath();
+      ctx.moveTo(2, -.8);
+      ctx.quadraticCurveTo(1, -7 * dy, -1.5, -11.5 * dy);
+      for (let k = 0; k < 4; k++) {                       // quatre rémiges primaires
+        const bx = -1.5 - k * 1.3, by = -11.5 * dy + k * 1.1 * dy;
+        ctx.lineTo(bx - .9, by - 1.6 * dy); ctx.lineTo(bx - 1.3, by + .2 * dy);
+      }
+      ctx.lineTo(-7.2, -6 * dy); ctx.lineTo(-6, -4.6 * dy); ctx.lineTo(-5.4, -3 * dy); ctx.lineTo(-4.2, -1.8 * dy);
+      ctx.quadraticCurveTo(-2.5, -.4 * dy, -1.8, 0); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "rgba(185,138,62,.35)"; ctx.lineWidth = .3;      // couvertures plus claires
+      ctx.beginPath(); ctx.moveTo(1.2, -1.5 * dy); ctx.quadraticCurveTo(-1, -4 * dy, -3.5, -4.2 * dy); ctx.stroke();
+    };
+    aile(battement * .9 + .1, "#1e150d");
+    // queue en éventail
+    ctx.fillStyle = brun; ctx.beginPath(); ctx.moveTo(-4.5, -.5); ctx.lineTo(-9, -2); ctx.lineTo(-9.3, 1.4); ctx.lineTo(-4.5, .9); ctx.fill();
+    // corps
+    ctx.fillStyle = brun2; ovale(0, 0, 5.2, 2.3);
+    // pierre tenue dans les serres
+    ctx.strokeStyle = jaune; ctx.lineWidth = .6; ctx.beginPath(); ctx.moveTo(0, 1.6); ctx.lineTo(.6, 3.4); ctx.stroke();
+    if (P.pierre) { ctx.fillStyle = "#a3a8ad"; ovale(.7, 4.4, 1.9, 1.4); }
+    // tête, bec
+    ctx.fillStyle = or; ovale(5, -1, 2.1, 1.8);
+    ctx.fillStyle = jaune; ctx.beginPath(); ctx.moveTo(6.6, -1.6); ctx.quadraticCurveTo(8.6, -1.3, 8, .2); ctx.quadraticCurveTo(7.4, -.6, 6.6, -.4); ctx.fill();
+    ctx.fillStyle = "#e09a2a"; rond(5.6, -1.4, .45);
+    // aile de devant
+    aile(battement, "#3a2a1c");
+  }
+  ctx.restore();
+}
+// Le pylône : tour en treillis de métal sombre posée sur le massif ; la lampe du sommet rougeoit puis tire
+function dessinerPylone(T, t) {
+  const x = T.x, haut = T.y + 3, bas = T.sol, lb = 7, lh = 1.6;
+  const gx = (y, s) => x + s * (lh + (lb - lh) * (y - haut) / (bas - haut));    // bord gauche (s = -1) ou droit (s = 1) à la hauteur y
+  ctx.strokeStyle = "#2b3035"; ctx.lineCap = "round";
+  // montants
+  ctx.lineWidth = 1.1;
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(gx(haut, s), haut); ctx.lineTo(gx(bas, s), bas); ctx.stroke(); }
+  // croisillons du treillis
+  ctx.lineWidth = .45;
+  const n = 7;
+  for (let k = 0; k < n; k++) {
+    const y1 = haut + (bas - haut) * k / n, y2 = haut + (bas - haut) * (k + 1) / n;
+    ctx.beginPath(); ctx.moveTo(gx(y1, -1), y1); ctx.lineTo(gx(y2, 1), y2); ctx.moveTo(gx(y1, 1), y1); ctx.lineTo(gx(y2, -1), y2);
+    ctx.moveTo(gx(y2, -1), y2); ctx.lineTo(gx(y2, 1), y2); ctx.stroke();
+  }
+  // bras et isolateurs
+  ctx.lineWidth = .8;
+  const yb = haut + 9;
+  ctx.beginPath(); ctx.moveTo(x - 9, yb); ctx.lineTo(x + 9, yb); ctx.moveTo(x - 9, yb); ctx.lineTo(gx(yb + 6, -1), yb + 6); ctx.moveTo(x + 9, yb); ctx.lineTo(gx(yb + 6, 1), yb + 6); ctx.stroke();
+  ctx.fillStyle = "#8a9196";
+  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) rond(x + s * 8.4, yb + 1 + k * 1.1, .5);
+  // liseré de lune sur le montant droit
+  ctx.strokeStyle = "rgba(242,220,174,.3)"; ctx.lineWidth = .3;
+  ctx.beginPath(); ctx.moveTo(gx(haut, 1) + .5, haut); ctx.lineTo(gx(bas, 1) + .5, bas); ctx.stroke();
+  // socle
+  ctx.fillStyle = "#3a3f44"; arrondi(x - lb - 1.5, bas - 2, 2 * lb + 3, 2, .6); ctx.fill();
+  // lampe de tir au sommet : elle rougeoit de plus en plus avant chaque tir
+  const charge = partie.tir ? 0 : Math.max(0, 1 - partie.tirAttente / 45);
+  const g = ctx.createRadialGradient(x, T.y, .5, x, T.y, 8 + 4 * charge);
+  g.addColorStop(0, `rgba(255,110,50,${.25 + .5 * charge})`); g.addColorStop(1, "rgba(255,110,50,0)");
+  ctx.fillStyle = g; ctx.fillRect(x - 13, T.y - 13, 26, 26);
+  ctx.fillStyle = "#2b3035"; arrondi(x - 2.2, T.y + .5, 4.4, 2.6, .6); ctx.fill();
+  ctx.fillStyle = charge > .1 ? "#ff7a45" : "#7a3a2a"; rond(x, T.y, 1.6);
+}
+function dessinerTir(p) {
+  const n = Math.hypot(p.vx, p.vy), ux = p.vx / n, uy = p.vy / n;
+  const g = ctx.createLinearGradient(p.x - ux * 7, p.y - uy * 7, p.x, p.y);
+  g.addColorStop(0, "rgba(255,140,60,0)"); g.addColorStop(1, "rgba(255,170,90,.9)");
+  ctx.strokeStyle = g; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(p.x - ux * 7, p.y - uy * 7); ctx.lineTo(p.x, p.y); ctx.stroke();
+  ctx.fillStyle = "#ffe0a0"; rond(p.x, p.y, 1);
+}
+// Sortie à droite : une lueur dans la brume
+function sortie(t) {
+  const y = niv.sortieY, a = .25 + .12 * Math.sin(t / 10);
+  const g = ctx.createRadialGradient(240, y, 1, 240, y, 18);
+  g.addColorStop(0, `rgba(255,214,130,${a + .2})`); g.addColorStop(1, "rgba(255,214,130,0)");
+  ctx.fillStyle = g; ctx.fillRect(220, y - 20, 20, 40);
+}
+
+function dessiner() {
+  ctx.setTransform(echelle, 0, 0, echelle, 0, 0);
+  const t = partie.image;
+  dessinerFond(t);
+  if (niv.piege) dessinerPiege(niv.piege);
+  (niv.decor || []).forEach(dessinerBloc);
+  niv.blocs.forEach(dessinerBloc);
+  if (niv.gardien) dessinerGardien(niv.gardien, t);
+  if (niv.niche) dessinerNiche(niv.niche, t);
+  if (niv.potence) dessinerPotence(niv.potence, t);
+  ascs.filter(a => !a.passerelle).forEach(a => a.horiz ? dessinerNavette(a) : dessinerAscenseur(a));
+  if (niv.pontLevis) dessinerPontLevis(niv.pontLevis);
+  (niv.tapis || []).forEach(b => dessinerTapis(b, t));
+  if (niv.porte) dessinerPorte(niv.porte);
+  if (niv.levier) dessinerLevier(niv.levier, partie.levier, niv.levierApresSerpent && serpent.etat !== "fini");
+  if (niv.tas) dessinerTas(niv.tas, t);
+  if (niv.aigle) dessinerAigle(t);
+  if (niv.tireur) dessinerPylone(niv.tireur, t);
+  if (niv.sortieVisible) sortie(t);
+  if (niv.ressort) dessinerRessort(niv.ressort);
+  peauSerpent(niv.serpent && niv.serpent.peau);
+  if (!niv.serpent) {}
+  else if (serpent.etat === "pont") { serpentPont(niv.pont, t); sortie(t); }
+  else if (niv.sorciere) {
+    if (!question && serpent.etat === "attend" && crapaud.etat !== "hypnose") {
+      const s = niv.serpent, a = .2 + .12 * Math.sin(t / 10);
+      const g = ctx.createRadialGradient(s.x, s.y, 1, s.x, s.y, 14);
+      g.addColorStop(0, `rgba(255,205,110,${a})`); g.addColorStop(1, "rgba(255,205,110,0)");
+      ctx.fillStyle = g; ctx.fillRect(s.x - 15, s.y - 18, 30, 20);
+    }
+    // elle se tourne vers le hérisson (à droite) quand elle lance une boule
+    dessinerSorciere(niv.serpent.x, niv.serpent.y, partie.sorciere.lance > 0 || crapaud.x + 6 >= niv.serpent.x ? 1 : -1, t);
+    if (partie.levier) sortie(t);
+  }
+  else if (serpent.etat === "fini") { if (!niv.serpentDisparait) serpentEnroule(niv.serpent.x, niv.serpent.y, 1, t); if (!niv.gardien || partie.levier) sortie(t); }
+  else if (serpent.etat === "glisse") {
+    // le serpent ondule jusqu'à sa place de pont (déroulé, en lacet sinueux, pas en nœud)
+    serpentRampant(serpent.t, t);
+  } else {
+    // tant qu'on ne l'a pas touché, une lueur dorée au sol signale le serpent
+    if (!question && serpent.etat === "attend") {
+      const s = niv.serpent, a = .25 + .15 * Math.sin(t / 10);
+      const g = ctx.createRadialGradient(s.x, s.y, 1, s.x, s.y, 13);
+      g.addColorStop(0, `rgba(255,205,110,${a})`); g.addColorStop(1, "rgba(255,205,110,0)");
+      ctx.fillStyle = g; ctx.fillRect(s.x - 14, s.y - 16, 28, 18);
+    }
+    serpentEnroule(niv.serpent.x, niv.serpent.y, crapaud.x + 6 < niv.serpent.x ? -1 : 1, t);
+  }
+  peauSerpent();
+  crabes.forEach(k => dessinerCrabe(k, t));
+  if (niv.herisson) { dessinerHerisson(t); dessinerBoules(t); }
+  if (niv.final) dessinerFinal(t);
+  if (niv.grue) dessinerGrue(t);
+  if (niv.escalier) dessinerEscalier(t);
+  if (partie.tir) dessinerTir(partie.tir);
+  // tableau final : le crapaud du joueur est devenu d'or (même éclat que la statue du plateau 8)
+  if (niv.final) ctx.filter = "saturate(1.7) brightness(1.2)";
+  dessinerCrapaud(crapaud, t);
+  ctx.filter = "none";
+  if (crapaud.etat === "hypnose") dessinerHypnose(crapaud, t);
+  if (niv.masque) dessinerMasque(niv.masque, t);     // par-dessus le crapaud : le conduit ne se voit pas
+  dessinerAmbiance(t);
+}
+// Niche : le bas du bloc est entaillé jusqu'à son bord droit (on y voit le paysage) ;
+// le creux sombre n'est qu'à gauche, au fond de l'entaille, derrière le levier
+function dessinerNiche(n, t) {
+  const bas = n.y + n.h + .5, xc = n.x + 6;                     // le creux va de n.x à xc
+  // le creux, voûté, plus sombre au fond
+  const g = ctx.createLinearGradient(n.x, 0, xc + 1.5, 0);
+  g.addColorStop(0, "#0e0906"); g.addColorStop(1, "rgba(30,20,13,.0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(n.x, bas); ctx.lineTo(n.x, n.y + 4); ctx.quadraticCurveTo(n.x + .5, n.y + .8, xc, n.y + .6); ctx.lineTo(xc + 1.5, bas); ctx.closePath(); ctx.fill();
+  // bord de terre éclairé par la lune : le plafond de l'entaille et le fond du creux
+  ctx.strokeStyle = "rgba(200,160,110,.35)"; ctx.lineWidth = .45;
+  ctx.beginPath(); ctx.moveTo(n.x, bas - 1); ctx.lineTo(n.x, n.y + 4); ctx.quadraticCurveTo(n.x + .5, n.y + .8, xc, n.y + .6); ctx.lineTo(n.x + n.w, n.y + .6); ctx.stroke();
+  // racines qui pendent du plafond
+  ctx.strokeStyle = "#4a3422"; ctx.lineWidth = .45; ctx.lineCap = "round";
+  for (const [x, l] of [[n.x + 4, 4], [n.x + 8.5, 5.5], [n.x + 12, 3]]) {
+    const b = Math.sin(t / 30 + x) * .4;
+    ctx.beginPath(); ctx.moveTo(x, n.y + .8); ctx.quadraticCurveTo(x + b, n.y + l * .6, x + b * 2, n.y + l); ctx.stroke();
+  }
+}
+// Le mur de pierre qui cache le conduit, dans le prolongement du bloc de gauche (mêmes teintes, mêmes rangées)
+function dessinerMasque(m, t) {
+  const y0 = m.alignY, y1 = m.alignY + m.alignH;
+  ctx.fillStyle = degrade(y0, y1, "#5d666a", "#353c40");
+  ctx.fillRect(m.x, m.y, m.w, m.h);
+  ctx.strokeStyle = "rgba(15,20,22,.55)"; ctx.lineWidth = .4;
+  for (let y = y0 + 8, k = 0; y < y1 - 1; y += 9, k++) {
+    if (y > m.y) { ctx.beginPath(); ctx.moveTo(m.x, y); ctx.lineTo(m.x + m.w, y); ctx.stroke(); }
+    for (let jx = m.x + (k % 2 ? 6 : 13); jx < m.x + m.w - 2; jx += 14) {
+      const ya = Math.max(y, m.y), yb = Math.min(y + 9, m.y + m.h);
+      if (yb > ya) { ctx.beginPath(); ctx.moveTo(jx, ya); ctx.lineTo(jx, yb); ctx.stroke(); }
+    }
+  }
+  ctx.strokeStyle = "rgba(15,20,22,.45)"; ctx.lineWidth = .3;
+  ctx.beginPath(); ctx.moveTo(m.x + 12, m.y + 18); ctx.lineTo(m.x + 17, m.y + 21); ctx.lineTo(m.x + 15, m.y + 25); ctx.stroke();
+  // bord inférieur : le plafond du couloir
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillRect(m.x, m.y + m.h - 1, m.w, 1);
+}
+// La trappe de pierre qui bouche le puits ; le levier la soulève : elle pivote sur son bord gauche jusqu'à se tenir debout
+function dessinerGardien(g, t) {
+  const ouvert = Math.min(1, partie.glisse / g.glisse), a = ouvert * Math.PI * .53;
+  ctx.save();
+  ctx.translate(g.x, g.y);
+  ctx.rotate(-a);
+  ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.fillRect(.6, 1, g.w, g.h);
+  ctx.fillStyle = degrade(0, g.h, "#737b80", "#41474b"); arrondi(0, 0, g.w, g.h, .8); ctx.fill();
+  ctx.strokeStyle = "rgba(15,20,22,.5)"; ctx.lineWidth = .35;
+  for (const jx of [g.w * .33, g.w * .7]) { ctx.beginPath(); ctx.moveTo(jx, .4); ctx.lineTo(jx, g.h - .4); ctx.stroke(); }
+  ctx.fillStyle = "#4f6a32"; arrondi(0, -.5, g.w, 1.2, .5); ctx.fill();
+  ctx.restore();
+  // la charnière
+  ctx.fillStyle = "#2c3034"; rond(g.x + .8, g.y + .8, 1);
+}
+
+// ---------- Boucle : 30 images par seconde ----------
+let dernier = performance.now(), cumul = 0;
+function boucle(maintenant) {
+  cumul += Math.min(200, maintenant - dernier);
+  dernier = maintenant;
+  while (cumul >= 1000 / 30) { if (!document.body.classList.contains("sans-nom")) pas(); cumul -= 1000 / 30; }
+  dessiner();
+  requestAnimationFrame(boucle);
+}
+
+new ResizeObserver(() => {
+  const r = $("cadreJeu").getBoundingClientRect();
+  const e = Math.max(1, Math.min(r.width / L, r.height / H));
+  const w = Math.floor(L * e), h = Math.floor(H * e), dpr = window.devicePixelRatio || 1;
+  cv.style.width = w + "px";
+  cv.style.height = h + "px";
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  echelle = cv.width / L;
+}).observe($("cadreJeu"));
+
+// ============================================================
+//  SONS rétro (oscillateur), coupables
+// ============================================================
+let sonActif = true, audio = null;
+// Les sons du projet Scratch du prof (dossier sons/, convertis en WAV lisibles par les navigateurs) ;
+// ils sont chargés au premier geste (règle des navigateurs). Tant qu'un son n'est pas chargé, un bip le remplace.
+const FICHIERS_SONS = ["croak", "serpent", "serpent2", "cestbien", "honte", "bravissimo", "finger-snap", "crank", "crank2",
+  "door-creak", "space-noise", "pew", "boom-cloud", "whoop", "rire", "boulet", "magic-spell", "final-voix", "dance-energetic"];
+const tampons = {};
+function contexteAudio() {
+  if (audio) return audio;
+  try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  for (const nom of FICHIERS_SONS)
+    fetch(`sons/${nom}.wav`).then(r => r.arrayBuffer()).then(d => audio.decodeAudioData(d)).then(t => { tampons[nom] = t; }).catch(() => {});
+  return audio;
+}
+// joue un son du Scratch ; renvoie false s'il n'est pas (encore) chargé
+function jouer(nom, { vitesse = 1, volume = .8, retard = 0 } = {}) {
+  if (!sonActif || !contexteAudio() || !tampons[nom]) return false;
+  const src = audio.createBufferSource(), g = audio.createGain();
+  src.buffer = tampons[nom]; src.playbackRate.value = vitesse; g.gain.value = volume;
+  src.connect(g); g.connect(audio.destination); src.start(audio.currentTime + retard);
+  return src;
+}
+function bip(freq, duree, type = "square", fin = freq, volume = .06, retard = 0) {
+  if (!sonActif || !contexteAudio()) return;
+  try {
+    const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime + retard;
+    o.type = type; o.frequency.setValueAtTime(freq, t0); o.frequency.exponentialRampToValueAtTime(fin, t0 + duree);
+    g.gain.setValueAtTime(volume, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + duree);
+    o.connect(g); g.connect(audio.destination); o.start(t0); o.stop(t0 + duree);
+  } catch (e) {}
+}
+function son(s) {
+  if (s === "saut") bip(300, .15, "square", 700);
+  // les voix du prof : « c'est bien », « honte », « bravissimo » (sauf la sorcière, qui ricane)
+  // (plateau 7, demande du prof : pas de voix « c'est bien » / « honte », un simple bip)
+  if (s === "bon") (!niv.grue && jouer("cestbien")) || (bip(660, .1), bip(880, .15, "square", 880, .06, .1));
+  if (s === "faux" && !niv.sorciere) (!niv.grue && jouer("honte")) || bip(200, .25, "sawtooth", 120);
+  if (s === "serpent" && !niv.sorciere) jouer(partie.niveau === 1 ? "serpent2" : "serpent", { volume: .6 }) || bip(900, .25, "sine", 500, .05);
+  if (s === "pont") jouer("bravissimo") || bip(220, .5, "triangle", 440, .08);
+  if (s === "ressort") bip(160, .35, "triangle", 720, .08);
+  if (s === "aigle") { bip(1400, .12, "sawtooth", 900, .04); bip(1200, .18, "sawtooth", 700, .04, .14); }
+  if (s === "pierre") bip(180, .12, "triangle", 90, .07);
+  if (s === "panierPlein") jouer("space-noise", { volume: .5 });
+  if (s === "tir") jouer("pew", { volume: .5 }) || bip(1200, .12, "square", 500, .025);
+  if (s === "levier") jouer("finger-snap") || bip(500, .06, "square", 300, .06);
+  // ce que le levier met en marche : la porte (plateau 3), la trappe (plateau 5), le pont-levis (plateau 6)
+  if (s === "porte") jouer("door-creak", { volume: .6 });
+  if (s === "trappe") jouer("crank2", { volume: .6 });
+  if (s === "treuil") jouer("crank", { volume: .6 });
+  // le crapaud meurt : il croasse de plus en plus grave (comme dans Scratch)
+  if (s === "piege") jouer("croak") ? [.8, .65].forEach((v, k) => jouer("croak", { vitesse: v, retard: .35 * (k + 1) })) : (bip(90, .5, "sawtooth", 50, .1), bip(70, .6, "square", 40, .08, .3));
+  if (s === "herisson") jouer("whoop", { vitesse: 1.25, volume: .6 }) || bip(320, .3, "triangle", 110, .07, .15);
+  if (s === "grossit") jouer("whoop", { vitesse: .75, volume: .6 }) || bip(110, .4, "triangle", 260, .08);
+  if (s === "pontLevis") { bip(90, .25, "square", 60, .06); bip(70, .3, "sawtooth", 50, .05, .12); }
+  if (s === "magie") jouer("boulet", { volume: .6 }) || son("sort");
+  if (s === "sort") { bip(700, .35, "sine", 1400, .04); bip(1050, .3, "sine", 520, .03, .08); }
+  if (s === "pince") jouer("finger-snap", { vitesse: .8 }) || bip(400, .06, "square", 250, .06);
+  if (s === "hypnose") jouer("magic-spell", { volume: .5, retard: .4 });
+  if (s === "ricane") jouer("rire") || [520, 470, 540, 480, 560].forEach((f, k) => bip(f, .1, "sawtooth", f * .8, .035, .25 + k * .12));
+  if (s === "victoire") [523, 659, 784, 1047].forEach((f, k) => bip(f, .16, "square", f, .06, k * .14));
+  if (s === "final") jouer("boom-cloud", { volume: .5 });
+}
+$("btnSon").onclick = () => { sonActif = !sonActif; $("btnSon").textContent = sonActif ? "🔊" : "🔇"; majMusique(); };
+
+// Musique du tableau final, comme à la fin du Scratch du prof : « Dance Energetic » en boucle,
+// et après chaque passage la voix enregistrée du dernier serpent. Seulement dans le tableau final ; 🔊 la coupe.
+let musique = null;
+function majMusique() {
+  const jouerMusique = niv && niv.final && sonActif && audio;
+  if (!jouerMusique) { if (musique) { musique.onended = null; try { musique.stop(); } catch (e) {} musique = null; } return; }
+  if (musique) return;
+  const boucle = () => {
+    const src = jouer("dance-energetic", { volume: .5 });
+    if (!src) { musique = null; setTimeout(majMusique, 500); return; }      // pas encore chargée : on réessaie
+    musique = src;
+    src.onended = () => { if (musique !== src) return; jouer("final-voix"); musique = null; majMusique(); };
+  };
+  boucle();
+}
+// le premier geste débloque le son (et charge les fichiers)
+addEventListener("pointerdown", () => { if (contexteAudio() && audio.state === "suspended") audio.resume(); }, { once: true });
+addEventListener("keydown", () => { if (contexteAudio() && audio.state === "suspended") audio.resume(); }, { once: true });
+
+// ============================================================
+//  EN-TÊTE, ACCUEIL
+// ============================================================
+function majEntete() {
+  $("eleveInfo").textContent = eleve.nom ? eleve.nom + " · " + eleve.plateaux + " plateau" + (eleve.plateaux > 1 ? "x" : "") + " franchi" + (eleve.plateaux > 1 ? "s" : "") : "";
+}
+function choisirEleve(nom) {
+  if (nom !== eleve.nom) {
+    eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, plateaux: 0, record: 0, reponses: 0, bonnes: 0 };
+    enregistre = eleve;
+    sauverEleve();
+  }
+  document.body.classList.remove("sans-nom");
+  majEntete();
+}
+function commencer() {
+  const champ = $("champNom");
+  const nom = champ.value.trim().replace(/\s+/g, " ");
+  if (nom.length < 2) { $("erreurNom").textContent = "Écris ton prénom et ton nom."; champ.focus(); return; }
+  choisirEleve(nom);
+  champ.blur();
+}
+$("btnCommencer").onclick = commencer;
+$("champNom").addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+$("btnRecommencer").onclick = () => chargerNiveau(partie.niveau);
+
+// ============================================================
+//  IMPRESSION : diplôme
+// ============================================================
+const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(31,36,48,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:2000;padding:24px;}
+#overlayFiche.ouverte{display:flex;}
+#ficheCarte{position:relative;background:#fff;color:#1f2430;width:min(297mm,100%);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:12mm 12mm 14mm;font-size:12pt;}
+#btnFermerFiche{position:absolute;top:8px;right:12px;border:none;background:none;font-size:28px;cursor:pointer;color:#6b6f7a;}
+#overlayFiche .fiche-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+#overlayFiche .fiche-actions button{border:1px solid #2f5fd0;background:#2f5fd0;color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:.95rem;cursor:pointer;}
+#overlayFiche .note-impression{font-size:.85rem;color:#6b6f7a;margin:0 0 10mm;}
+#overlayFiche .diplome{width:277mm;height:190mm;zoom:.95;flex:none;transform-origin:0 0;background:radial-gradient(ellipse at center,#fffdf6 0%,#fbf3de 100%);color:#1f2430;padding:4mm;border-radius:2mm;box-shadow:inset 0 0 0 1.5mm #1d3b8f;font-family:Georgia,"Times New Roman",serif;}
+#overlayFiche .d-cadre{position:relative;height:100%;border:.6mm solid #c9a227;outline:.3mm solid #c9a227;outline-offset:-2.2mm;padding:10mm 16mm 6mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;}
+#overlayFiche .d-c{position:absolute;width:14mm;height:14mm;}
+#overlayFiche .d-c svg{width:100%;height:100%;display:block;}
+#overlayFiche .d-c.hg{top:3mm;left:3mm;}
+#overlayFiche .d-c.hd{top:3mm;right:3mm;transform:scaleX(-1);}
+#overlayFiche .d-c.bg{bottom:3mm;left:3mm;transform:scaleY(-1);}
+#overlayFiche .d-c.bd{bottom:3mm;right:3mm;transform:scale(-1,-1);}
+#overlayFiche .d-dessin{position:absolute;left:14mm;top:9mm;width:42mm;}
+#overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
+#overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
+#overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;width:100%;justify-content:center;}
+#overlayFiche .d-texte{text-align:center;flex:1;}
+#overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}
+#overlayFiche .d-nom{font-family:"Dancing Script","Brush Script MT",cursive;font-size:42pt;font-weight:700;color:#1d3b8f;margin:1mm auto;padding:0 10mm 1mm;border-bottom:.4mm solid #c9a227;display:inline-block;min-width:120mm;}
+#overlayFiche .d-pour{font-size:12.5pt;font-style:italic;color:#4a4a4a;margin-top:2mm;}
+#overlayFiche .d-taux{display:inline-block;margin-top:3mm;padding:1.5mm 5mm;border:1.5px solid #c9a227;border-radius:3mm;font-size:13pt;color:#1d3b8f;background:#fffaf0;}
+#overlayFiche .d-taux b{font-size:20pt;font-family:'Playfair Display',serif;margin-left:2mm;}
+#overlayFiche .d-mention{font-size:18pt;font-weight:700;color:#1f8a4c;margin-top:3mm;letter-spacing:.03em;}
+#overlayFiche .d-sceau{width:44mm;flex:none;filter:drop-shadow(0 1mm 1mm rgba(0,0,0,.25));}
+#overlayFiche .d-sceau-note{font-family:Georgia,serif;font-size:22px;font-weight:700;fill:#1d3b8f;}
+#overlayFiche .d-sceau-sur{font-family:Georgia,serif;font-size:8px;fill:#6b5a2e;}
+#overlayFiche .d-meds{display:flex;gap:3mm;justify-content:center;}
+#overlayFiche .d-med{border:.4mm solid #d9c58a;border-radius:3mm;padding:3mm 4mm;min-width:32mm;text-align:center;background:rgba(255,255,255,.6);}
+#overlayFiche .d-med.complete{border-color:#c9a227;background:#fff6d6;}
+#overlayFiche .d-med-nom{font-size:10pt;color:#6b5a2e;text-transform:uppercase;letter-spacing:.05em;}
+#overlayFiche .d-med-pts{font-size:16pt;font-weight:700;color:#1d3b8f;}
+#overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm;font-size:12pt;}
+#overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1f2430;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
+#overlayFiche .d-frise{display:flex;gap:1.5mm;margin-top:1mm;font-size:5mm;line-height:1;}
+body.fiche-ouverte{overflow:hidden;}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.fiche-ouverte{height:auto !important;min-height:0 !important;display:block !important;background:#fff !important;}
+  body.fiche-ouverte > :not(#overlayFiche){display:none !important;}
+  #overlayFiche{position:static;background:#fff;padding:0;display:block !important;overflow:visible;}
+  #ficheCarte{box-shadow:none;width:100%;border-radius:0;padding:0;}
+  #btnFermerFiche,#overlayFiche .fiche-actions,#overlayFiche .note-impression{display:none !important;}
+  #overlayFiche .diplome{transform:none !important;margin:0 auto !important;break-inside:avoid;}
+}`;
+
+function ouvrirOverlay(contenu) {
+  let ov = $("overlayFiche");
+  if (!ov) {
+    const st = document.createElement("style");
+    st.textContent = FICHE_CSS + "@media print{@page{size:A4 landscape;margin:10mm;}}";
+    document.head.append(st);
+    ov = document.createElement("div");
+    ov.id = "overlayFiche";
+    ov.addEventListener("click", e => { if (e.target === ov) fermerOverlay(); });
+    document.body.append(ov);
+  }
+  ov.innerHTML = `<div id="ficheCarte">
+    <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+    <div class="fiche-actions"><button type="button" id="btnImprimerFiche">🖨️ Imprimer / Enregistrer en PDF</button></div>
+    <p class="note-impression">💡 Dans la fenêtre d’impression, décoche <strong>« En-têtes et pieds de page »</strong>.</p>
+    ${contenu}
+  </div>`;
+  $("btnFermerFiche").onclick = fermerOverlay;
+  $("btnImprimerFiche").onclick = () => window.print();
+  ov.classList.add("ouverte");
+  document.body.classList.add("fiche-ouverte");
+  return ov;
+}
+function fermerOverlay() {
+  const ov = $("overlayFiche");
+  if (ov) ov.classList.remove("ouverte");
+  document.body.classList.remove("fiche-ouverte");
+}
+
+function ouvrirDiplome() {
+  if (!eleve.nom) { document.body.classList.add("sans-nom"); return; }
+  const n = eleve.record, date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const medailles = NIVEAUX.map((niveau, k) => `<div class="d-med${n > k ? " complete" : ""}"><div class="d-med-nom">${niveau.titre}</div><div class="d-med-pts">${n > k ? "✓" : "—"}</div></div>`).join("");
+  const festons = Array.from({ length: 48 }, (_, k) => {
+    const a = k / 48 * 2 * Math.PI, r = k % 2 ? 44 : 48;
+    return (k ? "L" : "M") + (50 + r * Math.cos(a)).toFixed(2) + " " + (50 + r * Math.sin(a)).toFixed(2);
+  }).join(" ") + "Z";
+  const sceau = `<svg class="d-sceau" viewBox="0 0 100 130" aria-hidden="true">
+    <defs><linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#d4a62a"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>
+    <path d="M30 80 L18 128 L32 118 L40 130 L48 86 Z" fill="#1d3b8f"/><path d="M70 80 L82 128 L68 118 L60 130 L52 86 Z" fill="#1d3b8f"/>
+    <path d="${festons}" fill="url(#or)" stroke="#a87a12" stroke-width="1"/>
+    <circle cx="50" cy="50" r="36" fill="#fffaf0" stroke="#c9a227" stroke-width="2"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="#c9a227" stroke-width=".8" stroke-dasharray="2 2"/>
+    <text x="50" y="50" text-anchor="middle" class="d-sceau-note">${n} / ${NIVEAUX.length}</text>
+    <text x="50" y="64" text-anchor="middle" class="d-sceau-sur">plateau${n > 1 ? "x" : ""}</text>
+  </svg>`;
+  const dessin = `<div class="d-dessin"><svg width="96" height="80" viewBox="-8 -12 16 13" aria-hidden="true">
+    <defs><radialGradient id="peau" cx=".4" cy=".2" r=".9"><stop offset="0" stop-color="#d4b45a"/><stop offset=".55" stop-color="#9a7f34"/><stop offset="1" stop-color="#5b4b1f"/></radialGradient></defs>
+    <ellipse cx="-4.2" cy="-1.6" rx="3.4" ry="1.9" fill="#5e4f22"/><ellipse cx="-5.6" cy="-.3" rx="2.4" ry=".8" fill="#5e4f22"/>
+    <path d="M-6.4 -1.2 C-6.8 -5.6 -2.6 -8 1.6 -7.6 C4.6 -7.3 6.8 -5.4 6.9 -3 C7 -1.4 5.6 -.6 3.6 -.5 L-5 -.5 Z" fill="url(#peau)"/>
+    <circle cx="-3.6" cy="-4.6" r=".55" fill="#5a4416" opacity=".6"/><circle cx="-1.6" cy="-6" r=".5" fill="#5a4416" opacity=".6"/><circle cx=".4" cy="-5" r=".45" fill="#5a4416" opacity=".6"/>
+    <ellipse cx="3.2" cy="-.6" rx="1.1" ry=".7" fill="#5e4f22"/><ellipse cx="1" cy="-.5" rx="1" ry=".6" fill="#5e4f22"/>
+    <path d="M6.6 -2.9 Q4.4 -2.5 2.2 -3.1" fill="none" stroke="#3b2f12" stroke-width=".35" stroke-linecap="round"/>
+    <ellipse cx="3.4" cy="-6.9" rx="2.1" ry="1.7" fill="#8a7130"/><circle cx="3.7" cy="-7" r="1.3" fill="#e0b23a"/><ellipse cx="3.8" cy="-7" rx=".85" ry=".32" fill="#120d05"/>
+  </svg></div>`;
+  const coin = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 V2 H38" fill="none" stroke="#c9a227" stroke-width="2"/><path d="M8 38 V8 H38" fill="none" stroke="#1d3b8f" stroke-width="1"/><rect x="11" y="11" width="8" height="8" transform="rotate(45 15 15)" fill="#c9a227"/></svg>`;
+  const frise = Array.from({ length: 6 }, () => ["◆", "·"]).flat().map(e => `<span>${e}</span>`).join("");
+  const ov = ouvrirOverlay(`<div class="diplome">
+  <div class="d-cadre">
+    ${["hg", "hd", "bg", "bd"].map(p => `<div class="d-c ${p}">${coin}</div>`).join("")}
+    ${dessin}
+    <div class="d-titre">Diplôme</div>
+    <div class="d-sous">du marais · <b>Le crapaud d'or</b></div>
+    <div class="d-milieu">
+      <div class="d-texte">
+        <div class="d-decerne">Ce diplôme est décerné à</div>
+        <div class="d-nom">${esc(eleve.nom)}</div>
+        <div class="d-pour">pour avoir répondu aux créatures du marais.</div>
+        <div class="d-pour"><b>${eleve.reponses}</b> question${eleve.reponses > 1 ? "s" : ""} répondue${eleve.reponses > 1 ? "s" : ""}, dont <b>${eleve.bonnes}</b> juste${eleve.bonnes > 1 ? "s" : ""}${eleve.reponses ? ` (${Math.round(100 * eleve.bonnes / eleve.reponses)} %)` : ""}.</div>
+        ${eleve.reponses ? `<div class="d-taux">Taux de réponses justes :<b>${Math.round(100 * eleve.bonnes / eleve.reponses)} %</b></div>` : ""}
+        <div class="d-mention">${["Continue tes efforts", "Bien", "Très bien", "Félicitations !"][Math.round(3 * n / NIVEAUX.length)]}</div>
+      </div>
+      ${sceau}
+    </div>
+    <div class="d-meds">${medailles}</div>
+    <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
+    <div class="d-frise">${frise}</div>
+  </div>
+</div>`);
+  const d = ov.querySelector(".diplome");
+  const carte = getComputedStyle(d.parentElement);
+  const place = d.parentElement.clientWidth - parseFloat(carte.paddingLeft) - parseFloat(carte.paddingRight);
+  const r = d.getBoundingClientRect();
+  const e = Math.min(1, place / r.width);
+  d.style.transform = "scale(" + e + ")";
+  d.style.marginBottom = -(1 - e) * r.height / 0.95 + "px";
+  d.style.marginRight = -(1 - e) * r.width / 0.95 + "px";
+}
+$("btnDiplome").onclick = ouvrirDiplome;
+
+// Nouvel onglet : même nom
+$("btnOnglet").onclick = () => {
+  const url = new URL(location.href);
+  if (eleve.nom) url.searchParams.set("nom", eleve.nom);
+  window.open(url.toString(), "_blank");
+};
+
+// ---------- Démarrage ----------
+const params = new URLSearchParams(location.search);
+if (params.has("test")) document.body.classList.add("mode-test");
+chargerNiveau(0);
+if (params.get("nom")) choisirEleve(params.get("nom"));
+if (!eleve.nom) { document.body.classList.add("sans-nom"); setTimeout(() => $("champNom").focus(), 0); }
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>
