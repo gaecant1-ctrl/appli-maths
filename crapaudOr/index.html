@@ -36,6 +36,8 @@
   #eleveInfo{font-size:.85rem;font-weight:600;}
   .onglet{border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:.85rem;}
   .onglet:hover{border-color:var(--accent);}
+  .filet{align-self:stretch;width:1px;margin:2px 2px;background:var(--border);}
+  [hidden]{display:none !important;}
   @media (max-width:1200px){ header .txt{display:none;} main{grid-template-columns:minmax(0,1fr) 380px;} }
 
   main{
@@ -103,7 +105,7 @@
 
   /* Accueil (nom de l'élève), dans la page : l'en-tête reste visible */
   .accueil{display:none;grid-column:1 / -1;max-width:760px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;align-self:start;}
-  body.sans-nom .accueil{display:block;}
+  body.sans-nom .accueil{display:grid;}
   body.sans-nom main > .scene, body.sans-nom .colonne{display:none;}
   .accueil h2{margin:0 0 12px;}
   .accueil p{margin:6px 0;font-size:1.05rem;}
@@ -118,29 +120,119 @@
     main{grid-template-columns:1fr;grid-template-rows:none;}
     #cadreJeu{height:62vw;flex:none;}
   }
+
+  /* ===== Habillage du marais (demande du prof : le panneau dans le goût du jeu) =====
+     le décor du jeu : nuit bleu-vert, brume, lune voilée, horizon ambré, planches de bois et l'or du crapaud.
+     Les panneaux sont des planches sombres du marais cerclées de laiton ; la question est écrite sur un parchemin
+     éclairé par la lune ; les boutons sont dorés, le compteur en pièces d'or, les plateaux en petites pierres. */
+  :root{ --nuit:#14232c; --marais:#1f3234; --marais-clair:#2c4a50; --brume:#c8bea0; --lune:#f2dcae; --ambre:#c4874c;
+         --or:#d4a62a; --or-clair:#f7e08a; --or-fonce:#8a6a2a; --laiton:#9c7a3c; --texte-clair:#e9e1cb; --parchemin:#efe3c4; --encre:#2a2117; }
+  body{background:#14232c radial-gradient(ellipse at 50% 0%, #2c4a50 0%, #1a2b30 55%, #121d22 100%);}
+  .scene, .colonne aside{
+    background:radial-gradient(ellipse at 50% 0%, rgba(200,190,160,.12), transparent 60%),
+               linear-gradient(180deg, #24393b, var(--marais) 55%, #18282a);
+    border:1px solid #0d1719; border-radius:10px; color:var(--texte-clair);
+    box-shadow:inset 0 0 0 2px rgba(156,122,60,.55), inset 0 1px 0 3px rgba(242,220,174,.06), 0 6px 18px rgba(0,0,0,.45);
+  }
+  .colonne aside h3{font-family:"Playfair Display", Georgia, serif; color:var(--or-clair); letter-spacing:.03em; font-size:1.08rem;
+    padding-bottom:6px; margin-bottom:12px; border-bottom:1px solid rgba(212,166,42,.45); text-shadow:0 0 8px rgba(212,166,42,.35);}
+  .aide-touches, .aide-test, .compteur{color:#b9b29c;}
+  #cadreJeu{background:#0e181b; box-shadow:inset 0 0 0 1px rgba(156,122,60,.4);}
+  .carte-jeu{color:var(--ink);}            /* les cartes par-dessus le jeu restent claires : encre sombre */
+  /* le parchemin de la question, sous la lune */
+  .calcul{background:radial-gradient(ellipse at 50% 0%, #fbf3dc, var(--parchemin) 60%, #e0cfa6); color:var(--encre);
+    border:2px solid var(--laiton); border-radius:8px; box-shadow:inset 0 0 12px rgba(120,90,40,.25), 0 0 14px rgba(242,220,174,.18);}
+  .calcul.attente{background:linear-gradient(180deg, rgba(20,35,44,.75), rgba(20,35,44,.55)); color:var(--brume); font-style:italic;
+    border:1px solid rgba(200,190,160,.3); box-shadow:inset 0 0 14px rgba(0,0,0,.4);}
+  .calcul.bilan{background:var(--parchemin); color:var(--encre); border-color:var(--laiton);}
+  /* saisie, boutons */
+  .reponse input{background:#f6eedb; border:2px solid var(--laiton); border-radius:8px; color:var(--encre);}
+  .reponse input:focus{border-color:var(--or); box-shadow:0 0 0 3px rgba(212,166,42,.3);}
+  .choix button{background:var(--parchemin); border:2px solid var(--laiton); color:var(--encre);}
+  .choix button:hover{background:#fbf3dc; border-color:var(--or);}
+  .suite{background:linear-gradient(180deg, #e6c45a, var(--or) 55%, #a87a12); border:1px solid #6e5210; border-radius:8px; color:#2a1d06;
+    box-shadow:inset 0 1px 0 rgba(255,245,200,.55), 0 2px 5px rgba(0,0,0,.35); text-shadow:0 1px 0 rgba(255,240,190,.4);}
+  .suite:hover:not(:disabled){background:linear-gradient(180deg, #f0d06a, #dcae34 55%, #b5861a);}
+  .suite:disabled{background:#4a5a58; border-color:#34413f; color:#9aa39d; box-shadow:none; text-shadow:none;}
+  .second{background:rgba(20,35,44,.5); border:1px solid rgba(156,122,60,.7); border-radius:8px; color:var(--texte-clair);}
+  .second:hover{border-color:var(--or); color:var(--or-clair);}
+  /* le retour : correction et aide sur du parchemin, liseré rouille ou ambre */
+  #retour{border-radius:8px; color:var(--encre); white-space:pre-line; line-height:1.5;}
+  #retour.ok{background:#dfe8cf; border-left:5px solid #5f8a3c;}
+  #retour.ko{background:#f0dccb; border-left:5px solid #a8442a;}
+  #retour.aide{background:#f3e7c0; border-left:5px solid var(--ambre);}
+  /* compteur : des pièces d'or, ternes tant qu'elles ne sont pas gagnées */
+  .compteur span{border:2px solid #4b5552; background:#2a3a3a; box-shadow:inset 0 2px 3px rgba(0,0,0,.45);}
+  .compteur span.juste{background:radial-gradient(circle at 35% 30%, #fff3c4, var(--or-clair) 25%, var(--or) 60%, #8a6a2a); border-color:#6e5210;
+    box-shadow:0 0 7px rgba(247,224,138,.7);}
+  /* la liste des plateaux : des pierres du marais, étroites (le numéro seul, le titre en infobulle) */
+  .plateaux{gap:5px;}
+  .plateaux span{flex:0 0 34px; padding:5px 0; background:#2a3d3e; border:1px solid #47595a; border-radius:6px; color:#b9b29c; box-shadow:inset 0 1px 0 rgba(242,220,174,.08);}
+  .plateaux span.actuel{background:#34494a; border:2px solid var(--or); color:var(--or-clair);}
+  .plateaux span.fait{background:#3d3a24; border-color:var(--laiton); color:var(--or);}
+  body.mode-test .plateaux span[data-k]:hover{border-color:var(--or);}
+  /* l'accueil : la vignette du jeu à gauche, le texte et le nom à droite, sur une planche du marais */
+  .accueil{max-width:1150px;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:26px;align-items:center;
+    background:radial-gradient(ellipse at 50% 0%, rgba(200,190,160,.12), transparent 60%), linear-gradient(180deg, #24393b, var(--marais) 55%, #18282a);
+    border:1px solid #0d1719;border-radius:10px;color:var(--texte-clair);
+    box-shadow:inset 0 0 0 2px rgba(156,122,60,.55), 0 8px 24px rgba(0,0,0,.5);}
+  .accueil-visuel{background:#0e181b;border:2px solid var(--laiton);border-radius:8px;box-shadow:0 0 18px rgba(242,220,174,.12);line-height:0;overflow:hidden;}
+  #vignette{width:100%;height:auto;display:block;}
+  .accueil h2{font-family:"Playfair Display", Georgia, serif;color:var(--or-clair);font-size:1.8rem;border-bottom:1px solid rgba(212,166,42,.45);padding-bottom:6px;
+    text-shadow:0 0 10px rgba(212,166,42,.35);}
+  #champNom{background:#f6eedb;border:2px solid var(--laiton);border-radius:8px;color:var(--encre);}
+  #champNom:focus{border-color:var(--or);}
+  #erreurNom{color:#f0a48c;}
+  @media (max-width:900px){ .accueil{grid-template-columns:1fr;} }
+  /* l'overlay de confirmation : une planche du marais sur un voile de brume nocturne */
+  #voileConfirm{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(10,18,22,.65);backdrop-filter:blur(2px);}
+  .carte-confirm{max-width:420px;padding:22px 26px;text-align:center;color:var(--texte-clair);
+    background:radial-gradient(ellipse at 50% 0%, rgba(200,190,160,.14), transparent 60%), linear-gradient(180deg, #24393b, var(--marais) 55%, #18282a);
+    border:1px solid #0d1719;border-radius:10px;box-shadow:inset 0 0 0 2px rgba(156,122,60,.6), 0 12px 40px rgba(0,0,0,.6);}
+  .carte-confirm h3{margin:0 0 10px;font-family:"Playfair Display", Georgia, serif;color:var(--or-clair);font-size:1.35rem;}
+  .carte-confirm p{margin:0 0 18px;}
+  .boutons-confirm{display:flex;gap:10px;justify-content:flex-end;}
+  .boutons-confirm .second{width:auto;padding:10px 16px;}
+  .suite.danger{background:linear-gradient(180deg, #c0603e, #8e3f24);border-color:#5e2a16;color:#fbeee0;text-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .suite.danger:hover{background:linear-gradient(180deg, #cc6e4c, #9a4a2c);}
 </style>
 </head>
 <body>
+<!-- la confirmation de la réinitialisation, par-dessus la page -->
+<div id="voileConfirm" hidden>
+  <div class="carte-confirm" role="dialog" aria-modal="true" aria-labelledby="titreConfirm">
+    <h3 id="titreConfirm">Réinitialiser le jeu ?</h3>
+    <p>Les plateaux franchis et les réponses seront oubliés. Tu repartiras du plateau 1.</p>
+    <div class="boutons-confirm"><button class="second" id="btnAnnulerReinit" type="button">Annuler</button><button class="suite danger" id="btnOuiReinit" type="button">⟲ Réinitialiser</button></div>
+  </div>
+</div>
 <header>
   <h1>Le crapaud d'or</h1>
   <span id="eleveInfo"></span>
+  <!-- Nouvel onglet à part au début, Réinitialiser à part à la fin (filets verticaux) -->
+  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+  <span class="filet" aria-hidden="true"></span>
   <button class="onglet" id="btnSon" title="Couper ou remettre le son et la musique">🔊</button>
   <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
-  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+  <span class="filet" aria-hidden="true"></span>
+  <button class="onglet" id="btnReinitialiser" title="Réinitialiser le jeu : oublier les plateaux franchis et repartir du plateau 1">⟲<span class="txt"> Réinitialiser</span></button>
 </header>
 <main>
   <section class="accueil" id="accueil">
-    <h2>Le crapaud d'or</h2>
-    <p>Aide le crapaud à traverser le marais, plateau après plateau.</p>
-    <p>Sur chaque plateau, un serpent garde le passage. Va le toucher : il te pose ses questions. Réponds juste et il t'aidera à passer…</p>
-    <p>Sors de chaque plateau par la droite.</p>
-    <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
-    <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
-    <div id="erreurNom"></div>
-    <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+    <!-- le jeu lui-même, en vignette animée : le marais du plateau 1 au crépuscule, le serpent sur son étagère -->
+    <div class="accueil-visuel"><canvas id="vignette" width="480" height="360"></canvas></div>
+    <div class="accueil-texte">
+      <h2>Le crapaud d'or</h2>
+      <p>Aide le crapaud à traverser le marais, plateau après plateau, jusqu'au crapaud d'or.</p>
+      <p>Serpents, aigle, sorcière : chaque gardien te pose ses questions. Réponds juste, et le passage s'ouvrira.</p>
+      <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
+      <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+      <div id="erreurNom"></div>
+      <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+    </div>
   </section>
   <section class="scene">
-    <div class="entete"><h2 id="titreNiveau">Plateau 1</h2></div>
     <div id="cadreJeu">
       <canvas id="jeu" width="240" height="180"></canvas>
       <div id="ecranJeu"><div class="carte-jeu" id="carteJeu"></div></div>
@@ -177,6 +269,13 @@
 const L = 240, H = 180;
 const $ = id => document.getElementById(id);
 const fr = s => s.replace(/ ([?!:;»])/g, " $1");
+// les corrections, en plusieurs lignes pour qu'on les lise bien (demande du prof) : une phrase par ligne, un retour
+// après chaque « ; », la conséquence (— …) sur sa propre ligne (#retour est en white-space: pre-line)
+const lignes = s => s
+  .replace(/ — /g, "\n")
+  .replace(/ ; /g, " ;\n")
+  .replace(/([.…)]) (?=[A-ZÀ-ÖØ-Ý(])/g, "$1\n")
+  .replace(/ (En maya :)/g, "\n$1");
 const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 // ---------- Hasard ----------
@@ -339,7 +438,7 @@ function lireMixte(t, r) {
 // ============================================================
 const NIVEAUX = [
   {
-    titre: "Plateau 1", consigne: "touche le serpent : 5 bonnes réponses d'affilée",
+    titre: "Plateau 1", consigne: "touche le serpent et réponds juste à ses questions, sans te tromper",
     depart: [8, 115],
     blocs: [[0, 137.3, 245, 43], [-3, -50, 7.5, 187.3], [4.9, 125.4, 18, 11.9],
       [7.7, 55, 18, 3], [18.2, 101, 90.3, 2.7], [18.3, 97.2, 4, 3.8], [104.4, 97.4, 4, 3.6],
@@ -356,7 +455,7 @@ const NIVEAUX = [
     bonnes: 5, affilee: true, question: questionOperation, sortieY: 124
   },
   {
-    titre: "Plateau 2", consigne: "touche le serpent : 3 bonnes réponses",
+    titre: "Plateau 2", consigne: "touche le serpent et réponds juste à ses questions",
     depart: [6, 147.8],
     blocs: [[0, 157.8, 198.3, 22.2], [15.8, -45, 7, 182.3],
       [19.8, 42.5, 79, 6.4], [22.8, 71.4, 51.5, 5.9], [59.8, 17.9, 59, 5.9], [103.2, 101.4, 17.5, 5.9],
@@ -372,7 +471,7 @@ const NIVEAUX = [
     bonnes: 3, affilee: false, question: questionMixte, placeholder: "ex. 2 + 3/4", sortieY: 117
   },
   {
-    titre: "Plateau 3", consigne: "trouve le levier, puis 5 bonnes réponses d'affilée au serpent",
+    titre: "Plateau 3", consigne: "trouve le levier, puis réponds juste au serpent, sans te tromper",
     depart: [7.5, 113.9],
     blocs: [[0, 123.9, 54.8, 5.9], [0, 102.9, 27.7, 5.9], [0, 129.4, 78.6, 5], [45.6, 155.3, 135.2, 24.7],
       [48.2, 78.9, 30.5, 6], [48.2, 84.9, 6.5, 44], [101.8, 49.9, 23.5, 5.9], [101.8, 58.8, 7, 42.6],
@@ -416,7 +515,7 @@ const NIVEAUX = [
     question: questionFractionNombre
   },
   {
-    titre: "Plateau 5", consigne: "5 bonnes réponses d'affilée au serpent, puis le levier",
+    titre: "Plateau 5", consigne: "réponds juste au serpent, sans te tromper, puis tire le levier",
     depart: [2, 70.5],                               // posé sur le bloc de gauche, comme en arrivant du plateau 4
     // le bloc central est creusé d'une niche à sa base (côté droit) : pour les collisions, il est découpé en deux morceaux
     blocs: [[0, 80.5, 30.8, 56.1], [0, 173.3, 245, 6.7], [68.3, 81.3, 62.4, 38.7, "cache"], [68.3, 120, 47.7, 17.4, "cache"], [70.8, 136.3, 174.2, 6.6],
@@ -442,7 +541,7 @@ const NIVEAUX = [
     bonnes: 5, affilee: true, question: questionFractionManquante, placeholder: "ex. 3/4", sortieY: 160
   },
   {
-    titre: "Plateau 6", consigne: "3 bonnes réponses d'affilée à la sorcière font rapetisser le hérisson ; saute par-dessus, tire le levier et sors par le pont-levis",
+    titre: "Plateau 6", consigne: "les bonnes réponses données à la sorcière font rapetisser le hérisson ; saute par-dessus, tire le levier et sors par le pont-levis",
     depart: [14, 151.9],                             // au sol, en bas à gauche, comme en sortant du couloir du plateau 5
     blocs: [[0, 161.9, 245, 18.1], [236.9, 28.9, 8.1, 133], [97.4, 146.9, 8, 15], [82.9, 140.9, 37, 6],
       [19.4, 74.9, 68.6, 6.1], [94, 50, 24, 6], [232, 28.9, 4.9, 4, "roche"]],   // (la console de pierre de la charnière)
@@ -465,7 +564,7 @@ const NIVEAUX = [
     bonnes: 3, affilee: true, question: questionSommeFraction, placeholder: "ex. 17/5", sortieY: 16
   },
   {
-    titre: "Plateau 7", consigne: "au pupitre, donne l'abscisse du hérisson : la grue l'emporte en cage (3 hérissons), puis sors par le tunnel",
+    titre: "Plateau 7", consigne: "au pupitre, donne l'abscisse du hérisson : la grue l'emporte en cage, puis sors par le tunnel",
     depart: [2, 50],                                 // en haut à gauche, comme en sortant du pont-levis du plateau 6
     // la tour du pupitre, le sol de l'arène, le rocher du tunnel de sortie (la cage est posée dessus)
     blocs: [[0, 60, 34, 92], [0, 150, 245, 30], [214, 70, 31, 48, "roche"]],
@@ -562,7 +661,7 @@ function chargerNiveau(n) {
   partie.sorciere = { tourne: 0, lance: 0, debut: niv.sorciere ? 15 : 0 };
   partie.boules = []; partie.pontLevis = 0;
   if (niv.passerelle) { const p = niv.passerelle; ascs.push({ x: p.x, w: p.w, y: p.depart, h: 4, cible: p.depart, v: .35, dy: 0, passerelle: true, traversable: true }); }
-  question = null;
+  question = null; partie.quiz = false;
   fermerEcran();
   afficherQuestion();
   $("retour").className = "vide";
@@ -1012,12 +1111,15 @@ function commencerQuestions() {
 }
 function poserQuestion() {
   question = niv.question();
+  partie.quiz = true;
   afficherQuestion();
 }
 function afficherQuestion() {
   const zone = $("calcul"), champ = $("champReponse");
   if (niv.final) { afficherBilan(); return; }
   $("compteur").style.display = $("btnPasser").style.display = "";
+  // pas d'annonce du nombre de questions avant le quiz (demande du prof) : le compteur n'apparaît qu'une fois commencé
+  $("compteur").hidden = !partie.quiz;
   majCompteur();
   if (!question) {
     zone.className = "calcul attente";
@@ -1029,7 +1131,7 @@ function afficherQuestion() {
         : G.etat !== "attente" ? "La grue est en route…"
         : !G.hg || G.hg.etat !== "boule" ? "Attends que le hérisson se mette en boule…"
         : "")
-      : niv.sorciere ? (serpent.etat !== "fini" ? "Va voir la sorcière : 3 bonnes réponses d'affilée font rapetisser le hérisson."
+      : niv.sorciere ? (serpent.etat !== "fini" ? "Va voir la sorcière : tes bonnes réponses font rapetisser le hérisson."
         : !partie.levier ? "Le hérisson est tout petit : saute par-dessus et va tirer le levier."
         : "Le pont-levis s'est abaissé : rejoins-le et sors par la droite.")
       : serpent.etat === "pont" || serpent.etat === "glisse" ? "Le serpent te fait un pont. Sors par la droite."
@@ -1043,7 +1145,8 @@ function afficherQuestion() {
       : "Va toucher le serpent : il te posera ses questions.";
     champ.disabled = true; $("btnValider").disabled = true; champ.value = "";
     champ.blur();
-    $("formReponse").style.display = ""; $("choix").className = "choix"; $("choix").replaceChildren();
+    $("formReponse").style.display = "none";              // pas de case de réponse tant qu'aucune question n'est posée
+    $("choix").className = "choix"; $("choix").replaceChildren();
     return;
   }
   zone.className = "calcul";
@@ -1096,7 +1199,7 @@ $("formReponse").addEventListener("submit", ev => {
     if (lu.ok) { E.cible[E.k] = yMarche(E.k); E.etape = "monte"; son("pontLevis"); }
     else {
       const presque = lu.presque ? `${$("champReponse").value.trim()} : ${q.presque} ` : "";
-      r.textContent = fr("❌ " + presque + q.correction + (E.k ? " — La marche s'effondre : refais-la." : " — Le grand serpent attend : une autre question."));
+      r.textContent = fr(lignes("❌ " + presque + q.correction + (E.k ? " — La marche s'effondre : refais-la." : " — Le grand serpent attend : une autre question.")));
       if (E.k) { E.k--; E.cible[E.k] = niv.escalier.sol; sauterSurMarche(E.k - 1); E.etape = "saut"; son("pontLevis"); }
     }
     terminerQuestions();
@@ -1106,7 +1209,7 @@ $("formReponse").addEventListener("submit", ev => {
     // plateau 7 : la grue va à l'abscisse donnée (juste ou fausse) et descend sa pince
     const G = partie.grue, g = niv.grue;
     r.className = lu.ok ? "vide" : "ko";
-    if (!lu.ok) r.textContent = fr("❌ " + q.correction + " — La pince se referme sur le vide : le hérisson va se mettre ailleurs" + (G.pris ? ", et ceux de la cage sont libérés." : "."));
+    if (!lu.ok) r.textContent = fr(lignes("❌ " + q.correction + " — La pince se referme sur le vide : le hérisson va se mettre ailleurs" + (G.pris ? ", et ceux de la cage sont libérés." : ".")));
     son(lu.ok ? "bon" : "faux"); son("treuil");
     Object.assign(G, { etat: "va", reussi: lu.ok, cible: xAbscisse(Math.max(-.2, Math.min(g.max + .3, lu.v))) });
     terminerQuestions();
@@ -1118,7 +1221,7 @@ $("formReponse").addEventListener("submit", ev => {
     const presque = lu.presque ? `${$("champReponse").value.trim()} : ${q.presque} ` : "";
     // réponse juste : pas de message (la règle des applis) ; erreur : la correction
     r.className = lu.ok ? "vide" : "ko";
-    if (!lu.ok) r.textContent = fr("❌ " + presque + q.correction + " — L'aigle reprend une pierre et te repousse.");
+    if (!lu.ok) r.textContent = fr(lignes("❌ " + presque + q.correction + " — L'aigle reprend une pierre et te repousse."));
     son(lu.ok ? "bon" : "faux");
     if (lu.ok) { Object.assign(A, { vol: true, t: 0, sens: 1 }); terminerQuestions(); }      // le crapaud attend la question suivante
     else {
@@ -1145,7 +1248,7 @@ $("formReponse").addEventListener("submit", ev => {
     if (niv.hypnose) {
       // plateau 6 : la sorcière tourne sur elle-même et ricane ; le crapaud, hypnotisé, flotte jusqu'au départ ;
       // le hérisson reprend sa taille, la série repart de zéro
-      r.textContent = fr("❌ " + presque + q.correction + " — La sorcière t'a hypnotisé : retour au départ, et sa boule magique a fait regrossir le hérisson.");
+      r.textContent = fr(lignes("❌ " + presque + q.correction + " — La sorcière t'a hypnotisé : retour au départ, et sa boule magique a fait regrossir le hérisson."));
       son("faux"); son("ricane"); son("hypnose");
       serpent.justes = 0; serpent.etat = "attend"; serpent.boude = true;
       lancerBoule(1, false, true);
@@ -1157,13 +1260,13 @@ $("formReponse").addEventListener("submit", ev => {
       return;
     }
     if (niv.erreurMortelle) {
-      r.textContent = fr("❌ " + presque + q.correction);
+      r.textContent = fr(lignes("❌ " + presque + q.correction));
       son("faux");
       serpent.justes = 0;
       mourir("serpent");
       return;
     }
-    r.textContent = fr("❌ " + presque + q.correction + (niv.affilee ? " — Le serpent te repousse : retouche-le pour recommencer la série." : " — Le serpent te repousse : retouche-le."));
+    r.textContent = fr(lignes("❌ " + presque + q.correction + (niv.affilee ? " — Le serpent te repousse : retouche-le pour recommencer la série." : " — Le serpent te repousse : retouche-le.")));
     son("faux");
     if (niv.affilee) serpent.justes = 0;
     serpent.etat = "attend"; serpent.boude = true;
@@ -1260,9 +1363,9 @@ function majCompteur() {
 }
 function majPanneau() {
   $("titreQuestions").textContent = niv.final ? "Bilan" : niv.escalier ? "Le grand serpent" : niv.grue ? "La grue" : niv.aigle ? "L'aigle" : niv.sorciere ? "La sorcière" : "Le serpent";
-  $("titreNiveau").innerHTML = `${niv.titre} <span class="titre">— ${niv.consigne}</span>`;
-  $("plateaux").innerHTML = NIVEAUX.map((n, k) => `<span data-k="${k}" class="${k < partie.niveau ? "fait" : k === partie.niveau ? "actuel" : ""}">${k < partie.niveau ? "✓ " : ""}${n.titre}</span>`).join("")
-    + `<span data-k="${NIVEAUX.length}" class="${niv.final ? "actuel" : ""}">Final</span>`;
+  // (pas de bandeau titre + consigne au-dessus du jeu : demande du prof ; la consigne reste dans le code, pour mémoire)
+  $("plateaux").innerHTML = NIVEAUX.map((n, k) => `<span data-k="${k}" class="${k < partie.niveau ? "fait" : k === partie.niveau ? "actuel" : ""}" title="${n.titre}">${k + 1}</span>`).join("")
+    + `<span data-k="${NIVEAUX.length}" class="${niv.final ? "actuel" : ""}" title="${FINAL.titre}">★</span>`;
 }
 // Mode test : un clic sur un plateau y emmène directement
 $("plateaux").addEventListener("click", e => {
@@ -1291,7 +1394,8 @@ function fermerEcran() { $("ecranJeu").classList.remove("visible"); }
 //  DESSIN : marais au crépuscule (illustration vectorielle, couleurs sourdes, brume)
 //  On dessine dans le monde 240 × 180 ; le canevas est à la résolution réelle de l'écran.
 // ============================================================
-const cv = $("jeu"), ctx = cv.getContext("2d");
+const cv = $("jeu");
+let ctx = cv.getContext("2d");          // (let : pendant l'accueil, on dessine dans la vignette)
 let echelle = 1;
 
 const arrondi = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
@@ -2456,13 +2560,25 @@ function dessinerGardien(g, t) {
   ctx.fillStyle = "#2c3034"; rond(g.x + .8, g.y + .8, 1);
 }
 
+// ---------- L'accueil : le jeu en vignette ----------
+// pendant l'accueil, le grand canevas est caché : on dessine la scène du plateau 1 dans la vignette, à sa propre échelle
+// (en sortant de l'accueil, l'observateur de taille remet l'échelle du jeu)
+function dessinerVignette() {
+  const v = $("vignette"), dpr = window.devicePixelRatio || 1, w = Math.round(v.clientWidth * dpr);
+  if (!w) return;
+  if (v.width !== w) { v.width = w; v.height = Math.round(w * H / L); }
+  const ecran = ctx; ctx = v.getContext("2d"); echelle = v.width / L;
+  try { dessiner(); } finally { ctx = ecran; }
+}
+
 // ---------- Boucle : 30 images par seconde ----------
 let dernier = performance.now(), cumul = 0;
 function boucle(maintenant) {
   cumul += Math.min(200, maintenant - dernier);
   dernier = maintenant;
-  while (cumul >= 1000 / 30) { if (!document.body.classList.contains("sans-nom")) pas(); cumul -= 1000 / 30; }
-  dessiner();
+  const accueil = document.body.classList.contains("sans-nom");
+  while (cumul >= 1000 / 30) { if (!accueil) pas(); else partie.image++; cumul -= 1000 / 30; }
+  if (accueil) dessinerVignette(); else dessiner();
   requestAnimationFrame(boucle);
 }
 
@@ -2587,6 +2703,19 @@ function commencer() {
 $("btnCommencer").onclick = commencer;
 $("champNom").addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
 $("btnRecommencer").onclick = () => chargerNiveau(partie.niveau);
+// Réinitialiser le jeu : on oublie les plateaux franchis et les réponses (le nom reste), retour au plateau 1
+// (la confirmation se fait dans un overlay dans le goût du jeu, pas dans une fenêtre du navigateur)
+const fermerConfirm = () => { $("voileConfirm").hidden = true; };
+$("btnReinitialiser").onclick = () => { $("voileConfirm").hidden = false; $("btnAnnulerReinit").focus(); };
+$("btnAnnulerReinit").onclick = fermerConfirm;
+$("voileConfirm").addEventListener("click", e => { if (e.target === $("voileConfirm")) fermerConfirm(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("voileConfirm").hidden) fermerConfirm(); });
+$("btnOuiReinit").onclick = () => {
+  fermerConfirm();
+  Object.assign(eleve, { plateaux: 0, record: 0, reponses: 0, bonnes: 0 });
+  sauverEleve(); majEntete();
+  chargerNiveau(0);
+};
 
 // ============================================================
 //  IMPRESSION : diplôme

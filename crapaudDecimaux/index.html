@@ -141,32 +141,126 @@
   #guideCarte ul, #guideCarte ol{margin:0;padding-left:20px;}
   #guideCarte .source{margin-top:12px;font-size:.8rem;color:var(--muted);}
   #btnFermerGuide{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:#fff;font-size:20px;line-height:1;}
+  [hidden]{display:none !important;}
+  .filet{align-self:stretch;width:1px;margin:2px 2px;background:var(--border);}
+
+  /* ===== Habillage « grotte de cristal » (demande du prof : le panneau dans le goût du jeu) =====
+     les panneaux sont des blocs de la roche indigo des plateaux (avec le liseré violet des murs), la question s'affiche
+     sur une dalle sombre où les nombres luisent comme les cristaux bleus ; les boutons sont des cristaux turquoise,
+     le compteur et les titres prennent l'or des éclairs. L'en-tête garde son style clair. */
+  :root{ --roche-haut:#3c3f68; --roche:#25264a; --roche-bord:#140f33; --liseré:rgba(185,170,255,.45); --pale:#e4defa; --pale-sourd:#b3abd8;
+         --dalle-haut:#151236; --dalle:#0b0920; --lueur:#8cf0ff; --cristal:#1f8f9c; --cristal-clair:#5fd6e0; --cristal-fonce:#0e4f5a;
+         --or:#e0b84a; --or-fonce:#8a6a1e; }
+  body{background:#0d0b26 radial-gradient(ellipse at 50% 0%, #2a1f5a 0%, #0d0b26 72%);}
+  .scene, .colonne aside{
+    background:radial-gradient(circle at 15% 10%, rgba(150,120,255,.16), transparent 45%),
+               radial-gradient(circle at 88% 92%, rgba(80,240,255,.07), transparent 50%),
+               linear-gradient(180deg, var(--roche-haut), var(--roche));
+    border:1px solid var(--roche-bord); border-radius:8px; color:var(--pale);
+    box-shadow:inset 0 0 0 1px var(--liseré), inset 0 1px 0 rgba(255,255,255,.08), 0 6px 18px rgba(0,0,0,.45);
+  }
+  .colonne aside h3{font-family:"Playfair Display", Georgia, serif; color:var(--or); letter-spacing:.03em;
+    font-size:1.08rem; padding-bottom:6px; margin-bottom:12px; border-bottom:1px solid rgba(224,184,74,.4);}
+  .aide-touches, .aide-test, .compteur, .reserve .etiquette{color:var(--pale-sourd);}
+  .carte-jeu, #guideCarte{color:var(--ink);}
+  #cadreJeu{box-shadow:inset 0 0 0 1px var(--liseré);}
+  /* la dalle de la question : les nombres luisent comme les cristaux */
+  .calcul{background:linear-gradient(180deg, var(--dalle-haut), var(--dalle)); color:var(--lueur);
+    border:1px solid rgba(140,240,255,.35); border-radius:8px; text-shadow:0 0 8px rgba(140,240,255,.55);
+    box-shadow:inset 0 3px 12px rgba(0,0,0,.7), 0 0 0 1px var(--roche-bord);}
+  .calcul.attente{background:linear-gradient(180deg, #2a2852, #1c1a3c); color:var(--pale-sourd); font-style:italic; text-shadow:none; border-color:var(--liseré);}
+  .calcul.bilan{background:#ece7fb; color:var(--ink); border-color:#9a8fd0; text-shadow:none;}
+  /* saisie, boutons */
+  .reponse input{background:#121032; border:1px solid rgba(140,240,255,.4); border-radius:8px; color:var(--lueur);}
+  .reponse input::placeholder{color:#6f6a9a;}
+  .reponse input:focus{border-color:var(--cristal-clair); box-shadow:0 0 0 2px rgba(95,214,224,.25);}
+  .suite{background:linear-gradient(180deg, #2fb0bd, var(--cristal)); border:1px solid var(--cristal-fonce); border-radius:8px; color:#f2fdff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 2px 6px rgba(0,0,0,.35); text-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .suite:hover:not(:disabled){background:linear-gradient(180deg, #45c4d0, #23a1ae);}
+  .suite:disabled{background:#3a3866; border-color:var(--roche-bord); color:#8a84b6; box-shadow:none; text-shadow:none;}
+  .second{background:rgba(20,15,51,.35); border:1px solid var(--liseré); border-radius:8px; color:var(--pale);}
+  .second:hover{border-color:var(--cristal-clair); color:#bff6fb;}
+  .reserve .chance{background:linear-gradient(180deg, #c0473c, #8e2a22); border-color:#5a1812;}
+  #valPoints, #valSuper{color:var(--or);}
+  #valPoints.bas{color:#ff7a6a;}
+  /* le retour : sur des éclats clairs, lisibles */
+  #retour{border-radius:8px; color:var(--ink); white-space:pre-line; line-height:1.5;}
+  #retour.ok{background:#d9f3ec; border-left:5px solid #1f8f7a;}
+  #retour.ko{background:#f6dcdc; border-left:5px solid #b3362c;}
+  #retour.aide{background:#f5ecc8; border-left:5px solid var(--or-fonce);}
+  /* compteur : des gemmes éteintes, qui s'allument d'or */
+  .compteur span{border:1px solid rgba(185,170,255,.5); background:#1a1740; box-shadow:inset 0 2px 3px rgba(0,0,0,.5);}
+  .compteur span.juste{background:radial-gradient(circle at 35% 30%, #fff3c4, var(--or) 40%, var(--or-fonce) 90%); border-color:#5c4410;
+    box-shadow:0 0 7px rgba(224,184,74,.75);}
+  /* la liste des plateaux : seulement le numéro (le titre en info-bulle), des cases étroites */
+  .plateaux span{flex:0 0 40px; padding:5px 0; background:#1c1a3e; border:1px solid var(--liseré); border-radius:6px; color:var(--pale-sourd);}
+  .plateaux span.actuel{background:#24405a; border:1px solid var(--cristal-clair); color:#d8fbff; font-weight:700; box-shadow:0 0 6px rgba(95,214,224,.45);}
+  .plateaux span.fait{background:#2e2a18; border-color:var(--or); color:var(--or);}
+  body.mode-test .plateaux span[data-k]:hover{border-color:var(--cristal-clair);}
+  /* l'accueil : la vignette du jeu à gauche, le texte et le nom à droite, sur un bloc de roche */
+  body.sans-nom .accueil{display:grid;}
+  .accueil{max-width:1150px;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:26px;align-items:center;
+    background:radial-gradient(circle at 15% 10%, rgba(150,120,255,.16), transparent 45%), linear-gradient(180deg, var(--roche-haut), var(--roche));
+    border:1px solid var(--roche-bord);border-radius:8px;color:var(--pale);
+    box-shadow:inset 0 0 0 1px var(--liseré), 0 8px 24px rgba(0,0,0,.5);}
+  .accueil-visuel{background:var(--dalle);border:1px solid var(--liseré);border-radius:8px;box-shadow:0 0 14px rgba(140,240,255,.15);line-height:0;overflow:hidden;}
+  #vignette{width:100%;height:auto;display:block;}
+  .accueil h2{font-family:"Playfair Display", Georgia, serif;color:var(--or);font-size:1.8rem;border-bottom:1px solid rgba(224,184,74,.4);padding-bottom:6px;}
+  #champNom{background:#121032;border:1px solid rgba(140,240,255,.4);border-radius:8px;color:var(--pale);}
+  #champNom:focus{border-color:var(--cristal-clair);}
+  #erreurNom{color:#ff9a8c;}
+  @media (max-width:900px){ .accueil{grid-template-columns:1fr;} }
+  /* l'overlay de confirmation : un bloc de roche sur un voile sombre */
+  #voileConfirm{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(7,6,26,.65);backdrop-filter:blur(2px);}
+  .carte-confirm{max-width:420px;padding:22px 26px;text-align:center;color:var(--pale);
+    background:radial-gradient(circle at 15% 10%, rgba(150,120,255,.16), transparent 45%), linear-gradient(180deg, var(--roche-haut), var(--roche));
+    border:1px solid var(--roche-bord);border-radius:8px;box-shadow:inset 0 0 0 1px var(--liseré), 0 12px 40px rgba(0,0,0,.6);}
+  .carte-confirm h3{margin:0 0 10px;font-family:"Playfair Display", Georgia, serif;color:var(--or);font-size:1.35rem;}
+  .carte-confirm p{margin:0 0 18px;}
+  .boutons-confirm{display:flex;gap:10px;justify-content:flex-end;}
+  .boutons-confirm .second{width:auto;padding:10px 16px;}
+  .suite.danger{background:linear-gradient(180deg, #c0473c, #8e2a22);border-color:#5a1812;}
+  .suite.danger:hover{background:linear-gradient(180deg, #d0574a, #9e352a);}
 </style>
 </head>
 <body>
+<!-- la confirmation de la réinitialisation, par-dessus la page -->
+<div id="voileConfirm" hidden>
+  <div class="carte-confirm" role="dialog" aria-modal="true" aria-labelledby="titreConfirm">
+    <h3 id="titreConfirm">Réinitialiser le jeu ?</h3>
+    <p>Les plateaux franchis et les réponses seront oubliés. Tu repartiras du plateau 1.</p>
+    <div class="boutons-confirm"><button class="second" id="btnAnnulerReinit" type="button">Annuler</button><button class="suite danger" id="btnOuiReinit" type="button">⟲ Réinitialiser</button></div>
+  </div>
+</div>
 <header>
   <h1>Le crapaud et les décimaux</h1>
   <span id="eleveInfo"></span>
+  <!-- Nouvel onglet à part au début, Réinitialiser à part à la fin (filets verticaux) -->
+  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+  <span class="filet" aria-hidden="true"></span>
   <button class="onglet" id="btnSon" title="Couper ou remettre le son et la musique">🔊</button>
   <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
-  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
   <button class="onglet" id="btnGuide" title="Le mode d'emploi du jeu">Guide</button>
+  <span class="filet" aria-hidden="true"></span>
+  <button class="onglet" id="btnReinitialiser" title="Réinitialiser le jeu : oublier les plateaux franchis et repartir du plateau 1">⟲<span class="txt"> Réinitialiser</span></button>
 </header>
 <main>
   <section class="accueil" id="accueil">
-    <h2>Le crapaud et les décimaux</h2>
-    <p>Aide le crapaud à traverser les grottes magiques, plateau après plateau.</p>
-    <p>Sur chaque plateau, une panthère ou un serpent garde le passage. Va le toucher : il te pose ses questions de calcul. Réponds juste et il t'aidera à passer…</p>
-    <p>Tu as 10 points : une bonne réponse en rapporte 1, une erreur en coûte 2 ; sous 0, c'est perdu : tout le jeu recommence. Les pommes font rapetisser (ou regrandir) ; la sorcière, qu'on appelle avec le bouton du panneau, en vend aussi, mais 4 points la pomme. Les libellules donnent des super-sauts (on peut aussi appeler la libellule magique : 4 points le super-saut), les éclairs (jaunes ou bleus) ouvrent des passages secrets…</p>
-    <p>Pour les nombres décimaux, écris la virgule : 3,47.</p>
-    <p>Sors de chaque plateau par la droite.</p>
-    <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
-    <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
-    <div id="erreurNom"></div>
-    <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+    <!-- le jeu lui-même, en vignette animée : la grotte du plateau 1, la statue de panthère, le crapaud -->
+    <div class="accueil-visuel"><canvas id="vignette" width="480" height="360"></canvas></div>
+    <div class="accueil-texte">
+      <h2>Le crapaud et les décimaux</h2>
+      <p>Aide le crapaud à traverser les grottes de cristal, jusqu'à la salle du crapaud d'or.</p>
+      <p>Statues de panthère et serpents gardent les passages : réponds juste à leurs calculs sur les décimaux, et ils s'ouvriront.</p>
+      <p>Pour les nombres décimaux, écris la virgule : 3,47.</p>
+      <label for="champNom">Ton prénom et ton nom (pour le diplôme) :</label>
+      <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+      <div id="erreurNom"></div>
+      <div class="actions"><button class="suite" id="btnCommencer">Commencer →</button></div>
+    </div>
   </section>
   <section class="scene">
-    <div class="entete"><h2 id="titreNiveau">Plateau 1</h2></div>
     <div id="cadreJeu">
       <canvas id="jeu" width="240" height="180"></canvas>
       <div id="ecranJeu"><div class="carte-jeu" id="carteJeu"></div></div>
@@ -256,6 +350,13 @@
 const L = 240, H = 180;
 const $ = id => document.getElementById(id);
 const fr = s => s.replace(/ ([?!:;»])/g, " $1");
+// les corrections, en plusieurs lignes pour qu'on les lise bien (demande du prof) : une phrase par ligne, un retour
+// après chaque « ; », la conséquence (— …) sur sa propre ligne (#retour est en white-space: pre-line)
+const lignes = s => s
+  .replace(/ — /g, "\n")
+  .replace(/ ; /g, " ;\n")
+  .replace(/([.…)]) (?=[A-ZÀ-ÖØ-Ý(])/g, "$1\n")
+  .replace(/ (En maya :)/g, "\n$1");
 const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const alea = () => Math.random();
 const hasard = n => Math.floor(alea() * n);
@@ -426,7 +527,7 @@ const CARTES = {"1": {"blocs": [[98.3, 102.8, 13.3, 42.1, "terre"], [235.7, -14.
 // Les objets (positions du Scratch, converties). rayon = moitié de la zone qui réagit au contact.
 const NIVEAUX = [
   {
-    titre: "Plateau 1", consigne: "la panthère : 4 questions ; la cloche ouvre la grille, l'éclair mène à la sortie",
+    titre: "Plateau 1", consigne: "la panthère pose ses questions ; la cloche ouvre la grille, l'éclair mène à la sortie",
     depart: [sx(-217), sy(120)],
     questionneur: { sorte: "panthere", x: 133, sol: 144.8, dir: 1, n: 4, question: questionDecimaux1, place: [sx(88), sy(-80)], effet: "plateau", placeholder: "ex. 3,47" },
     // l'arrivée de l'éclair bleu (haut du pilier) : un éclair bleu gravé dans la pierre, juste dessous, comme pour l'éclair jaune
@@ -453,7 +554,7 @@ const NIVEAUX = [
     portails: [[181.8, 145.4, 18.3, 22.1]]
   },
   {
-    titre: "Plateau 2", consigne: "le cristal magique libère le serpent cristallisé : 6 questions ; le levier fait monter l'ascenseur",
+    titre: "Plateau 2", consigne: "le cristal magique libère le serpent cristallisé, qui pose ses questions ; le levier fait monter l'ascenseur",
     depart: [sx(-220), sy(-144)],
     questionneur: { sorte: "serpent", x: sx(-94), sol: 60.9, dir: 1, n: 6, question: questionFractionDecimal, place: [sx(-150), sy(71)], effet: "plateau", endormi: true, cobra: true, placeholder: "ex. 0,9" },
     mecas: [
@@ -506,7 +607,7 @@ const NIVEAUX = [
     ]
   },
   {
-    titre: "Plateau 5", consigne: "le serpent sur la planche : 10 questions de priorités, puis la planche bascule",
+    titre: "Plateau 5", consigne: "le serpent sur la planche : des questions de priorités, puis la planche bascule",
     depart: [sx(-218), sy(-2)],
     questionneur: { sorte: "serpent", x: sx(204), sol: 46.8, dir: -1, peau: "jaune", n: 10, question: questionPriorites, place: [sx(156), sy(95)], glisse: true, effet: "pont", disparait: true, placeholder: "ex. 8,2" },
     // le trou d'entrée de la grotte, signalé par une lueur
@@ -627,6 +728,7 @@ const touches = { gauche: false, droite: false, saut: false };
 const CLAVIER = { ArrowLeft: "gauche", ArrowRight: "droite", ArrowUp: "saut", " ": "saut", Spacebar: "saut" };
 addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if (!$("voileConfirm").hidden) return;          // la confirmation de réinitialisation est ouverte : les touches sont pour elle
   if (e.key === "p" || e.key === "P") { superSaut(); e.preventDefault(); return; }
   if ((e.key === "r" || e.key === "R") && partie.peage && partie.peage.etat === "demande") { payerPeage(); e.preventDefault(); return; }
   const t = CLAVIER[e.key];
@@ -996,7 +1098,7 @@ $("formReponse").addEventListener("submit", ev => {
       partie.chance.fin = 0; crapaud.etat = "libre";
       afficherQuestion(); majPanneau();
     } else {
-      r.className = "ko"; r.textContent = fr("❌ " + q.correction + " — La dernière chance est perdue.");
+      r.className = "ko"; r.textContent = fr(lignes("❌ " + q.correction + " — La dernière chance est perdue."));
       son("faux"); partie.chance = null; mourir("chance");
     }
     return;
@@ -1015,7 +1117,7 @@ $("formReponse").addEventListener("submit", ev => {
   else {
     r.className = "ko";
     const presque = lu.presque ? `${$("champReponse").value.trim()} : ${q.presque} ` : "";
-    r.textContent = fr("❌ " + presque + q.correction + " — 2 points en moins.");
+    r.textContent = fr(lignes("❌ " + presque + q.correction + " — 2 points en moins."));
     changerPoints(-2); son("faux");
     partie.q.erreurs = (partie.q.erreurs || 0) + 1;
   }
@@ -1074,7 +1176,7 @@ function afficherQuestion() {
     else zone.textContent = fr(niv.salleOr ? "Monte jusqu'au toit du temple et touche le cristal."
       : !Q ? ""
       : Q.etat === "dort" ? "Le serpent est pris dans le cristal : un cristal magique le libérera."
-      : Q.etat === "attend" ? `Va toucher ${nom} : ${niv.questionneur.n} questions. Juste : +1 point ; faux : −2 points.`
+      : Q.etat === "attend" ? `Va toucher ${nom} : ${nom.startsWith("la ") ? "elle" : "il"} te posera ses questions. Juste : +1 point ; faux : −2 points.`
       : niv.questionneur.effet === "plateau" ? "Un passage s'est ouvert : trouve la sortie !"
       : partie.marches.length && partie.marches.some(m => !m.on) ? "Il manque des marches : appelle la libellule magique (4 points) ; son super-saut (touche P) t'aidera à monter."
       : partie.marches.length ? "Monte par les marches de cristal jusqu'à la sortie, en haut à droite."
@@ -1089,7 +1191,7 @@ function afficherQuestion() {
       : "Trouve la sortie !");
     champ.disabled = true; $("btnValider").disabled = true; champ.value = "";
     champ.blur();
-    $("formReponse").style.display = "";
+    $("formReponse").style.display = "none";              // pas de case de réponse tant qu'aucune question n'est posée
     return;
   }
   zone.className = "calcul";
@@ -1105,6 +1207,8 @@ function majCompteur() {
   const Q = niv.questionneur;
   if (!Q) { $("compteur").replaceChildren(); return; }
   const n = partie.q ? partie.q.fait : 0;
+  // pas d'annonce du nombre de questions avant le quiz (demande du prof) : le compteur n'apparaît qu'une fois commencé
+  $("compteur").hidden = !(partie.q && (n > 0 || (partie.q.etat !== "attend" && partie.q.etat !== "dort")));
   $("compteur").replaceChildren(document.createTextNode("Questions :"),
     ...Array.from({ length: Q.n }, (_, k) => { const s = document.createElement("span"); if (k < n) s.className = "juste"; return s; }));
 }
@@ -1114,9 +1218,8 @@ function majChance() {
 }
 function majPanneau() {
   $("titreQuestions").textContent = niv.final || partie.fin === "or" ? "Bilan" : partie.chance && !partie.chance.fin && question ? "Dernière chance" : niv.questionneur ? (niv.questionneur.sorte === "panthere" ? "La panthère" : "Le serpent") : "Le cristal";
-  $("titreNiveau").innerHTML = `${niv.titre} <span class="titre">— ${niv.consigne}</span>`;
-  $("plateaux").innerHTML = NIVEAUX.map((n, k) => `<span data-k="${k}" class="${k < partie.niveau ? "fait" : k === partie.niveau ? "actuel" : ""}">${k < partie.niveau ? "✓ " : ""}${n.titre}</span>`).join("")
-;
+  // (pas de bandeau titre + consigne au-dessus du jeu : demande du prof ; la consigne reste dans le code, pour mémoire)
+  $("plateaux").innerHTML = NIVEAUX.map((n, k) => `<span data-k="${k}" class="${k < partie.niveau ? "fait" : k === partie.niveau ? "actuel" : ""}" title="${n.titre}">${k + 1}</span>`).join("");
   $("valPoints").textContent = points;
   $("valPoints").className = points <= 3 ? "bas" : "";
   $("valSuper").textContent = superSauts;
@@ -1336,7 +1439,8 @@ function fermerEcran() { $("ecranJeu").classList.remove("visible"); }
 // ============================================================
 //  DESSIN : marais de jour, dans le style du Crapaud d'or
 // ============================================================
-const cv = $("jeu"), ctx = cv.getContext("2d");
+const cv = $("jeu");
+let ctx = cv.getContext("2d");          // (let : pendant l'accueil, dessinerVignette dessine dans la vignette)
 let echelle = 1;
 const arrondi = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
 const degrade = (y1, y2, ...couleurs) => { const g = ctx.createLinearGradient(0, y1, 0, y2); couleurs.forEach((c, k) => g.addColorStop(k / (couleurs.length - 1), c)); return g; };
@@ -2362,13 +2466,25 @@ function alertePoints(t) {
   ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
 }
 
+// ---------- L'accueil : le jeu en vignette ----------
+// pendant l'accueil, le grand canevas est caché : on dessine la scène du plateau 1 dans la vignette, à sa propre échelle
+// (en sortant de l'accueil, l'observateur de taille remet l'échelle du jeu)
+function dessinerVignette() {
+  const v = $("vignette"), dpr = window.devicePixelRatio || 1, w = Math.round(v.clientWidth * dpr);
+  if (!w) return;
+  if (v.width !== w) { v.width = w; v.height = Math.round(w * H / L); }
+  const ecran = ctx; ctx = v.getContext("2d"); echelle = v.width / L;
+  try { dessiner(); } finally { ctx = ecran; }
+}
+
 // ---------- Boucle : 30 images par seconde ----------
 let dernier = performance.now(), cumul = 0;
 function boucle(maintenant) {
   cumul += Math.min(200, maintenant - dernier);
   dernier = maintenant;
-  while (cumul >= 1000 / 30) { if (!document.body.classList.contains("sans-nom") && !$("overlayGuide").classList.contains("visible")) pas(); cumul -= 1000 / 30; }
-  dessiner();
+  const accueil = document.body.classList.contains("sans-nom");
+  while (cumul >= 1000 / 30) { if (!accueil && !$("overlayGuide").classList.contains("visible")) pas(); else if (accueil) partie.image++; cumul -= 1000 / 30; }
+  if (accueil) dessinerVignette(); else dessiner();
   requestAnimationFrame(boucle);
 }
 new ResizeObserver(() => {
@@ -2492,6 +2608,20 @@ function commencer() {
 }
 $("btnCommencer").onclick = commencer;
 $("champNom").addEventListener("keydown", e => { if (e.key === "Enter") commencer(); });
+// Réinitialiser le jeu : on oublie les plateaux franchis et les réponses (le nom reste), retour au plateau 1
+// (la confirmation se fait dans un overlay de roche, pas dans une fenêtre du navigateur)
+const fermerConfirm = () => { $("voileConfirm").hidden = true; };
+$("btnReinitialiser").onclick = () => { $("voileConfirm").hidden = false; $("btnAnnulerReinit").focus(); };
+$("btnAnnulerReinit").onclick = fermerConfirm;
+$("voileConfirm").addEventListener("click", e => { if (e.target === $("voileConfirm")) fermerConfirm(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("voileConfirm").hidden) fermerConfirm(); });
+$("btnOuiReinit").onclick = () => {
+  fermerConfirm();
+  Object.assign(eleve, { plateaux: 0, record: 0, reponses: 0, bonnes: 0 });
+  delete eleve.pointsFinal;
+  sauverEleve(); majEntete();
+  chargerNiveau(0);
+};
 // ============================================================
 //  IMPRESSION : diplôme
 // ============================================================
