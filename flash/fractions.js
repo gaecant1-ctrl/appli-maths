@@ -19,6 +19,54 @@ function dfrac(nombre, opts = {}) {
   return nombre.toLatex({ nombreAff: "fraction", ...opts });
 }
 
+// simple : la fraction est toujours affichée irréductible, aucune
+// simplification n'est à faire ; l'énoncé porte une étoile ("Calculer*").
+function genFractionDUnNombre(simple) {
+  // fraction simplifiée de base (a0/b0 premiers entre eux)
+  const b0 = 2 + Math.floor(Math.random() * 9); // 2..10
+  let a0;
+  do {
+    a0 = 1 + Math.floor(Math.random() * (b0 - 1));
+  } while (pgcd(a0, b0) !== 1);
+
+  // facteur de complication éventuel (a0/b0 affiché non réduit)
+  const facteurs = simple ? [1] : [1, 2, 3, 5];
+  const kComp = facteurs[Math.floor(Math.random() * facteurs.length)];
+
+  const a = a0 * kComp;
+  const b = b0 * kComp;
+
+  // c multiple du dénominateur simplifié, pour un résultat entier
+  const k = 2 + Math.floor(Math.random() * 6);
+  const c = b0 * k;
+
+  const fractionAffichee = Nombre.fromParts(a, b, "fraction");
+  const fractionSimplifiee = Nombre.fromParts(a0, b0, "fraction");
+  const produit = fractionAffichee.mul(Nombre.fromParts(c, 1, "entier")).simplify();
+
+  const exprAffichee = `${dfrac(fractionAffichee)} \\times ${c}`;
+  const exprSimple = `${dfrac(fractionSimplifiee)} \\times ${c}`;
+  const resultat = dfrac(produit);
+
+  const correction =
+    kComp === 1
+      ? `${exprAffichee} = ${resultat}`
+      : `${exprAffichee} = ${exprSimple} = ${resultat}`;
+
+  return {
+    latex: `
+    \\text{Calculer${simple ? "*" : ""} : }
+    ${exprAffichee}
+    `,
+    correction: `
+    ${correction}
+    `,
+    verifier(input) {
+      return verifierScalaire(produit, input);
+    }
+  };
+}
+
 const fractions = [
 
   /* =========================================
@@ -199,8 +247,12 @@ const fractions = [
     negatif: "non",
     gen() {
       const k = 2 + Math.floor(Math.random() * 5);
-      const a0 = 2 + Math.floor(Math.random() * 4);
-      const b0 = 3 + Math.floor(Math.random() * 4);
+      // a0 multiple de b0 (ex: 12/12) s'afficherait "1" : rien à simplifier.
+      let a0, b0;
+      do {
+        a0 = 2 + Math.floor(Math.random() * 4);
+        b0 = 3 + Math.floor(Math.random() * 4);
+      } while (a0 % b0 === 0);
 
       const a = k * a0;
       const b = k * b0;
@@ -235,49 +287,17 @@ const fractions = [
     niveau: "6",
     negatif: "non",
     gen() {
-      // fraction simplifiée de base (a0/b0 premiers entre eux)
-      const b0 = 2 + Math.floor(Math.random() * 9); // 2..10
-      let a0;
-      do {
-        a0 = 1 + Math.floor(Math.random() * (b0 - 1));
-      } while (pgcd(a0, b0) !== 1);
+      return genFractionDUnNombre(false);
+    }
+  },
 
-      // facteur de complication éventuel (a0/b0 affiché non réduit)
-      const facteurs = [1, 2, 3, 5];
-      const kComp = facteurs[Math.floor(Math.random() * facteurs.length)];
-
-      const a = a0 * kComp;
-      const b = b0 * kComp;
-
-      // c multiple du dénominateur simplifié, pour un résultat entier
-      const k = 2 + Math.floor(Math.random() * 6);
-      const c = b0 * k;
-
-      const fractionAffichee = Nombre.fromParts(a, b, "fraction");
-      const fractionSimplifiee = Nombre.fromParts(a0, b0, "fraction");
-      const produit = fractionAffichee.mul(Nombre.fromParts(c, 1, "entier")).simplify();
-
-      const exprAffichee = `${dfrac(fractionAffichee)} \\times ${c}`;
-      const exprSimple = `${dfrac(fractionSimplifiee)} \\times ${c}`;
-      const resultat = dfrac(produit);
-
-      const correction =
-        kComp === 1
-          ? `${exprAffichee} = ${resultat}`
-          : `${exprAffichee} = ${exprSimple} = ${resultat}`;
-
-      return {
-        latex: `
-        \\text{Calculer : }
-        ${exprAffichee}
-        `,
-        correction: `
-        ${correction}
-        `,
-        verifier(input) {
-          return verifierScalaire(produit, input);
-        }
-      };
+  {
+    id: "fraction_d_un_nombre_simple",
+    theme: "fractions",
+    niveau: "6",
+    negatif: "non",
+    gen() {
+      return genFractionDUnNombre(true);
     }
   },
 

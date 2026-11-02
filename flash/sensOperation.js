@@ -1,4 +1,5 @@
 import * as reponse from "./reponse.js";
+import { rougeTexte } from "./trou.js";
 import { Grandeur } from "./calcul-grandeur.js";
 import { tirerArbreEtCible, toLatexParenthese } from "./arbreCalcul.js";
 
@@ -137,7 +138,7 @@ const sensOperation = [
 
       return {
         latex: `${choix.debut} \\text{...}`,
-        correction: `\\text{${choix.reponse}.}`,
+        correction: `${choix.debut} \\text{ }${rougeTexte(choix.reponse)}\\text{.}`,
         verifier(input) {
           return reponse.verifier("texte", choix.reponse, input);
         }

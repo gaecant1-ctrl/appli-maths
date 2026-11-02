@@ -3,6 +3,7 @@
 // =====================================================
 
 import * as reponse from "./reponse.js";
+import { rougeTexte } from "./trou.js";
 
 // Listes non ordonnées (décomposition en facteurs, multiples d'un
 // intervalle) : pas un cas couvert par reponse.js, comparaison locale
@@ -229,7 +230,7 @@ const arithmetique = [
     }
 
     const expression = `${a} \\text{ est un } \\dots\\dots \\text{ de } ${b}`;
-    const correction = `${a} \\text{ est un ${mot} de } ${b}`;
+    const correction = `${a} \\text{ est un }${rougeTexte(mot)}\\text{ de } ${b}`;
 
     return {
       latex: `

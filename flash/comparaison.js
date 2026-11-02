@@ -1,5 +1,6 @@
 import { Nombre } from "./nombre.js";
 import * as reponse from "./reponse.js";
+import { rouge } from "./trou.js";
 
 function comparer(a, b) {
   if (a < b) return "<";
@@ -40,7 +41,7 @@ const comparaison = [
       const signe = comparer(a, b);
 
       const expression = `${a} \\, \\ldots \\, ${b}`;
-      const resultat = `${a} ${signe} ${b}`;
+      const resultat = `${a} \\mathrel{${rouge(signe)}} ${b}`;
 
       return {
         latex: `
@@ -82,7 +83,7 @@ const comparaison = [
       const signe = comparer(a, b);
 
       const expression = `${a} \\, \\ldots \\, ${b}`;
-      const resultat = `${a} ${signe} ${b}`;
+      const resultat = `${a} \\mathrel{${rouge(signe)}} ${b}`;
 
       return {
         latex: `
@@ -121,7 +122,7 @@ const comparaison = [
       const signe = comparer(a * d, c * b);
 
       const expression = `${dfrac(gauche)} \\, \\ldots \\, ${dfrac(droite)}`;
-      const resultat = `${dfrac(gauche)} ${signe} ${dfrac(droite)}`;
+      const resultat = `${dfrac(gauche)} \\mathrel{${rouge(signe)}} ${dfrac(droite)}`;
 
       return {
         latex: `
@@ -154,7 +155,7 @@ const comparaison = [
       const signe = comparer(a, b);
 
       const expression = `${tex(a)} \\, \\ldots \\, ${tex(b)}`;
-      const resultat = `${tex(a)} ${signe} ${tex(b)}`;
+      const resultat = `${tex(a)} \\mathrel{${rouge(signe)}} ${tex(b)}`;
 
       return {
         latex: `
@@ -197,7 +198,7 @@ const comparaison = [
       const signe = comparer(a, b);
 
       const expression = `${tex(a)} \\, \\ldots \\, ${tex(b)}`;
-      const resultat = `${tex(a)} ${signe} ${tex(b)}`;
+      const resultat = `${tex(a)} \\mathrel{${rouge(signe)}} ${tex(b)}`;
 
       return {
         latex: `
@@ -240,7 +241,7 @@ const comparaison = [
       const signe = comparer(a * d, c * b);
 
       const expression = `${dfrac(gauche)} \\, \\ldots \\, ${dfrac(droite)}`;
-      const resultat = `${dfrac(gauche)} ${signe} ${dfrac(droite)}`;
+      const resultat = `${dfrac(gauche)} \\mathrel{${rouge(signe)}} ${dfrac(droite)}`;
 
       return {
         latex: `

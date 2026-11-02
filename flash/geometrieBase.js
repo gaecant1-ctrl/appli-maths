@@ -4,6 +4,7 @@
 
 import * as reponse from "./reponse.js";
 import { construireQcm } from "./qcm.js";
+import { rougeTexte } from "./trou.js";
 
 function randInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -12,7 +13,7 @@ function randInt(min, max) {
 // I et O exclus (confusion avec 1 et 0).
 const LETTRES = "ABCDEFGHJKLMNPQRSTUVWXYZ".split("");
 
-function deuxLettres() {
+export function deuxLettres() {
   const i = randInt(0, LETTRES.length - 1);
   let j;
   do { j = randInt(0, LETTRES.length - 1); } while (j === i);
@@ -175,15 +176,15 @@ const proprietes = [
 // Énoncé à trou générique : si `debut` contient déjà le trou (trou au
 // milieu de la phrase), on le garde ; sinon on ajoute le trou en fin.
 // Correction : le trou est remplacé par la réponse.
-function questionTrou(entree, a, b) {
+export function questionTrou(entree, a, b) {
   const debut = typeof entree.debut === "function" ? entree.debut(a, b) : entree.debut;
   const rep = entree.reponse;
   const repAffichee = Array.isArray(rep) ? rep[0] : rep;
   const trouAuMilieu = debut.includes(".............");
   const latex = trouAuMilieu ? debut : `${debut} \\text{ .............}`;
   const correction = trouAuMilieu
-    ? debut.replace(".............", repAffichee)
-    : `${debut} \\text{ ${repAffichee}.}`;
+    ? debut.replace(".............", () => `}${rougeTexte(repAffichee)}\\text{`)
+    : `${debut} \\text{ }${rougeTexte(repAffichee)}\\text{.}`;
   return {
     latex,
     correction,
@@ -305,7 +306,7 @@ const geometrieBase = [
 
       return {
         latex: `${avant} \\text{ .............}`,
-        correction: `${avant} \\text{ ${repAffichee}}`,
+        correction: `${avant} \\text{ }${rougeTexte(repAffichee)}`,
         verifier(input) {
           return reponse.verifier("texte", rep, input, {
             mode: Array.isArray(rep) ? "in" : "identique",
@@ -330,33 +331,6 @@ const geometrieBase = [
   // Cours : propriétés droites parallèles / perpendiculaires
   // ---------------------------------------------------
   coursTrou("proprietes_paralleles_perpendiculaires", proprietes),
-
-  // ---------------------------------------------------
-  // Cours : notation du cercle C_{A,B} (centre A, passant par B)
-  // ---------------------------------------------------
-  {
-    id: "notation_cercle",
-    theme: "geometrieBase",
-    niveau: "6",
-    negatif: "non",
-    cours: "oui",
-    gen() {
-      const [a, b] = deuxLettres();
-      const demandeCentre = Math.random() < 0.5;
-      const debut = demandeCentre
-        ? `\\text{Le centre du cercle } \\mathcal{C}_{${a},${b}} \\text{ est le point}`
-        : `\\text{Le cercle } \\mathcal{C}_{${a},${b}} \\text{ passe par le point}`;
-      const rep = demandeCentre ? a : b;
-      const autre = demandeCentre ? b : a;
-      return {
-        latex: `${debut} \\text{ .............}`,
-        correction: `${debut} \\text{ ${rep}.}`,
-        verifier(input) {
-          return reponse.verifier("texte", rep, input, { presqueJuste: [autre] });
-        }
-      };
-    }
-  },
 
   // ---------------------------------------------------
   // Exercice : que peut-on déduire ? (droites parallèles / perpendiculaires)

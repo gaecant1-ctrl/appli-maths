@@ -5,6 +5,7 @@
 import { Nombre } from "./nombre.js";
 import { Grandeur } from "./calcul-grandeur.js";
 import * as reponse from "./reponse.js";
+import { rougeTexte } from "./trou.js";
 
 function randInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -49,7 +50,7 @@ const angle = [
 
       return {
         latex: `${choix.debut} \\text{.............}`,
-        correction: `${choix.debut} \\text{ ${choix.reponse}.}`,
+        correction: `${choix.debut} \\text{ }${rougeTexte(choix.reponse)}\\text{.}`,
         verifier(input) {
           return reponse.verifier("texte", choix.reponse, input);
         }

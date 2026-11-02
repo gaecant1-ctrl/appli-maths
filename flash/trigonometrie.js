@@ -5,6 +5,7 @@
 import { Nombre } from "./nombre.js";
 import { Grandeur } from "./calcul-grandeur.js";
 import * as reponse from "./reponse.js";
+import { rouge } from "./trou.js";
 
 function randInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -186,7 +187,7 @@ const trigonometrie = [
 
         return {
           latex: enonce,
-          correction: enonce.replace("\\dfrac{\\text{....}}{\\text{....}}", `\\dfrac{${numName}}{${denName}}`),
+          correction: enonce.replace("\\dfrac{\\text{....}}{\\text{....}}", () => `\\dfrac{${rouge(numName)}}{${rouge(denName)}}`),
           verifier(input) { return verifierRatioCotes(numName, denName, input); }
         };
       }
@@ -204,7 +205,7 @@ const trigonometrie = [
 
       return {
         latex: enonce,
-        correction: enonce.replace("....", reponseAttendue),
+        correction: enonce.replace("....", () => rouge(reponseAttendue)),
         verifier(input) {
           return reponse.verifier("texte", variantesCote(reponseAttendue), input, {
             mode: "in",

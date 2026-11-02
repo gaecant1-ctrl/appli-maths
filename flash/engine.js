@@ -13,6 +13,7 @@ import durees from "./durees.js";
 import conversions from "./conversions.js";
 import arrondis from "./arrondis.js";
 import geometrieBase from "./geometrieBase.js";
+import distances from "./distances.js";
 import trigonometrie from "./trigonometrie.js";
 import thales from "./thales.js";
 import proportion from "./proportion.js";
@@ -46,6 +47,7 @@ const banqueFlash = [
   ...conversions,
   ...arrondis,
   ...geometrieBase,
+  ...distances,
   ...trigonometrie,
   ...thales,
   ...proportion,
@@ -139,6 +141,7 @@ const THEME_LABELS = {
   "conversion": "Conversions",
   "arrondis": "Arrondis",
   "geometrieBase": "Bases de la géométrie",
+  "distances": "Distances",
   "trigonometrie": "Trigonométrie",
   "thales": "Thalès",
   "proportion": "Proportion",
@@ -163,6 +166,7 @@ const THEME_CATEGORIES = {
   "angle": "geometrie",
   "pythagore": "geometrie",
   "geometrieBase": "geometrie",
+  "distances": "geometrie",
   "trigonometrie": "geometrie",
   "thales": "geometrie",
   "echelle": "geometrie"

@@ -208,17 +208,20 @@ function agrandir(racine, niveau, avecFraction) {
 // mode fraction, où decomposer() ne préserve pas la valeur de la feuille
 // remplacée (voir agrandir) ; sans effet en mode entier, où noeud.nombre
 // était déjà exact partout depuis construireNiveau1/agrandir.
+// Renvoie null dès qu'un résultat n'est pas strictement positif : pas de
+// relatifs pour l'arbre, et un sous-calcul nul ferait diviser par zéro.
 function recalculer(noeud) {
   if (noeud.type === "jeton") return noeud.nombre;
   const g = recalculer(noeud.gauche);
   const d = recalculer(noeud.droite);
+  if (!g || !d) return null;
   switch (noeud.op) {
     case "+": noeud.nombre = g.add(d).simplify(); break;
     case "-": noeud.nombre = g.sub(d).simplify(); break;
     case "*": noeud.nombre = g.mul(d).simplify(); break;
     case ":": noeud.nombre = g.div(d).simplify(); break;
   }
-  return noeud.nombre;
+  return noeud.nombre.valeurNum.a > 0 ? noeud.nombre : null;
 }
 
 function finaliserArbre(structure, cible) {
@@ -247,7 +250,7 @@ export function tirerArbreEtCible(nbJetons, niveauCle, avecFraction = false, ess
       if (!agrandir(racine, niveau, avecFraction)) continue essaiArbre;
     }
     const cible = avecFraction ? recalculer(racine) : racine.nombre;
-    if (depasseMax(cible)) continue;
+    if (!cible || depasseMax(cible)) continue;
     return finaliserArbre(racine, cible);
   }
   return null;

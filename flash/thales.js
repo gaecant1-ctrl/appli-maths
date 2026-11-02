@@ -5,6 +5,7 @@
 import { Nombre } from "./nombre.js";
 import { Grandeur } from "./calcul-grandeur.js";
 import * as reponse from "./reponse.js";
+import { rouge } from "./trou.js";
 
 function randInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
@@ -81,7 +82,9 @@ const thales = [
       const chaineTrou = paires
         .map(([num, den], i) => i === indexBlanc ? "\\dfrac{\\text{....}}{\\text{....}}" : `\\dfrac{${num}}{${den}}`)
         .join(" = ");
-      const chaineComplete = paires.map(([num, den]) => `\\dfrac{${num}}{${den}}`).join(" = ");
+      const chaineComplete = paires
+        .map(([num, den], i) => i === indexBlanc ? `\\dfrac{${rouge(num)}}{${rouge(den)}}` : `\\dfrac{${num}}{${den}}`)
+        .join(" = ");
 
       return {
         latex: `

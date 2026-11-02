@@ -42,7 +42,7 @@ class GuideAppli {
     contenu.id = "guideContenu";
     contenu.innerHTML = `
       <h3>Objectif</h3>
-      <p>S'entraîner sur les automatismes du collège : calcul (fractions, calcul numérique et littéral, durées, conversions, arrondis, calcul astucieux...), géométrie (bases de la géométrie, angles, aires, périmètres, volumes, Pythagore, Thalès...), proportionnalité, statistiques et probabilités — ainsi que des questions de cours.</p>
+      <p>S'entraîner sur les automatismes du collège : calcul (fractions, calcul numérique et littéral, durées, conversions, arrondis, calcul astucieux...), géométrie (bases de la géométrie, distances, angles, aires, périmètres, volumes, Pythagore, Thalès...), proportionnalité, statistiques et probabilités — ainsi que des questions de cours.</p>
 
       <h3>Panneau de gauche</h3>
       <p><b>Niveau</b> : plusieurs niveaux (<b>6e</b>, <b>5e</b>, <b>4e</b>, <b>3e</b>) peuvent être actifs à la fois — chaque question est piochée dans l'un d'eux.<br>
