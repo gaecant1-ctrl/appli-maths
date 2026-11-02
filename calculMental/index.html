@@ -55,6 +55,9 @@ main{flex:1;display:flex;flex-direction:column}
 .bar{width:min(700px,100%);height:14px;background:var(--line);border-radius:99px;overflow:hidden}
 .bar>div{height:100%;background:var(--accent);width:100%}
 .hint{color:var(--muted);font-size:1.15rem;text-align:center}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.15}
+.frac>span{padding:0 .15em}
+.frac>span+span{border-top:.07em solid currentColor;align-self:stretch;text-align:center}
 
 /* Correction flash 2 x 5 */
 .corr{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;gap:12px 20px;margin-top:12px}
@@ -253,6 +256,8 @@ function parseNum(s) {
   return parseFloat(s.replace(',', '.'));
 }
 const op = (a, o, b) => `${fmt(a)} ${o} ${fmt(b)}`;
+const pgcd = (a, b) => b ? pgcd(b, a % b) : a;
+const frac = (a, b) => `<span class="frac"><span>${a}</span><span>${b}</span></span>`;
 
 /* ================= Générateurs =================
    Chaque générateur renvoie { q: html du calcul, a: réponse, w: erreurs typiques (QCM) } */
@@ -362,6 +367,14 @@ function genTablesZeros() {             // 3 × 50, 40 × 70, 300 × 6 : une tab
   const x = a * 10 ** pa, y = b * 10 ** pb, z = 10 ** (pa + pb), p = a * b * z;
   return { q: op(x, '×', y), a: p, w: [p / 10, p * 10, a * (b + 1) * z, a * (b - 1) * z, (a + 1) * b * z] };
 }
+function genFractionNombre() {          // 3/4 × 20 : fraction irréductible et b divise c
+  const sup1 = Math.random() < .3;      // 3/2 × 8 : b et k plus petits pour rester en calcul mental
+  const b = sup1 ? R(2, 6) : R(2, 10), k = sup1 ? R(2, 10) : R(2, 12), c = b * k;
+  let a;
+  do { a = sup1 ? R(b + 1, 2 * b - 1) : R(1, b - 1); } while (pgcd(a, b) !== 1);
+  const p = a * k;
+  return { q: `${frac(a, b)} × ${fmt(c)}`, a: p, w: [a * c, k, c, p + k, p - k, p + a] };
+}
 const TYPES = [
   { id: 'entiers', label: 'Additions, soustractions', ex: '100 − 37',     on: true,  gen: genEntiers },
   { id: 'tables',  label: 'Tables de multiplication', ex: '7 × 8',        on: true,  gen: genTables },
@@ -372,6 +385,7 @@ const TYPES = [
   { id: 'quad',    label: 'Quadruple, quart',         ex: 'Quart de 60',  on: true,  gen: genQuad },
   { id: 'div60',   label: 'Divisions de 60',          ex: '60 : 12',      on: true,  gen: genDiv60 },
   { id: 'paren',   label: 'Calculs avec parenthèses', ex: '(3 × 4) + 5',  on: true,  gen: genParen },
+  { id: 'fracNb',  label: 'Fraction d’un nombre',     ex: `${frac(3, 4)} × 20`, on: true, gen: genFractionNombre },
   { id: 'mult10',  label: '× 10, × 100, × 1 000',     ex: '3,5 × 100',    on: false,  gen: genMult10 },
   { id: 'div10',   label: ': 10, : 100, : 1 000',     ex: '42 : 100',     on: false,  gen: genDiv10 },
   { id: 'dec',     label: 'Décimaux : + et −',        ex: '2,5 + 1,7',    on: false, gen: genDec },

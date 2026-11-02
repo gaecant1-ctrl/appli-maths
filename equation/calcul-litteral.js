@@ -1516,7 +1516,16 @@ class Quotient extends Expression {
     const [num, den] = this.termes;
     num.instanceOptions.parentheseObligatoire = null;
     den.instanceOptions.parentheseObligatoire = null;
-    return `\\frac{${num.toLatex(opts)}}{${den.toLatex(opts)}}`;
+    // La barre de fraction groupe déjà numérateur et dénominateur : on masque leurs
+    // parenthèses le temps du rendu, sans toucher au drapeau (toString en a encore besoin).
+    const sansParenthese = (terme) => {
+      const parenthese = terme.instanceOptions.parenthese;
+      terme.instanceOptions.parenthese = false;
+      const latex = terme.toLatex(opts);
+      terme.instanceOptions.parenthese = parenthese;
+      return latex;
+    };
+    return `\\frac{${sansParenthese(num)}}{${sansParenthese(den)}}`;
   }
 
   evaluer(opts = {}) {
