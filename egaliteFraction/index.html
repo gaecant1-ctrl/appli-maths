@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Égalité de fractions</title>
+<style>
+:root{
+  --papier:#ffffff; --papier-panel:#f1f8f3;
+  --grille:#d3ead9;
+  --encre:#23302a; --encre-douce:#5f7a68;
+  --accent:#2f9e44; --accent-hover:#237a35;
+  --header-fond:#f1f8f3; --header-bordure:#d3ead9; --header-texte:#1f5c33;
+  --coloriage:#f4b942; --coloriage-survol:#f9dc9f; --survol:#fbf3e0;
+  --partage2:#3f6fb5;
+  --rayon-petit:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;color:var(--encre);background:var(--papier-panel)}
+
+header{display:flex;align-items:center;padding:0 20px;min-height:54px;background:var(--header-fond);border-bottom:1px solid var(--header-bordure)}
+#titre_appli{font-size:1.2rem;padding:10px 0}
+#titre_appli b{color:var(--header-texte)}
+
+#appBody{display:flex;align-items:stretch;min-height:calc(100vh - 54px)}
+#panneauLateral{flex:0 0 280px;background:var(--papier);border-right:1px solid var(--grille);padding:20px 16px;display:flex;flex-direction:column;gap:18px}
+.panel-groupe{display:flex;flex-direction:column;gap:8px}
+.panel-label{font-size:11.5px;font-weight:700;color:var(--encre-douce);text-transform:uppercase;letter-spacing:.04em}
+.panel-aide{font-size:12.5px;color:var(--encre-douce);line-height:1.35}
+.choix{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.choix button,#effacer,#hasard,#cacherPartages{background:var(--papier-panel);border:2px solid var(--grille);border-radius:var(--rayon-petit);font:inherit;font-weight:700;color:var(--encre);cursor:pointer;transition:border-color .15s,color .15s,background-color .15s}
+.choix button{height:44px;font-size:16px;padding:0}
+.choix button:hover,#effacer:hover:enabled,#hasard:hover,#cacherPartages:hover{border-color:var(--accent);color:var(--accent)}
+.choix button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--papier)}
+.choix button[aria-pressed="true"]:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:var(--papier)}
+#choixK button:hover{border-color:var(--partage2);color:var(--partage2)}
+#choixK button[aria-pressed="true"]{background:var(--partage2);border-color:var(--partage2);color:var(--papier)}
+#choixK button[aria-pressed="true"]:hover{background:#2f5791;border-color:#2f5791;color:var(--papier)}
+#effacer,#hasard,#cacherPartages{width:100%;padding:10px 14px;font-size:13.5px}
+#effacer:disabled{cursor:default;color:#9a9a9a}
+#correction{height:44px;padding:0 24px;background:var(--accent);border:2px solid var(--accent);border-radius:var(--rayon-petit);font:inherit;font-size:15px;font-weight:700;color:var(--papier);cursor:pointer;transition:background-color .15s,border-color .15s,color .15s}
+#correction:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+#correction[aria-expanded="true"]{background:var(--papier);color:var(--accent)}
+#correction[aria-expanded="true"]:hover{background:var(--papier-panel);border-color:var(--accent-hover);color:var(--accent-hover)}
+button:focus-visible{outline:3px solid var(--encre);outline-offset:2px}
+
+main{flex:1;min-width:0;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:26px}
+
+#rectangle{position:relative;width:80%;aspect-ratio:5/2;background:var(--papier);border:3px solid var(--encre)}
+#parts{position:absolute;inset:0;display:flex}
+.part{flex:1 1 0;min-width:0;height:100%;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer;transition:background-color .12s}
+.part:hover{background:var(--survol)}
+.part[aria-pressed="true"]{background:var(--coloriage)}
+.part[aria-pressed="true"]:hover{background:var(--coloriage-survol)}
+.part:focus-visible{outline-offset:-5px}
+.trait{position:absolute;pointer-events:none}
+.trait-v{top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--encre);z-index:2}
+.trait-h{left:0;right:0;height:2px;margin-top:-1px;background:var(--partage2);z-index:1;transform-origin:left;animation:apparait .3s ease-out}
+#rectangle.sans-partages .trait{display:none}
+#rectangle.sans-partages .part:hover{background:transparent}
+#rectangle.sans-partages .part[aria-pressed="true"]:hover{background:var(--coloriage)}
+@keyframes apparait{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.trait-h{animation:none}.part{transition:none}}
+
+#egalite{display:flex;justify-content:center;align-items:flex-start;gap:22px}
+.bloc{display:flex;flex-direction:column;align-items:center;gap:10px;width:190px}
+.fraction{display:flex;flex-direction:column;align-items:center;font-size:44px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.fraction .num{padding:0 12px 2px}
+.fraction .den{padding:2px 12px 0;border-top:4px solid var(--encre);min-width:100%;text-align:center}
+.legende{font-size:14px;color:var(--encre-douce);text-align:center;line-height:1.3}
+#liaison{display:flex;flex-direction:column;align-items:center;justify-content:space-between;height:106px;font-weight:700;color:var(--partage2);font-size:20px}
+#liaison .egal{font-size:40px;line-height:1;color:var(--encre)}
+[hidden]{display:none !important}
+
+@media (max-width:760px){
+  #appBody{flex-direction:column}
+  #panneauLateral{flex:none;border-right:0;border-bottom:1px solid var(--grille)}
+  main{padding:20px 16px}
+  #egalite{gap:8px}
+  .bloc{width:auto;flex:1 1 0}
+  .fraction{font-size:36px}
+  #liaison{height:90px;font-size:17px}
+  #liaison .egal{font-size:32px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div id="titre_appli"><b>Égalité de fractions</b></div>
+</header>
+<div id="appBody">
+  <aside id="panneauLateral">
+    <button id="hasard" type="button">Hasard</button>
+    <div class="panel-groupe">
+      <div class="panel-label" id="labelD">Partage de la longueur</div>
+      <div class="choix" id="choixD" role="group" aria-labelledby="labelD"></div>
+      <div class="panel-aide">Clique sur les parts du rectangle pour les colorier.</div>
+    </div>
+    <div class="panel-groupe">
+      <div class="panel-label" id="labelK">Deuxième partage</div>
+      <div class="choix" id="choixK" role="group" aria-labelledby="labelK"></div>
+      <div class="panel-aide">Clique à nouveau sur le bouton allumé pour enlever ce partage.</div>
+    </div>
+    <button id="cacherPartages" type="button">Cacher les partages</button>
+    <button id="effacer" type="button">Effacer le coloriage</button>
+  </aside>
+
+  <main>
+    <div id="rectangle">
+      <div id="parts"></div>
+      <div id="traitsV"></div>
+      <div id="traitsH"></div>
+    </div>
+
+    <button id="correction" type="button" aria-controls="egalite">Correction</button>
+
+    <div id="egalite" aria-live="polite">
+      <div class="bloc">
+        <div class="fraction"><span class="num" id="num1"></span><span class="den" id="den1"></span></div>
+        <div class="legende" id="legende1"></div>
+      </div>
+      <div id="liaison">
+        <span id="multHaut"></span>
+        <span class="egal">=</span>
+        <span id="multBas"></span>
+      </div>
+      <div class="bloc" id="bloc2">
+        <div class="fraction"><span class="num" id="num2"></span><span class="den" id="den2"></span></div>
+        <div class="legende" id="legende2"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const PARTAGES = [2, 3, 4, 5, 10];
+const etat = { d: 4, k: 1, coloriees: new Set(), correction: false, partagesCaches: false };
+
+const $ = id => document.getElementById(id);
+
+function creerBoutons(conteneur, surClic) {
+  PARTAGES.forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = n;
+    b.dataset.n = n;
+    b.addEventListener('click', () => surClic(n));
+    conteneur.appendChild(b);
+  });
+}
+
+function majBoutons(conteneur, valeur) {
+  conteneur.querySelectorAll('button').forEach(b => {
+    b.setAttribute('aria-pressed', Number(b.dataset.n) === valeur);
+  });
+}
+
+function dessinerParts() {
+  const parts = $('parts');
+  parts.textContent = '';
+  for (let i = 0; i < etat.d; i++) {
+    const p = document.createElement('button');
+    p.type = 'button';
+    p.className = 'part';
+    p.setAttribute('aria-label', `Part ${i + 1} sur ${etat.d}`);
+    p.setAttribute('aria-pressed', etat.coloriees.has(i));
+    p.addEventListener('click', () => {
+      if (etat.coloriees.has(i)) etat.coloriees.delete(i);
+      else etat.coloriees.add(i);
+      etat.correction = false;
+      p.setAttribute('aria-pressed', etat.coloriees.has(i));
+      majFractions();
+    });
+    parts.appendChild(p);
+  }
+  const traits = $('traitsV');
+  traits.textContent = '';
+  for (let i = 1; i < etat.d; i++) {
+    const t = document.createElement('div');
+    t.className = 'trait trait-v';
+    t.style.left = (i / etat.d * 100) + '%';
+    traits.appendChild(t);
+  }
+}
+
+function dessinerDeuxiemePartage() {
+  const traits = $('traitsH');
+  traits.textContent = '';
+  for (let j = 1; j < etat.k; j++) {
+    const t = document.createElement('div');
+    t.className = 'trait trait-h';
+    t.style.top = (j / etat.k * 100) + '%';
+    traits.appendChild(t);
+  }
+}
+
+function legende(n, total, petite) {
+  const s = n > 1 ? 's' : '';
+  const nom = petite ? `petite${s} part${s}` : `part${s}`;
+  return `${n} ${nom} coloriée${s} sur ${total}`;
+}
+
+function majFractions() {
+  const a = etat.coloriees.size, b = etat.d, k = etat.k;
+  $('num1').textContent = a;
+  $('den1').textContent = b;
+  $('legende1').textContent = legende(a, b, false);
+
+  const avecDeuxieme = k > 1;
+  $('liaison').hidden = !avecDeuxieme;
+  $('bloc2').hidden = !avecDeuxieme;
+  if (avecDeuxieme) {
+    $('multHaut').textContent = '×' + k;
+    $('multBas').textContent = '×' + k;
+    $('num2').textContent = a * k;
+    $('den2').textContent = b * k;
+    $('legende2').textContent = legende(a * k, b * k, true);
+  }
+  $('effacer').disabled = a === 0;
+
+  $('egalite').hidden = !etat.correction;
+  $('correction').setAttribute('aria-expanded', etat.correction);
+  $('correction').textContent = etat.correction ? 'Masquer la correction' : 'Correction';
+}
+
+function cacherPartages(caches) {
+  etat.partagesCaches = caches;
+  $('rectangle').classList.toggle('sans-partages', caches);
+  $('cacherPartages').textContent = caches ? 'Montrer les partages' : 'Cacher les partages';
+}
+
+$('cacherPartages').addEventListener('click', () => cacherPartages(!etat.partagesCaches));
+
+creerBoutons($('choixD'), n => {
+  cacherPartages(false);
+  if (n === etat.d) return;
+  etat.d = n;
+  etat.coloriees.clear();
+  etat.correction = false;
+  majBoutons($('choixD'), etat.d);
+  dessinerParts();
+  majFractions();
+});
+
+creerBoutons($('choixK'), n => {
+  cacherPartages(false);
+  etat.k = n === etat.k ? 1 : n;
+  etat.correction = false;
+  majBoutons($('choixK'), etat.k);
+  dessinerDeuxiemePartage();
+  majFractions();
+});
+
+$('effacer').addEventListener('click', () => {
+  etat.coloriees.clear();
+  etat.correction = false;
+  dessinerParts();
+  majFractions();
+});
+
+const auHasard = liste => liste[Math.floor(Math.random() * liste.length)];
+const entierEntre = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const signature = (d, k, indices) => [d, k, [...indices].sort((x, y) => x - y)].join('|');
+
+$('hasard').addEventListener('click', () => {
+  const avant = signature(etat.d, etat.k, etat.coloriees);
+  let d, k, coloriees;
+  do {
+    d = auHasard(PARTAGES);
+    k = auHasard(PARTAGES);
+    const a = entierEntre(1, d - 1);
+    coloriees = Array.from({ length: a }, (_, i) => i);
+  } while (signature(d, k, coloriees) === avant);
+
+  etat.d = d;
+  etat.k = k;
+  etat.coloriees = new Set(coloriees);
+  etat.correction = false;
+  majBoutons($('choixD'), etat.d);
+  majBoutons($('choixK'), etat.k);
+  dessinerParts();
+  dessinerDeuxiemePartage();
+  majFractions();
+});
+
+$('correction').addEventListener('click', () => {
+  etat.correction = !etat.correction;
+  majFractions();
+});
+
+majBoutons($('choixD'), etat.d);
+majBoutons($('choixK'), etat.k);
+dessinerParts();
+dessinerDeuxiemePartage();
+majFractions();
+</script>
+</body>
+</html>
