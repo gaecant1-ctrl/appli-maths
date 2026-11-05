@@ -35,6 +35,19 @@
     border-radius:10px;padding:12px;min-height:84px;}
   #consigne b{color:var(--accent);}
   .etapes{font-size:14px;color:var(--muted);margin:0;padding-left:18px;line-height:1.5;}
+  #sidebar>*{flex-shrink:0;}   /* sinon la consigne s'écrase quand la colonne se remplit */
+  /* Hauteur fixe : la figure ne change jamais de taille quand la liste se remplit */
+  #colonne{flex:1;min-width:0;display:flex;flex-direction:column;}
+  #ecrire{flex:0 0 106px;height:106px;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px;padding:8px 12px;background:var(--panel);border-top:1px solid var(--border);}
+  #ecrire label{font-size:15px;color:var(--muted);white-space:nowrap;}
+  #ecrire-form{display:flex;gap:8px;align-items:center;}
+  #saisie{flex:1;min-width:0;font:inherit;font-size:17px;padding:8px;border:1px solid var(--border);border-radius:8px;}
+  #saisie:focus{outline:none;border-color:var(--accent);}
+  #ecrire-form button{padding:8px 10px;}
+  #journal{list-style:none;margin:0;padding:0;font-size:14px;line-height:1.35;flex:1;min-height:0;overflow-y:auto;}
+  #journal li{margin-bottom:2px;}
+  #journal .ok{color:var(--ok);}
+  #journal .ko{color:var(--ko);}
   #pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,58px);gap:6px;justify-content:center;}
   #pad button{font-size:24px;padding:0;user-select:none;-webkit-user-select:none;touch-action:none;}
   #pad .up{grid-column:2;grid-row:1;}
@@ -48,7 +61,7 @@
   details{font-size:14px;color:var(--muted);}
   details summary{cursor:pointer;}
   details .col{margin-top:8px;}
-  #stage{flex:1;position:relative;background:#fff;}
+  #stage{flex:1;min-height:0;position:relative;overflow:hidden;background:#fff;}
   #ggb{position:absolute;inset:0;}
   #overlay{position:absolute;pointer-events:none;z-index:3;}
   /* Dès que le bonhomme part : plus aucune construction possible */
@@ -101,17 +114,18 @@
     </div>
     <div class="touches">Flèches du clavier · Maj = lent</div>
     <div class="col">
-      <button id="btn-reset">🔄 Recommencer</button>
-      <label class="chk"><input type="checkbox" id="chk-viseur" checked> Viseur</label>
+      <button id="btn-reset">🔄 Recommencer la traversée</button>
+      <button id="btn-effacer">🧹 Effacer les tracés</button>
+      <label class="chk"><input type="checkbox" id="chk-viseur"> Viseur</label>
     </div>
     <details>
       <summary>Professeur</summary>
       <div class="col">
         <label class="chk"><input type="checkbox" id="chk-mines"> Montrer les mines</label>
-        <button id="btn-effacer">Effacer les tracés</button>
       </div>
     </details>
   </aside>
+  <div id="colonne">
   <main id="stage">
     <div id="ggb"></div>
     <div id="verrou"><div class="badge">🔒 Construction terminée</div></div>
@@ -138,6 +152,15 @@
     </svg></div><div class="big"></div><div class="small"></div><button id="btn-again">Recommencer</button></div>
     <div id="loading">Chargement…</div>
   </main>
+    <div id="ecrire">
+      <form id="ecrire-form">
+        <label for="saisie">Ou écris une instruction :</label>
+        <input id="saisie" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Tracer ...">
+        <button type="submit">OK</button>
+      </form>
+      <ul id="journal"></ul>
+    </div>
+  </div>
 </div>
 
 <script src="https://www.geogebra.org/apps/deployggb.js"></script>
@@ -251,6 +274,7 @@ const pt=p=>`(${p[0]},${p[1]})`;
 
 // ---------- Codage automatique (repris de geogebra-chasse-tresor) ----------
 let codageEnCours=false, nbEgaux=0;
+const objetsCodage=new Set();   // marques de codage : ce ne sont pas des tracés
 const ligne=t=>t==='line'||t==='segment'||t==='ray';
 const args=cs=>cs.split(',').map(x=>x.trim());
 function extremites(seg){
@@ -270,6 +294,7 @@ function longueursEgales(P,M,Q){
   const deco=4+(nbEgaux++%2);
   for(const [u,v] of [[P,M],[M,Q]]){
     const s=ggb.evalCommandGetLabels(`Segment(${u},${v})`); if(!s) continue;
+    objetsCodage.add(s);
     ggb.evalCommand(`SetDecoration(${s},${deco})`); ggb.setLabelVisible(s,false); ggb.setColor(s,0,0,0); ggb.setFixed(s,true,false);
   }
 }
@@ -317,7 +342,7 @@ function coder(n){
     const a=args(m[1]); const pq=a.length===2?a:(a.length===1?extremites(a[0]):null);
     if(!pq) return;
     const I=ggb.evalCommandGetLabels(`Midpoint(${pq[0]},${pq[1]})`);
-    if(I){ ggb.setLabelVisible(I,false); ggb.setPointSize(I,2); ggb.setFixed(I,true,false); longueursEgales(pq[0],I,pq[1]); }
+    if(I){ objetsCodage.add(I); ggb.setLabelVisible(I,false); ggb.setPointSize(I,2); ggb.setFixed(I,true,false); longueursEgales(pq[0],I,pq[1]); }
     const d=ggb.evalCommandGetLabels(`Line(${pq[0]},${pq[1]})`);
     if(d){ ggb.setVisible(d,false); angleDroit(d,n); }
   }
@@ -353,6 +378,7 @@ function construire(){
   for(const t of ['txtD','txtA']){ ggb.setFixed(t,true,false); ggb.setColor(t,30,110,60); }
   baseObjets = new Set(ggb.getAllObjectNames());
   ggb.registerAddListener(n=>{ if(pointALaVolee(n)) return; if(!codageEnCours){ codageEnCours=true; try{ coder(n); }catch(e){ console.warn('codage',e); } finally{ codageEnCours=false; } } });
+  ggb.registerRemoveListener(n=>objetsCodage.delete(n));   // GeoGebra réutilise les noms libérés
   cadrer();
   window.addEventListener('resize',()=>{ ggb.setSize(stage.clientWidth,stage.clientHeight); setTimeout(cadrer,150); });
   choisirCas(0);
@@ -545,6 +571,7 @@ function recommencer(){
   verrouiller(false);
   Object.assign(bh,{pos:[...DEPART_POS],ang:Math.PI/2,phase:0,trace:[],etat:'jeu',tEtat:0,boom:null});
   msg.style.display='none';
+  journal.innerHTML='';
   for(const k in keys) keys[k]=false;
   document.querySelectorAll('#pad button').forEach(b=>b.classList.remove('held'));
 }
@@ -557,6 +584,228 @@ function choisirCas(i){
   mines=genererMines();
   recommencer();
 }
+
+// ---------- Écrire une instruction (au lieu des outils) ----------
+// Même règle qu'avec les outils : points donnés, intersections et milieux seulement.
+// Les noms choisis sont des légendes : (c) et (d) restent libres alors que c et d sont
+// les côtés du champ pour GeoGebra.
+const COTES={AB:'a',BC:'b',CD:'c',DA:'d'};
+const COTE=(P,Q)=>COTES[P+Q]||COTES[Q+P]||null;
+const NOM='[A-Za-z]\\d?';
+let nomsEleve={}, dernierObjet=null;
+const journal=document.getElementById('journal'), saisie=document.getElementById('saisie');
+function viderEcriture(){ nomsEleve={}; dernierObjet=null; journal.innerHTML=''; saisie.value=''; }
+function noter(texte,ok,detail){
+  const li=document.createElement('li'); li.className=ok?'ok':'ko';
+  li.textContent=(ok?'✓ ':'✗ ')+texte+(detail?' : '+detail:'');
+  journal.appendChild(li); journal.scrollTop=journal.scrollHeight;
+}
+function pointsDuCas(){
+  const m={A:'A',B:'B',C:'C',D:'D'};
+  if(CAS[cas].E) m.E='E';
+  for(const n of CAS[cas].pts||[]) m[ggb.getCaption(n)]=n;
+  return m;
+}
+function nomEleve(n){ const o=nomsEleve[n]; return o&&ggb.exists(o)?o:null; }
+// Objet renommé dans GeoGebra (clic droit) : son nom est affiché. Les noms internes (f, G…) restent inaccessibles.
+const nomAffiche=n=>ggb.exists(n)&&!baseObjets.has(n)&&ggb.getLabelVisible(n)&&!ggb.getCaption(n);
+function chercherPoint(n){
+  const cas_=pointsDuCas();
+  for(const v of [n,n.toUpperCase()]){
+    if(cas_[v]) return cas_[v];
+    const o=nomEleve(v);
+    if(o&&ggb.getObjectType(o)==='point') return o;
+    if(nomAffiche(v)&&ggb.getObjectType(v)==='point') return v;
+  }
+  return null;
+}
+function point(n){
+  const p=chercherPoint(n);
+  if(!p) throw new Error(`le point ${n.toUpperCase()} n'est pas sur la figure`);
+  return p;
+}
+// Un tracé déjà fait (aux outils ou écrit) : getCommandString(n,false) donne « Line[A, B] »
+const commandeDe=n=>(ggb.getCommandString(n,false)||'').replace(/\s/g,'').replace(/\[/g,'(').replace(/\]/g,')');
+function trouve(genre,P,Q){
+  const voulu=[`${genre}(${P},${Q})`]; if(genre!=='Ray') voulu.push(`${genre}(${Q},${P})`);
+  return ggb.getAllObjectNames().find(n=>!baseObjets.has(n)&&!objetsCodage.has(n)&&ggb.getVisible(n)
+    &&voulu.includes(commandeDe(n)))||null;
+}
+function epurerRef(t){
+  return t.trim().replace(/^(?:(?:(?:aux|au|a|le|la|du|des|de|segment|demi-droite|demi droite|droite|cercle|mur|cote|point)\b|l'|d')\s*)+(?=[\[(A-Za-z])/i,'').trim();
+}
+// Lit « [AB] », « (AB) », « [AB) », « (d) » ou « d »
+function lireRef(texte){
+  const t=epurerRef(texte).replace(/\s+/g,'');
+  let m;
+  if((m=t.match(new RegExp(`^\\(?(${NOM})\\)?$`)))) return {nom:m[1]};
+  if((m=t.match(new RegExp(`^([\\[(])(${NOM})(${NOM})([\\])])$`)))){
+    const genre=m[1]==='['?(m[4]===']'?'Segment':'Ray'):(m[4]===')'?'Line':null);
+    if(genre) return {genre,P:point(m[2]),Q:point(m[3]),cote:COTE(m[2].toUpperCase(),m[3].toUpperCase()),texte:t};
+  }
+  throw new Error(`je ne comprends pas « ${texte.trim()} »`);
+}
+const MOT_GENRE={Segment:'le segment',Line:'la droite',Ray:'la demi-droite'};
+function objetNomme(n){
+  const o=nomEleve(n)||nomEleve(n.toLowerCase());
+  if(o) return o;
+  if(nomAffiche(n)) return n;
+  throw new Error(`aucun objet ne s'appelle (${n})`);
+}
+// Objet sur lequel on prend une intersection : il doit être tracé (ou être un côté du champ)
+function objet(texte){
+  const r=lireRef(texte);
+  if(r.nom) return objetNomme(r.nom);
+  const o=trouve(r.genre,r.P,r.Q)||r.cote;
+  if(!o) throw new Error(`trace d'abord ${MOT_GENRE[r.genre]} ${r.texte}`);
+  return o;
+}
+// Droite de référence d'une perpendiculaire ou d'une parallèle : pas besoin de la tracer avant
+function direction(texte){
+  const r=lireRef(texte);
+  if(r.nom){
+    const o=objetNomme(r.nom);
+    if(!ligne(ggb.getObjectType(o))) throw new Error(`(${r.nom}) n'est pas une droite`);
+    return o;
+  }
+  const o=r.cote||trouve('Line',r.P,r.Q)||trouve('Segment',r.P,r.Q)||trouve('Ray',r.P,r.Q);
+  if(o) return o;
+  const h=ggb.evalCommandGetLabels(`Line(${r.P},${r.Q})`);
+  if(!h) throw new Error('ces deux points ne donnent pas une droite');
+  ggb.setVisible(h,false);
+  return h;
+}
+function deuxPoints(t,exemple){
+  let m=t.match(new RegExp(`[\\[(]\\s*(${NOM})\\s*(${NOM})\\s*[\\])]`));
+  if(!m) m=t.match(new RegExp(`\\b(${NOM})\\s+et\\s+(${NOM})\\b`));
+  if(!m) throw new Error(`précise : ${exemple}`);
+  return [point(m[1]),point(m[2])];
+}
+const passantPar=t=>{ const m=t.match(new RegExp(`\\bpar\\s+(?:le point\\s+)?(${NOM})\\b`)); return m?point(m[1]):null; };
+function nettoyerPhrase(p){
+  return p.replace(/©/g,'(c)').replace(/®/g,'(r)').replace(/[’‘`´]/g,"'").normalize('NFD').replace(/\p{M}/gu,'')
+    .replace(/\s+/g,' ').trim().replace(/[.;!]+$/,'').trim();
+}
+// Phrase → commande GeoGebra {cmd, cible, inter}
+function comprendre(phrase){
+  let t=nettoyerPhrase(phrase), cible=null, m;
+  const nommerSeul=t.match(new RegExp(`^(?:nommer|nomme|appeler|appelle)\\s+\\(?(${NOM})\\)?$`,'i'));
+  if(nommerSeul) return {renommer:nommerSeul[1]};
+  t=t.replace(/^(?:tracer|trace|construire|construis|dessiner|dessine|placer|place|nommer|nomme)\s+/i,'');
+  // « … et la nommer (d) », « …, appelée (d) »
+  if((m=t.match(new RegExp(`\\s*,?\\s*(?:et\\s+(?:le|la|l')\\s*(?:nommer|appeler)|nommee?|appelee?)\\s+\\(?(${NOM})\\)?$`,'i')))){
+    cible=m[1]; t=t.slice(0,m.index);
+  }
+  // « (c) le cercle… », « I, le milieu… », « d la droite… »
+  if((m=t.match(new RegExp(`^\\(?(${NOM})\\)?\\s*[,:]?\\s+(?=(?:l[ea]\\s|l'|une?\\s)?(?:cercle|droite|demi|perp|paral|segment|mediatrice|milieu|point|intersection))`)))){
+    cible=m[1]; t=t.slice(m[0].length);
+  }
+  t=t.replace(/\s*,\s*situe.*$/i,'');
+  if(/intersection/i.test(t)){
+    m=t.match(/(?:entre|de|des)\s+(.+?)\s+et\s+(.+)$/i);
+    if(!m) throw new Error("précise : le point d'intersection entre (d) et [AB]");
+    const u=objet(m[1]), v=objet(m[2]);
+    return {cible,inter:[u,v]};
+  }
+  if(/perpendiculaire|parallele/i.test(t)){
+    const perp=/perpendiculaire/i.test(t), mot=perp?'la perpendiculaire':'la parallèle';
+    m=t.match(/(?:perpendiculaire|parallele)\s+(?:(?:aux|au|a)\b\s*)?(.+?)\s+(?:et\s+)?(?:passant\s+)?par\s/i);
+    if(!m) throw new Error(`précise : ${mot} à (AB) passant par E`);
+    const P=passantPar(t), d=direction(m[1]);
+    return {cible,cmd:perp?`PerpendicularLine(${P},${d})`:`Line(${P},${d})`};
+  }
+  if(/mediatrice/i.test(t)){ const [P,Q]=deuxPoints(t,'la médiatrice de [AB]'); return {cible,cmd:`PerpendicularBisector(${P},${Q})`}; }
+  if(/milieu/i.test(t)){ const [P,Q]=deuxPoints(t,'le milieu de [AB]'); return {cible,cmd:`Midpoint(${P},${Q})`}; }
+  if(/cercle/i.test(t)){
+    m=t.match(new RegExp(`centre\\s+(${NOM})\\b`));
+    if(!m) throw new Error('précise : le cercle de centre A passant par E');
+    const O=point(m[1]), r=t.match(/rayon\s+(?:de\s+)?(\d+(?:[.,]\d+)?)/i);
+    if(r) return {cible,cmd:`Circle(${O},${r[1].replace(',','.')})`};
+    const P=passantPar(t);
+    if(!P) throw new Error('précise : le cercle de centre A passant par E');
+    return {cible,cmd:`Circle(${O},${P})`};
+  }
+  if(/demi[- ]?droite/i.test(t)||/^\[[^\]]*\)$/.test(t)){
+    m=t.match(new RegExp(`origine\\s+(${NOM})\\b`));
+    if(m){ const P=passantPar(t); if(!P) throw new Error("précise : la demi-droite d'origine A passant par E"); return {cible,cmd:`Ray(${point(m[1])},${P})`}; }
+    const [P,Q]=deuxPoints(t,'la demi-droite [AB)');
+    return {cible,cmd:`Ray(${P},${Q})`};
+  }
+  if(/segment/i.test(t)||/^\[[^\]]*\]$/.test(t)){ const [P,Q]=deuxPoints(t,'le segment [AB]'); return {cible,cmd:`Segment(${P},${Q})`}; }
+  if(/droite/i.test(t)||/^\([^)]*\)$/.test(t)){ const [P,Q]=deuxPoints(t,'la droite (AB)'); return {cible,cmd:`Line(${P},${Q})`}; }
+  throw new Error('je ne comprends pas. Exemple : Tracer la droite (AB)');
+}
+function donnerNom(obj,n){
+  const estPoint=ggb.getObjectType(obj)==='point';
+  const nom=estPoint?n.toUpperCase():n.toLowerCase();
+  if(pointsDuCas()[nom]||(nomEleve(nom)&&nomEleve(nom)!==obj)) throw new Error(`le nom ${estPoint?nom:'('+nom+')'} est déjà pris`);
+  nomsEleve[nom]=obj;
+  ggb.setCaption(obj,estPoint?nom:`(${nom})`); ggb.setLabelStyle(obj,3); ggb.setLabelVisible(obj,true);
+}
+function creerIntersection(u,v){
+  const courbe=[u,v].some(o=>ggb.getObjectType(o)==='circle');
+  const labels=(courbe?[`Intersect(${u},${v},1)`,`Intersect(${u},${v},2)`]:[`Intersect(${u},${v})`])
+    .map(c=>ggb.evalCommandGetLabels(c)).filter(Boolean);
+  // un point non défini ou hors de la figure ne sert à rien
+  let garde=[];
+  for(const n of labels){
+    const dedans=ggb.isDefined(n)&&ggb.getXcoord(n)>=0&&ggb.getXcoord(n)<=W&&ggb.getYcoord(n)>=0&&ggb.getYcoord(n)<=H;
+    if(dedans) garde.push(n); else ggb.deleteObject(n);
+  }
+  if(!garde.length) throw new Error('ces deux objets ne se coupent pas ici');
+  if(garde.length>1){
+    const champ=garde.filter(n=>dansPoly([ggb.getXcoord(n),ggb.getYcoord(n)],CHAMP));
+    if(champ.length===1){ garde.filter(n=>n!==champ[0]).forEach(n=>ggb.deleteObject(n)); garde=champ; }
+  }
+  return garde;
+}
+// Le même tracé existe déjà ? (Segment, Line et Midpoint de deux points : dans les deux sens)
+function dejaFait(cmd){
+  // GeoGebra relit PerpendicularLine en OrthogonalLine et PerpendicularBisector en LineBisector
+  const c=cmd.replace(/^PerpendicularLine/,'OrthogonalLine').replace(/^PerpendicularBisector/,'LineBisector');
+  const voulu=[c], m=c.match(/^(Segment|Line|Midpoint|LineBisector)\(([^,]+),([^,]+)\)$/);
+  if(m) voulu.push(`${m[1]}(${m[3]},${m[2]})`);
+  return ggb.getAllObjectNames().find(n=>!baseObjets.has(n)&&!objetsCodage.has(n)&&ggb.getVisible(n)
+    &&voulu.includes(commandeDe(n)))||null;
+}
+function executer(phrase){
+  if(document.getElementById('verrou').style.display==='block') throw new Error('construction terminée, clique sur Recommencer');
+  const c=comprendre(phrase);
+  if(c.renommer){
+    if(!dernierObjet||!ggb.exists(dernierObjet)) throw new Error('rien à nommer pour le moment');
+    donnerNom(dernierObjet,c.renommer);
+    return '';
+  }
+  if(c.inter){
+    const pts=creerIntersection(...c.inter);
+    if(pts.length>1) return 'deux points : aucun nom donné';
+    dernierObjet=pts[0];
+    if(c.cible) donnerNom(pts[0],c.cible);
+    return '';
+  }
+  const deja=dejaFait(c.cmd);
+  if(deja){
+    const dejaNomme=Object.keys(nomsEleve).find(k=>nomsEleve[k]===deja);
+    if(dejaNomme) throw new Error(`déjà tracé : c'est ${ggb.getCaption(deja)||dejaNomme}`);
+    if(!c.cible) throw new Error('déjà tracé');
+    dernierObjet=deja; donnerNom(deja,c.cible);
+    return '';
+  }
+  const n=ggb.evalCommandGetLabels(c.cmd);
+  if(!n) throw new Error('construction impossible');
+  if(!ggb.isDefined(n)){ ggb.deleteObject(n); throw new Error('construction impossible'); }
+  dernierObjet=n;
+  if(c.cible) donnerNom(n,c.cible);
+  return '';
+}
+document.getElementById('ecrire-form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const phrase=saisie.value.trim();
+  if(!phrase||!ggb) return;
+  try{ noter(phrase,true,executer(phrase)); saisie.value=''; }
+  catch(err){ noter(phrase,false,err.message); }   // la phrase reste là pour être corrigée
+  [0,60,200].forEach(ms=>setTimeout(()=>{ if(bh.etat==='jeu') saisie.focus(); },ms));   // GeoGebra reprend le clavier
+});
 
 // ---------- Sons ----------
 let ac=null;
@@ -583,6 +832,7 @@ function sonVictoire(){
 const TOUCHES={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
 function saisieTexte(){
   const el=document.activeElement; if(!el) return false;
+  if(el.id==='saisie' && !el.value) return false;   // champ vide : les flèches pilotent le bonhomme
   if(el.isContentEditable) return el.offsetWidth>2;
   return (el.tagName==='INPUT'&&el.type==='text'||el.tagName==='TEXTAREA') && el.offsetWidth>2;
 }
@@ -613,13 +863,15 @@ document.getElementById('btn-reset').addEventListener('click',recommencer);
 function effacerTraces(){
   if(!ggb) return;
   for(const n of ggb.getAllObjectNames()) if(!baseObjets.has(n) && ggb.exists(n)) ggb.deleteObject(n);
+  viderEcriture();
 }
 // Après une traversée réussie : cas suivant (figure propre) ; après une explosion : on recommence.
 document.getElementById('btn-again').addEventListener('click',()=>{
   if(bh.etat==='gagne'){ effacerTraces(); choisirCas(cas===CAS.length-1 ? 1 : cas+1); }
   else recommencer();
 });
-document.getElementById('btn-effacer').addEventListener('click',effacerTraces);
+// Repartir de zéro : plus de tracés, bonhomme au départ, construction déverrouillée.
+document.getElementById('btn-effacer').addEventListener('click',()=>{ effacerTraces(); recommencer(); });
 </script>
 </body>
 </html>
