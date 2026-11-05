@@ -287,17 +287,20 @@ const frac = (n, d) => `<span class="frac"><span>${n}</span><span>${d}</span></s
 const melanger = t => { t = [...t]; for (let k = t.length - 1; k > 0; k--) { const j = hasard(k + 1); [t[k], t[j]] = [t[j], t[k]]; } return t; };
 
 // ---------- Les questions des serpents ----------
-// Plateau 1 : les quatre opérations, le résultat est toujours entier (a est un multiple de b)
+// Plateau 1 : les quatre opérations ; les produits et les quotients restent dans les tables de multiplication
 function questionOperation() {
   const sorte = hasard(4);
   if (sorte === 3) {
-    const b = entier(3, 10), a = b * entier(3, 10);
+    const a = entier(3, 10), b = entier(3, 10);
     return { html: `Quel est le produit de ${a} et ${b} ?`, r: a * b, correction: `${a} × ${b} = ${a * b}`, lire: lireEntier };
+  }
+  if (sorte === 2) {
+    const b = entier(3, 10), q = entier(3, 10), a = b * q;
+    return { html: `Quel est le quotient de ${a} par ${b} ?`, r: q, correction: `${a} : ${b} = ${q}`, lire: lireEntier };
   }
   const b = entier(7, 15), a = b * entier(7, 15);
   if (sorte === 0) return { html: `Quelle est la somme de ${a} et ${b} ?`, r: a + b, correction: `${a} + ${b} = ${a + b}`, lire: lireEntier };
-  if (sorte === 1) return { html: `Quelle est la différence de ${a} et ${b} ?`, r: a - b, correction: `${a} − ${b} = ${a - b}`, lire: lireEntier };
-  return { html: `Quel est le quotient de ${a} par ${b} ?`, r: a / b, correction: `${a} : ${b} = ${a / b}`, lire: lireEntier };
+  return { html: `Quelle est la différence de ${a} et ${b} ?`, r: a - b, correction: `${a} − ${b} = ${a - b}`, lire: lireEntier };
 }
 // Plateau 2 : une fraction à écrire sous forme mixte, 17/5 = 3 + 2/5 (la fraction donnée est irréductible)
 function questionMixte() {
@@ -441,7 +444,7 @@ const NIVEAUX = [
     titre: "Plateau 1", consigne: "touche le serpent et réponds juste à ses questions, sans te tromper",
     depart: [8, 115],
     blocs: [[0, 137.3, 245, 43], [-3, -50, 7.5, 187.3], [4.9, 125.4, 18, 11.9],
-      [7.7, 55, 18, 3], [18.2, 101, 90.3, 2.7], [18.3, 97.2, 4, 3.8], [104.4, 97.4, 4, 3.6],
+      [7.7, 55, 18, 3],
       [44.1, 73.9, 28.4, 3.2], [52.5, 33.4, 18, 3.1], [98.2, 26.4, 17.8, 3.8],
       [116.5, 85.9, 45.2, 3.5], [131, 87.7, 7.5, 26.7], [131, 114.2, 51, 5.6],
       [193.8, 49.4, 24.5, 5.3], [209.8, 52.2, 6.5, 85.1], [237.5, -70, 7, 181.3]],
@@ -449,9 +452,9 @@ const NIVEAUX = [
     piege: null,
     serpent: { x: 150, y: 114.2, dir: 1 },          // y = sol sous le serpent
     pont: { x: 115, y: 27, w: 81 },                 // le serpent allongé : passage vers la droite
-    repousse: { x: 165, vx: 9, vy: -3, ejecte: 60 },     // éjecté de l'étagère jusqu'au sol (chez le crabe), sans commande pendant 2 s
-    // crabes : ils tombent, marchent tout droit, font demi-tour contre un mur ; les toucher fait perdre le plateau
-    crabes: [{ x: 64, y: 22, v: 1.5, taille: 1 }, { x: 130, y: 26, v: 2.5, taille: .8 }],
+    repousse: { x: 165, vx: 9, vy: -3, ejecte: 60 },     // éjecté de l'étagère jusqu'au sol, sans commande pendant 2 s
+    // un petit crabe immobile au sol ; le toucher fait perdre le plateau
+    crabes: [{ x: 75, y: 130, v: 0, taille: .6 }],
     bonnes: 5, affilee: true, question: questionOperation, sortieY: 124
   },
   {
@@ -588,7 +591,7 @@ const NIVEAUX = [
 // Tableau final : le crapaud se promène entre les socles de pierre, un par plateau, chacun avec sa créature ;
 // le panneau donne le bilan (notion de chaque plateau, réponses justes)
 const SOCLES = [
-  { x: 2, notion: "les quatre opérations (le serpent, les crabes)" },
+  { x: 2, notion: "les quatre opérations (le serpent, le crabe)" },
   { x: 27, notion: "une fraction sous forme mixte (17/5 = 3 + 2/5)" },
   { x: 52, notion: "une fraction d'heure en h et min (7/4 h = 1 h + 45 min)" },
   { x: 77, notion: "la fraction d'un nombre (2/3 × 240 = 160) avec l'aigle" },
@@ -2121,13 +2124,13 @@ function dessinerCrapaud(c, t) {
 // Crabe, vu de face : carapace large et plate orange-rouge, deux grosses pinces levées qui s'ouvrent et se ferment,
 // quatre pattes pointues de chaque côté, yeux noirs au bout de pédoncules
 function dessinerCrabe(k, t) {
-  const e = k.taille, cx = k.x + k.w / 2, bas = k.y + k.h, trot = k.auSol ? t / 2.2 + k.x : 0;
+  const e = k.taille, cx = k.x + k.w / 2, bas = k.y + k.h, trotte = k.auSol && k.v !== 0, trot = trotte ? t / 2.2 + k.x : 0;
   ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(cx, bas + .2, 7.5 * e, 1 * e);
   ctx.save(); ctx.translate(cx, bas); ctx.scale(e, e);
   ctx.lineCap = "round"; ctx.lineJoin = "round";
   // pattes : 4 de chaque côté, coudées, pointe au sol ; elles trottinent en alternance
   for (const s of [-1, 1]) for (let i = 0; i < 4; i++) {
-    const lev = k.auSol ? Math.max(0, Math.sin(trot + i * 1.6 + (s > 0 ? Math.PI : 0))) * .9 : 0;
+    const lev = trotte ? Math.max(0, Math.sin(trot + i * 1.6 + (s > 0 ? Math.PI : 0))) * .9 : 0;
     const x0 = s * (3.2 + i * .5), y0 = -3 + i * .35;
     const xg = s * (5.4 + i * .9), yg = -5 + i * .7 - lev;
     const xp = s * (6.4 + i * 1), yp = -lev * .6;
