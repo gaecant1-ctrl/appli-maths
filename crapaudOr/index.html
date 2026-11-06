@@ -70,8 +70,13 @@
   .calcul.bilan .score{font-size:1.15rem;font-weight:700;margin:0 0 4px;}
   .calcul.bilan .boutons{display:flex;gap:8px;flex-wrap:wrap;}
   .calcul.attente{color:var(--muted);font-weight:400;font-size:.9rem;background:var(--bg);border-color:var(--border);}
-  .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.1;margin:0 .1em;}
+  .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.1;margin:0 .1em;position:relative;top:-.07em;}   /* la barre au niveau du signe = */
   .frac > span:first-child{border-bottom:2px solid currentColor;padding:0 .15em;}
+  /* numérateur et dénominateur de même hauteur (même avec une case de saisie) : les barres de fraction s'alignent */
+  .frac > span{height:1.3em;display:flex;align-items:center;justify-content:center;}
+  /* plateau 1 : la case de réponse est dans l'égalité, à la place du nombre qui manque */
+  .calcul input.trou{width:2.6em;height:1.2em;box-sizing:border-box;font:inherit;line-height:1;text-align:center;padding:0 .1em;margin:0;border:2px solid var(--border);border-radius:7px;background:#fff;color:inherit;}
+  .calcul input.trou:focus{outline:none;border-color:var(--accent);}
   .reponse{display:flex;gap:8px;margin-top:10px;}
   .reponse input{flex:1;min-width:0;font:inherit;font-size:1.4rem;padding:10px 12px;border:2px solid var(--border);border-radius:10px;text-align:center;}
   .reponse input:focus{outline:none;border-color:var(--accent);}
@@ -274,7 +279,7 @@ const fr = s => s.replace(/ ([?!:;»])/g, " $1");
 const lignes = s => s
   .replace(/ — /g, "\n")
   .replace(/ ; /g, " ;\n")
-  .replace(/([.…)]) (?=[A-ZÀ-ÖØ-Ý(])/g, "$1\n")
+  .replace(/([.…)]) (?=[A-ZÀ-ÖØ-Ý(\d])/g, "$1\n")              // aussi avant un calcul : « …encore.\n9/18 = 1/2 »
   .replace(/ (En maya :)/g, "\n$1");
 const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
@@ -287,20 +292,51 @@ const frac = (n, d) => `<span class="frac"><span>${n}</span><span>${d}</span></s
 const melanger = t => { t = [...t]; for (let k = t.length - 1; k > 0; k--) { const j = hasard(k + 1); [t[k], t[j]] = [t[j], t[k]]; } return t; };
 
 // ---------- Les questions des serpents ----------
-// Plateau 1 : les quatre opérations ; les produits et les quotients restent dans les tables de multiplication
-function questionOperation() {
-  const sorte = hasard(4);
-  if (sorte === 3) {
-    const a = entier(3, 10), b = entier(3, 10);
-    return { html: `Quel est le produit de ${a} et ${b} ?`, r: a * b, correction: `${a} × ${b} = ${a * b}`, lire: lireEntier };
-  }
-  if (sorte === 2) {
-    const b = entier(3, 10), q = entier(3, 10), a = b * q;
-    return { html: `Quel est le quotient de ${a} par ${b} ?`, r: q, correction: `${a} : ${b} = ${q}`, lire: lireEntier };
-  }
-  const b = entier(7, 15), a = b * entier(7, 15);
-  if (sorte === 0) return { html: `Quelle est la somme de ${a} et ${b} ?`, r: a + b, correction: `${a} + ${b} = ${a + b}`, lire: lireEntier };
-  return { html: `Quelle est la différence de ${a} et ${b} ?`, r: a - b, correction: `${a} − ${b} = ${a - b}`, lire: lireEntier };
+// Plateau 1 : compléter une égalité de deux fractions (3/4 = …/12, 3/4 = 9/…, 9/12 = …/4, 9/12 = 3/…)
+// a/b est irréductible, on multiplie (ou on divise) le numérateur et le dénominateur par un même k ; la réponse est entière
+// la case de saisie, posée dans l'égalité à la place du nombre qui manque (demande du prof)
+const TROU = `<input class="trou" type="text" autocomplete="off" maxlength="4" aria-label="Le nombre qui manque">`;
+function questionEgalite() {
+  let a, b; do { b = entier(2, 10); a = entier(1, 2 * b); } while (a === b || pgcd(a, b) !== 1);
+  const k = entier(2, Math.min(10, Math.floor(100 / Math.max(a, b)))), A = a * k, B = b * k;
+  const sorte = hasard(4), m = TROU;
+  const html = (g, d) => `Complète l'égalité :<br>${g} = ${d}`;
+  const fois = `(car ${b} × ${k} = ${B}, donc ${a} × ${k} = ${A})`, fois2 = `(car ${a} × ${k} = ${A}, donc ${b} × ${k} = ${B})`;
+  const div = `(car ${B} : ${k} = ${b}, donc ${A} : ${k} = ${a})`, div2 = `(car ${A} : ${k} = ${a}, donc ${B} : ${k} = ${b})`;
+  const q = [
+    { html: html(frac(a, b), frac(m, B)), r: A, correction: `${a}/${b} = ${A}/${B}  ${fois}` },
+    { html: html(frac(a, b), frac(A, m)), r: B, correction: `${a}/${b} = ${A}/${B}  ${fois2}` },
+    { html: html(frac(A, B), frac(m, b)), r: a, correction: `${A}/${B} = ${a}/${b}  ${div}` },
+    { html: html(frac(A, B), frac(a, m)), r: b, correction: `${A}/${B} = ${a}/${b}  ${div2}` }
+  ][sorte];
+  return { ...q, lire: lireEntier, aide: "Écris le nombre qui manque." };
+}
+// Plateau 1 aussi : choisir la fraction irréductible égale à une fraction donnée (12/18 → 2/3), parmi 4 fractions au clic
+// les pièges : une simplification pas finie (6/9), la fraction renversée (3/2), une fraction voisine (2/4 ou 3/3 exclues)
+function questionIrreductible() {
+  let a, b, k;
+  do {
+    b = entier(2, 10); a = entier(1, 2 * b - 1);
+    k = [4, 6, 8, 9, 10, 12][hasard(6)];
+  } while (a === b || pgcd(a, b) !== 1 || a * k > 100 || b * k > 100);
+  const A = a * k, B = b * k;
+  const p = melanger([2, 3, 4, 5, 6].filter(x => k % x === 0 && x < k))[0];   // simplification pas finie : on divise par p seulement
+  const voisins = [[a + 1, b], [a, b + 1], [a - 1, b], [a, b - 1], [a + 2, b], [a + 1, b + 1]]
+    .filter(([n, d]) => n > 0 && d > 1 && n !== d && pgcd(n, d) === 1 && n * b !== d * a && !(n === b && d === a));
+  // pas de fraction renversée sur 1 (2/1, 10/1) : une deuxième fraction voisine à la place
+  const choix = [[a, b], [A / p, B / p], ...(a > 1 ? [[b, a]] : []), ...melanger(voisins)].slice(0, 4);
+  return {
+    html: `Quelle est la fraction irréductible égale à ${frac(A, B)} ?`,
+    r: [a, b],
+    correction: `${A}/${B} = ${a}/${b}  (car ${A} : ${k} = ${a} et ${B} : ${k} = ${b}, et ${a}/${b} ne se simplifie plus)`,
+    lire: lireFraction, aide: "Choisis une des fractions.",
+    presque: "elle est égale, mais elle se simplifie encore.",
+    choix: melanger(choix)
+  };
+}
+// la série du plateau 1, dans cet ordre (demande du prof) : 4 égalités à compléter, puis 4 fractions irréductibles à choisir
+function questionPlateau1() {
+  return (serpent.justes < 4 ? questionEgalite : questionIrreductible)();
 }
 // Plateau 2 : une fraction à écrire sous forme mixte, 17/5 = 3 + 2/5 (la fraction donnée est irréductible)
 function questionMixte() {
@@ -391,7 +427,7 @@ function lireAbscisse(t, r) {
 }
 // Plateau 8 : l'escalier de révision, une marche par plateau, dans l'ordre du jeu
 const MARCHES = [
-  { question: questionOperation, placeholder: "Ta réponse" },
+  { question: questionEgalite, placeholder: "Ta réponse" },
   { question: questionMixte, placeholder: "ex. 2 + 3/4" },
   { question: questionDuree, placeholder: "ex. 1 h + 45 min" },
   { question: questionFractionNombre, placeholder: "Ta réponse" },
@@ -455,7 +491,7 @@ const NIVEAUX = [
     repousse: { x: 165, vx: 9, vy: -3, ejecte: 60 },     // éjecté de l'étagère jusqu'au sol, sans commande pendant 2 s
     // un petit crabe immobile au sol ; le toucher fait perdre le plateau
     crabes: [{ x: 75, y: 130, v: 0, taille: .6 }],
-    bonnes: 5, affilee: true, question: questionOperation, sortieY: 124
+    bonnes: 8, affilee: true, question: questionPlateau1, sortieY: 124
   },
   {
     titre: "Plateau 2", consigne: "touche le serpent et réponds juste à ses questions",
@@ -591,7 +627,7 @@ const NIVEAUX = [
 // Tableau final : le crapaud se promène entre les socles de pierre, un par plateau, chacun avec sa créature ;
 // le panneau donne le bilan (notion de chaque plateau, réponses justes)
 const SOCLES = [
-  { x: 2, notion: "les quatre opérations (le serpent, le crabe)" },
+  { x: 2, notion: "l'égalité de deux fractions (3/4 = 9/12) avec le serpent et le crabe" },
   { x: 27, notion: "une fraction sous forme mixte (17/5 = 3 + 2/5)" },
   { x: 52, notion: "une fraction d'heure en h et min (7/4 h = 1 h + 45 min)" },
   { x: 77, notion: "la fraction d'un nombre (2/3 × 240 = 160) avec l'aigle" },
@@ -1166,7 +1202,15 @@ function afficherQuestion() {
   champ.placeholder = question.placeholder || niv.placeholder || "Ta réponse";
   champ.disabled = false; $("btnValider").disabled = false;
   champ.value = "";
-  champ.focus();
+  // la case est dans l'égalité (plateau 1) : la case du dessous est cachée, elle reçoit ce qu'on tape, Valider reste
+  const trou = zone.querySelector("input.trou");
+  champ.style.display = trou ? "none" : "";
+  $("formReponse").style.justifyContent = trou ? "flex-end" : "";
+  if (trou) {
+    trou.oninput = () => { champ.value = trou.value; };
+    trou.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); $("formReponse").requestSubmit(); } };
+    trou.focus();
+  } else champ.focus();
 }
 // une fraction choisie (clic ou touche 1 à 4) : elle est envoyée comme une réponse écrite
 function choisir(k) {
@@ -1188,7 +1232,7 @@ $("formReponse").addEventListener("submit", ev => {
   const lu = q.lire($("champReponse").value, q.r);
   // réponse illisible : on dit comment écrire, sans compter de réponse
   // réponse illisible (ou à côté de la question : lu.aide) : on dit quoi faire, sans compter de réponse
-  if (!lu || lu.aide) { const r = $("retour"); r.className = "aide"; r.textContent = (lu && lu.aide) || q.aide || "Écris un nombre entier."; $("champReponse").focus(); return; }
+  if (!lu || lu.aide) { const r = $("retour"); r.className = "aide"; r.textContent = (lu && lu.aide) || q.aide || "Écris un nombre entier."; ($("calcul").querySelector("input.trou") || $("champReponse")).focus(); return; }
   // compteurs de l'élève (pour le diplôme), enregistrés à chaque réponse
   eleve.reponses++; parcours.reponses++;
   if (lu.ok) { eleve.bonnes++; parcours.bonnes++; }
