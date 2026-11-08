@@ -47,6 +47,39 @@ class Equation {
         }
     }
 
+    /**
+     * Toutes les solutions (tableau de Nombre) : [] si l'équation est impossible,
+     * null si elle est invalide, toujours vraie, ou de racines non rationnelles.
+     */
+    getSolutions() {
+        try {
+            const diff = this.getDiffPolynome();
+            if (diff.estConstant()) return diff.coeff(0).equal(new Nombre("0")) ? null : [];
+            if (diff.degre() === 1) return [diff.getSolution()];
+            if (diff.degre() === 2) return racinesRationnelles(diff);
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /** Vrai si l'équation s'écrit x = nombre (ou nombre = x), nombre sous forme irréductible. */
+    estResolue() {
+        try {
+            const { polyLhs, polyRhs } = this._parsePolynomes();
+            const estX = (p) => p.degre() === 1
+                && p.coeff(1).equal(new Nombre("1"))
+                && p.coeff(0).equal(new Nombre("0"));
+            const lhsEstX = estX(polyLhs);
+            if (!(lhsEstX && polyRhs.estConstant()) && !(estX(polyRhs) && polyLhs.estConstant())) return false;
+
+            const te = new Nombre((lhsEstX ? this.rhs : this.lhs).trim()).typeEcriture;
+            return te === 'entier' || te === 'fractionSimple';
+        } catch (e) {
+            return false;
+        }
+    }
+
     /** Polynome représentant (lhs - rhs), pour comparer deux équations exactement. */
     getDiffPolynome() {
         const { polyLhs, polyRhs } = this._parsePolynomes();
@@ -130,7 +163,7 @@ class InputWrapper {
     renderInput() {
         this.input = document.createElement('input');
         this.input.className = 'input-full';
-        this.input.placeholder = "Ex: 2x = 10  (division : utiliser ':' , ex 6:2)";
+        this.input.placeholder = "équation";
         
         // Cache les zones statiques pendant la saisie
         this.leftPart.style.gridColumn = "1 / span 3";
@@ -164,8 +197,69 @@ class InputWrapper {
         if (window.MathJax) MathJax.typesetPromise([this.equivZone]);
     }
 
+    /** Équation à plusieurs solutions : la ligne peut enchaîner « A=B ou C=D ». */
+    validerAlternatives(val, cibles) {
+        const textes = val.split(/\bou\b/i).map(s => s.trim());
+        const alternatives = textes.map(t => {
+            const morceaux = t.split('=');
+            // Le parseur refuse un moins devant une parenthèse : -(x+5) devient -1(x+5).
+            const opposes = morceaux.map(m => m.replace(/^\s*-\s*\(/, '-1('));
+            return opposes.length === 2 ? new Equation(opposes[0], opposes[1]) : null;
+        });
+
+        const listes = alternatives.map(eq => eq ? eq.getSolutions() : null);
+        const lisible = listes.every(l => l !== null);
+        const trouvees = lisible ? listes.flat() : [];
+        const dans = (s, liste) => liste.some(c => c.equal(s));
+        const equivalente = lisible
+            && trouvees.every(s => dans(s, cibles))
+            && cibles.every(c => dans(c, trouvees));
+        const resolue = equivalente && alternatives.every(eq => eq.estResolue());
+
+        if (this.input) this.input.remove();
+        this.leftPart.innerHTML = lisible
+            ? `\\(${alternatives.map(eq => `${formatToLatex(eq.lhs)} = ${formatToLatex(eq.rhs)}`).join(' \\text{ ou } ')}\\)`
+            : '';
+        if (!lisible) this.leftPart.textContent = val;
+        if (window.MathJax) MathJax.typesetPromise();
+
+        if (resolue) {
+            this.wrapper.classList.add('capsule-wrapper-final');
+            this.afficherEquivalent();
+            this.commentPart.innerHTML = "<span style='color:var(--succes); font-weight:bold;'>✅ Résolu !</span>";
+            createNextBtn(this.container);
+        } else if (equivalente) {
+            this.afficherEquivalent();
+            this.commentPart.innerHTML = "Étape valide";
+            new InputWrapper(this.equationObj, this.container, false);
+        } else {
+            this.signalerNonEquivalente(lisible ? "Pas équivalente" : "Expression invalide");
+        }
+    }
+
+    signalerNonEquivalente(msg) {
+        this.equivZone.classList.add('non-equiv');
+        this.commentPart.innerHTML = msg;
+
+        const btnX = document.createElement('button');
+        btnX.className = "delete-button";
+        btnX.innerHTML = "❌";
+        btnX.onclick = () => {
+            this.wrapper.remove();
+            new InputWrapper(this.equationObj, this.container, false);
+        };
+        this.commentPart.appendChild(btnX);
+    }
+
  validate() {
     const val = this.input.value;
+
+    const cibles = this.equationObj.getSolutions();
+    if (cibles && cibles.length > 1) {
+        this.validerAlternatives(val, cibles);
+        return;
+    }
+
     const parts = val.split('=');
     const userEq = new Equation(parts[0], parts[1]);
 
@@ -189,26 +283,7 @@ class InputWrapper {
     //   2. La constante écrite est déjà en forme irréductible :
     //      typeEcriture 'entier' ou 'fractionSimple' — jamais 'fraction' non
     //      réduite (ex: 72/9 ou 30/3 sont refusés, l'élève doit simplifier).
-    let isSolved = false;
-    if (isEquivalent) {
-        try {
-            const { polyLhs, polyRhs } = userEq._parsePolynomes();
-            const lhsEstX = polyLhs.degre() === 1
-                && polyLhs.coeff(1).equal(new Nombre("1"))
-                && polyLhs.coeff(0).equal(new Nombre("0"));
-            const rhsEstX = polyRhs.degre() === 1
-                && polyRhs.coeff(1).equal(new Nombre("1"))
-                && polyRhs.coeff(0).equal(new Nombre("0"));
-            const formeValide = (lhsEstX && polyRhs.estConstant())
-                             || (rhsEstX && polyLhs.estConstant());
-            if (formeValide) {
-                const texteConstante = (lhsEstX ? parts[1] : parts[0]).trim();
-                const nombreConstante = new Nombre(texteConstante);
-                const te = nombreConstante.typeEcriture;
-                isSolved = (te === 'entier' || te === 'fractionSimple');
-            }
-        } catch (e) { /* isSolved reste false */ }
-    }
+    const isSolved = isEquivalent && userEq.estResolue();
 
     this.renderStatic(userEq);
 
@@ -236,18 +311,7 @@ class InputWrapper {
         };
         const msg = messages[diagUser.statut] || "Pas équivalente";
 
-        this.equivZone.classList.add('non-equiv');
-
-        this.commentPart.innerHTML = msg;
-        
-        const btnX = document.createElement('button');
-        btnX.className = "delete-button";
-        btnX.innerHTML = "❌";
-        btnX.onclick = () => { 
-            this.wrapper.remove(); 
-            new InputWrapper(this.equationObj, this.container, false); 
-        };
-        this.commentPart.appendChild(btnX);
+        this.signalerNonEquivalente(msg);
     }
 }
 }
@@ -297,7 +361,7 @@ function demarrerSaisiePersonnalisee() {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'perso-input';
-    input.placeholder = "Ex: 2x+3=7";
+    input.placeholder = "équation";
 
     const btn = document.createElement('button');
     btn.className = 'panel-btn accent';
@@ -309,7 +373,7 @@ function demarrerSaisiePersonnalisee() {
         if (!val.includes('=')) return;
         const [lhs, rhs] = val.split('=');
         const eq = new Equation(lhs, rhs);
-        if (eq.getSolution() === null) {
+        if (!(eq.getSolutions() || []).length) {
             label.textContent = "Équation invalide ou sans solution unique — réessaie.";
             label.classList.add('perso-erreur');
             return;
@@ -366,6 +430,13 @@ function startQuiz() {
  *   option n'a aucun effet sur ce mode.
  */
 function formatToLatex(exprText, opts = {}) {
+    // "3/4x" devient "3:4x" une fois réécrit, ce que le parseur refuse (division
+    // par x) : dans ce cas on retombe sur l'écriture d'origine.
+    if (opts.preserverEcriture && String(exprText).includes('/')) {
+        const reecrit = String(exprText).replace(/\//g, ':');
+        const rendu = formatToLatex(reecrit);
+        return rendu === reecrit ? formatToLatex(exprText) : rendu;
+    }
     try {
         const texte = opts.preserverEcriture
             ? String(exprText).replace(/\//g, ':')
@@ -424,6 +495,7 @@ function updateScoreDisplay() {
 
 /** Écran de fin de quiz : affiche le score final et propose de recommencer. */
 function showScore() {
+    fermerOutils();
     const cont = document.getElementById("inputContainer");
     if (!cont) return;
     cont.innerHTML = "";
@@ -480,14 +552,17 @@ function construireBoutonsFamille(conteneurId, referentiel, preselection = []) {
 }
 
 function setupParamsPanel() {
-    // Présélection par défaut : le cas le plus simple (ax+b=d, coefficients entiers, solution entière).
+    // Présélection par défaut : tous les types d'équation, coefficients entiers, solution entière.
     // L'utilisateur peut décocher/recocher librement ensuite ; case vide = shuffle, comme pour le reste.
-    construireBoutonsFamille("grpTypeEquation", TYPES_EQUATION, ["Simple"]);
+    construireBoutonsFamille("grpTypeEquation", TYPES_EQUATION, TYPES_EQUATION.map(t => t.id));
     construireBoutonsFamille("grpTypeNombre", TYPES_NOMBRE, ["Entiers"]);
     construireBoutonsFamille("grpTypeSolution", [
         { id: "entier", label: "Entier" },
         { id: "fraction", label: "Fraction" }
     ], ["entier"]);
+
+    // Cocher un type à la main peut changer le niveau affiché à gauche.
+    document.getElementById("grpTypeEquation")?.addEventListener("click", renderPanneauLateral);
 
     const overlay = document.getElementById("paramsOverlay");
     const modal = document.getElementById("paramsModal");
@@ -523,7 +598,7 @@ document.addEventListener("keydown", (e) => {
 let questionCount = 0;
 let score = 0;
 let piocheEnCours = [];
-let modeActuel = 'libre'; // 'libre' | 'guide' — mode de RÉSOLUTION (orthogonal à l'état atelier/quiz)
+let modeActuel = 'guide'; // 'libre' | 'guide' — mode de RÉSOLUTION (orthogonal à l'état atelier/quiz)
 let etatJeu = 'atelier'; // 'atelier' | 'quiz' — atelier : rien n'est figé, pas de comptage.
 let quizDemarre = false; // true une fois qu'on a cliqué "Commencer le Quiz"
 let equationPersonnaliseeActive = false; // toggle indépendant : source de l'équation (atelier uniquement)
@@ -536,6 +611,7 @@ let equationPersonnaliseeActive = false; // toggle indépendant : source de l'é
  *   - modeActuel ('libre' | 'guide') : mécanique de résolution une fois l'équation choisie.
  */
 function demarrerQuestion() {
+    fermerOutils();
     if (etatJeu === 'quiz' && !quizDemarre) return; // rien à afficher avant le clic "Commencer"
     if (etatJeu === 'quiz' && questionCount >= 10) { showScore(); return; }
 
@@ -670,6 +746,9 @@ function renderPanneauLateral() {
         ));
         ajouterFilet();
 
+        panneau.appendChild(creerGroupeNiveau(equationPersonnaliseeActive));
+        ajouterFilet();
+
         panneau.appendChild(creerGroupePaire(
             'Mode de résolution',
             'Par saisie', 'Par opération',
@@ -687,6 +766,9 @@ function renderPanneauLateral() {
         setupSkipButton();
 
     } else if (etatJeu === 'quiz' && !quizDemarre) {
+        panneau.appendChild(creerGroupeNiveau(false));
+        ajouterFilet();
+
         panneau.appendChild(creerGroupePaire(
             'Mode de résolution',
             'Par saisie', 'Par opération',
@@ -745,6 +827,48 @@ function renderPanneauLateral() {
         panneau.appendChild(scoreContainer);
         setupSkipButton();
     }
+}
+
+/** Boutons des types d'équation dans les paramètres : ils restent la seule source de vérité. */
+function boutonsTypesEquation() {
+    return [...document.querySelectorAll("#grpTypeEquation .param-btn")];
+}
+
+/** Niveau correspondant exactement aux types cochés, ou null si la sélection est personnalisée. */
+function niveauCourant() {
+    const coches = boutonsTypesEquation().filter(b => b.classList.contains("active")).map(b => b.dataset.value);
+    return NIVEAUX.find(n => n.types.length === coches.length && n.types.every(t => coches.includes(t))) || null;
+}
+
+/** Groupe « Niveau » du panneau de gauche : un clic coche les types du niveau et relance une question. */
+function creerGroupeNiveau(disabled) {
+    const wrap = document.createElement('div');
+    wrap.className = 'panel-groupe';
+
+    const label = document.createElement('div');
+    label.className = 'panel-groupe-label';
+    label.textContent = 'Niveau';
+
+    const grille = document.createElement('div');
+    grille.className = 'panel-groupe-niveaux';
+
+    const actuel = niveauCourant();
+    NIVEAUX.forEach(niveau => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-btn panel-btn-half' + (niveau === actuel ? ' accent' : '');
+        btn.textContent = niveau.label;
+        btn.disabled = disabled;
+        btn.onclick = () => {
+            boutonsTypesEquation().forEach(b => b.classList.toggle("active", niveau.types.includes(b.dataset.value)));
+            renderPanneauLateral();
+            demarrerQuestion();
+        };
+        grille.appendChild(btn);
+    });
+
+    wrap.append(label, grille);
+    return wrap;
 }
 
 /**

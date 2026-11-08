@@ -19,7 +19,18 @@ const TYPES_EQUATION = [
   { id: "Simple",         label: "ax+b=d" },
   { id: "Variable2Cotes", label: "ax+b=cx+d" },
   { id: "Parentheses",    label: "u(ax+b)=d" },
-  { id: "Division",       label: "(ax+b):v=d" }
+  { id: "Division",       label: "(ax+b):v=d" },
+  { id: "DeuxQuotients",  label: "(ax+b)/u=(cx+d)/v" },
+  { id: "ProduitNul",     label: "(ax+b)(cx+d)=0" },
+  { id: "DeuxCarres",     label: "A²=B²" },
+  { id: "FacteurCommun",  label: "(ax+b)(cx+d)=(ax+b)(ex+f)" }
+];
+
+// Un niveau est un raccourci qui coche un ensemble de types d'équation (cumulatif).
+const NIVEAUX = [
+  { id: "5e", label: "5e", types: ["Simple"] },
+  { id: "4e", label: "4e", types: ["Simple", "Variable2Cotes", "Parentheses", "Division"] },
+  { id: "3e", label: "3e", types: TYPES_EQUATION.map(t => t.id) }
 ];
 
 const TYPES_NOMBRE = [
@@ -210,9 +221,170 @@ function genererEquation(params) {
       return { lhs: `(${lhsInterieur}):${simplifie(v).toString()}`, rhs: d.toString(), xSol, typeEq, typeNb, typeSol };
     }
 
+    case "DeuxQuotients": {
+      // (ax+b):u=(cx+d):v : tirer u != v, a, b, c -> déduire d = (a*xSol+b)*v/u - c*xSol.
+      // On écarte a/u = c/v (x disparaîtrait) et d = 0. En "Entiers", on retire
+      // jusqu'à obtenir un d entier raisonnable ; après TENTATIVES_MAX essais,
+      // on accepte un d fractionnaire plutôt que de boucler.
+      const TENTATIVES_MAX = 2000;
+      let a, b, c, d, u, v, valable, ideal;
+      let tentatives = 0;
+      do {
+        const nu = tirerEntier(2, 6);
+        let nv;
+        do { nv = tirerEntier(2, 6); } while (nv === nu);
+        u = Nombre.fromParts(nu, 1, "entier");
+        v = Nombre.fromParts(nv, 1, "entier");
+
+        a = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+        b = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 15 });
+        c = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+        d = simplifie(a.mul(xSol).add(b).mul(v).div(u).sub(c.mul(xSol)));
+
+        valable = !a.mul(v).equal(c.mul(u)) && d.valeurNum.a !== 0;
+        ideal = typeNb !== "Entiers"
+          || (d.isEntier() && Math.abs(d.valeurNum.a / d.valeurNum.b) <= 40);
+        tentatives++;
+      } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
+
+      const gauche = formatTerme(a, 1) + formatTerme(b, 0, true);
+      const droite = formatTerme(c, 1) + formatTerme(d, 0, true);
+      return {
+        lhs: `(${gauche}):${simplifie(u).toString()}`,
+        rhs: `(${droite}):${simplifie(v).toString()}`,
+        xSol, typeEq, typeNb, typeSol
+      };
+    }
+
+    case "ProduitNul": {
+      // (ax+b)(cx+d)=0 : deux racines distinctes non nulles, chaque facteur s'écrit a(x-r).
+      const [x1, x2] = tirerDeuxRacines(typeSol, solutionNegative);
+      const ecrire = (r) => ecrireFacteurDeRacine(r, typeNb, coeffOpts);
+      return { lhs: `(${ecrire(x1)})(${ecrire(x2)})`, rhs: "0", xSol: x1, solutions: [x1, x2], typeEq, typeNb, typeSol };
+    }
+
+    case "DeuxCarres": {
+      // A²=B² : on part de P = A-B de racine x1 et Q = A+B de racine x2, d'où
+      // A = (P+Q)/2 et B = (Q-P)/2. On écarte les cas où A ou B perd son terme
+      // en x ou sa constante, et en "Entiers" on retire jusqu'à des coefficients entiers.
+      const TENTATIVES_MAX = 5000;
+      const [x1, x2] = tirerDeuxRacines(typeSol, solutionNegative);
+      const zero = Nombre.fromParts(0, 1, "entier");
+      const deux = Nombre.fromParts(2, 1, "entier");
+      let a, b, c, d, valable, ideal;
+      let tentatives = 0;
+      do {
+        // En "Entiers", une pente multiple du dénominateur de la racine garantit une constante entière.
+        const tirerPente = (r) => (typeNb === "Entiers")
+          ? Nombre.fromParts(tirerSigne(coefficientsNegatifs) * r.valeurNum.b * tirerEntier(1, Math.ceil(24 / r.valeurNum.b)), 1, "entier")
+          : tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 12 });
+        const p = tirerPente(x1);
+        const q = tirerPente(x2);
+        const pc = zero.sub(p.mul(x1));
+        const qc = zero.sub(q.mul(x2));
+
+        a = simplifie(p.add(q).div(deux));
+        b = simplifie(pc.add(qc).div(deux));
+        c = simplifie(q.sub(p).div(deux));
+        d = simplifie(qc.sub(pc).div(deux));
+
+        valable = [a, b, c, d].every(n => n.valeurNum.a !== 0)
+          && (coefficientsNegatifs || (a.valeurNum.a > 0 && c.valeurNum.a > 0));
+        const borne = (n, max) => n.isEntier() && Math.abs(n.valeurNum.a / n.valeurNum.b) <= max;
+        ideal = typeNb !== "Entiers"
+          || (borne(a, 12) && borne(c, 12) && borne(b, 60) && borne(d, 60));
+        tentatives++;
+      } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
+
+      return {
+        lhs: `(${formatTerme(a, 1)}${formatTerme(b, 0, true)})^2`,
+        rhs: `(${formatTerme(c, 1)}${formatTerme(d, 0, true)})^2`,
+        xSol: x1, solutions: [x1, x2], typeEq, typeNb, typeSol
+      };
+    }
+
+    case "FacteurCommun": {
+      // A×B=A×C : A s'annule en x1 (A vaut parfois x seul, alors x1 = 0) ;
+      // B=cx+d et C=ex+f sont égaux en x2, d'où f = c*x2+d-e*x2.
+      const TENTATIVES_MAX = 5000;
+      const zero = Nombre.fromParts(0, 1, "entier");
+      const [r1, x2] = tirerDeuxRacines(typeSol, solutionNegative);
+      const facteurX = Math.random() < 0.3;
+      const x1 = facteurX ? zero : r1;
+      const commun = facteurX ? "x" : `(${ecrireFacteurDeRacine(x1, typeNb, coeffOpts)})`;
+
+      let c, d, e, f, valable, ideal;
+      let tentatives = 0;
+      do {
+        c = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+        d = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 15 });
+        e = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+        f = simplifie(c.mul(x2).add(d).sub(e.mul(x2)));
+
+        valable = !c.equal(e) && f.valeurNum.a !== 0;
+        ideal = typeNb !== "Entiers"
+          || (f.isEntier() && Math.abs(f.valeurNum.a / f.valeurNum.b) <= 40);
+        tentatives++;
+      } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
+
+      return {
+        lhs: `${commun}(${formatTerme(c, 1)}${formatTerme(d, 0, true)})`,
+        rhs: `${commun}(${formatTerme(e, 1)}${formatTerme(f, 0, true)})`,
+        xSol: x1, solutions: [x1, x2], typeEq, typeNb, typeSol
+      };
+    }
+
     default:
       throw new Error("Type d'équation inconnu : " + typeEq);
   }
+}
+
+/** Deux racines distinctes et non nulles, selon le type de solution demandé. */
+function tirerDeuxRacines(typeSol, solutionNegative) {
+  const tirer = () => {
+    let r;
+    do { r = simplifie(tirerSolution(typeSol, solutionNegative)); } while (r.valeurNum.a === 0);
+    return r;
+  };
+  const x1 = tirer();
+  let x2;
+  do { x2 = tirer(); } while (x2.equal(x1));
+  return [x1, x2];
+}
+
+/** Écrit un facteur a(x-r) développé. En "Entiers", a est un multiple du dénominateur de r. */
+function ecrireFacteurDeRacine(r, typeNb, coeffOpts) {
+  const q = r.valeurNum.b;
+  const a = (typeNb === "Entiers")
+    ? Nombre.fromParts(tirerSigne(coeffOpts.coefficientsNegatifs) * q * tirerEntier(1, q > 1 ? 1 : 3), 1, "entier")
+    : tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+  return formatTerme(a, 1) + formatTerme(Nombre.fromParts(0, 1, "entier").sub(a.mul(r)), 0, true);
+}
+
+/**
+ * Racines d'un Polynome de degré 2 à coefficients rationnels : tableau de
+ * Nombre (1 si racine double, 2 sinon), ou null si elles ne sont pas rationnelles.
+ */
+function racinesRationnelles(poly) {
+  const [a, b, c] = [2, 1, 0].map(d => poly.coeff(d).simplify().valeurNum);
+  const pgcd = (m, n) => n === 0 ? Math.abs(m) : pgcd(n, m % n);
+  const ppcm = (m, n) => m * n / pgcd(m, n);
+
+  const den = ppcm(ppcm(a.b, b.b), c.b);
+  const A = a.a * den / a.b;
+  const B = b.a * den / b.b;
+  const C = c.a * den / c.b;
+  if (A === 0) return null;
+
+  const delta = B * B - 4 * A * C;
+  const s = Math.round(Math.sqrt(Math.max(delta, 0)));
+  if (delta < 0 || s * s !== delta) return null;
+
+  const racine = (num) => {
+    const signe = 2 * A < 0 ? -1 : 1;
+    return Nombre.fromParts(signe * num, signe * 2 * A, "fraction").simplify();
+  };
+  return delta === 0 ? [racine(-B)] : [racine(-B - s), racine(-B + s)];
 }
 
 /** Simplifie un Nombre (réduit la fraction) avant de le formater. */
