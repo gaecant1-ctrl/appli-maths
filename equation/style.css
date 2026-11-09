@@ -373,6 +373,14 @@ button.delete-button.bouton-masque {
     color: var(--encre-douce) !important;
 }
 
+/* Un choix verrouillé (quiz en cours) reste lisible */
+.panel-btn.accent:disabled {
+    opacity: 1;
+    background-color: var(--craie) !important;
+    border-color: var(--craie) !important;
+    color: var(--papier) !important;
+}
+
 .panel-filet {
     height: 1px;
     background: var(--grille);
@@ -689,7 +697,7 @@ button.delete-button.bouton-masque {
     border: 1px solid var(--grille);
 
     display: grid;
-    /* Deux zones : l'équation (1re colonne), puis saisie et « Autre » à leur juste taille. */
+    /* Deux zones : l'équation (1re colonne), puis la saisie à sa juste taille. */
     grid-template-columns: minmax(0, 1fr) 110px 66px 26px;
     align-items: center;
     column-gap: 10px;
@@ -751,12 +759,7 @@ button.delete-button.bouton-masque {
 }
 
 .op-row-saisie > .op-op-cell {
-    grid-column: 2;
-}
-
-.op-row > .op-outils {
-    grid-column: 3;
-    grid-row: 1;
+    grid-column: 2 / 4;
 }
 
 /* Croix d'une saisie erronée : même colonne que la croix d'une étape validée. */
@@ -911,31 +914,10 @@ button.delete-button.bouton-masque {
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
-/* Bouton "Autre" à côté de la saisie (mode par opération) */
-.op-outils {
-    display: flex;
-    justify-content: flex-start;
-}
-
-.op-outils button {
-    padding: 6px 14px;
-    font-size: 13px;
-    color: var(--craie);
-    background: var(--papier);
-    border: 1px solid var(--header-bordure);
-    border-radius: var(--rayon);
-    cursor: pointer;
-}
-
-.op-outils button:hover {
-    color: var(--papier);
-    background: var(--craie);
-}
-
-/* Panneau de droite : autres opérations */
+/* Panneau de droite : outils */
 #panneauOutils {
-    flex: 0 0 220px;
-    width: 220px;
+    flex: 0 0 300px;
+    width: 300px;
     min-height: calc(100vh - 54px);
     background: var(--papier-encart);
     border-left: 1px solid var(--grille);
@@ -948,18 +930,6 @@ button.delete-button.bouton-masque {
 
 #panneauOutils[hidden] {
     display: none;
-}
-
-.op-outils button:disabled {
-    opacity: 0.5;
-    cursor: default;
-    color: var(--craie);
-    background: var(--papier);
-}
-
-.op-input:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* Ligne « A = 0 ou B = 0 » : bouton à la place de la saisie */
@@ -1085,4 +1055,88 @@ button.recopier-button:hover {
 .verification-cas.faux .verification-titre,
 .verification-cas.faux .verification-conclusion {
     color: var(--erreur);
+}
+
+/* Formule sous le nom d'une équivalence */
+.outil-formule {
+    display: block;
+    margin-top: 3px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--encre-douce);
+}
+
+.outil-conseil {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--encre-douce);
+}
+
+/* Titre contenant des variables : x et a restent en minuscules */
+.panel-groupe-label.sans-majuscules {
+    text-transform: none;
+}
+
+.verification-zone {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.verification-zone .verification {
+    margin-bottom: 0;
+}
+
+/* Même format que « Suivant », en version secondaire */
+button.verifier-button {
+    padding: 10px 28px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--craie);
+    background: var(--papier-encart);
+    border: 2px solid var(--craie);
+    border-radius: var(--rayon-petit);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+button.verifier-button:hover {
+    color: var(--papier);
+    background: var(--craie);
+}
+
+/* Paramètres verrouillés pendant un quiz : les choix restent lisibles */
+.param-btn:disabled {
+    cursor: not-allowed;
+}
+
+.param-btn:not(.active):disabled {
+    opacity: 0.5;
+}
+
+.param-btn.active:disabled {
+    opacity: 1;
+}
+
+/* Saisie accompagnée : Recopier et Modifier côte à côte */
+.op-op-cell:has(.recopier-button) {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Mode « Saisie avec aide » */
+.aide-commentaire {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--encre);
+}
+
+.aide-commentaire:first-of-type {
+    font-weight: 700;
+    color: var(--craie);
 }

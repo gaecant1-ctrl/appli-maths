@@ -117,6 +117,8 @@ class Equation {
     }
 }
 
+let derniereLigneValide = ''; // mode saisie : texte repris par le bouton Recopier
+
 class InputWrapper {
     constructor(equationObj, container, isQuestion = false) {
         this.equationObj = equationObj;
@@ -154,6 +156,8 @@ class InputWrapper {
         this.container.appendChild(this.wrapper);
 
         if (isQuestion) {
+            derniereLigneValide = `${this.equationObj.lhs}=${this.equationObj.rhs}`;
+            actualiserAide(derniereLigneValide);
             this.renderStatic(this.equationObj);
         } else {
             this.renderInput();
@@ -173,6 +177,17 @@ class InputWrapper {
         
         this.leftPart.appendChild(this.input);
         this.input.focus();
+
+        const btnRecopier = document.createElement('button');
+        btnRecopier.className = "recopier-button";
+        btnRecopier.textContent = "Recopier";
+        btnRecopier.title = "Remettre la ligne précédente dans le champ";
+        btnRecopier.onclick = () => {
+            this.input.value = derniereLigneValide;
+            this.input.focus();
+        };
+        this.commentPart.appendChild(btnRecopier);
+
         this.input.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && this.input.value.includes('=')) {
                 this.validate();
@@ -231,10 +246,13 @@ class InputWrapper {
             this.afficherEquivalent();
             this.commentPart.innerHTML = "<span style='color:var(--succes); font-weight:bold;'>✅ Résolu !</span>";
             afficherVerification(this.container, this.equationObj, trouvees);
+            actualiserAide(val);
             createNextBtn(this.container);
         } else if (equivalente) {
             this.afficherEquivalent();
             this.commentPart.innerHTML = "Étape valide";
+            derniereLigneValide = val;
+            actualiserAide(val);
             new InputWrapper(this.equationObj, this.container, false);
         } else {
             this.signalerNonEquivalente(lisible ? "Pas équivalente" : "Expression invalide", val);
@@ -246,19 +264,24 @@ class InputWrapper {
         this.equivZone.classList.add('non-equiv');
         this.commentPart.innerHTML = msg;
 
-        // Faute de frappe : on rouvre la saisie avec le texte de l'élève.
-        const btnRecopier = document.createElement('button');
-        btnRecopier.className = "recopier-button";
-        btnRecopier.textContent = "Modifier";
-        btnRecopier.title = "Remettre cette ligne dans le champ pour la corriger";
-        btnRecopier.onclick = () => {
-            this.verification?.remove();
-            this.wrapper.remove();
-            const ligne = new InputWrapper(this.equationObj, this.container, false);
-            ligne.input.value = saisie;
-            ligne.input.focus();
-        };
-        this.commentPart.appendChild(btnRecopier);
+        // On rouvre la saisie avec la réponse refusée ou avec la ligne précédente.
+        [
+            ["Modifier", "Remettre cette ligne dans le champ pour la corriger", saisie],
+            ["Recopier", "Remettre la ligne précédente dans le champ", derniereLigneValide]
+        ].forEach(([texte, titre, contenu]) => {
+            const btn = document.createElement('button');
+            btn.className = "recopier-button";
+            btn.textContent = texte;
+            btn.title = titre;
+            btn.onclick = () => {
+                this.verification?.remove();
+                this.wrapper.remove();
+                const ligne = new InputWrapper(this.equationObj, this.container, false);
+                ligne.input.value = contenu;
+                ligne.input.focus();
+            };
+            this.commentPart.appendChild(btn);
+        });
 
         const btnX = document.createElement('button');
         btnX.className = "delete-button";
@@ -313,12 +336,15 @@ class InputWrapper {
         this.afficherEquivalent();
         this.commentPart.innerHTML = "<span style='color:var(--succes); font-weight:bold;'>✅ Résolu !</span>";
         afficherVerification(this.container, this.equationObj, [diagUser.solution]);
+        actualiserAide(val);
         createNextBtn(this.container); 
     } else if (isEquivalent) {
         // --- ÉTAPE VALIDE : équivalente à la précédente (donc à l'origine,
         // puisqu'aucune étape non équivalente n'a jamais pu être validée) ---
         this.afficherEquivalent();
         this.commentPart.innerHTML = "Étape valide";
+        derniereLigneValide = val;
+        actualiserAide(val);
         new InputWrapper(this.equationObj, this.container, false);
     } else {
         // --- NON ÉQUIVALENTE : message différencié selon la cause.
@@ -380,8 +406,8 @@ function remplacerX(latex, valeur) {
 }
 
 /**
- * Écrit sous la résolution le calcul des deux membres de l'énoncé pour chaque
- * valeur, et conclut si elle est solution. Renvoie le bloc affiché.
+ * Place sous la résolution un bouton Vérifier qui écrit le calcul des deux membres
+ * de l'énoncé pour chaque valeur, et conclut si elle est solution. Renvoie la zone.
  */
 function afficherVerification(container, equation, valeurs) {
     const bloc = document.createElement('div');
@@ -409,9 +435,21 @@ function afficherVerification(container, equation, valeurs) {
             + `</div>`;
     }).join('');
 
-    container.appendChild(bloc);
-    if (window.MathJax) MathJax.typesetPromise([bloc]);
-    return bloc;
+    const zone = document.createElement('div');
+    zone.className = 'verification-zone';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'verifier-button';
+    btn.textContent = 'Vérifier';
+    btn.onclick = () => {
+        btn.replaceWith(bloc);
+        if (window.MathJax) MathJax.typesetPromise([bloc]);
+    };
+
+    zone.appendChild(btn);
+    container.appendChild(zone);
+    return zone;
 }
 
 // --- FONCTIONS DE JEU ---
@@ -488,6 +526,11 @@ function demarrerSaisiePersonnalisee() {
     input.focus();
 }
 
+/** Vrai pour les modes qui passent par les opérations et les outils. */
+function modeAvecOutils() {
+    return modeActuel === 'guide' || modeActuel === 'accompagnee';
+}
+
 let equationAffichee = null; // équation en cours, reprise au changement de mode
 
 /** Après un changement de mode : reprend l'équation en cours depuis le début, sans en tirer une autre. */
@@ -508,7 +551,7 @@ function lancerResolution(eq) {
     equationAffichee = eq;
     cont.innerHTML = "";
 
-    if (modeActuel !== 'libre') {
+    if (modeAvecOutils()) {
         const osLhs = new ObjetString(eq.lhs, {});
         const osRhs = new ObjetString(eq.rhs, {});
         const polyLhs = osLhs.calculer().resultat.polynome;
@@ -711,7 +754,7 @@ document.addEventListener("keydown", (e) => {
 let questionCount = 0;
 let score = 0;
 let piocheEnCours = [];
-let modeActuel = 'guide'; // 'libre' | 'accompagnee' | 'guide' — mode de RÉSOLUTION (orthogonal à l'état atelier/quiz)
+let modeActuel = 'guide'; // 'libre' | 'aide' | 'accompagnee' | 'guide' — mode de RÉSOLUTION (orthogonal à l'état atelier/quiz)
 let etatJeu = 'atelier'; // 'atelier' | 'quiz' — atelier : rien n'est figé, pas de comptage.
 let quizDemarre = false; // true une fois qu'on a cliqué "Commencer le Quiz"
 let equationPersonnaliseeActive = false; // toggle indépendant : source de l'équation (atelier uniquement)
@@ -721,7 +764,7 @@ let equationPersonnaliseeActive = false; // toggle indépendant : source de l'é
  *   - etatJeu ('atelier' | 'quiz') : si quiz et pas encore démarré, ne lance rien.
  *   - equationPersonnaliseeActive : en atelier seulement, remplace la génération
  *     aléatoire par un petit formulaire de saisie.
- *   - modeActuel ('libre' | 'accompagnee' | 'guide') : mécanique de résolution une fois l'équation choisie.
+ *   - modeActuel ('libre' | 'aide' | 'accompagnee' | 'guide') : mécanique de résolution une fois l'équation choisie.
  */
 function demarrerQuestion() {
     fermerOutils();
@@ -737,7 +780,7 @@ function demarrerQuestion() {
         return;
     }
 
-    if (modeActuel !== 'libre') {
+    if (modeAvecOutils()) {
         startQuizOperationGuidee();
     } else {
         startQuiz();
@@ -843,7 +886,7 @@ function renderPanneauLateral() {
     btnParams.type = 'button';
     btnParams.className = 'panel-btn';
     btnParams.textContent = 'Paramètres';
-    btnParams.onclick = () => document.getElementById("paramsOverlay")?.classList.add("open");
+    btnParams.onclick = ouvrirParametres;
     panneau.appendChild(btnParams);
     ajouterFilet();
 
@@ -893,7 +936,9 @@ function renderPanneauLateral() {
         panneau.appendChild(btnCommencer);
 
     } else if (etatJeu === 'quiz' && quizDemarre) {
-        btnParams.disabled = true;
+        panneau.appendChild(creerGroupeNiveau(true));
+        ajouterFilet();
+
         panneau.appendChild(creerGroupeMode(() => {}, true));
         ajouterFilet();
 
@@ -948,7 +993,7 @@ function creerGroupeMode(apresChoix, disabled = false) {
     const liste = document.createElement('div');
     liste.className = 'panel-groupe-modes';
 
-    const modes = [['libre', 'Par saisie'], ['accompagnee', 'Saisie accompagnée'], ['guide', 'Par opération']];
+    const modes = [['libre', 'Par saisie'], ['aide', 'Saisie avec aide'], ['accompagnee', 'Saisie accompagnée'], ['guide', 'Par opération']];
     const boutons = modes.map(([mode, texte]) => {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -967,6 +1012,15 @@ function creerGroupeMode(apresChoix, disabled = false) {
     liste.append(...boutons);
     wrap.append(label, liste);
     return wrap;
+}
+
+/** Ouvre les paramètres ; pendant un quiz, ils se consultent sans pouvoir être changés. */
+function ouvrirParametres() {
+    const verrouille = etatJeu === 'quiz' && quizDemarre;
+    const modal = document.getElementById("paramsModal");
+    modal.querySelectorAll(".param-btn, input").forEach(el => { el.disabled = verrouille; });
+    document.getElementById("paramsTitre").textContent = verrouille ? "Paramètres du quiz (non modifiables)" : "Paramètres";
+    document.getElementById("paramsOverlay").classList.add("open");
 }
 
 function creerGroupeNiveau(disabled) {

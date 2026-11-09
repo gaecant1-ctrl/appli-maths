@@ -31,17 +31,12 @@ function lireQuotient(texte) {
   return profondeur === 0 ? { interieur: m[1], denominateur: Number(m[2]) } : null;
 }
 
-// Les boutons du panneau de droite restent révélés d'une ligne à l'autre
-// pendant une même équation.
-let outilsOuverts = false;
-
 function panneauOutils() {
   return document.getElementById('panneauOutils');
 }
 
-/** Referme le panneau de droite (nouvelle question) ; il n'existe qu'en mode par opération. */
+/** Vide le panneau de droite (nouvelle question) ; il n'existe pas en mode saisie. */
 function fermerOutils() {
-  outilsOuverts = false;
   const panneau = panneauOutils();
   if (!panneau) return;
   panneau.innerHTML = '';
@@ -103,6 +98,16 @@ function polynomeReduit(p) {
     resultat = resultat.add(Polynome.fromMonome(p.coeff(d).simplify(), d));
   }
   return resultat;
+}
+
+/** Écriture saisissable d'un polynôme : "2x^2-7x+3". */
+function textePolynome(p) {
+  let texte = '';
+  for (let d = p.degre(); d >= 0; d--) {
+    const c = p.coeff(d).simplify();
+    if (c.valeurNum.a !== 0) texte += formatTerme(c, d, texte !== '');
+  }
+  return texte || '0';
 }
 
 /** Sépare « A=B » en deux textes, ou null. Le parseur refuse -( : il devient -1(. */
@@ -218,6 +223,51 @@ class OperationRow {
       if (e.key === 'Enter' && this.input.value.includes('=')) this._validerResultat();
     });
     this.input.addEventListener('input', () => this._effacerErreur());
+
+    this.btnRecopier = document.createElement('button');
+    this.btnRecopier.type = 'button';
+    this.btnRecopier.className = 'recopier-button';
+    this.btnRecopier.textContent = 'Recopier';
+    this.btnRecopier.title = 'Remettre la ligne précédente dans le champ';
+    this.btnRecopier.onclick = () => {
+      this._effacerErreur();
+      this.input.value = this.ligneParente._texteLigne();
+      this.input.focus();
+    };
+    this.opCell.appendChild(this.btnRecopier);
+
+    this._afficherOutils();
+  }
+
+  /** Après un refus : un bouton remet la réponse refusée dans le champ, même après Recopier. */
+  _proposerModifier(texte) {
+    if (!this.btnModifier) {
+      this.btnModifier = document.createElement('button');
+      this.btnModifier.type = 'button';
+      this.btnModifier.className = 'recopier-button';
+      this.btnModifier.textContent = 'Modifier';
+      this.btnModifier.title = 'Remettre la réponse refusée dans le champ';
+      this.btnModifier.onclick = () => {
+        this._effacerErreur();
+        this.input.value = this.reponseRefusee;
+        this.input.focus();
+      };
+      this.opCell.appendChild(this.btnModifier);
+    }
+    this.reponseRefusee = texte;
+  }
+
+  /** Cette ligne, écrite comme l'élève la taperait. */
+  _texteLigne() {
+    if (!this.ligneParente) return `${this.equationCible.lhs}=${this.equationCible.rhs}`;
+
+    const { cas, produit } = this.formeLatex || {};
+    if (cas) return cas.map(f => `${textePolynome(f)}=0`).join(' ou ');
+    if (produit) {
+      const facteurs = produit.facteurs.map(f => f.coeff(0).equal(new Nombre("0")) ? textePolynome(f) : `(${textePolynome(f)})`);
+      return `${produit.k ? produit.k.toString() : ''}${facteurs.join('')}=0`;
+    }
+    return `${textePolynome(this.polyLhs)}=${textePolynome(this.polyRhs)}`;
   }
 
   _validerResultat() {
@@ -230,12 +280,15 @@ class OperationRow {
 
     if (erreur) {
       this._signalerErreur(erreur);
+      this._proposerModifier(texte);
       return;
     }
 
     this._effacerErreur();
     this.input.remove();
     this.input = null;
+    this.btnRecopier.remove();
+    this.btnModifier?.remove();
     this.saisieResultat = false;
 
     if (forme?.finale) {
@@ -355,6 +408,7 @@ class OperationRow {
         }
       };
       this.opCell.appendChild(btn);
+      this._afficherOutils();
       return;
     }
 
@@ -372,80 +426,69 @@ class OperationRow {
     // message et l'état d'erreur — pas besoin de cliquer sur ❌ pour ça.
     this.input.addEventListener('input', () => this._effacerErreur());
 
-    this._construireOutils();
+    this.wrapper.classList.add('op-row-saisie');
+    this._afficherOutils();
   }
 
   /**
-   * Bouton « Autre » à côté de la saisie : il révèle les outils dans le panneau
-   * de droite, qui agissent sur la ligne en cours. Un outil qui ne s'applique
-   * pas reste cliquable et explique pourquoi : le griser indiquerait à l'élève
-   * quelle étape choisir.
+   * Un outil qui ne s'applique pas reste cliquable et explique pourquoi : le
+   * griser indiquerait à l'élève quelle étape choisir.
    */
-  _construireOutils() {
-    this.wrapper.classList.add('op-row-saisie');
-
-    this.outilsCell = document.createElement('div');
-    this.outilsCell.className = 'op-outils';
-    this.wrapper.insertBefore(this.outilsCell, this.feedbackCell);
-
-    const btnAutre = document.createElement('button');
-    btnAutre.type = 'button';
-    btnAutre.textContent = 'Autre';
-    btnAutre.onclick = () => this._basculerOutils(true);
-    this.outilsCell.appendChild(btnAutre);
-    this.btnAutre = btnAutre;
-
-    if (outilsOuverts) this._basculerOutils(true);
-  }
-
-  /** Mode « Autre » : la saisie est inactive tant que la liste des outils est ouverte. */
-  _basculerOutils(ouvert) {
-    outilsOuverts = ouvert;
-    this.input.disabled = ouvert;
-    this.btnAutre.disabled = ouvert;
-    this._effacerErreur();
-
-    if (ouvert) {
-      this._afficherOutils();
-    } else {
-      panneauOutils().innerHTML = '';
-      this.input.focus();
-    }
-  }
-
   /** Remplit le panneau de droite avec les outils de cette ligne. */
   _afficherOutils() {
     const panneau = panneauOutils();
     panneau.innerHTML = '';
 
-    const titre = document.createElement('div');
-    titre.className = 'panel-groupe-label';
-    titre.textContent = 'Autres opérations';
-    panneau.appendChild(titre);
+    // Tant que la ligne attend autre chose qu'une opération, les outils ne s'appliquent pas.
+    const blocage = this.saisieResultat ? "Écris d'abord le résultat de l'étape."
+      : this.formeLatex?.cas ? "Clique sur « Résoudre les deux équations »."
+      : null;
 
-    const outils = [
-      ['Produit en croix', this._actionProduitEnCroix(), "Le produit en croix demande un quotient de chaque côté, sur l'énoncé."],
-      ['Différence nulle', this._actionDifferenceNulle(), "Le membre de droite vaut déjà 0."],
-      ['Factoriser', this._actionFactoriser(), "Pour factoriser, il faut une ligne de la forme P = 0 qui ne soit pas déjà un produit."],
-      ['Développer', this._actionDevelopper(), "Rien à développer sur cette ligne."],
-      ['Produit nul', this._actionProduitNul(), "Il faut d'abord un produit égal à 0."]
+    const groupes = [
+      ['Transformation des membres', [
+        ['Développer', null, this._actionDevelopper(), "Rien à développer sur cette ligne."],
+        ['Factoriser', null, this._actionFactoriser(), "Pour factoriser, il faut une ligne de la forme P = 0 qui ne soit pas déjà un produit."]
+      ]],
+      ['Équivalences', [
+        ['Différence nulle', 'A = B ⇔ A − B = 0', this._actionDifferenceNulle(), "Le membre de droite vaut déjà 0."],
+        ['Produit nul', 'A × B = 0 ⇔ A = 0 ou B = 0', this._actionProduitNul(), "Il faut d'abord un produit égal à 0."],
+        ['Produit en croix', 'A/B = C/D ⇔ A × D = B × C', this._actionProduitEnCroix(), "Le produit en croix demande un quotient de chaque côté, sur l'énoncé."],
+        ['Équation x² = a', 'selon le signe de a', this._actionCarreEgal(), "Il faut une ligne de la forme x² = a."]
+      ]]
     ];
 
-    outils.forEach(([texte, action, refus]) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'panel-btn';
-      btn.textContent = texte;
-      btn.onclick = () => action ? action() : this._refuserOutil(refus);
-      panneau.appendChild(btn);
+    groupes.forEach(([titreGroupe, outils]) => {
+      const titre = document.createElement('div');
+      titre.className = 'panel-groupe-label';
+      titre.textContent = titreGroupe;
+      panneau.appendChild(titre);
+
+      outils.forEach(([nom, formule, action, refus]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-btn';
+        btn.textContent = nom;
+        if (formule) {
+          const detail = document.createElement('span');
+          detail.className = 'outil-formule';
+          detail.textContent = formule;
+          btn.appendChild(detail);
+        }
+        btn.onclick = () => {
+          if (blocage) this._refuserOutil(blocage);
+          else if (action) action();
+          else this._refuserOutil(refus);
+        };
+        panneau.appendChild(btn);
+      });
     });
 
-    const retour = document.createElement('button');
-    retour.type = 'button';
-    retour.className = 'panel-btn accent';
-    retour.textContent = "Retour à l'opération";
-    retour.onclick = () => this._basculerOutils(false);
-    panneau.appendChild(retour);
+    if (Math.max(this.polyLhs.degre(), this.polyRhs.degre()) === 2) {
+      const conseil = document.createElement('p');
+      conseil.className = 'outil-conseil';
+      conseil.textContent = 'Pour une équation du second degré, on se ramène à une équation produit nul.';
+      panneau.appendChild(conseil);
+    }
   }
 
   _refuserOutil(message) {
@@ -792,6 +835,88 @@ class OperationRow {
     if (window.MathJax) MathJax.typesetPromise([equivCell, eqCell]);
   }
 
+  /** Sur une ligne x² = a : demande le signe de a. */
+  _actionCarreEgal() {
+    const zero = new Nombre("0");
+    const un = new Nombre("1");
+    const estCarre = this.polyLhs.degre() === 2 && this.polyLhs.coeff(2).equal(un)
+      && this.polyLhs.coeff(1).equal(zero) && this.polyLhs.coeff(0).equal(zero);
+    if (!estCarre || !this.polyRhs.estConstant()) return null;
+
+    const signeA = Math.sign(this.polyRhs.coeff(0).simplify().valeurNum.a);
+    const nbSolutions = signeA + 1; // a < 0 : 0, a = 0 : 1, a > 0 : 2
+
+    return () => this._vueChoix('x² = a : quel est le signe de a ?',
+      [['a > 0', signeA === 1], ['a = 0', signeA === 0], ['a < 0', signeA === -1]],
+      "Ce n'est pas le signe de a.",
+      () => this._vueChoix('a ' + ['< 0', '= 0', '> 0'][nbSolutions] + ' : combien de solutions ?',
+        [['Pas de solution', nbSolutions === 0], ['Une solution', nbSolutions === 1], ['Deux solutions', nbSolutions === 2]],
+        "Ce n'est pas le bon nombre de solutions.",
+        (erreur) => this._appliquerCarreEgal(signeA, erreur)
+      )
+    );
+  }
+
+  /**
+   * Question à choix dans le panneau, en minuscules.
+   * @param {[string, boolean][]} choix - texte du bouton, et s'il est juste
+   * @param {(erreur: HTMLElement) => void} surJuste - appelée quand l'élève choisit juste
+   */
+  _vueChoix(titre, choix, messageFaux, surJuste) {
+    const panneau = this._viderPanneau(titre);
+    panneau.firstChild.classList.add('sans-majuscules');
+
+    const erreur = document.createElement('div');
+    choix.forEach(([texte, juste]) => {
+      this._boutonPanneau(panneau, texte, () => {
+        if (juste) surJuste(erreur);
+        else erreur.textContent = messageFaux;
+      });
+    });
+
+    erreur.className = 'op-msg-erreur panneau-erreur';
+    panneau.appendChild(erreur);
+    this._boutonPanneau(panneau, 'Retour à la liste', () => this._afficherOutils());
+  }
+
+  /** a > 0 : x = √a ou x = -√a ; a = 0 : x = 0 ; a < 0 : pas de solution. */
+  _appliquerCarreEgal(signe, erreur) {
+    const zero = new Nombre("0");
+    const x = Polynome.fromMonome(new Nombre("1"), 1);
+
+    if (signe > 0) {
+      const racines = racinesRationnelles(this.polyLhs.sub(this.polyRhs));
+      if (!racines) {
+        erreur.textContent = "a n'est pas le carré d'un nombre rationnel.";
+        return;
+      }
+      const r = racines.find(v => v.valeurNum.a > 0);
+      const facteurs = [r, zero.sub(r).simplify()].map(v => x.sub(Polynome.fromConstant(v)));
+
+      this._freeze('\\text{type } x^2=a');
+      if (modeActuel === 'accompagnee') {
+        new OperationRow(this.polyLhs, this.polyRhs, this.equationCible, this.container, this, { finale: facteurs }, true);
+        return;
+      }
+      this._masquerBoutonAnnulation();
+      this._afficherResultatFinal(facteurs
+        .map(f => `x = ${nombreLatex(f.getSolution())}`)
+        .join(' \\text{ ou } '));
+      afficherVerification(this.container, this.equationCible, facteurs.map(f => f.getSolution()));
+      createNextBtn(this.container);
+      return;
+    }
+
+    this._freeze('\\text{type } x^2=a');
+    if (signe === 0) {
+      this._poursuivre(x, Polynome.fromConstant(zero));
+      return;
+    }
+    this._masquerBoutonAnnulation();
+    this._afficherResultatFinal('\\text{Pas de solution}');
+    createNextBtn(this.container);
+  }
+
   /** Sur l'énoncé uniquement, quand chaque membre est un quotient. */
   _actionProduitEnCroix() {
     if (this.ligneParente) return null;
@@ -831,10 +956,7 @@ class OperationRow {
   _freeze(texteOperation) {
     this._retirerCroixErreur();
     if (this.input) this.input.remove();
-    if (this.outilsCell) {
-      this.outilsCell.remove();
-      panneauOutils().innerHTML = '';
-    }
+    panneauOutils().innerHTML = '';
     this.wrapper.classList.remove('op-row-saisie');
     this.wrapper.classList.add('op-row-validee');
     this.opCell.classList.remove('op-erreur');

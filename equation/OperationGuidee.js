@@ -33,20 +33,23 @@ class OperationGuidee {
     if (!['+', '-', '*', ':'].includes(operateur)) {
       throw new Error("L'opération doit commencer par +, -, * ou :");
     }
-    const reste = s.slice(1);
+    // La valeur peut être écrite entre parenthèses : :(-1), +(-3x).
+    const reste = s.slice(1).replace(/^\((.+)\)$/, '$1');
     if (!reste) throw new Error("Il manque la valeur de l'opération.");
 
     // Terme en x : "x", "2x", "1/2x", "-3x" (le signe global est déjà séparé
     // dans `operateur`, donc reste ne devrait pas recommencer par +/- sauf
     // cas comme ":-2" qui n'a pas de sens ici et sera rejeté par Nombre).
-    const estTermeXSeul = /^x$/.test(reste);
-    const estTermeXAvecCoeff = /^\d+(?:[.,]\d+)?(?:\/\d+)?x$/.test(reste);
+    const estTermeXSeul = /^-?x$/.test(reste);
+    const estTermeXAvecCoeff = /^-?\d+(?:[.,]\d+)?(?:\/\d+)?x$/.test(reste);
 
     if (estTermeXSeul || estTermeXAvecCoeff) {
       if (operateur === '*' || operateur === ':') {
         throw new Error("Multiplier ou diviser par x n'est pas autorisé (x pourrait valoir 0).");
       }
-      const valeur = estTermeXSeul ? new Nombre("1") : new Nombre(reste.slice(0, -1));
+      const valeur = estTermeXSeul
+        ? new Nombre(reste === '-x' ? "-1" : "1")
+        : new Nombre(reste.slice(0, -1));
       return { operateur, estTermeX: true, valeur };
     }
 
@@ -121,9 +124,10 @@ class OperationGuidee {
   static formaterOperationLatex(operation) {
     const { operateur, estTermeX, valeur } = operation;
     const estUn = valeur.equal(new Nombre("1"));
-    const corpsLatex = estTermeX
-      ? (estUn ? "x" : `${valeur.toLatex()}x`)
+    const corpsBrut = estTermeX
+      ? (estUn ? "x" : valeur.equal(new Nombre("-1")) ? "-x" : `${valeur.toLatex()}x`)
       : valeur.toLatex();
+    const corpsLatex = valeur.valeurNum.a < 0 ? `(${corpsBrut})` : corpsBrut;
 
     // + et - restent lisibles tels quels ; * et : sont rendus en symboles
     // mathématiques explicites pour ne pas les confondre avec des opérateurs

@@ -24,6 +24,7 @@ const TYPES_EQUATION = [
   { id: "DeuxQuotients",  label: "(ax+b)/u=(cx+d)/v" },
   { id: "ProduitNul",     label: "(ax+b)(cx+d)=0" },
   { id: "ProduitConstante", label: "(ax+b)(cx+d)=bd" },
+  { id: "CarreEgalNombre", label: "x²=a" },
   { id: "CarreX",         label: "ax²=bx" },
   { id: "CarreNombre",    label: "(ax+b)²=c²" },
   { id: "DeuxCarres",     label: "A²=B²" },
@@ -330,6 +331,19 @@ function genererEquation(params) {
         rhs: simplifie(b.mul(d)).toString(),
         xSol: zero, solutions: [zero, r], typeEq, typeNb, typeSol
       };
+    }
+
+    case "CarreEgalNombre": {
+      // x²=a : a est le carré d'une racine r > 0, solutions r et -r. En "Entiers", r est
+      // entière quel que soit le type de solution, sinon a serait fractionnaire.
+      const typeRacine = typeNb === "Entiers" ? "entier" : typeSol;
+      let r;
+      do {
+        r = simplifie(tirerSolution(typeRacine, false));
+      } while (r.valeurNum.a === 0 || !carresSousLimite([r]));
+
+      const oppose = simplifie(Nombre.fromParts(0, 1, "entier").sub(r));
+      return { lhs: "x^2", rhs: simplifie(r.mul(r)).toString(), xSol: r, solutions: [r, oppose], typeEq, typeNb, typeSol };
     }
 
     case "CarreX": {
