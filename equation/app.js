@@ -167,6 +167,7 @@ class InputWrapper {
         
         // Cache les zones statiques pendant la saisie
         this.leftPart.style.gridColumn = "1 / span 3";
+        this.leftPart.classList.add('ligne-entiere');
         this.symbolPart.style.display = "none";
         this.rightPart.style.display = "none";
         
@@ -182,6 +183,7 @@ class InputWrapper {
     renderStatic(eq) {
         if (this.input) this.input.remove();
         this.leftPart.style.gridColumn = "1";
+        this.leftPart.classList.remove('ligne-entiere');
         this.symbolPart.style.display = "block";
         this.rightPart.style.display = "block";
 
@@ -214,7 +216,8 @@ class InputWrapper {
         const equivalente = lisible
             && trouvees.every(s => dans(s, cibles))
             && cibles.every(c => dans(c, trouvees));
-        const resolue = equivalente && alternatives.every(eq => eq.estResolue());
+        const formeFinale = lisible && alternatives.every(eq => eq.estResolue());
+        const resolue = equivalente && formeFinale;
 
         if (this.input) this.input.remove();
         this.leftPart.innerHTML = lisible
@@ -227,24 +230,41 @@ class InputWrapper {
             this.wrapper.classList.add('capsule-wrapper-final');
             this.afficherEquivalent();
             this.commentPart.innerHTML = "<span style='color:var(--succes); font-weight:bold;'>✅ Résolu !</span>";
+            afficherVerification(this.container, this.equationObj, trouvees);
             createNextBtn(this.container);
         } else if (equivalente) {
             this.afficherEquivalent();
             this.commentPart.innerHTML = "Étape valide";
             new InputWrapper(this.equationObj, this.container, false);
         } else {
-            this.signalerNonEquivalente(lisible ? "Pas équivalente" : "Expression invalide");
+            this.signalerNonEquivalente(lisible ? "Pas équivalente" : "Expression invalide", val);
+            if (formeFinale) this.verification = afficherVerification(this.container, this.equationObj, trouvees);
         }
     }
 
-    signalerNonEquivalente(msg) {
+    signalerNonEquivalente(msg, saisie) {
         this.equivZone.classList.add('non-equiv');
         this.commentPart.innerHTML = msg;
+
+        // Faute de frappe : on rouvre la saisie avec le texte de l'élève.
+        const btnRecopier = document.createElement('button');
+        btnRecopier.className = "recopier-button";
+        btnRecopier.textContent = "Modifier";
+        btnRecopier.title = "Remettre cette ligne dans le champ pour la corriger";
+        btnRecopier.onclick = () => {
+            this.verification?.remove();
+            this.wrapper.remove();
+            const ligne = new InputWrapper(this.equationObj, this.container, false);
+            ligne.input.value = saisie;
+            ligne.input.focus();
+        };
+        this.commentPart.appendChild(btnRecopier);
 
         const btnX = document.createElement('button');
         btnX.className = "delete-button";
         btnX.innerHTML = "❌";
         btnX.onclick = () => {
+            this.verification?.remove();
             this.wrapper.remove();
             new InputWrapper(this.equationObj, this.container, false);
         };
@@ -292,6 +312,7 @@ class InputWrapper {
         this.wrapper.classList.add('capsule-wrapper-final');
         this.afficherEquivalent();
         this.commentPart.innerHTML = "<span style='color:var(--succes); font-weight:bold;'>✅ Résolu !</span>";
+        afficherVerification(this.container, this.equationObj, [diagUser.solution]);
         createNextBtn(this.container); 
     } else if (isEquivalent) {
         // --- ÉTAPE VALIDE : équivalente à la précédente (donc à l'origine,
@@ -311,9 +332,86 @@ class InputWrapper {
         };
         const msg = messages[diagUser.statut] || "Pas équivalente";
 
-        this.signalerNonEquivalente(msg);
+        this.signalerNonEquivalente(msg, val);
+        if (diagUser.statut === "ok" && userEq.estResolue()) {
+            this.verification = afficherVerification(this.container, this.equationObj, [diagUser.solution]);
+        }
     }
 }
+}
+
+// --- VÉRIFICATION ÉCRITE ---
+
+/** Valeur d'un membre (texte de l'énoncé) pour x = valeur. */
+function evaluerMembre(texte, valeur) {
+    const poly = polynomeDe(texte);
+    let somme = new Nombre("0");
+    let puissance = new Nombre("1");
+    for (let d = 0; d <= poly.degre(); d++) {
+        somme = somme.add(poly.coeff(d).mul(puissance));
+        puissance = puissance.mul(valeur);
+    }
+    return somme.simplify();
+}
+
+/** LaTeX d'un nombre, avec le signe devant la fraction. */
+function nombreLatex(nombre) {
+    const n = nombre.simplify();
+    if (n.valeurNum.a >= 0) return n.toLatex();
+    return '-' + Nombre.fromParts(-n.valeurNum.a, n.valeurNum.b, n.typeEcriture).toLatex();
+}
+
+/** Remplace x par la valeur dans une écriture LaTeX, en ajoutant les × et parenthèses nécessaires. */
+function remplacerX(latex, valeur) {
+    const v = valeur.simplify();
+    const texteValeur = nombreLatex(v);
+
+    return latex.replace(/(?<![a-zA-Z\\])x(?![a-zA-Z])/g, (x, position) => {
+        const avant = latex.slice(0, position).trimEnd().slice(-1);
+        const apres = latex.slice(position + 1).trimStart();
+        const puissance = apres.startsWith('^');
+        const entreParentheses = texteValeur.startsWith('-') || (puissance && !v.isEntier());
+
+        const corps = entreParentheses ? `\\left(${texteValeur}\\right)` : texteValeur;
+        const foisAvant = /[0-9})]/.test(avant) ? '\\times ' : '';
+        const foisApres = /^(\(|\\left)/.test(apres) ? ' \\times ' : '';
+        return foisAvant + corps + foisApres;
+    });
+}
+
+/**
+ * Écrit sous la résolution le calcul des deux membres de l'énoncé pour chaque
+ * valeur, et conclut si elle est solution. Renvoie le bloc affiché.
+ */
+function afficherVerification(container, equation, valeurs) {
+    const bloc = document.createElement('div');
+    bloc.className = 'verification';
+
+    const ligneMembre = (libelle, texte, valeur) => {
+        const latex = formatToLatex(texte, { preserverEcriture: true });
+        const resultat = nombreLatex(evaluerMembre(texte, valeur));
+        const calcul = /x/.test(texte) ? `${latex} = ${remplacerX(latex, valeur)} = ${resultat}` : resultat;
+        return `<div>${libelle} : \\(${calcul}\\)</div>`;
+    };
+
+    bloc.innerHTML = valeurs.map(valeurBrute => {
+        const valeur = valeurBrute.simplify();
+        const juste = evaluerMembre(equation.lhs, valeur).equal(evaluerMembre(equation.rhs, valeur));
+        const conclusion = juste
+            ? `Les deux membres sont égaux : \\(${nombreLatex(valeur)}\\) est solution.`
+            : `Les deux membres sont différents : \\(${nombreLatex(valeur)}\\) n'est pas solution.`;
+
+        return `<div class="verification-cas ${juste ? 'juste' : 'faux'}">`
+            + `<div class="verification-titre">Vérification pour \\(x = ${nombreLatex(valeur)}\\)</div>`
+            + ligneMembre('À gauche', equation.lhs, valeur)
+            + ligneMembre('À droite', equation.rhs, valeur)
+            + `<div class="verification-conclusion">${conclusion}</div>`
+            + `</div>`;
+    }).join('');
+
+    container.appendChild(bloc);
+    if (window.MathJax) MathJax.typesetPromise([bloc]);
+    return bloc;
 }
 
 // --- FONCTIONS DE JEU ---
@@ -349,6 +447,7 @@ function generateRandomExpression() {
 function demarrerSaisiePersonnalisee() {
     const cont = document.getElementById("inputContainer");
     if (!cont) return;
+    equationAffichee = null;
     cont.innerHTML = "";
 
     const bloc = document.createElement('div');
@@ -389,13 +488,27 @@ function demarrerSaisiePersonnalisee() {
     input.focus();
 }
 
+let equationAffichee = null; // équation en cours, reprise au changement de mode
+
+/** Après un changement de mode : reprend l'équation en cours depuis le début, sans en tirer une autre. */
+function reprendreEquation() {
+    if (!equationAffichee) {
+        demarrerQuestion();
+        return;
+    }
+    fermerOutils();
+    setupSkipButton();
+    lancerResolution(equationAffichee);
+}
+
 /** Lance la résolution d'une équation donnée (perso ou générée), selon le mode de résolution courant. */
 function lancerResolution(eq) {
     const cont = document.getElementById("inputContainer");
     if (!cont) return;
+    equationAffichee = eq;
     cont.innerHTML = "";
 
-    if (modeActuel === 'guide') {
+    if (modeActuel !== 'libre') {
         const osLhs = new ObjetString(eq.lhs, {});
         const osRhs = new ObjetString(eq.rhs, {});
         const polyLhs = osLhs.calculer().resultat.polynome;
@@ -598,7 +711,7 @@ document.addEventListener("keydown", (e) => {
 let questionCount = 0;
 let score = 0;
 let piocheEnCours = [];
-let modeActuel = 'guide'; // 'libre' | 'guide' — mode de RÉSOLUTION (orthogonal à l'état atelier/quiz)
+let modeActuel = 'guide'; // 'libre' | 'accompagnee' | 'guide' — mode de RÉSOLUTION (orthogonal à l'état atelier/quiz)
 let etatJeu = 'atelier'; // 'atelier' | 'quiz' — atelier : rien n'est figé, pas de comptage.
 let quizDemarre = false; // true une fois qu'on a cliqué "Commencer le Quiz"
 let equationPersonnaliseeActive = false; // toggle indépendant : source de l'équation (atelier uniquement)
@@ -608,7 +721,7 @@ let equationPersonnaliseeActive = false; // toggle indépendant : source de l'é
  *   - etatJeu ('atelier' | 'quiz') : si quiz et pas encore démarré, ne lance rien.
  *   - equationPersonnaliseeActive : en atelier seulement, remplace la génération
  *     aléatoire par un petit formulaire de saisie.
- *   - modeActuel ('libre' | 'guide') : mécanique de résolution une fois l'équation choisie.
+ *   - modeActuel ('libre' | 'accompagnee' | 'guide') : mécanique de résolution une fois l'équation choisie.
  */
 function demarrerQuestion() {
     fermerOutils();
@@ -624,7 +737,7 @@ function demarrerQuestion() {
         return;
     }
 
-    if (modeActuel === 'guide') {
+    if (modeActuel !== 'libre') {
         startQuizOperationGuidee();
     } else {
         startQuiz();
@@ -749,13 +862,7 @@ function renderPanneauLateral() {
         panneau.appendChild(creerGroupeNiveau(equationPersonnaliseeActive));
         ajouterFilet();
 
-        panneau.appendChild(creerGroupePaire(
-            'Mode de résolution',
-            'Par saisie', 'Par opération',
-            () => modeActuel === 'libre',
-            () => { modeActuel = 'libre'; demarrerQuestion(); },
-            () => { modeActuel = 'guide'; demarrerQuestion(); }
-        ));
+        panneau.appendChild(creerGroupeMode(reprendreEquation));
         ajouterFilet();
 
         const skipAtelier = document.createElement('button');
@@ -769,13 +876,7 @@ function renderPanneauLateral() {
         panneau.appendChild(creerGroupeNiveau(false));
         ajouterFilet();
 
-        panneau.appendChild(creerGroupePaire(
-            'Mode de résolution',
-            'Par saisie', 'Par opération',
-            () => modeActuel === 'libre',
-            () => { modeActuel = 'libre'; },
-            () => { modeActuel = 'guide'; }
-        ));
+        panneau.appendChild(creerGroupeMode(() => {}));
         ajouterFilet();
 
         const btnCommencer = document.createElement('button');
@@ -793,13 +894,7 @@ function renderPanneauLateral() {
 
     } else if (etatJeu === 'quiz' && quizDemarre) {
         btnParams.disabled = true;
-        panneau.appendChild(creerGroupePaire(
-            'Mode de résolution',
-            'Par saisie', 'Par opération',
-            () => modeActuel === 'libre',
-            () => {}, () => {},
-            true
-        ));
+        panneau.appendChild(creerGroupeMode(() => {}, true));
         ajouterFilet();
 
         const labelQuiz = document.createElement('div');
@@ -841,6 +936,39 @@ function niveauCourant() {
 }
 
 /** Groupe « Niveau » du panneau de gauche : un clic coche les types du niveau et relance une question. */
+/** Choix du mode de résolution. apresChoix est appelé quand l'élève change de mode. */
+function creerGroupeMode(apresChoix, disabled = false) {
+    const wrap = document.createElement('div');
+    wrap.className = 'panel-groupe';
+
+    const label = document.createElement('div');
+    label.className = 'panel-groupe-label';
+    label.textContent = 'Mode de résolution';
+
+    const liste = document.createElement('div');
+    liste.className = 'panel-groupe-modes';
+
+    const modes = [['libre', 'Par saisie'], ['accompagnee', 'Saisie accompagnée'], ['guide', 'Par opération']];
+    const boutons = modes.map(([mode, texte]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'panel-btn' + (mode === modeActuel ? ' accent' : '');
+        btn.textContent = texte;
+        btn.disabled = disabled;
+        btn.onclick = () => {
+            if (mode === modeActuel) return;
+            modeActuel = mode;
+            boutons.forEach(b => b.classList.toggle('accent', b === btn));
+            apresChoix();
+        };
+        return btn;
+    });
+
+    liste.append(...boutons);
+    wrap.append(label, liste);
+    return wrap;
+}
+
 function creerGroupeNiveau(disabled) {
     const wrap = document.createElement('div');
     wrap.className = 'panel-groupe';

@@ -20,16 +20,20 @@ const TYPES_EQUATION = [
   { id: "Variable2Cotes", label: "ax+b=cx+d" },
   { id: "Parentheses",    label: "u(ax+b)=d" },
   { id: "Division",       label: "(ax+b):v=d" },
+  { id: "DifferenceParentheses", label: "(ax+b)-(cx+d)=0" },
   { id: "DeuxQuotients",  label: "(ax+b)/u=(cx+d)/v" },
   { id: "ProduitNul",     label: "(ax+b)(cx+d)=0" },
+  { id: "ProduitConstante", label: "(ax+b)(cx+d)=bd" },
+  { id: "CarreX",         label: "ax²=bx" },
+  { id: "CarreNombre",    label: "(ax+b)²=c²" },
   { id: "DeuxCarres",     label: "A²=B²" },
   { id: "FacteurCommun",  label: "(ax+b)(cx+d)=(ax+b)(ex+f)" }
 ];
 
 // Un niveau est un raccourci qui coche un ensemble de types d'équation (cumulatif).
 const NIVEAUX = [
-  { id: "5e", label: "5e", types: ["Simple"] },
-  { id: "4e", label: "4e", types: ["Simple", "Variable2Cotes", "Parentheses", "Division"] },
+  { id: "5e", label: "5e", types: ["Simple", "Variable2Cotes"] },
+  { id: "4e", label: "4e", types: ["Simple", "Variable2Cotes", "Parentheses", "Division", "DifferenceParentheses"] },
   { id: "3e", label: "3e", types: TYPES_EQUATION.map(t => t.id) }
 ];
 
@@ -41,6 +45,7 @@ const TYPES_NOMBRE = [
 
 const DENOM_MIN = 2;
 const DENOM_MAX = 6;
+const CARRE_RACINE_MAX = 10; // un nombre élevé au carré ne dépasse pas 10, soit un carré d'au plus 100
 
 // --- Utilitaires de tirage ---
 
@@ -62,6 +67,20 @@ function piocherType(selection, referentiel) {
   const ids = referentiel.map(t => t.id);
   const dispo = (selection && selection.length > 0) ? selection : ids;
   return choisirParmi(dispo);
+}
+
+const PROBA_CHANGEMENT_TYPE = 2 / 3;
+let dernierTypeEquation = null;
+
+/** D'une équation à la suivante, le type change avec la probabilité PROBA_CHANGEMENT_TYPE. */
+function piocherTypeEquation(selection) {
+  const dispo = (selection && selection.length > 0) ? selection : TYPES_EQUATION.map(t => t.id);
+  const autres = dispo.filter(id => id !== dernierTypeEquation);
+
+  const garder = autres.length < dispo.length
+    && (autres.length === 0 || Math.random() >= PROBA_CHANGEMENT_TYPE);
+  if (!garder) dernierTypeEquation = choisirParmi(autres);
+  return dernierTypeEquation;
 }
 
 /**
@@ -134,7 +153,7 @@ function genererEquation(params) {
     solutionNegative = false
   } = params || {};
 
-  const typeEq = piocherType(typesEquation, TYPES_EQUATION);
+  const typeEq = piocherTypeEquation(typesEquation);
   const typeNb = piocherType(typesNombre, TYPES_NOMBRE);
   const typeSol = (typesSolution && typesSolution.length > 0)
     ? choisirParmi(typesSolution)
@@ -221,6 +240,30 @@ function genererEquation(params) {
       return { lhs: `(${lhsInterieur}):${simplifie(v).toString()}`, rhs: d.toString(), xSol, typeEq, typeNb, typeSol };
     }
 
+    case "DifferenceParentheses": {
+      // (ax+b)-(cx+d)=0 : tirer a != c et b -> déduire d = (a-c)*xSol+b.
+      const TENTATIVES_MAX = 2000;
+      let a, b, c, d, valable, ideal;
+      let tentatives = 0;
+      do {
+        a = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+        c = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+        b = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 15 });
+        d = simplifie(a.sub(c).mul(xSol).add(b));
+
+        valable = !a.equal(c) && d.valeurNum.a !== 0 && (coefficientsNegatifs || d.valeurNum.a > 0);
+        ideal = typeNb !== "Entiers"
+          || (d.isEntier() && Math.abs(d.valeurNum.a / d.valeurNum.b) <= 40);
+        tentatives++;
+      } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
+
+      return {
+        lhs: `(${formatTerme(a, 1)}${formatTerme(b, 0, true)})-(${formatTerme(c, 1)}${formatTerme(d, 0, true)})`,
+        rhs: "0",
+        xSol, typeEq, typeNb, typeSol
+      };
+    }
+
     case "DeuxQuotients": {
       // (ax+b):u=(cx+d):v : tirer u != v, a, b, c -> déduire d = (a*xSol+b)*v/u - c*xSol.
       // On écarte a/u = c/v (x disparaîtrait) et d = 0. En "Entiers", on retire
@@ -263,20 +306,83 @@ function genererEquation(params) {
       return { lhs: `(${ecrire(x1)})(${ecrire(x2)})`, rhs: "0", xSol: x1, solutions: [x1, x2], typeEq, typeNb, typeSol };
     }
 
+    case "ProduitConstante": {
+      // (ax+b)(cx+d)=bd : en développant, bd s'élimine ; solutions 0 et r = -(ad+bc)/(ac).
+      // b et d sont signés, sans quoi r serait toujours négative avec a et c positifs.
+      const TENTATIVES_MAX = 5000;
+      const zero = Nombre.fromParts(0, 1, "entier");
+      let a, b, c, d, r, valable, ideal;
+      let tentatives = 0;
+      do {
+        a = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 6 });
+        c = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 6 });
+        b = tirerCoefficient(typeNb, { ...coeffOpts, coefficientsNegatifs: true, min: 1, max: 9 });
+        d = tirerCoefficient(typeNb, { ...coeffOpts, coefficientsNegatifs: true, min: 1, max: 9 });
+        r = simplifie(zero.sub(a.mul(d).add(b.mul(c))).div(a.mul(c)));
+
+        valable = r.valeurNum.a !== 0 && (solutionNegative || r.valeurNum.a > 0);
+        ideal = r.isEntier() === (typeSol === "entier");
+        tentatives++;
+      } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
+
+      return {
+        lhs: `(${formatTerme(a, 1)}${formatTerme(b, 0, true)})(${formatTerme(c, 1)}${formatTerme(d, 0, true)})`,
+        rhs: simplifie(b.mul(d)).toString(),
+        xSol: zero, solutions: [zero, r], typeEq, typeNb, typeSol
+      };
+    }
+
+    case "CarreX": {
+      // ax²=bx : solutions 0 et r, avec b = a*r. En "Entiers", a est un multiple du dénominateur de r.
+      const [r] = tirerDeuxRacines(typeSol, solutionNegative);
+      const q = r.valeurNum.b;
+      const a = (typeNb === "Entiers")
+        ? Nombre.fromParts(tirerSigne(coefficientsNegatifs) * q * tirerEntier(q > 1 ? 1 : 2, Math.floor(9 / q)), 1, "entier")
+        : tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 9 });
+      const zero = Nombre.fromParts(0, 1, "entier");
+      return { lhs: formatTerme(a, 2), rhs: formatTerme(a.mul(r), 1), xSol: zero, solutions: [zero, r], typeEq, typeNb, typeSol };
+    }
+
+    case "CarreNombre": {
+      // (ax+b)²=c² : ax+b vaut c en x1 et -c en x2, d'où c = a(x1-x2)/2 et b = -a(x1+x2)/2.
+      const TENTATIVES_MAX = 5000;
+      const zero = Nombre.fromParts(0, 1, "entier");
+      const deux = Nombre.fromParts(2, 1, "entier");
+      let x1, x2, a, b, c, valable, ideal;
+      let tentatives = 0;
+      do {
+        [x1, x2] = tirerDeuxRacines(typeSol, solutionNegative);
+        a = tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 6 });
+        c = simplifie(a.mul(x1.sub(x2)).div(deux));
+        if (c.valeurNum.a < 0) c = simplifie(zero.sub(c));
+        b = simplifie(zero.sub(a.mul(x1.add(x2)).div(deux)));
+
+        valable = b.valeurNum.a !== 0;
+        ideal = carresSousLimite([b, c]) && (typeNb !== "Entiers" || (b.isEntier() && c.isEntier()));
+        tentatives++;
+      } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
+
+      return {
+        lhs: `(${formatTerme(a, 1)}${formatTerme(b, 0, true)})^2`,
+        rhs: simplifie(c.mul(c)).toString(),
+        xSol: x1, solutions: [x1, x2], typeEq, typeNb, typeSol
+      };
+    }
+
     case "DeuxCarres": {
       // A²=B² : on part de P = A-B de racine x1 et Q = A+B de racine x2, d'où
       // A = (P+Q)/2 et B = (Q-P)/2. On écarte les cas où A ou B perd son terme
       // en x ou sa constante, et en "Entiers" on retire jusqu'à des coefficients entiers.
       const TENTATIVES_MAX = 5000;
-      const [x1, x2] = tirerDeuxRacines(typeSol, solutionNegative);
       const zero = Nombre.fromParts(0, 1, "entier");
       const deux = Nombre.fromParts(2, 1, "entier");
-      let a, b, c, d, valable, ideal;
+      let x1, x2, a, b, c, d, valable, ideal;
       let tentatives = 0;
       do {
+        [x1, x2] = tirerDeuxRacines(typeSol, solutionNegative);
         // En "Entiers", une pente multiple du dénominateur de la racine garantit une constante entière.
         const tirerPente = (r) => (typeNb === "Entiers")
-          ? Nombre.fromParts(tirerSigne(coefficientsNegatifs) * r.valeurNum.b * tirerEntier(1, Math.ceil(24 / r.valeurNum.b)), 1, "entier")
+          ? Nombre.fromParts(tirerSigne(coefficientsNegatifs) * r.valeurNum.b * tirerEntier(1, Math.ceil(12 / r.valeurNum.b)), 1, "entier")
           : tirerCoefficient(typeNb, { ...coeffOpts, min: 1, max: 12 });
         const p = tirerPente(x1);
         const q = tirerPente(x2);
@@ -290,9 +396,7 @@ function genererEquation(params) {
 
         valable = [a, b, c, d].every(n => n.valeurNum.a !== 0)
           && (coefficientsNegatifs || (a.valeurNum.a > 0 && c.valeurNum.a > 0));
-        const borne = (n, max) => n.isEntier() && Math.abs(n.valeurNum.a / n.valeurNum.b) <= max;
-        ideal = typeNb !== "Entiers"
-          || (borne(a, 12) && borne(c, 12) && borne(b, 60) && borne(d, 60));
+        ideal = carresSousLimite([a, b, c, d]) && (typeNb !== "Entiers" || [a, b, c, d].every(n => n.isEntier()));
         tentatives++;
       } while (!(valable && (ideal || tentatives >= TENTATIVES_MAX)));
 
@@ -337,6 +441,11 @@ function genererEquation(params) {
     default:
       throw new Error("Type d'équation inconnu : " + typeEq);
   }
+}
+
+/** Vrai si le numérateur et le dénominateur de chaque nombre ont un carré d'au plus 100. */
+function carresSousLimite(nombres) {
+  return nombres.every(n => Math.abs(n.valeurNum.a) <= CARRE_RACINE_MAX && n.valeurNum.b <= CARRE_RACINE_MAX);
 }
 
 /** Deux racines distinctes et non nulles, selon le type de solution demandé. */
@@ -395,7 +504,7 @@ function simplifie(n) {
 /**
  * Formate un coefficient en terme texte ("3x", "-2/3x", "+5", "-7"...).
  * @param {Nombre} coeff
- * @param {number} degre - 1 pour le terme en x, 0 pour la constante
+ * @param {number} degre - 2 pour le terme en x², 1 pour le terme en x, 0 pour la constante
  * @param {boolean} avecSignePourPositif - si true, préfixe "+" explicite quand positif (utile pour la concaténation après un premier terme)
  */
 function formatTerme(coeffBrut, degre, avecSignePourPositif = false) {
@@ -405,11 +514,11 @@ function formatTerme(coeffBrut, degre, avecSignePourPositif = false) {
     ? Nombre.fromParts(-coeff.valeurNum.a, coeff.valeurNum.b, coeff.typeEcriture)
     : coeff;
   const texte = valeurAbs.toString();
-  const suffixe = degre === 1 ? "x" : "";
+  const suffixe = degre === 2 ? "x^2" : degre === 1 ? "x" : "";
 
   // Coefficient 1 devant x (entier OU fraction valant exactement 1) : on écrit juste "x".
-  const estUnSimple = degre === 1 && texte === "1";
-  const corps = estUnSimple ? "x" : `${texte}${suffixe}`;
+  const estUnSimple = degre >= 1 && texte === "1";
+  const corps = estUnSimple ? suffixe : `${texte}${suffixe}`;
 
   if (estNegatif) return `-${corps}`;
   return avecSignePourPositif ? `+${corps}` : corps;

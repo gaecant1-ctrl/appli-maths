@@ -45,7 +45,7 @@ function fermerOutils() {
   const panneau = panneauOutils();
   if (!panneau) return;
   panneau.innerHTML = '';
-  panneau.hidden = modeActuel !== 'guide';
+  panneau.hidden = modeActuel === 'libre';
 }
 
 function polynomeDe(texte) {
@@ -94,10 +94,32 @@ function coefficientsReduits(p) {
   return true;
 }
 
-/** Vrai si le texte n'a ni parenthèse ni deux termes de même degré (2x+3, et non 2x+x+3). */
+/** Même polynôme avec des fractions irréductibles. */
+function polynomeReduit(p) {
+  if (coefficientsReduits(p)) return p;
+
+  let resultat = Polynome.fromMonome(p.coeff(0).simplify(), 0);
+  for (let d = 1; d <= p.degre(); d++) {
+    resultat = resultat.add(Polynome.fromMonome(p.coeff(d).simplify(), d));
+  }
+  return resultat;
+}
+
+/** Sépare « A=B » en deux textes, ou null. Le parseur refuse -( : il devient -1(. */
+function lireMembres(texte) {
+  const membres = String(texte).split('=').map(m => m.trim().replace(/^-\s*\(/, '-1('));
+  return membres.length === 2 && membres.every(m => m !== '') ? membres : null;
+}
+
+/** Vrai si le texte n'a ni parenthèse, ni deux termes de même degré, ni fraction réductible (2x+3, et non 2x+x+3). */
 function ecritureReduite(texte) {
   const s = String(texte).replace(/\s+/g, '');
   if (s.includes('(')) return false;
+
+  // Le parseur transforme 8/2 en 4 : on contrôle les fractions sur le texte.
+  const pgcd = (m, n) => n === 0 ? m : pgcd(n, m % n);
+  const fractionsReduites = [...s.matchAll(/(\d+)\/(\d+)/g)].every(([, n, d]) => Number(d) > 1 && pgcd(Number(n), Number(d)) === 1);
+  if (!fractionsReduites) return false;
 
   const termes = s.replace(/(?!^)[+-]/g, '|$&').split('|');
   const degres = termes.map(t => t.includes('x^2') ? 2 : t.includes('x') ? 1 : 0);
@@ -132,9 +154,11 @@ class OperationRow {
    *   (sert à retirer le bouton ❌ de la parente dès qu'on avance d'une étape).
    * @param {{gauche: string, droite: string}|null} formeLatex - écriture à afficher à la place
    *   du polynôme développé (ex: 6(2x+3) = 4(x+5) après un produit en croix).
+   * @param {boolean} saisieResultat - saisie accompagnée : l'élève doit d'abord taper cette équation.
    */
-  constructor(polyLhs, polyRhs, equationCible, container, ligneParente = null, formeLatex = null) {
+  constructor(polyLhs, polyRhs, equationCible, container, ligneParente = null, formeLatex = null, saisieResultat = false) {
     this.formeLatex = formeLatex;
+    this.saisieResultat = saisieResultat;
     this.polyLhs = polyLhs;
     this.polyRhs = polyRhs;
     this.equationCible = equationCible;
@@ -175,8 +199,125 @@ class OperationRow {
       if (window.MathJax) MathJax.typesetPromise([this.equivZone]);
     }
 
-    this._renderEquation();
-    this._renderInput();
+    if (saisieResultat) {
+      this._renderSaisieResultat();
+    } else {
+      this._renderEquation();
+      this._renderInput();
+    }
+  }
+
+  /** Saisie accompagnée : l'équation obtenue est à taper à la place de son affichage. */
+  _renderSaisieResultat() {
+    this.input = document.createElement('input');
+    this.input.className = 'op-input op-input-resultat';
+    this.input.placeholder = 'équation';
+    this.eqCell.appendChild(this.input);
+    this.input.focus();
+    this.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && this.input.value.includes('=')) this._validerResultat();
+    });
+    this.input.addEventListener('input', () => this._effacerErreur());
+  }
+
+  _validerResultat() {
+    const forme = this.formeLatex;
+    const texte = this.input.value;
+    const erreur = forme?.finale ? this._erreurSolutions(texte, forme.finale)
+      : forme?.cas ? this._erreurCas(texte, forme.cas)
+      : forme?.produit ? this._erreurProduit(texte)
+      : this._erreurEquation(texte);
+
+    if (erreur) {
+      this._signalerErreur(erreur);
+      return;
+    }
+
+    this._effacerErreur();
+    this.input.remove();
+    this.input = null;
+    this.saisieResultat = false;
+
+    if (forme?.finale) {
+      this.ligneParente._masquerBoutonAnnulation();
+      this.wrapper.remove();
+      this._afficherResultatFinal(forme.finale
+        .map(f => `x = ${f.getSolution().simplify().toLatex()}`)
+        .join(' \\text{ ou } '));
+      afficherVerification(this.container, this.equationCible, forme.finale.map(f => f.getSolution()));
+      createNextBtn(this.container);
+    } else if (!forme?.cas && this._estResolue(this.polyLhs, this.polyRhs)) {
+      this.ligneParente._masquerBoutonAnnulation();
+      this.wrapper.remove();
+      this._conclure(this.polyLhs, this.polyRhs);
+    } else {
+      this._renderEquation();
+      this._renderInput();
+    }
+  }
+
+  /** Équation attendue. Sur une ligne sans écriture particulière, elle doit être réduite. */
+  _erreurEquation(texte) {
+    const membres = lireMembres(texte);
+    const [g, d] = membres ? membres.map(polynomeSaisi) : [null, null];
+    if (!g || !d) return "Expression invalide.";
+    if (!g.equals(this.polyLhs) || !d.equals(this.polyRhs)) return "Ce n'est pas le résultat de cette opération.";
+
+    const reduit = coefficientsReduits(g) && coefficientsReduits(d) && membres.every(ecritureReduite);
+    return this.formeLatex || reduit ? null : "Ce résultat n'est pas réduit.";
+  }
+
+  /** Produit de deux facteurs réduits, égal à 0. L'écriture de l'élève devient celle de la ligne. */
+  _erreurProduit(texte) {
+    const membres = lireMembres(texte);
+    if (!membres) return "Expression invalide.";
+
+    const droite = polynomeSaisi(membres[1]);
+    if (!droite || !droite.estNul()) return "Le membre de droite doit valoir 0.";
+
+    const facteurs = this._lireProduitReduit(membres[0]);
+    if (typeof facteurs === 'string') return facteurs;
+
+    this.formeLatex = this._formeProduit({ k: null, facteurs });
+    return null;
+  }
+
+  /** « A=0 ou B=0 », dans n'importe quel ordre. */
+  _erreurCas(texte, facteurs) {
+    const parties = texte.split(/\bou\b/i).map(lireMembres);
+    if (parties.length !== facteurs.length || parties.some(m => !m)) {
+      return "Écris une équation par facteur, séparées par « ou ».";
+    }
+
+    const restants = [...facteurs];
+    for (const [g, d] of parties) {
+      const poly = polynomeSaisi(g);
+      const droite = polynomeSaisi(d);
+      const i = poly && droite && droite.estNul() ? restants.findIndex(f => f.equals(poly)) : -1;
+      if (i === -1) return "Chaque facteur doit être égal à 0.";
+      restants.splice(i, 1);
+    }
+    return null;
+  }
+
+  /** « x=a ou x=b », valeurs réduites, dans n'importe quel ordre. */
+  _erreurSolutions(texte, facteurs) {
+    const parties = texte.split(/\bou\b/i).map(lireMembres);
+    if (parties.length !== facteurs.length || parties.some(m => !m)) {
+      return "Écris une solution par facteur : x=… ou x=…";
+    }
+
+    const restants = facteurs.map(f => f.getSolution().simplify());
+    for (const [g, d] of parties) {
+      const valeur = polynomeSaisi(d);
+      if (g.replace(/\s+/g, '') !== 'x' || !valeur || !valeur.estConstant()) return "Écris une solution par facteur : x=… ou x=…";
+      if (!coefficientsReduits(valeur) || !ecritureReduite(d)) return "Ces solutions ne sont pas réduites.";
+
+      const i = restants.findIndex(r => r.equal(valeur.coeff(0)));
+      if (i === -1) return "Ce ne sont pas les solutions.";
+      restants.splice(i, 1);
+    }
+    return null;
   }
 
   _renderEquation() {
@@ -184,7 +325,7 @@ class OperationRow {
     // première ligne, sinon le développement en polynôme ferait disparaître
     // le dénominateur sur lequel l'élève doit justement raisonner.
     const eq = this.equationCible;
-    const garderForme = !this.ligneParente && /\)\s*[:(^]|x\(/.test(`${eq.lhs} ${eq.rhs}`);
+    const garderForme = !this.ligneParente && /\)\s*[:(^]|\)\s*-\s*\(|x\(/.test(`${eq.lhs} ${eq.rhs}`);
     const gauche = this.formeLatex ? this.formeLatex.gauche
       : garderForme ? formatToLatex(eq.lhs) : this.polyLhs.toLatex();
     const droite = this.formeLatex ? this.formeLatex.droite
@@ -206,7 +347,12 @@ class OperationRow {
       btn.textContent = 'Résoudre les deux équations';
       btn.onclick = () => {
         this._freeze('\\text{résoudre}');
-        this._resoudreCasEnParallele(this.formeLatex.cas);
+        if (modeActuel === 'accompagnee') {
+          new OperationRow(this.polyLhs, this.polyRhs, this.equationCible, this.container, this,
+            { finale: this.formeLatex.cas }, true);
+        } else {
+          this._resoudreCasEnParallele(this.formeLatex.cas);
+        }
       };
       this.opCell.appendChild(btn);
       return;
@@ -282,7 +428,6 @@ class OperationRow {
       ['Différence nulle', this._actionDifferenceNulle(), "Le membre de droite vaut déjà 0."],
       ['Factoriser', this._actionFactoriser(), "Pour factoriser, il faut une ligne de la forme P = 0 qui ne soit pas déjà un produit."],
       ['Développer', this._actionDevelopper(), "Rien à développer sur cette ligne."],
-      ['Réduire', this._actionReduire(), "Rien à réduire sur cette ligne."],
       ['Produit nul', this._actionProduitNul(), "Il faut d'abord un produit égal à 0."]
     ];
 
@@ -316,84 +461,14 @@ class OperationRow {
   _actionDevelopper() {
     const developpable = this.formeLatex
       ? this.formeLatex.developpable !== false
-      : !!(this._produitEnonce() || this._factorisationEnonce());
+      : !!(this._factorisationEnonce()
+          || (!this.ligneParente && (decouperProduit(this.equationCible.lhs) || /\)\s*-\s*\(/.test(this.equationCible.lhs))));
     if (!developpable) return null;
 
     return () => {
       this._freeze('\\text{développer}');
       this._poursuivre(this.polyLhs, this.polyRhs);
     };
-  }
-
-  /**
-   * Deux cas : un produit encore écrit avec A, B et C ((A-B)(A+B) = 0 devient
-   * (x-4)(3x+6) = 0), ou des coefficients dont la fraction n'est pas réduite.
-   * Une ligne affichée sous une autre forme se développe d'abord.
-   */
-  _actionReduire() {
-    const retour = { texte: 'Retour à la liste', action: () => this._afficherOutils() };
-
-    if (this.formeLatex?.aReduire) {
-      const produit = this.formeLatex.produit;
-
-      // Un facteur constant n'arrive qu'avec une équation personnalisée : réduction directe.
-      if (produit.k) {
-        return () => {
-          this._freeze('\\text{réduire}');
-          this._poursuivre(this.polyLhs, this.polyRhs, {
-            gauche: produit.k.toLatex() + produit.facteurs.map(facteurLatex).join(''),
-            droite: '0',
-            developpable: false,
-            produit
-          });
-        };
-      }
-
-      return () => this._vueSaisie('Réduire', ['À gauche'],
-        (polynomes, textes) => this._lireProduitReduit(textes[0]),
-        (facteurs) => {
-          this._freeze('\\text{réduire}');
-          this._poursuivre(this.polyLhs, this.polyRhs, {
-            gauche: facteurs.map(facteurLatex).join(''),
-            droite: '0',
-            developpable: false,
-            produit: { k: null, facteurs }
-          });
-        },
-        retour
-      );
-    }
-
-    if (this.formeAffichee) return null;
-
-    const membres = [
-      { libelle: 'À gauche', poly: this.polyLhs },
-      { libelle: 'À droite', poly: this.polyRhs }
-    ];
-    const aReduire = membres.filter(m => !coefficientsReduits(m.poly));
-    if (aReduire.length === 0) return null;
-
-    return () => this._vueSaisie('Réduire', aReduire.map(m => m.libelle),
-      (polynomes, textes) => {
-        for (let i = 0; i < aReduire.length; i++) {
-          const { libelle, poly } = aReduire[i];
-          if (!polynomes[i].equals(poly)) return `${libelle} : ce n'est pas égal à ce membre.`;
-          if (!coefficientsReduits(polynomes[i]) || !ecritureReduite(textes[i])) {
-            return `${libelle} : ce n'est pas encore réduit.`;
-          }
-        }
-        return polynomes;
-      },
-      (polynomes) => {
-        const nouveau = (poly) => {
-          const i = aReduire.findIndex(m => m.poly === poly);
-          return i === -1 ? poly : polynomes[i];
-        };
-        this._freeze('\\text{réduire}');
-        this._poursuivre(nouveau(this.polyLhs), nouveau(this.polyRhs));
-      },
-      retour
-    );
   }
 
   /** Lit un produit de deux facteurs réduits égal au membre gauche : les facteurs, ou un message d'erreur. */
@@ -654,7 +729,7 @@ class OperationRow {
         this._poursuivre(facteurs[0], zero, { gauche, droite: '0', developpable: false });
       } else {
         new OperationRow(this.polyLhs, this.polyRhs, this.equationCible, this.container, this,
-          { gauche, droite: '0', developpable: false, cas: facteurs });
+          { gauche, droite: '0', developpable: false, cas: facteurs }, modeActuel === 'accompagnee');
       }
     };
   }
@@ -694,13 +769,14 @@ class OperationRow {
     for (let i = 1; i < nbLignes - 1; i++) this._afficherLigneAuto(ligne(i));
 
     this._afficherResultatFinal(ligne(nbLignes - 1));
+    afficherVerification(this.container, this.equationCible, facteurs.map(f => f.getSolution()));
     createNextBtn(this.container);
   }
 
   /** Ligne de résolution automatique, en lecture seule. */
   _afficherLigneAuto(latex) {
     const rang = document.createElement('div');
-    rang.className = 'op-row';
+    rang.className = 'op-row op-row-validee';
 
     const equivCell = document.createElement('div');
     equivCell.className = 'equiv-zone';
@@ -760,6 +836,7 @@ class OperationRow {
       panneauOutils().innerHTML = '';
     }
     this.wrapper.classList.remove('op-row-saisie');
+    this.wrapper.classList.add('op-row-validee');
     this.opCell.classList.remove('op-erreur');
     this.opCell.innerHTML = '';
     this.feedbackCell.innerHTML = '';
@@ -798,11 +875,10 @@ class OperationRow {
 
   /** Annule cette étape déjà validée : supprime la ligne de saisie courante (qui la suit) et redonne une saisie vierge ici. */
   _annulerEtape() {
-    // Retire la ligne de saisie courante (celle qui suit cette étape, encore vide).
+    // Retire ce qui suit cette étape : la ligne de saisie et une éventuelle ligne de réduction automatique.
     const lignes = [...this.container.querySelectorAll('.op-row')];
     const indexCette = lignes.indexOf(this.wrapper);
-    const ligneSuivante = lignes[indexCette + 1];
-    if (ligneSuivante) ligneSuivante.remove();
+    lignes.slice(indexCette + 1).forEach(l => l.remove());
 
     this.wrapper.remove();
     // La parente redevient la dernière étape validée : elle réaffiche son bouton ❌.
@@ -828,30 +904,55 @@ class OperationRow {
     this._poursuivre(nouveauLhs, nouveauRhs);
   }
 
-  /** Après une étape validée : termine si l'équation est résolue, sinon ouvre la ligne suivante. */
-  _poursuivre(nouveauLhs, nouveauRhs, formeLatex = null) {
-    // Vérifie si l'équation résultante est résolue : x = nombre ou nombre = x
-    // (même logique que le mode saisie libre, mais ici toujours garanti
-    // mathématiquement valide puisque l'opération est réversible par construction —
-    // donc on vérifie juste la FORME, pas l'équivalence).
-    const lhsEstX = nouveauLhs.degre() === 1 && nouveauLhs.coeff(1).equal(new Nombre("1")) && nouveauLhs.coeff(0).equal(new Nombre("0"));
-    const rhsEstX = nouveauRhs.degre() === 1 && nouveauRhs.coeff(1).equal(new Nombre("1")) && nouveauRhs.coeff(0).equal(new Nombre("0"));
-    const lhsEstConstante = nouveauLhs.estConstant();
-    const rhsEstConstante = nouveauRhs.estConstant();
-    const estResolu = (lhsEstX && rhsEstConstante) || (rhsEstX && lhsEstConstante);
+  /** Après une étape validée : les fractions sont réduites, puis l'équation se conclut ou continue. */
+  _poursuivre(lhs, rhs, formeLatex = null) {
+    const nouveauLhs = polynomeReduit(lhs);
+    const nouveauRhs = polynomeReduit(rhs);
 
-    if (estResolu) {
-      // Une fois résolu, plus aucun retour en arrière possible : on masque
-      // (et neutralise) le bouton ❌ de cette dernière étape — il n'y a plus
-      // de ligne de saisie à recréer derrière, donc l'annuler n'aurait plus
-      // de sens dans ce flux.
-      this._masquerBoutonAnnulation();
-      const valeur = (lhsEstConstante ? nouveauLhs : nouveauRhs).coeff(0).simplify();
-      this._afficherResultatFinal(lhsEstConstante ? `${valeur.toLatex()} = x` : `x = ${valeur.toLatex()}`);
-      createNextBtn(this.container);
-    } else {
-      new OperationRow(nouveauLhs, nouveauRhs, this.equationCible, this.container, this, formeLatex);
+    // Saisie accompagnée : c'est l'élève qui écrit le résultat (facteur constant excepté, cas rare).
+    if (modeActuel === 'accompagnee' && !formeLatex?.produit?.k) {
+      new OperationRow(nouveauLhs, nouveauRhs, this.equationCible, this.container, this, formeLatex, true);
+      return;
     }
+
+    if (this._estResolue(nouveauLhs, nouveauRhs)) {
+      // Une fois résolu, plus aucun retour en arrière : il n'y a plus de ligne de saisie à recréer.
+      this._masquerBoutonAnnulation();
+      this._conclure(nouveauLhs, nouveauRhs);
+      return;
+    }
+
+    // Produit encore écrit avec A, B et C : on le montre, puis sa réduction sur la ligne suivante.
+    let forme = formeLatex;
+    if (forme?.aReduire) {
+      this._afficherLigneAuto(`${forme.gauche} = ${forme.droite}`);
+      forme = this._formeProduit(forme.produit);
+    }
+    new OperationRow(nouveauLhs, nouveauRhs, this.equationCible, this.container, this, forme);
+  }
+
+  /** Écriture réduite d'un produit égal à 0. */
+  _formeProduit({ k, facteurs }) {
+    const reduits = facteurs.map(polynomeReduit);
+    return {
+      gauche: (k ? k.toLatex() : '') + reduits.map(facteurLatex).join(''),
+      droite: '0',
+      developpable: false,
+      produit: { k, facteurs: reduits }
+    };
+  }
+
+  /** x = nombre ou nombre = x. */
+  _estResolue(lhs, rhs) {
+    const estX = (p) => p.degre() === 1 && p.coeff(1).equal(new Nombre("1")) && p.coeff(0).equal(new Nombre("0"));
+    return (estX(lhs) && rhs.estConstant()) || (estX(rhs) && lhs.estConstant());
+  }
+
+  _conclure(lhs, rhs) {
+    const valeur = (lhs.estConstant() ? lhs : rhs).coeff(0).simplify();
+    this._afficherResultatFinal(lhs.estConstant() ? `${valeur.toLatex()} = x` : `x = ${valeur.toLatex()}`);
+    afficherVerification(this.container, this.equationCible, [valeur]);
+    createNextBtn(this.container);
   }
 
   /** Affiche une ligne finale en lecture (x = valeur), avec le même calage que les autres lignes et le symbole ⟺. */
@@ -896,7 +997,7 @@ class OperationRow {
       btnX.title = 'Effacer et retaper';
       btnX.onclick = () => {
         this.wrapper.remove();
-        new OperationRow(this.polyLhs, this.polyRhs, this.equationCible, this.container, this.ligneParente, this.formeLatex);
+        new OperationRow(this.polyLhs, this.polyRhs, this.equationCible, this.container, this.ligneParente, this.formeLatex, this.saisieResultat);
       };
       this.wrapper.appendChild(btnX);
       this._btnErreur = btnX;
