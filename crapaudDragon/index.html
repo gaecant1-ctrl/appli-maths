@@ -277,7 +277,7 @@
           <li><b>La cour du lion de pierre</b> (pourcentage d'un nombre) : un lion de pierre garde la porte de la cour ; sur le mur, ses sapèques sont rangées par 10. Quand on le touche, il demande : combien font 10 % ou 50 %, puis 20 %, 30 % ou 40 %, puis 25 % ou 75 % de ces sapèques ? Chaque bonne réponse allume une lanterne de la porte ; à la 3e, elle s'ouvre.</li>
           <li><b>Le marché des soieries</b> (fraction d'une quantité) : à chaque étage de la maison de thé, une pièce de soie de quelques chi est tendue, partagée en parts égales. Le marchand en vend une fraction : combien de chi vend-il (1/b, puis a/b) ? Combien lui en reste-t-il ? Juste : les parts coupées deviennent un tremplin pour monter sur le toit suivant.</li>
           <li><b>La carte au trésor</b> (constructions géométriques, avec GeoGebra) : une carte est déroulée sur une table ; on y suit un programme de construction (segments, cercle, perpendiculaire, parallèle, milieu) pour trouver le point X, construit comme point d'intersection, puis « Vérifier X ». Trois trésors à trouver. Il faut Internet (GeoGebra).</li>
-          <li><b>La Grande Muraille</b> (droite graduée : abscisses, fractions et nombres mixtes) : le chemin de ronde est une droite graduée. Quatre épreuves : se placer sur l'abscisse annoncée, lire l'abscisse d'une lanterne en fraction, puis les deux mêmes avec une partie entière (2 + 1/3). Juste : une tour de signal s'allume sur la crête ; faux : la pierre cède et les graduations s'écrivent. Après la 4e, entrer dans la lumière, à la porte de la tour.</li>
+          <li><b>La Grande Muraille</b> (droite graduée : abscisses en fractions) : le chemin de ronde est une droite graduée de 0 à 1, partagée en 12 parts égales. Quatre épreuves, avec des fractions de dénominateur 2, 3, 4, 6 ou 12 : se placer sur l'abscisse annoncée (2/3, c'est la graduation 8/12), lire l'abscisse d'une lanterne sous forme simplifiée (3/4 et non 9/12), puis encore une fois chacune. À la correction, toutes les graduations s'écrivent en douzièmes, avec la forme simplifiée sous le bon point. Juste : une tour de signal s'allume sur la crête ; faux : la pierre cède et les graduations s'écrivent. Après la 4e, entrer dans la lumière, à la porte de la tour.</li>
           <li><b>La pagode de la clepsydre</b> (calcul astucieux, contre la montre) : une nacelle monte vers une trappe de 5 planches ; chaque bonne réponse ouvre une planche, avant que la clepsydre (l'horloge à eau) soit pleine. Le temps écoulé : la nacelle redescend, on recommence. Pendant la lecture d'une correction, la clepsydre s'arrête.</li>
           <li><b>La fête des lanternes</b> (un même nombre, plusieurs écritures), vue de dessus : une grille de lanternes-lotus sur la rivière, chacune avec un nombre écrit en fraction, en écriture mixte (1 + 1/4 ou 1 − 1/4), en décimal ou en pourcentage. On ne saute que sur celles qui sont égales au nombre de la banderole (3/4 = 0,75 = 75 % = 6/8…). Les flèches tournent le crapaud, l'espace le fait sauter.</li>
           <li><b>Le jardin des lotus</b> (distances : cercle et médiatrice, avec GeoGebra) : sur le plan, une estampe du jardin, des fleurs de lotus A, B et des pierres de gué M. On trace ce qui aide (cercle, médiatrice), puis on choisit toutes les pierres qui vérifient la contrainte (AM &gt; 3 cm ; BM &lt; AM…) et on valide. À la correction, les pierres sont marquées sur le plan (vert : juste, rouge : faux, orange : oubliée). Deux jardins. Il faut Internet (GeoGebra).</li>
@@ -380,7 +380,7 @@ function lireDuree(t, q) {
 // (la correction commence par le dire)
 function lireIrreductible(t, q) {
   const lu = lireFraction(t, q);
-  if (lu.ok) { const [a, b] = t.replace(/\s/g, "").split("/").map(Number); if (pgcd(a, b) > 1) return { ok: false, presque: `${a}/${b} est bien égale à la fraction remplie, mais elle n'est pas irréductible : on peut encore la simplifier.` }; }
+  if (lu.ok) { const [a, b] = t.replace(/\s/g, "").split("/").map(Number); if (pgcd(a, b) > 1) return { ok: false, presque: `${a}/${b} est bien égale à la bonne réponse, mais elle n'est pas irréductible : on peut encore la simplifier.` }; }
   return lu;
 }
 
@@ -930,38 +930,41 @@ function bougerPalais() {
 }
 
 // ============================================================
-//  PLATEAU 7 : LA GRANDE MURAILLE (droite graduée : abscisses, fractions et nombres mixtes — d'après la fiche 3)
-//  La nuit, le chemin de ronde est une droite graduée, de 0 à quelques unités. Quatre épreuves : se placer sur l'abscisse annoncée,
-//  lire l'abscisse d'une lanterne (en fraction), puis la même chose avec une partie entière (2 + 1/3).
+//  PLATEAU 7 : LA GRANDE MURAILLE (droite graduée de 0 à 1, en douzièmes : abscisses de dénominateur 2, 3, 4, 6 ou 12)
+//  La nuit, le chemin de ronde est une droite graduée de 0 à 1, l'unité partagée en 12 parts égales. Quatre épreuves, en alternance :
+//  se placer sur l'abscisse annoncée (2/3 : il faut aller à la graduation 8/12), puis lire l'abscisse d'une lanterne, sous forme
+//  simplifiée (3/4 ; 9/12 est refusée). À la correction, tous les douzièmes s'écrivent, et sous le bon point sa forme simplifiée. Chaque épreuve a un dénominateur différent (3, 4, 6, et 2 ou 12), la fraction est irréductible.
 //  Juste : une tour de signal s'allume sur la crête. Faux : la pierre cède, la correction, et toutes les graduations s'écrivent.
 // ============================================================
 const MUR_X0 = 14, MUR_X1 = 190;                        // la droite graduée, le long du chemin de ronde
+let ordreMur = [], dernierMur = -1;
 function tirageMuraille(k) {
-  const [n, max] = choisir([[2, 4], [3, 4], [4, 4], [5, 3], [6, 3], [7, 2], [10, 2]]), mixte = k >= 2;
-  let num;
-  do { num = mixte ? entier(1, max - 1) * n + entier(1, n - 1) : entier(1, max * n - 1); } while (num % n === 0 || pgcd(num, n) > 1 || (mixte && num < n));
-  return { n, max, num, e: Math.floor(num / n), a: num % n, lire: k % 2 === 1, mixte };
+  if (k === 0 || !ordreMur.length) ordreMur = melanger([3, 4, 6, choisir([2, 12])]);
+  let d = ordreMur[k % ordreMur.length], a, essais = 0;
+  // une fraction irréductible a/d ; pas deux fois de suite le même point (après une erreur, 1/2 changerait de dénominateur)
+  do { if (++essais > 20) d = choisir([3, 4, 6, 12]); a = entier(1, d - 1); } while (pgcd(a, d) > 1 || a * 12 / d === dernierMur);
+  dernierMur = a * 12 / d;
+  return { n: 12, max: 1, d, a, num: a * 12 / d, lire: k % 2 === 1 };
 }
 const pasMuraille = T => (MUR_X1 - MUR_X0) / (T.max * T.n);
 const xGraduation = (T, i) => MUR_X0 + i * pasMuraille(T);
 // la graduation la plus proche du crapaud
 function graduationCrapaud(T) { const cx = crapaud.x + CRAPAUD_W / 2; return Math.round((cx - MUR_X0) / pasMuraille(T)); }
-const ecritAbscisse = T => T.mixte ? `${T.e} + ${T.a}/${T.n}` : `${T.num}/${T.n}`;
-const htmlAbscisse = T => T.mixte ? `${T.e} + ${frac(T.a, T.n)}` : frac(T.num, T.n);
+const ecritAbscisse = T => `${T.a}/${T.d}`;
+const htmlAbscisse = T => frac(T.a, T.d);
+// le passage du dénominateur d aux douzièmes : 2/3 = (2 × 4)/(3 × 4) = 8/12
 function explicationAbscisse(T) {
-  return `L'unité est partagée en ${T.n} parts égales. ${T.num}/${T.n}, ce sont ${T.num} parts : ${T.e ? `${T.e} unité${T.e > 1 ? "s" : ""} (${T.e * T.n} parts) et encore ${T.a} part${T.a > 1 ? "s" : ""}, soit ${T.e} + ${T.a}/${T.n}.` : "moins d'une unité."}`;
-}
-function lireMixte(t, q) {
-  const m = t.replace(/\s/g, "").match(/^(\d+)\+(\d+)\/(\d+)$/);
-  if (!m || !+m[3] || +m[2] >= +m[3]) return { aide: "Écris la partie entière, puis la fraction plus petite que 1, par exemple 2 + 1/3." };
-  return { ok: (+m[1] * +m[3] + +m[2]) * q.r[1] === q.r[0] * +m[3] };
+  const k = 12 / T.d;
+  return `L'unité est partagée en 12 parts égales. ` + (T.d === 12 ? `${T.a}/12, ce sont ${T.a} parts sur 12.`
+    : `Comme 12 = ${T.d} × ${k}, on écrit ${T.a}/${T.d} en douzièmes : ${T.a}/${T.d} = (${T.a} × ${k})/(${T.d} × ${k}) = ${T.num}/12, ce sont ${T.num} parts sur 12.`);
 }
 function questionMuraille() {
-  const T = partie.mur.T;
+  const T = partie.mur.T, k = 12 / T.d;
   return {
-    html: `Quelle est l'abscisse de la lanterne ?<br>${T.mixte ? "Écris-la avec sa partie entière." : "Écris-la sous forme de fraction."}`,
-    r: [T.num, T.n], lire: T.mixte ? lireMixte : lireFraction, placeholder: T.mixte ? "ex. 2 + 1/3" : "ex. 7/4",
-    correction: `${explicationAbscisse(T)} La lanterne est à l'abscisse ${ecritAbscisse(T)}.`,
+    html: `Quelle est l'abscisse de la lanterne ?<br>Écris-la sous forme de fraction <u>simplifiée</u>.`,
+    r: [T.a, T.d], lire: lireIrreductible, placeholder: "ex. 3/4",
+    correction: `L'unité est partagée en 12 parts égales. La lanterne est à ${T.num} parts sur 12 : son abscisse est ${T.num}/12`
+      + (T.d < 12 ? `, c'est-à-dire ${T.a}/${T.d} (on divise le numérateur et le dénominateur par ${k}).` : "."),
     suite: "Une autre lanterne s'allume sur le chemin de ronde."
   };
 }
@@ -3428,6 +3431,13 @@ function dessinerMuraille(t) {
     ctx.lineWidth = unite ? 1 : .55; ctx.beginPath(); ctx.moveTo(x, y - (unite ? 5 : 3)); ctx.lineTo(x, y + (unite ? 5 : 3)); ctx.stroke();
     if (unite) { ctx.font = "bold 6px Georgia, serif"; ctx.fillText(i / T.n, x, y + 11); }
     else if (M.montre) { ctx.font = "3.4px Georgia, serif"; ctx.fillStyle = i === enLumiere ? "#ffd880" : "rgba(240,228,192,.75)"; ctx.fillText(i, x, y + 9); ctx.fillRect(x - 1.6, y + 11.4, 3.2, .3); ctx.fillText(T.n, x, y + 13.8); ctx.fillStyle = "#f0e4c0"; }
+  }
+  // à la correction : sous le bon point, sa forme simplifiée (celle qui était donnée ou demandée)
+  if (M.montre && T.d < 12) {
+    const x = xGraduation(T, T.num);
+    ctx.font = "bold 4.2px Georgia, serif"; ctx.fillStyle = "#ffd880";
+    ctx.fillText("=", x, y + 17.4); ctx.fillText(T.a, x, y + 21); ctx.fillRect(x - 2, y + 23.2, 4, .4); ctx.fillText(T.d, x, y + 25.7);
+    ctx.fillStyle = "#f0e4c0";
   }
   // la lanterne à lire, posée sur le chemin de ronde
   if (T.lire) {
