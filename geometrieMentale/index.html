@@ -43,6 +43,7 @@ main{flex:1;display:flex;flex-direction:column}
 #flRun .fig{width:min(640px,100%);max-height:50vh}
 .flchoix{display:grid;grid-template-columns:1fr 1fr;gap:10px 28px;width:min(900px,100%);font-size:clamp(1.3rem,3.2vw,2rem);font-weight:700}
 .flchoix.long{grid-template-columns:1fr}
+.flchoix.vf{grid-template-columns:1fr;justify-items:center;text-align:center;font-size:clamp(1.6rem,4.2vw,2.8rem)}
 .flchoix div{display:flex;align-items:center;gap:12px}
 .flchoix b{flex:none;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:.8em}
 .corr{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;gap:10px 20px;margin-top:12px}
@@ -147,7 +148,7 @@ main{flex:1;display:flex;flex-direction:column}
   <main>
     <section class="screen" id="sHome">
       <div class="modes">
-        <button class="mode" data-mode="flash"><b>Flash</b><span>Figures projetées, correction à la fin</span></button>
+        <button class="mode" data-mode="flash"><b>Flash</b><span>Projeté : vrai, faux ou indécidable, correction à la fin</span></button>
         <button class="mode" data-mode="qcm"><b>QCM</b><span>Choisis la bonne réponse</span></button>
         <button class="mode" data-mode="vf"><b>Vrai / Faux</b><span>Une phrase : vrai, faux ou indécidable</span></button>
       </div>
@@ -158,7 +159,7 @@ main{flex:1;display:flex;flex-direction:column}
     <section class="screen hidden" id="sFlash">
       <div class="stage" id="flIntro" style="justify-content:center">
         <div class="mid" id="flIntroTxt"></div>
-        <p class="hint">Écris ta réponse sur ta feuille.</p>
+        <p class="hint">Pour chaque phrase, écris V (vrai), F (faux) ou I (indécidable) sur ta feuille.</p>
         <button class="btn primary" id="flStart" style="font-size:1.4rem;padding:14px 32px">Démarrer</button>
       </div>
       <div class="stage hidden" id="flRun">
@@ -661,12 +662,14 @@ function genDistMediatrice() { // M sur (d) : MA = MB seulement si le codage dit
     fig.point(a, A, mul(n, -16 * s)).point(b, B, mul(n, -16 * s)).point(m, Mn, mul(u, 18)).nomDroite(c, n, d, -1);
     const MA = deux(Mn, A), MB = deux(Mn, B), AB = deux(A, B);
     if (code === 'deux') {
-      const visibles = [eg(MA, AB), eg(MB, AB)];
+      // évident (« ça se voit ») : jamais posé en Vrai/Faux
+      const visibles = [eg(MA, AB), eg(MB, AB), `${Mn} ∈ [${AB}]`, `${Mn} ∉ ${D}`];
       return { svg: fig, juste: ph(eg(MA, MB)), horsVF: visibles.map(t => ph(t)),
-        faux: shuffle([...visibles, `${Mn} ∈ [${AB}]`, `${Mn} ∉ ${D}`]).map(t => ph(t)) };
+        faux: [inf(MA, MB)].concat(shuffle(visibles.slice())).map(t => ph(t)) };
     }
-    const egal = eg(MA, MB);
-    return { svg: fig, juste: ph(`${Mn} ∈ ${D}`), faux: [egal, `${Mn} ∉ ${D}`, `${Mn} ∈ [${AB}]`].map(t => ph(t)), indec: [ph(egal)] };
+    const egal = eg(MA, MB), plus = inf(MA, MB), evidents = [`${Mn} ∈ ${D}`, `${Mn} ∉ ${D}`, `${Mn} ∈ [${AB}]`];
+    return { svg: fig, juste: ph(evidents[0]), faux: [egal, evidents[1], evidents[2]].map(t => ph(t)),
+      indec: [ph(egal), ph(plus)], horsVF: evidents.map(t => ph(t)) };
   });
 }
 function genDistRegion() { // M du côté de A par rapport à la médiatrice de [AB] : MA < MB
@@ -678,34 +681,59 @@ function genDistRegion() { // M du côté de A par rapport à la médiatrice de 
     const fig = new Fig().seg(a, b).droite(c, n).angleDroit(c, mul(u, -cote), mul(n, s)).marques(a, c, k).marques(c, b, k);
     fig.point(a, A, mul(n, -16 * s)).point(b, B, mul(n, -16 * s)).point(m, Mn, mul(n, 16 * s)).nomDroite(c, n, d, -cote);
     const MA = deux(Mn, A), MB = deux(Mn, B), [pres, loin] = cote < 0 ? [MA, MB] : [MB, MA];
-    return { svg: fig, juste: ph(inf(pres, loin)), faux: shuffle([inf(loin, pres), eg(MA, MB), `${Mn} ∈ ${D}`]).map(t => ph(t)) };
+    const surD = ph(`${Mn} ∈ ${D}`);
+    return { svg: fig, juste: ph(inf(pres, loin)), faux: shuffle([inf(loin, pres), eg(MA, MB)]).map(t => ph(t)).concat([surD]), horsVF: [surD] };
   });
 }
-function genDistDroite() { // (AH) ⊥ (d) en H, M autre point de (d) : AH < AM, et la distance de A à (d) est AH
+
+// Rayons : A et B sur le cercle de centre O donnent OA = OB. N à l'intérieur (ON < OA),
+// ou N posé « sur » le cercle par une simple croix : on ne peut pas affirmer ON = OA.
+function genDistRayons() {
   return essai(() => {
-    const [A, Hn, Mn] = lettres(3), d = pick(LIGNE), D = nomH(d), mesure = coin(), code = mesure || coin();
-    const u = dir(rad(R(-15, 15))), n = nrm(u), h0 = V(R(120, 180), R(140, 165)), s = pick([1, -1]);
-    const h = R(2, 5), m = h + R(1, 3);                         // en cm ; à l'échelle sur la figure quand ils sont affichés
-    const hpx = mesure ? h * 22 : R(75, 100), dx = mesure ? Math.sqrt(m * m - h * h) * 22 : R(70, 105);
-    const a = add(h0, mul(n, -hpx)), pm = add(h0, mul(u, s * dx));
-    if (!inside(a) || !inside(pm)) return null;
-    const fig = new Fig().droite(h0, u).seg(a, h0).seg(a, pm);
-    if (code) fig.angleDroit(h0, mul(u, -s), mul(n, -1));
-    fig.point(a, A, mul(n, -16)).point(h0, Hn, add(mul(n, 16), mul(u, -8 * s))).point(pm, Mn, mul(n, 16));
-    if (mesure) {
-      const w = nrm(unit(sub(pm, a))), v = (w.x * s * u.x + w.y * s * u.y) > 0 ? w : mul(w, -1);
-      fig.txt(add(mid(a, h0), mul(u, -24 * s)), cmTxt(h), 'mesure').txt(add(mid(a, pm), mul(v, 24)), cmTxt(m), 'mesure');
-    }
-    fig.nomDroite(h0, u, d, -1);
-    const AH = deux(A, Hn), AM = deux(A, Mn);
-    if (mesure) {
-      const phrase = x => ph(`Distance de ${A} à ${D} = ${cmTxt(x)}`);
-      const autres = uniques([m, h + m, m - h, 2 * h, h + 1]).filter(x => x !== h);
-      return { svg: fig, juste: phrase(h), faux: [m].concat(shuffle(autres.slice(1))).map(phrase) };
-    }
-    if (code) return { svg: fig, juste: ph(inf(AH, AM)), faux: shuffle([inf(AM, AH), eg(AH, AM), `${Hn} ∉ ${D}`]).map(t => ph(t)) };
-    const visibles = [inf(AH, AM), inf(AM, AH)];   // AM visiblement plus long : pas une figure limite
-    return { svg: fig, juste: ph(`${Hn} ∈ ${D}`), faux: [...visibles, `${Mn} ∉ ${D}`].map(t => ph(t)), horsVF: visibles.map(t => ph(t)) };
+    const [O, A, B, Nn] = lettres(4), c = pick(CERCLE), cas = pick(['dedans', 'croix']);
+    const o = V(R(135, 165), R(95, 105)), r = R(56, 62), a0 = Math.random() * 2 * Math.PI;
+    const aA = a0, aB = a0 + rad(R(95, 150)), aN = aB + rad(R(70, 110));
+    const pa = add(o, mul(dir(aA), r)), pb = add(o, mul(dir(aB), r));
+    const pn = add(o, mul(dir(aN), cas === 'dedans' ? R(26, 36) : r + R(-15, 15) / 10));
+    const fig = new Fig().cercle(o, r).point(o, O, mul(dir(aN), -16))   // nom du centre à l'opposé de N
+      .point(pa, A, mul(dir(aA), 16)).point(pb, B, mul(dir(aB), 16)).point(pn, Nn, mul(dir(aN), 16), true);
+    fig.nomCercle(o, r, c, [pa, pb, pn, add(pa, mul(dir(aA), 16)), add(pb, mul(dir(aB), 16)), add(pn, mul(dir(aN), 16))]);
+    const OA = deux(O, A), OB = deux(O, B), ON = deux(O, Nn), AB = deux(A, B);
+    const corde = ph(eg(OA, AB));                                         // corde = rayon : se voit, jamais en Vrai/Faux
+    const base = [ph(inf(OA, OB)), ph(inf(OB, OA)), corde];
+    if (cas === 'dedans') return { svg: fig, juste: coin() ? ph(eg(OA, OB)) : ph(inf(ON, OA)),
+      faux: shuffle([ph(eg(ON, OA)), ph(inf(OA, ON)), ph(inf(OA, OB))]).concat([corde]), horsVF: [corde] };
+    return { svg: fig, juste: ph(eg(OA, OB)), faux: shuffle(base.slice(0, 2)).concat([corde]), horsVF: [corde],
+      indec: [ph(eg(ON, OA)), ph(eg(ON, OB))], raison: 'une croix posée sur le cercle n’est pas une intersection.' };
+  });
+}
+
+// Inégalité triangulaire : AC ≤ AB + BC, avec égalité seulement si B ∈ [AC]
+const plusTxt = (x, y) => `${x} + ${y}`;
+function genDistTriangle() {
+  return essai(() => {
+    const [A, B, Cn] = lettres(3), surSeg = coin(), x = pick([2, 3, 4, 5]), y = pick([2, 3, 4]), k = 22;   // 22 px pour 1 cm
+    const AB = deux(A, B), BC = deux(B, Cn), AC = deux(A, Cn), somme = plusTxt(AB, BC);
+    const u = dir(rad(R(-20, 20))), a = V(R(30, 70), R(60, 140));
+    const tour = surSeg ? 0 : pick([1, -1]) * rad(R(55, 110));          // triangle franchement non aplati
+    const b = add(a, mul(u, x * k)), c = add(b, mul(dir(Math.atan2(u.y, u.x) + tour), y * k));
+    if (![a, b, c].every(p => inside(p))) return null;
+    const fig = new Fig(), g = mul(add(add(a, b), c), 1 / 3);
+    const cote = (p, q) => {   // côté extérieur, perpendiculaire au segment
+      const v = nrm(unit(sub(q, p))), d = sub(mid(p, q), g);
+      return surSeg ? mul(v, -18) : mul(v, (v.x * d.x + v.y * d.y > 0 ? 1 : -1) * 20);
+    };
+    if (surSeg) fig.seg(a, c); else fig.seg(a, b).seg(b, c).seg(a, c);
+    fig.txt(add(mid(a, b), cote(a, b)), cmTxt(x), 'mesure').txt(add(mid(b, c), cote(b, c)), cmTxt(y), 'mesure');
+    const off = q => surSeg ? mul(nrm(u), 16) : mul(unit(sub(q, g)), 16);
+    fig.point(a, A, off(a)).point(b, B, off(b)).point(c, Cn, off(c));
+    const lg = v => ph(`${AC} = ${cmTxt(v)}`);
+    if (surSeg) return { svg: fig, juste: coin() ? ph(eg(AC, somme)) : lg(x + y),
+      faux: shuffle([ph(`${AC} < ${somme}`), lg(Math.abs(x - y) || x + y + 2), lg(x + y + 1), ph(`${AC} > ${somme}`)]) };
+    const reel = Math.round(len(sub(c, a)) / k);                         // AC n'est pas écrit : on ne peut pas le donner
+    return { svg: fig, juste: coin() ? ph(`${AC} < ${somme}`) : ph(`${AC} < ${cmTxt(x + y)}`),
+      faux: shuffle([ph(eg(AC, somme)), lg(x + y), lg(x + y + pick([1, 2])), ph(`${AC} > ${somme}`)]),
+      indec: reel !== x + y && reel > 0 && R(0, 2) === 0 ? [lg(reel)] : [] };   // pas trop souvent
   });
 }
 
@@ -779,6 +807,18 @@ function genLimAlignes() { // trois points presque alignés : sans droite tracé
     return trace ? { svg: fig, juste: sur, faux: [hors] } : { svg: fig, juste: null, faux: [], indec: [sur, hors] };
   });
 }
+function genLimTriangle() { // B presque sur [AC] : sans segment tracé, on ne peut pas savoir si AC = AB + BC
+  return essai(() => {
+    const [A, B, Cn] = lettres(3), trace = coin(), u = dir(rad(R(-30, 30))), n = nrm(u), a = V(R(40, 70), R(55, 145));
+    const c = add(a, mul(u, R(180, 205))), b = add(add(a, mul(u, R(70, 120))), mul(n, trace ? 0 : R(-2, 2)));
+    if (!inside(a) || !inside(c)) return null;
+    const fig = new Fig();
+    if (trace) fig.seg(a, c);
+    fig.point(a, A, mul(n, -16)).point(b, B, mul(n, -16)).point(c, Cn, mul(n, -16));
+    const AC = deux(A, Cn), somme = plusTxt(deux(A, B), deux(B, Cn)), egal = ph(eg(AC, somme)), plus = ph(`${AC} < ${somme}`);
+    return trace ? { svg: fig, juste: egal, faux: [plus] } : { svg: fig, juste: null, faux: [], indec: [egal, plus] };
+  });
+}
 function genLimEquidistance() { // M à égale distance de A et B, ou écrit à 0,1 cm près et tracé à l'échelle
   return essai(() => {
     const [A, B, Mn] = lettres(3), cas = pick(['code', 'ecrit', 'rien', 'rien']), u = dir(rad(R(-15, 15))), n = nrm(u), L = R(70, 85), h = R(85, 100);
@@ -844,7 +884,7 @@ function enVraiFaux(q) {
   const s = phrases.I.length && coin() ? 'I' : pick(dispo), h = pick(phrases[s]);   // indécidable favorisé quand il est possible
   const texteQ = q.consigne ? `Le tracé rouge se note ${h}` : h;
   return {
-    svg: q.svg, vf: true, statut: s, raison: q.raison, phrase: texteQ, consigne: 'Vrai, faux ou indécidable ?',
+    svg: q.svg, vf: true, statut: s, raison: s === 'I' ? q.raison : undefined, phrase: texteQ, consigne: 'Vrai, faux ou indécidable ?',
     juste: STATUTS[s], correction: `${texteQ} : <span class="r">${STATUTS[s]}</span>`,
     choix: ['V', 'F', 'I'].map(k => ({ h: STATUTS[k], ok: k === s })),
   };
@@ -867,16 +907,18 @@ const TYPES = [
   { id: 'carre',   groupe: 2, label: 'Quadrilatère codé', ex: 'AB = BC, (AB) ⊥ (BC)',       gen: genCarre },
   { id: 'mesure',  groupe: 2, label: 'Longueur mesurée',      ex: 'HJ = 4 cm',         gen: genMesure },
   { id: 'dComparer', groupe: 4, label: 'Comparer au rayon',      ex: 'ON < OA',          gen: genDistComparer },
+  { id: 'dRayons',   groupe: 4, label: 'Rayons d’un cercle',     ex: 'OA = OB',          gen: genDistRayons },
   { id: 'dDiametre', groupe: 4, label: 'Rayon et diamètre',      ex: 'AB = 8 cm',        gen: genDistDiametre },
   { id: 'dMediat',   groupe: 4, label: 'Médiatrice codée',       ex: 'MA = MB',          gen: genDistMediatrice },
   { id: 'dRegion',   groupe: 4, label: 'Côté de la médiatrice',  ex: 'MA < MB',          gen: genDistRegion },
-  { id: 'dDroite',   groupe: 4, label: 'Distance à une droite',  ex: 'AH < AM',          gen: genDistDroite },
+  { id: 'dTriangle', groupe: 4, label: 'Inégalité triangulaire', ex: 'AC < AB + BC',     gen: genDistTriangle },
   // vf : figures limites, seulement dans le mode Vrai/Faux/Indécidable
   { id: 'lLong',   groupe: 2, vf: true, label: 'Longueurs presque égales', ex: 'AB = CD',    gen: genLimLongueurs },
   { id: 'lAngle',  groupe: 2, vf: true, label: 'Angle presque droit',      ex: '(d) ⊥ (e)',  gen: genLimAngle },
   { id: 'lPara',   groupe: 2, vf: true, label: 'Presque parallèles',       ex: '(d) // (e)', gen: genLimParalleles },
   { id: 'lAlign',  groupe: 2, vf: true, label: 'Presque alignés',          ex: 'B ∈ (AC)',   gen: genLimAlignes },
   { id: 'lTrait',  groupe: 2, vf: true, label: 'Croix sur un trait',       ex: 'M ∈ (d)',    gen: genLimSurTrait },
+  { id: 'lTriang', groupe: 4, vf: true, label: 'Presque sur le segment',   ex: 'AC = AB + BC', gen: genLimTriangle },
   { id: 'lEquid',  groupe: 4, vf: true, label: 'Presque à égale distance', ex: 'MA = MB',    gen: genLimEquidistance },
 ];
 
@@ -897,7 +939,7 @@ try {
   }
 } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} };
-const activeTypes = () => TYPES.filter(t => (!t.vf || mode === 'vf') && (settings.questions === 3 || t.groupe === settings.questions));
+const activeTypes = () => TYPES.filter(t => (!t.vf || mode === 'vf' || mode === 'flash') && (settings.questions === 3 || t.groupe === settings.questions));
 
 function renderSettings() {
   $('grpSeg').innerHTML = QUESTIONS.map(([g, l]) =>
@@ -927,7 +969,7 @@ function makeSeries() {
     let q;
     try { q = t.gen(); } catch (e) { bag.unshift(t); continue; }   // figure introuvable (très rare) : autre tirage
     q.svg = String(q.svg);
-    if (mode === 'vf') q = enVraiFaux(q);
+    if (mode === 'vf' || mode === 'flash') q = enVraiFaux(q);   // Flash : une phrase, vrai / faux / indécidable
     else q.choix = shuffle([{ h: q.juste, ok: true }, ...q.faux.slice(0, 3).map(h => ({ h, ok: false }))]);
     out.push(q); prev = t;
   }
@@ -977,7 +1019,7 @@ function runTimer(sec, onEnd, barId = 'qBar') {
 function stopTimer() { if (timer) clearInterval(timer); timer = null; }
 
 /* ================= Flash (vidéoprojeté) =================
-   Notations : la figure seule, on écrit la notation. Phrases : la figure et les 4 phrases numérotées, on écrit le numéro. */
+   La figure et une phrase : on écrit V, F ou I. */
 function flashPart(p) { ['flIntro', 'flRun', 'flEnd', 'flCorr'].forEach(id => $(id).classList.toggle('hidden', id !== p)); }
 function flashIntro() {
   show('sFlash'); flashPart('flIntro');
@@ -990,14 +1032,9 @@ function flashShow() {
   setProg();
   $('flNum').textContent = `n° ${idx + 1}`;
   $('flFig').innerHTML = q.svg;
-  if (q.consigne) {
-    $('flConsigne').textContent = 'Écris la notation du tracé rouge.';
-    $('flChoix').innerHTML = '';
-  } else {
-    $('flConsigne').textContent = 'Quelle phrase est vraie ? Écris son numéro.';
-    $('flChoix').classList.toggle('long', q.choix.some(c => texte(c.h).length > 14));
-    $('flChoix').innerHTML = q.choix.map((c, i) => `<div><b>${i + 1}</b><span>${c.h}</span></div>`).join('');
-  }
+  $('flConsigne').textContent = 'Vrai, faux ou indécidable ? Écris V, F ou I.';
+  $('flChoix').className = 'flchoix vf';
+  $('flChoix').innerHTML = `<div><span>${q.phrase}</span></div>`;
   $('bPause').textContent = '⏸ Pause';
   runTimer(settings.flDuree, () => {
     if (++idx < N()) flashShow();
@@ -1008,8 +1045,7 @@ $('bPause').onclick = () => { paused = !paused; $('bPause').textContent = paused
 $('flShow').onclick = () => {
   $('flGrid').style.gridTemplateRows = `repeat(${Math.ceil(N() / 2)}, auto)`;
   $('flGrid').innerHTML = series.map((q, i) => {
-    const rep = q.consigne ? `<span class="r">${q.correction || q.juste}</span>`
-      : `<span><span class="r">n° ${q.choix.findIndex(c => c.ok) + 1}</span> : ${q.juste}</span>`;
+    const rep = `<span>${q.correction}</span>`;
     return `<div class="cell"><span class="n">${i + 1}</span>${q.svg}${rep}</div>`;
   }).join('');
   $('hProg').textContent = 'Correction';
