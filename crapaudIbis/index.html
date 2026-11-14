@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le crapaud et l'ibis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Habillage : la Grèce antique. Vase à figures noires : terre cuite, noir lustré, crème ; frise de méandres ===== */
+  :root{
+    --terre:#c58a2e; --terre-clair:#e2b04a; --terre-fonce:#8a4a1a; --noir:#1b130e; --creme:#f4e6c6; --creme2:#e7d3a8;
+    --pourpre:#7c2418; --ocre:#d99a3a; --or-clair:#f3d48c; --mer:#1f4e8c; --olive:#5f7a3a; --olive-clair:#9fbf6a;
+    --tablette:#1b130e; --tablette-haut:#33241a;
+    --meandre:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='12' viewBox='0 0 36 12'%3E%3Crect width='36' height='12' fill='%23f2e3bf'/%3E%3Crect x='1' y='2' width='6' height='8' fill='%231f4e8c'/%3E%3Crect x='10' y='2' width='6' height='8' fill='%23b5402a'/%3E%3Crect x='19' y='2' width='6' height='8' fill='%233a9a7a'/%3E%3Crect x='28' y='2' width='6' height='8' fill='%23d4a535'/%3E%3Crect y='0' width='36' height='1' fill='%231b130e'/%3E%3Crect y='11' width='36' height='1' fill='%231b130e'/%3E%3C/svg%3E");
+  }
+  *{box-sizing:border-box;}
+  html{font-size:18px;}
+  body{
+    margin:0;height:100vh;display:flex;flex-direction:column;color:var(--noir);
+    background:#120d0a radial-gradient(ellipse at 50% 0%, #3a2216 0%, #120d0a 70%);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.45;
+  }
+  button{font:inherit;cursor:pointer;}
+  [hidden]{display:none !important;}
+  .papier{
+    background:radial-gradient(circle at 18% 12%, rgba(255,250,235,.5), transparent 45%), linear-gradient(180deg, var(--creme), var(--creme2));
+    border:2px solid var(--noir); border-radius:4px; color:var(--noir);
+    box-shadow:inset 0 0 0 3px var(--creme), inset 0 0 0 4px var(--terre), 0 4px 14px rgba(0,0,0,.45);
+  }
+  .titre-grec{font-family:"Cinzel", Georgia, serif; font-weight:800; color:var(--terre-fonce); letter-spacing:.04em;}
+  /* le sceau : la lettre Ω sur un rond de terre cuite */
+  .sceau{display:inline-flex;align-items:center;justify-content:center;width:1.6em;height:1.6em;margin-right:.45em;vertical-align:middle;
+    background:var(--terre);color:var(--noir);border-radius:50%;font-family:"Cinzel",serif;font-weight:800;font-size:1.05em;line-height:1;box-shadow:inset 0 0 0 2px var(--noir), 0 0 0 2px var(--terre);}
+
+  /* En-tête : bandeau noir et frise de méandres */
+  header{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 20px 16px;position:relative;
+    background:linear-gradient(180deg,#24180f,#1b130e);color:var(--or-clair);}
+  header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:12px;background:var(--meandre) repeat-x;background-size:24px 12px;opacity:.95;}
+  header h1{font-size:1.25rem;margin:0;margin-right:auto;font-family:"Cinzel",Georgia,serif;font-weight:800;color:var(--terre-clair);letter-spacing:.06em;}
+  #eleveInfo{font-size:.85rem;font-weight:600;}
+  /* les points : une pièce d'argent marquée de l'ankh, et le total */
+  .points{position:relative;display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 6px;border:1px solid var(--terre);border-radius:20px;background:#2c1d13;font-size:.9rem;}
+  .points b{font-size:1.15rem;color:#fff1d0;min-width:1.2em;text-align:right;}
+  .points .piece{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #ffffff, #cfd3d6 45%, #8d9296 90%);border:1px solid #5d6266;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;}
+  #deltaPoints{position:absolute;right:-6px;top:-4px;font-weight:700;font-size:1rem;opacity:0;pointer-events:none;}
+  #deltaPoints.gain{color:var(--olive-clair);animation:delta 1.6s ease-out;}
+  #deltaPoints.perte{color:#ff8a70;animation:delta 1.6s ease-out;}
+  @keyframes delta{0%{opacity:0;transform:translateY(6px);}15%{opacity:1;transform:translateY(0);}70%{opacity:1;}100%{opacity:0;transform:translateY(-14px);}}
+  .onglet{border:1px solid #6b4a30;background:#2c1d13;color:var(--or-clair);border-radius:4px;padding:6px 12px;font-size:.85rem;}
+  .onglet:hover{border-color:var(--terre-clair);}
+  #btnGuide.actif{border-color:var(--terre-clair);background:#4a2a1a;}
+  .filet{align-self:stretch;width:1px;margin:2px 2px;background:#6b4a30;}
+  @media (max-width:1200px){ header .txt{display:none;} main{grid-template-columns:minmax(0,1fr) 380px;} }
+
+  main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:20px;padding:20px;grid-template-rows:minmax(0,1fr);}
+  .scene{padding:16px;display:flex;flex-direction:column;gap:12px;min-height:0;}
+  #cadreJeu{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;background:#160f0b;border-radius:4px;overflow:hidden;border:2px solid #4a3020;}
+  #jeu{display:block;border-radius:2px;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+  #ecranJeu{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(18,13,10,.45);backdrop-filter:blur(2px);z-index:8;}
+  #ecranJeu.visible{display:flex;}
+  #ecranJeu.final{background:radial-gradient(circle at 50% 28%, #f8dc96, #d88a3a 42%, #5a2c18 78%, #22120c);backdrop-filter:none;align-items:flex-end;padding-bottom:3%;}
+  #ecranJeu.final .carte-jeu{background:rgba(244,230,198,.93);max-width:400px;padding:16px 22px;}
+  .carte-jeu{padding:22px 28px;max-width:460px;max-height:96%;overflow:auto;text-align:center;}
+  .carte-jeu h3{font-size:1.5rem;margin:0 0 10px;}
+  .carte-jeu p{margin:6px 0;}
+  .aide-touches{font-size:.8rem;color:#6a4a32;text-align:center;}
+
+  /* Colonne de droite */
+  .colonne{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto;}
+  aside{padding:16px 18px;}
+  aside h3{margin:0 0 12px;font-size:1.05rem;padding-bottom:8px;border-bottom:none;position:relative;}
+  aside h3::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:8px;background:var(--meandre) repeat-x;background-size:16px 8px;}
+  .calcul{font-size:1.25rem;font-weight:700;line-height:1.45;padding:14px 12px;text-align:center;min-height:76px;
+    background:linear-gradient(180deg, var(--tablette-haut), var(--tablette));color:var(--or-clair);
+    border:3px solid var(--terre);border-radius:4px;box-shadow:inset 0 3px 10px rgba(0,0,0,.6), 0 0 0 1px var(--creme);}
+  .calcul.attente{color:#ead9bb;font-weight:400;font-size:.92rem;font-style:italic;background:linear-gradient(180deg,#45321f,#33241a);}
+  .calcul .petit{font-size:.82rem;font-weight:400;font-style:italic;color:#dcc7a3;margin-top:6px;}
+  .calcul .gros{font-size:1.5rem;margin-top:8px;color:#fff1d0;}
+  .calcul .phrase{font-style:italic;font-weight:600;color:#fff1d0;margin:6px 0;}
+  .calcul.carte{font-size:.95rem;font-weight:400;text-align:left;line-height:1.5;}
+  .calcul.fin-voyage{text-align:center;}
+  .calcul.fin-voyage h3{margin:0 0 6px;color:#fff1d0;}
+  /* l'étiquette de la matière, en haut de la tablette */
+  .matiere{display:inline-block;font-family:"Cinzel",serif;font-size:.7rem;font-weight:800;letter-spacing:.12em;padding:2px 10px;border-radius:10px;margin-bottom:8px;}
+  .matiere.maths{background:var(--terre);color:var(--noir);}
+  .matiere.mixte{background:linear-gradient(90deg,var(--terre) 50%,var(--mer) 50%);color:#fff4dc;border:1px solid #6f9cc6;text-shadow:0 1px 0 rgba(0,0,0,.5);}
+  .matiere.francais{background:var(--mer);color:#e6f0fa;border:1px solid #6f9cc6;}
+  .calcul blockquote.extrait{margin:4px 0 10px;padding:8px 12px;text-align:left;font-family:Georgia,"Times New Roman",serif;font-size:.98rem;font-weight:400;font-style:italic;line-height:1.5;color:#fff6dc;background:rgba(255,240,200,.07);border-left:3px solid var(--terre);border-radius:2px;}
+  .calcul blockquote.extrait cite{display:block;margin-top:6px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:.72rem;font-style:normal;color:#d8c39d;}
+  .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.1;margin:0 .1em;}
+  .frac > span:first-child{border-bottom:2px solid currentColor;padding:0 .15em;}
+  /* le danger (moins de 3 points) : un halo rouge autour de la zone de jeu */
+  #cadreJeu.danger::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:4px;
+    box-shadow:inset 0 0 40px 14px rgba(220,40,20,.55), inset 0 0 0 3px rgba(230,60,30,.8);animation:pouls 1.4s ease-in-out infinite;}
+  @keyframes pouls{0%,100%{opacity:.55;}50%{opacity:1;}}
+  .points.danger{border-color:#ff6a50;background:#5a1a14;animation:pouls 1.4s ease-in-out infinite;}
+  /* le bouton « Appeler Anubis », en bas à gauche de la zone de jeu */
+  #btnChouette{position:absolute;left:14px;bottom:14px;z-index:6;display:flex;align-items:center;gap:8px;padding:8px 16px 8px 8px;
+    background:linear-gradient(180deg,#2a2230,#120e16);color:#f6e6b8;border:2px solid var(--or-clair);border-radius:24px;font-weight:700;font-size:.95rem;
+    box-shadow:0 6px 16px rgba(0,0,0,.45);animation:appel 1.6s ease-out infinite;}
+  @keyframes appel{0%{box-shadow:0 0 0 0 rgba(243,212,140,.6),0 6px 16px rgba(0,0,0,.45);}100%{box-shadow:0 0 0 16px rgba(243,212,140,0),0 6px 16px rgba(0,0,0,.45);}}
+  .sceau-chouette{display:inline-block;flex:none;width:34px;height:34px;border-radius:50%;background:#1b130e var(--sceau-anubis) center/cover;border:2px solid var(--or-clair);box-shadow:0 0 10px rgba(255,200,90,.6);}
+  .chouette-panneau{display:flex;gap:10px;align-items:center;text-align:left;font-size:.85rem;font-weight:400;font-style:italic;color:#f2e4c4;line-height:1.4;}
+  .chouette-panneau .sceau-chouette{width:64px;height:64px;border-width:3px;}
+  .calcul.chouette{border-color:#d9a62e;box-shadow:inset 0 3px 10px rgba(0,0,0,.6), 0 0 0 2px #2a2230, 0 0 14px rgba(217,166,46,.45);}
+  .calcul .enigme{font-size:1.05rem;font-weight:600;font-style:italic;margin-top:8px;color:#fff1d0;line-height:1.5;}
+  /* la bulle : ce que dit un personnage, par-dessus la zone de jeu */
+  #bulle{position:absolute;top:5%;left:50%;transform:translateX(-50%);max-width:min(72%,560px);z-index:5;pointer-events:none;padding:12px 20px 14px;
+    background:linear-gradient(180deg,#fbf3df,#efdfbd);border:2px solid var(--noir);border-radius:10px;box-shadow:inset 0 0 0 3px #fbf3df, inset 0 0 0 4px var(--terre), 0 8px 24px rgba(0,0,0,.4);color:var(--noir);}
+  .bulle-qui{font-family:"Cinzel",Georgia,serif;font-weight:800;color:var(--terre-fonce);font-size:.8rem;letter-spacing:.06em;margin-bottom:4px;}
+  #bulleTexte{font-size:clamp(.95rem,1.5vw,1.25rem);font-weight:600;font-style:italic;line-height:1.4;}
+
+  .reponse{display:flex;gap:8px;margin-top:10px;}
+  .reponse input{flex:1;min-width:0;font:inherit;font-size:1.4rem;padding:10px 12px;text-align:center;background:#fdf6e6;border:2px solid var(--terre-fonce);border-radius:4px;color:var(--noir);}
+  .reponse input:focus{outline:none;border-color:var(--terre);box-shadow:0 0 0 3px rgba(200,100,44,.3);}
+  /* les réponses à choisir (QCM) */
+  #choix{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  #choix button{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 12px;border:2px solid var(--terre-fonce);border-radius:6px;background:#fdf6e6;color:var(--noir);font-size:1rem;line-height:1.3;}
+  #choix button:hover:not(:disabled){border-color:var(--terre);background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+  #choix button .lettre{flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--noir);color:var(--terre-clair);font-family:"Cinzel",serif;font-weight:800;font-size:.85rem;}
+  #choix button.bonne{border-color:var(--olive);background:#e6f0d6;}
+  #choix button.mauvaise{border-color:var(--pourpre);background:#f6d9cc;}
+  #choix button:disabled{cursor:default;}
+  .suite{background:linear-gradient(180deg,#d6743a,var(--terre-fonce));color:#fff4dc;border:1px solid var(--noir);border-radius:4px;padding:10px 16px;font-weight:600;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 2px 4px rgba(0,0,0,.25);text-shadow:0 1px 0 rgba(0,0,0,.35);}
+  .suite:hover:not(:disabled){background:linear-gradient(180deg,#e4834a,#a04a1e);}
+  .suite:disabled{background:#b3a58a;border-color:#8f846c;color:#efe6d0;box-shadow:none;text-shadow:none;cursor:default;}
+  .second{width:100%;background:rgba(255,250,235,.5);border:1px solid var(--terre-fonce);border-radius:4px;padding:9px;color:var(--noir);font-size:.92rem;}
+  .second:hover{border-color:var(--terre);color:var(--terre-fonce);}
+  #btnAction{display:block;width:100%;margin-top:10px;}
+  #btnPasser,#btnTestChouette{display:none;margin-top:12px;border-style:dashed;}
+  body.mode-test #btnPasser, body.mode-test #btnTestChouette{display:block;}
+  body.mode-test .plateaux span[data-k]{cursor:pointer;}
+  .aide-test{display:none;font-size:.8rem;color:#6a5a4a;margin:8px 0 0;}
+  body.mode-test .aide-test{display:block;}
+  #retour{margin-top:12px;font-size:1.02rem;border-radius:4px;padding:10px 12px;white-space:pre-line;line-height:1.5;color:#3b2219;}
+  #retour.ko{background:#f5dccd;border-left:5px solid var(--pourpre);}
+  #retour.ok{background:#e6f0d6;border-left:5px solid var(--olive);}
+  #retour.aide{background:#f6e8c4;border-left:5px solid var(--ocre);font-size:1rem;}
+  #retour.vide{display:none;}
+  .titre-aide{display:flex;align-items:center;gap:6px;}
+  #lexique{margin:12px 0 6px;padding:10px 14px;font-size:1rem;line-height:1.6;word-spacing:.08em;background:#fff8e6;color:#1b130e;border:1px solid #d8c08a;border-left:6px solid #1f4e8c;border-radius:6px;text-align:left;}
+  #lexique .titre{display:block;font-size:.95rem;font-weight:700;color:#1f4e8c;margin-bottom:4px;}
+  #lexique .titre::before{content:"☥ ";color:#b8862e;}
+  #lexique b{color:#1b130e;font-weight:700;}
+  .titre-aide span{flex:1;}
+  .btn-aide{flex:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:.75rem;font-weight:600;padding:3px 10px;border:1px solid var(--terre);border-radius:12px;background:#fdf6e6;color:var(--terre-fonce);letter-spacing:0;}
+  .btn-aide:hover, .btn-aide[aria-expanded="true"]{background:var(--terre);color:var(--noir);border-color:var(--noir);}
+  #aidePlateau{margin:-2px 0 12px;padding:10px 12px;font-size:.92rem;line-height:1.45;background:#f6e8c4;border-left:5px solid var(--ocre);border-radius:4px;}
+  #btnSuiteCorrection{display:block;width:100%;margin-top:10px;}
+  #chrono{margin-top:10px;padding:6px 12px;border-radius:4px;background:#2c1d13;color:var(--or-clair);font-weight:700;font-size:1.05rem;text-align:center;border:1px solid var(--terre);}
+  #chrono.presse{background:#7a1e14;color:#fff1c4;animation:pouls 1s ease-in-out infinite;}
+  /* le compteur : des amphores, remplies quand la réponse est juste */
+  .compteur{display:flex;gap:6px;margin-top:12px;align-items:center;font-size:.85rem;color:#4a3a26;flex-wrap:wrap;}
+  .compteur span{width:16px;height:22px;border-radius:45% 45% 40% 40% / 30% 30% 60% 60%;border:2px solid #8f7a52;background:#e3d3b0;position:relative;}
+  .compteur span::before{content:"";position:absolute;left:3px;right:3px;top:-5px;height:4px;border:2px solid #8f7a52;border-bottom:none;border-radius:3px 3px 0 0;}
+  .compteur span.juste{background:radial-gradient(circle at 40% 35%, #f19a5c, var(--terre) 55%, var(--terre-fonce));border-color:var(--noir);}
+  .compteur span.juste::before{border-color:var(--noir);}
+  .plateaux{display:flex;flex-wrap:wrap;gap:6px;font-size:.9rem;}
+  .plateaux span{flex:1 0 34px;text-align:center;border:1px solid #a8946c;border-radius:3px;padding:6px 4px;color:#5a4a34;background:#efe2c4;}
+  .plateaux span.actuel{border:2px solid var(--terre-fonce);color:var(--terre-fonce);font-weight:700;background:#fdf6e6;}
+  .plateaux span.fait{background:var(--terre);border-color:var(--noir);color:var(--noir);font-weight:600;}
+  .savoir{font-size:.9rem;margin:0;}
+
+  /* Accueil (nom de l'élève) */
+  .accueil{display:none;grid-column:1 / -1;max-width:1150px;padding:24px;align-self:start;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:26px;align-items:center;justify-self:center;}
+  body.sans-nom .accueil{display:grid;}
+  body.sans-nom main > .scene, body.sans-nom .colonne{display:none;}
+  .accueil-visuel{background:#160f0b;border:3px solid var(--noir);border-radius:4px;line-height:0;overflow:hidden;box-shadow:0 0 0 3px var(--terre);}
+  #vignette{width:100%;height:auto;display:block;}
+  @keyframes approche{from{transform:scale(1);}to{transform:scale(1.12);}}
+  @media (prefers-reduced-motion:reduce){#imageAccueil{animation:none;}}
+  .accueil h2{margin:0 0 12px;font-size:1.8rem;}
+  .accueil p{margin:6px 0;font-size:1.02rem;}
+  .accueil label{display:block;margin-top:18px;font-weight:600;}
+  #champNom{display:block;width:100%;max-width:420px;font:inherit;padding:10px 12px;margin-top:6px;background:#fdf6e6;border:2px solid var(--terre-fonce);border-radius:4px;}
+  #champNom:focus{outline:none;border-color:var(--terre);}
+  #erreurNom{color:var(--pourpre);font-size:.85rem;min-height:1.3em;margin:4px 0;}
+  .accueil .actions{display:flex;justify-content:flex-end;}
+  @media (max-width:900px){
+    body{height:auto;min-height:100vh;}
+    main{grid-template-columns:1fr;grid-template-rows:none;padding:12px;}
+    #cadreJeu{height:62vw;flex:none;}
+    .accueil{grid-template-columns:1fr;}
+  }
+  /* le guide, par-dessus la zone de jeu (le jeu est en pause) */
+  #overlayGuide{display:none;position:absolute;inset:0;z-index:20;background:rgba(18,13,10,.6);backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;overflow:auto;padding:18px;}
+  #overlayGuide.visible{display:flex;}
+  #guideCarte{position:relative;max-width:660px;width:100%;padding:18px 24px;}
+  #guideCarte h2{text-align:center;margin:0 0 8px;font-size:1.4rem;}
+  #guideCarte h3{font-family:"Cinzel",Georgia,serif;color:var(--terre-fonce);font-size:.98rem;margin:12px 0 4px;border-bottom:1px solid #a8946c;padding-bottom:2px;}
+  #guideCarte p, #guideCarte li{margin:0 0 3px;line-height:1.45;font-size:.9rem;}
+  #guideCarte ul, #guideCarte ol{margin:0;padding-left:20px;}
+  #btnFermerGuide{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--terre-fonce);background:#fdf6e6;color:var(--noir);font-size:20px;line-height:1;}
+  #voileConfirm{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(18,13,10,.62);backdrop-filter:blur(2px);}
+  .carte-confirm{max-width:420px;padding:22px 26px;text-align:center;}
+  .carte-confirm h3{margin:0 0 10px;font-size:1.3rem;}
+  .carte-confirm p{margin:0 0 18px;}
+  .boutons-confirm{display:flex;gap:10px;justify-content:flex-end;}
+  .boutons-confirm .second{width:auto;padding:10px 16px;}
+  /* l'éditeur de programme (la gerboise) */
+  .calcul .programme{font-style:normal;font-size:.88rem;color:#f4e6c6;text-align:left;}
+  .programme .prog-intro{margin-bottom:8px;line-height:1.4;}
+  .programme .prog-liste{margin:0 0 8px;padding:6px 8px 6px 28px;background:rgba(255,240,200,.08);border:1px solid rgba(226,176,74,.5);border-radius:4px;min-height:30px;max-height:170px;overflow:auto;font-weight:600;font-style:normal;}
+  .programme .prog-liste li{margin:1px 0;padding:1px 4px;border-radius:3px;}
+  .programme .prog-liste li.actif{background:#e2b04a;color:#1b130e;}
+  .programme .prog-liste li.vide{list-style:none;margin-left:-20px;font-weight:400;font-style:italic;opacity:.7;}
+  .programme .prog-blocs, .programme .prog-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+  .programme button{flex:1 1 auto;padding:6px 8px;border-radius:4px;border:1px solid #8a6a2a;background:#f6e8c4;color:#1b130e;font-size:.82rem;font-weight:600;font-style:normal;}
+  .programme .prog-blocs button{background:#cfe0f2;border-color:#1f4e8c;}
+  .programme button[data-prog="lancer"], .programme button[data-bal="lancer"], .programme button[data-bal="montrer"]{background:linear-gradient(180deg,#e2b04a,#c58a2e);border-color:#8a4a1a;}
+  .soleil-miroir{display:flex;flex-wrap:nowrap;align-items:center;gap:5px;padding:4px 5px;font-size:.78rem;min-width:0;margin-bottom:6px;background:rgba(255,240,200,.08);border:1px solid rgba(226,176,74,.5);border-radius:4px;}
+  .soleil-nom{font-weight:700;}
+  .soleil-reglage{display:flex;flex-direction:column;align-items:flex-start;gap:6px;white-space:nowrap;min-width:0;}
+  .soleil-texte{display:block;}
+  .roue{flex:none;cursor:pointer;touch-action:none;} .roue .fond{fill:#1a1008;} .roue .anneau{fill:none;stroke:#d4a535;stroke-width:.8;}
+  .roue .grad line{stroke:#d4a535;stroke-width:.6;} .roue .grad line.fort{stroke-width:1.2;}
+  .roue text{fill:#f6dc90;font:bold 4.6px Georgia,serif;text-anchor:middle;}
+  .roue .lame-dos{stroke:#7a5a1a;stroke-width:4.4;stroke-linecap:round;} .roue .lame{stroke:#f0d070;stroke-width:2.4;stroke-linecap:round;}
+  .roue .ombelle{fill:#3a9a6a;stroke:#1f5a3a;stroke-width:.5;} .roue .bouton{fill:#d4a535;} .roue .socle{fill:#5a3a1e;}
+  .roue.inactive{opacity:.5;cursor:default;}
+  .soleil-sens, .soleil-angle{display:inline-flex;align-items:center;gap:4px;}
+  .soleil-sens button{flex:none;} .soleil-sens button[aria-pressed="true"]{background:#e2b04a;border-color:#8a4a1a;box-shadow:inset 0 0 0 2px #8a4a1a;}
+  .soleil-angle{gap:2px;} .soleil-angle button{flex:none;width:1.8em;padding:2px 0;font-size:.85rem;} .soleil-angle b{min-width:3.2em;text-align:center;font-size:1rem;font-variant-numeric:tabular-nums;}
+  .roue{width:104px;height:104px;}
+  @media (max-width:420px){ .soleil-miroir{font-size:.74rem;gap:6px;} .roue{width:92px;height:92px;} }
+  .programme button[data-sol="lancer"], .programme button[data-sol="montrer"], .programme button[data-sol="monter"]{background:linear-gradient(180deg,#e2b04a,#c58a2e);border-color:#8a4a1a;}
+  .champ-avancer{display:inline-flex;align-items:center;gap:3px;flex:1 1 auto;} .champ-avancer button{flex:none;} .champ-avancer b{min-width:1.6em;text-align:center;}
+  .programme button[data-cr="lancer"], .programme button[data-cr="montrer"], .programme button[data-cr="monter"]{background:linear-gradient(180deg,#e2b04a,#c58a2e);border-color:#8a4a1a;}
+  .bloc-editeur .be-zones{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;}
+  .be-palette{flex:0 0 42%;display:flex;flex-direction:column;gap:6px;padding:6px;background:rgba(255,240,200,.06);border-radius:6px;}
+  .be-titre{font-size:.75rem;opacity:.75;}
+  .be-programme{flex:1;min-height:150px;padding:6px;border:2px dashed rgba(226,176,74,.6);border-radius:6px;display:flex;flex-direction:column;gap:3px;}
+  .be-chapeau{background:#ffbf00;color:#3a2a00;font-weight:700;font-size:.8rem;padding:7px 10px 5px;border-radius:12px 12px 4px 4px;}
+  .be-bloc{background:#4c97ff;color:#fff;font-weight:700;font-size:.8rem;padding:6px 8px;border-radius:4px;border-bottom:3px solid #3373cc;cursor:grab;touch-action:none;user-select:none;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .be-bloc.be-d, .be-bloc.be-g{background:#5c8ae6;border-bottom-color:#3a62b8;}
+  .be-bloc.actif{box-shadow:0 0 0 3px #ffe680;}
+  .be-bloc.be-parti{opacity:.35;}
+  .be-nombre{display:inline-flex;align-items:center;gap:2px;background:#fff;color:#1b130e;border-radius:10px;padding:0 3px;}
+  .be-nombre button{border:none;background:transparent;color:#3373cc;font-weight:800;padding:0;font-size:.95rem;min-width:24px;min-height:24px;flex:none;}
+  .be-nombre b{min-width:1.3em;text-align:center;}
+  .be-vide{font-size:.75rem;opacity:.6;font-style:italic;padding:8px;text-align:center;}
+  .be-insert{height:4px;border-radius:2px;background:#ffe680;margin:1px 0;}
+  .be-poubelle{margin-top:4px;padding:8px 6px;border:2px dashed rgba(230,120,100,.6);border-radius:6px;font-size:.72rem;text-align:center;color:#f0c0b0;}
+  .be-poubelle.vise{background:rgba(230,100,80,.35);color:#fff;}
+  .be-fantome{position:fixed;z-index:1000;pointer-events:none;opacity:.92;box-shadow:0 6px 14px rgba(0,0,0,.45);transform:rotate(-2deg);}
+  .be-fantome.be-supprime{background:#c0503a;border-bottom-color:#8a3020;}
+  .bloc-editeur.en-cours .be-bloc{cursor:default;}
+  .be-bloc.be-sauter{background:#9966ff;border-bottom-color:#774dcb;}
+  .be-bloc.be-rep{background:#ffab19;border-bottom-color:#cf8b17;color:#fff;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:0;padding:4px 0 0;}
+  .be-rep-tete{padding:2px 8px 4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .be-corps{margin-left:14px;min-height:24px;padding:3px;background:rgba(40,20,0,.18);border-radius:3px 0 0 3px;display:flex;flex-direction:column;gap:3px;}
+  .be-corps-pal{min-height:12px;}
+  .be-corps .be-vide{padding:3px;font-size:.7rem;}
+  .be-rep-pied{height:10px;}
+  .be-bloc.actif-rep{box-shadow:0 0 0 2px #ffe680;}
+  .flottant{position:fixed;z-index:900;background:#2a1c10;border:2px solid #c58a2e;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:#f4e6c6;max-height:calc(100vh - 16px);display:flex;flex-direction:column;}
+  .flottant .fl-barre{display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(180deg,#c58a2e,#9a6420);color:#1b130e;font-weight:700;border-radius:8px 8px 0 0;cursor:move;touch-action:none;user-select:none;}
+  .flottant .fl-titre{flex:1;font-size:.9rem;} .flottant .fl-poignee{font-size:1rem;opacity:.7;}
+  .flottant .fl-barre button{flex:none;width:28px;height:24px;border-radius:4px;border:1px solid #6a3a10;background:#f6e8c4;color:#1b130e;font-weight:800;padding:0;}
+  .flottant .fl-corps{padding:8px;overflow:auto;flex:1;min-height:0;}
+  .flottant .fl-taille{position:absolute;right:0;bottom:0;width:26px;height:26px;cursor:nwse-resize;touch-action:none;border-radius:0 0 8px 0;background:linear-gradient(135deg,transparent 50%,rgba(197,138,46,.85) 50%,rgba(197,138,46,.85) 58%,transparent 58%,transparent 68%,rgba(197,138,46,.85) 68%,rgba(197,138,46,.85) 76%,transparent 76%);}
+  .flottant.replie .fl-taille{display:none;}
+  @media (max-width:520px){ .bloc-editeur .be-zones{flex-direction:column;} .be-palette{flex:none;width:100%;box-sizing:border-box;flex-direction:row;flex-wrap:wrap;} .be-palette .be-bloc{flex:1 1 40%;} .be-programme{width:100%;box-sizing:border-box;min-height:90px;} }
+  .flottant.replie .fl-corps{display:none;}
+  .flottant .programme{font-size:.88rem;}
+  .champ-bateau{flex:1 1 auto;min-width:0;padding:6px 8px;border-radius:4px;border:1px solid #8a6a2a;font-size:1rem;}
+  .programme button[data-bt]{background:linear-gradient(180deg,#e2b04a,#c58a2e);border-color:#8a4a1a;}
+  .releves{width:100%;border-collapse:collapse;margin:6px 0;font-size:.85rem;} .releves th, .releves td{border:1px solid rgba(226,176,74,.5);padding:3px 6px;text-align:center;} .releves th{background:rgba(226,176,74,.2);}
+  .programme button[data-vd]{flex:1 1 auto;}
+  .voyage-mesures{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-bottom:6px;font-size:1.05rem;} .voyage-mesures span{background:rgba(255,240,200,.12);border:1px solid rgba(226,176,74,.5);border-radius:6px;padding:4px 10px;}
+  .programme button:disabled{opacity:.45;cursor:default;}
+@keyframes repliqueApres{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+.replique-choix{display:flex;gap:10px;margin:6px 0 2px 54px;}.replique-choix button{padding:7px 18px;border:2px solid var(--terre-fonce);border-radius:6px;background:#fdf6e6;color:var(--noir);font-size:1rem;cursor:pointer;}.replique-choix button:hover{background:#f6e7c4;}
+.replique{display:flex;align-items:center;gap:10px;margin:2px 0;}.replique img{width:44px;height:44px;flex:none;border-radius:50%;border:1px solid rgba(143,63,23,.35);}
+.qui-parle{font-variant:small-caps;color:#e8c27a;font-weight:bold;}
+</style>
+</head>
+<body class="sans-nom">
+<div id="voileConfirm" hidden>
+  <div class="carte-confirm papier" role="dialog" aria-modal="true" aria-labelledby="titreConfirm">
+    <h3 id="titreConfirm" class="titre-grec">Réinitialiser le jeu ?</h3>
+    <p>Les plateaux franchis et les réponses seront oubliés. Le voyage repart du premier plateau.</p>
+    <div class="boutons-confirm"><button class="second" id="btnAnnulerReinit" type="button">Annuler</button><button class="suite" id="btnOuiReinit" type="button">⟲ Réinitialiser</button></div>
+  </div>
+</div>
+<header>
+  <h1><span class="sceau" aria-hidden="true">☥</span>Le crapaud et l'ibis</h1>
+  <span id="eleveInfo"></span>
+  <span class="points" id="badgePoints" title="10 points au départ ; +1 par bonne réponse, −2 par erreur"><span class="piece" aria-hidden="true">☥</span><b id="points">10</b> points<span id="deltaPoints"></span></span>
+  <button class="onglet" id="btnOnglet" title="Ouvrir le jeu en plein écran dans un nouvel onglet">↗<span class="txt"> Nouvel onglet</span></button>
+  <span class="filet"></span>
+  <button class="onglet" id="btnSon" title="Couper ou remettre le son">🔊</button>
+  <button class="onglet" id="btnDiplome" title="Voir et imprimer le diplôme">🎓<span class="txt"> Diplôme</span></button>
+  <button class="onglet" id="btnGuide" title="Le mode d'emploi du jeu">Guide</button>
+  <span class="filet"></span>
+  <button class="onglet" id="btnReinitialiser" title="Réinitialiser le jeu : oublier les plateaux franchis et repartir du premier plateau">⟲<span class="txt"> Réinitialiser</span></button>
+</header>
+<main>
+  <section class="accueil papier" id="accueil">
+    <div class="accueil-visuel"><canvas id="vignette" width="480" height="360"></canvas></div>
+    <div>
+      <h2 class="titre-grec">Le crapaud et l'ibis</h2>
+      <p>Le crapaud d'or a traversé la mer jusqu'à l'Égypte des pharaons. Le long du Nil, entre les papyrus et les palmiers, les temples gardent leurs secrets…</p>
+      <p>Les scribes l'attendent avec leurs papyrus : des énigmes de <b>maths</b>, écrites en chiffres égyptiens. L'ibis de Thot, le dieu du calcul et de l'écriture, veille sur lui.</p>
+      <label for="champNom">Ton prénom et ton nom</label>
+      <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
+      <div id="erreurNom"></div>
+      <div class="actions"><button class="suite" id="btnCommencer">Lever l'ancre →</button></div>
+    </div>
+  </section>
+  <section class="scene papier">
+    <div id="cadreJeu">
+      <canvas id="jeu" width="240" height="180"></canvas>
+      <button type="button" id="btnChouette" hidden title="En danger : Anubis peut t'aider, une fois par plateau, si tu résous son énigme"><span class="sceau-chouette" aria-hidden="true"></span>Appeler Anubis</button>
+      <div id="bulle" hidden><div class="bulle-qui"></div><div id="bulleTexte"></div></div>
+      <div id="ecranJeu"><div class="carte-jeu papier" id="carteJeu"></div></div>
+      <div id="overlayGuide"><div id="guideCarte" class="papier">
+        <button id="btnFermerGuide" aria-label="Fermer le guide">×</button>
+        <h2 class="titre-grec">Guide</h2>
+        <h3>Le but</h3>
+        <p>Guider le crapaud d'or le long du Nil, de plateau en plateau. Les scribes posent leurs énigmes sur des papyrus.</p>
+        <h3>Les commandes (au clavier)</h3>
+        <ul>
+          <li><b>← →</b> marcher ; <b>espace</b> ou <b>↑</b> sauter (flèche + espace : saut en avançant).</li>
+          <li>Pour un nombre : écris-le dans la case, puis <b>Entrée</b>.</li>
+        </ul>
+        <h3>Les points</h3>
+        <ul>
+          <li>10 au départ ; +1 par bonne réponse, −2 par erreur. Tomber à l'eau ou se faire happer par un crocodile ramène au dernier point sûr, sans perdre de points.</li>
+        </ul>
+        <h3>Les plateaux</h3>
+        <ol>
+          <li><b>Les rives du Nil</b> : sauter sur le dos d'un crocodile : la vue passe au-dessus du Nil ; ← → font tourner le crapaud de 30°, sur la rive, ↑ et ↓ le font avancer ou reculer d'un pas pour choisir son point de départ, l'espace le fait sauter de crocodile en crocodile. Il faut atterrir sur la zone verte de leur dos : ailleurs, ils mordent (on repart de la rive). Ensuite, le crapaud guide sa compagne, une gerboise (un petit rongeur sauteur du désert, qui ne sait pas nager), par un programme : « sauter », « tourner à gauche de 60° »… Quand la gerboise arrive au temple, la porte s'ouvre : les maths de ce plateau, ce sont les angles et le programme.</li>
+          <li><b>Le temple de la pesée</b> (vu à hauteur de crapaud) : une grande balance, et le babouin de Thot, compagnon de passage, assis en haut du pilier. Au-dessus de chaque plateau, une jarre verse du sable, chacune à son débit (par exemple 4 et 6 deben par seconde). L'élève donne au babouin deux instructions : combien de secondes verser à gauche, et à droite (10 s au plus : c'est ce que mesurent les clepsydres). La balance s'équilibre si les deux plateaux reçoivent autant de sable : un multiple commun des deux débits (4 × 3 = 6 × 2 = 12) ; le plus petit, le PPCM, est le plus rapide. Les débits sont plus grands que 10 et ont toujours un diviseur commun (par exemple 18 et 24 : PPCM 72, soit 4 s et 3 s) ; les temps de la solution la plus rapide restent sous 10 s et s'allongent d'une pesée à l'autre.</li>
+          <li><b>La salle de Thot</b> (vue à hauteur de crapaud) : le dieu à tête d'ibis, dieu du calcul et des scribes, trône dans sa bibliothèque et déroule son papyrus. Quatre sommes de deux fractions de dénominateurs différents : un dénominateur multiple de l'autre (1/3 + 1/6), des dénominateurs premiers entre eux (1/4 + 2/5), un diviseur commun (5/6 + 3/8), puis un résultat à simplifier. La réponse doit être <b>irréductible</b> : une fraction égale mais non simplifiée est signalée, sans être comptée juste.</li>
+          <li><b>Le sanctuaire du soleil</b> (vu de dessus) : le rayon de Rê part toujours du même point A, vers le haut (0°, comme dans Scratch). Dans chaque salle, un seul miroir B ; la figure donne le trajet A B C jusqu'au pharaon et l'angle ABC. L'élève donne au scarabée de Khépri l'<b>orientation</b> du miroir (« orienter Miroir B à … », comme le bloc « s'orienter à » de Scratch, de −175° à 180°), avec une roue d'orientation qui reprend la rose des directions et le miroir. Méthode : la perpendiculaire au miroir est la <b>bissectrice</b> de l'angle ABC. Le miroir est dessiné dissymétrique (son ombelle de papyrus montre son orientation) ; deux orientations opposées renvoient le rayon de la même façon. Trois salles, tirées au hasard à chaque partie : un angle ABC droit, puis obtus, puis aigu, avec un virage à gauche ou à droite ; on vérifie que chaque salle n'a qu'une solution. On peut aussi acheter le passage des salles contre 8 points (il faut en avoir plus de 8).</li>
+          <li><b>La sortie du temple</b> : le décor du plateau 1 en miroir ; le crapaud ressort du temple, descend les marches jusqu'au quai et saute dans la felouque ; elle remonte le fleuve dans un travelling (le décor glisse en parallaxe, le temple s'éloigne, la rive devient peu à peu les champs) et accoste au bord des champs. Pendant la traversée, le panneau affiche le temps écoulé et la distance parcourue ; à l'arrivée, un crapaud compagnon, sur le ponton, demande la vitesse de la felouque en coudées par minute (le temps est affiché en secondes : distance ÷ temps donne la vitesse par seconde, puis × 60 ; par exemple 108 coudées en 18 s → 6 par seconde → 360 coudées par minute ; la vitesse est tirée au hasard, la réponse tombe juste). Juste : « Waouh… le vent souffle fort ! ». Faux une première fois : le crapaud réagit sans donner la solution (« bien lent », « bien rapide », ou « ça, c'est en une seconde ») ; la deuxième fois, il explique le calcul.</li>
+          <li><b>Au milieu des champs</b> (vue de côté) : guidé par le crapaud du ponton, on traverse les champs ; le décor défile pendant qu'on marche. En marchant, le guide fait la conversation : « Bonjour, moi c'est Dory. C'est quoi, déjà, … ? » et on choisit sa réplique (juste : +1 point ; faux : −3 points ; trois échanges) (médiatrice, bissectrice, rayon, diamètre, triangle isocèle ou équilatéral, losange, angle obtus, droites parallèles ou perpendiculaires). Après chaque erreur, l'ibis qui picore au loin disparaît de son champ et apparaît en vignette, s'arrachant les plumes : « Ils me font peur, les deux ! ». Au bout du chemin, l'ibis vole jusqu'aux crapauds ; Dory se présente (« Bonjour, moi c'est Dory ! »), l'ibis, venu se poser devant eux, lui répond (« Je sais… tu me l'as dit ce matin »), demande au crapaud « T'es pas un boulet, toi ? » — on répond oui (« Ça va faire lourd… ») ou non (« Ça fera plus léger ! ») — puis l'emporte voir l'oie.</li>
+          <li><b>Les champs après la crue</b> (dehors) : le Nil s'est retiré et les bornes ont disparu sous le limon. L'oie du Nil, compagne de passage, tire la corde à nœuds des arpenteurs selon un programme façon Scratch (« avancer de … coudées », « tourner à droite / à gauche de 90° ») pour retracer un champ rectangulaire à partir de la borne restante. Trois champs, aux nombres tirés au hasard : les deux dimensions données ; l'aire et le côté le long du canal (trouver l'autre côté) ; le périmètre et ce côté. Le champ doit être fermé, aux bonnes dimensions, sans entrer dans le canal ni chez les voisins. <br><b>Les programmes de l'oie</b> (elle part de la borne, tournée vers le haut ; <i>a</i> = côté le long du canal, <i>b</i> = l'autre côté) :<ul><li><b>Trouver b</b> — champ 1 : b est donné ; champ 2 : b = aire ÷ a (24 ÷ 6 = 4) ; champ 3 : b = périmètre ÷ 2 − a (20 ÷ 2 − 4 = 6).</li>
+          <li><b>Le long du fleuve</b> (au crépuscule, vue de côté) : un crocodile de Sobek porte le crapaud sur son dos le long du Nil (le crapaud ne bouge pas, le décor défile tout seul et le soleil se couche ; le crocodile s'arrête à chaque question). Trois fois, il s'arrête devant une borne gravée d'un nombre décimal et demande un chiffre (des dixièmes, des centièmes, des unités…) ou un nombre (de dizaines, de centaines), avec le même barème. Au bout, le temple de Sobek.</li>
+          <li><b>Le bassin de Sobek</b> (dehors, au bord du Nil) : Au crépuscule, au bord du Nil, Sobek, le dieu à tête de crocodile, se dresse devant son temple. Sur une stèle, un rectangle partagé en parts égales (des carrés, ou des triangles tracés par une ou deux diagonales de chaque carré), dont certaines sont coloriées : on écrit la fraction coloriée sous forme irréductible. Trois bonnes réponses pour passer ; une erreur coûte des points. À la fin, la nuit tombe sur l'image ; l'ibis revient, fond sur le crapaud et l'emporte dans la nuit jusqu'à la route des pyramides.</li>
+          <li><b>La route des pyramides</b> (de nuit, vue de côté) : l'ibis dépose le crapaud sur la route, devant le chacal qui l'attend, et repart (passage de relais) ; puis le décor défile et s'assombrit ; un chacal noir, Oupouaout « l'ouvreur des chemins », marche devant le crapaud vers les pyramides. Trois fois, il demande un mot du calcul (produit, somme, quotient, reste, dividende, numérateur, diviseur, multiple…) ; les quatre réponses sont gravées sur des stèles le long de la piste, dans le noir, et on va toucher la bonne (↓) : juste, +1 point et le chemin s'éclaire ; faux, −3 points et l'obscurité se resserre. Au bout, on entre dans la grande pyramide : le portail des souterrains, gardé par Sobek et Anubis, apparaît dans la brume, et la vue s'avance vers sa porte lumineuse.</li>
+          <li><b>Le puits</b> (calcul astucieux chronométré) : le crapaud glisse au fond d'un puits. Le sable coule de la gueule d'une tête de lion sculptée et une dalle de granit descend dans ses rainures. À droite, un tunnel à hauteur du crapaud est bouché par cinq pierres en file : chaque calcul juste en fait s'effondrer une (la 5, puis la 4…), la 1 libère le passage. Le sable s'arrête pendant les corrections ; si la dalle arrive en bas, une pierre retombe. Deux familles de calculs : regrouper les facteurs (25 × 37 × 4, 2 × 43 × 5, 125 × 19 × 8) et partir d'un nombre presque rond (99 × 7 = 700 − 7, 198 + 46 = 200 + 46 − 2, 6 × 49, 312 − 99).</li>
+          <li><b>La barque du soleil</b> (vue de dessus, dans les souterrains) : on programme en blocs la barque de Rê, l'ibis à la proue (avancer de … cases, tourner ↻ / ↺ de 90°, répéter), pour qu'elle suive le fleuve souterrain sans heurter la rive jusqu'à la porte de l'aube. Trois sections ; la dernière, en escalier, ne permet que 6 blocs : il faut « répéter ». Puis le lever du soleil sur le Nil : tous les compagnons du voyage arrivent un à un, l'ibis se pose près du crapaud d'or.</li><li><b>Canal à gauche de la borne</b> (le champ est à droite) : avancer de a · tourner ↻ de 90° · avancer de b · tourner ↻ de 90° · avancer de a · tourner ↻ de 90° · avancer de b.</li><li><b>Canal à droite de la borne</b> (le champ est à gauche) : la même chose avec « tourner ↺ de 90° ».</li><li><b>Autres programmes acceptés</b> : faire le tour dans l'autre sens (tourner d'abord, longer le bas, puis remonter) ; couper un côté en plusieurs « avancer » (avancer de 3 puis de 4 au lieu de 7) ; ajouter ou non un dernier « tourner ». Ce qui compte : un rectangle fermé, aux bonnes dimensions, qui revient à la borne sans entrer dans le canal ni chez les voisins.</li><li><b>Erreurs fréquentes</b> : tourner du mauvais côté (l'oie tombe dans le canal), oublier le dernier côté (le champ n'est pas fermé), inverser a et b (le côté le long du canal est trop court ou trop long).</li></ul></li>
+        </ol>
+        <h3>Pour le professeur</h3>
+        <ul>
+          <li><b>Plateau 1, le programme de la gerboise</b> : les crocodiles changent de place à chaque traversée. Ils sont posés à partir d'un trajet tiré au hasard (4 sauts, au moins deux virages), donc il existe toujours une solution. La gerboise part de l'endroit d'où le crapaud s'est élancé, tournée dans la direction de son saut : le programme qui marche est celui du crapaud lui-même (sauter, puis tourner et sauter pour chaque crocodile). Si la gerboise tombe à l'eau ou se fait mordre, tout recommence avec de nouveaux crocodiles.</li>
+          <li><b>⟲ Réinitialiser</b> : oublie les plateaux franchis (le nom reste) et repart du premier plateau.</li>
+          <li><b>🎓 Diplôme</b> : à imprimer ou enregistrer en PDF.</li>
+          <li><b>En danger</b> (1 ou 2 points) : un halo rouge entoure le jeu et le bouton « Appeler Anubis » apparaît, une fois par plateau. Anubis, le dieu à tête de chacal, pose une énigme : juste, +3 points ; faux, −2 points.</li>
+          <li>Mode test : ajouter <b>?test</b> à l'adresse (on peut alors cliquer sur un plateau pour y aller, passer les questions, appeler Anubis).</li>
+        </ul>
+      </div></div>
+    </div>
+    <div class="aide-touches" id="aideTouches">Clavier : ← → pour marcher, espace ou ↑ pour sauter.</div>
+  </section>
+  <div class="colonne">
+    <aside class="papier">
+      <h3 class="titre-grec titre-aide"><span id="titreQuestions">La question</span><button type="button" class="btn-aide" id="btnAide" aria-expanded="false" title="Comment jouer à cette escale">Aide</button></h3>
+      <div id="aidePlateau" hidden></div>
+      <div class="calcul attente" id="calcul"></div>
+      <form class="reponse" id="formReponse" autocomplete="off">
+        <input id="champReponse" type="text" placeholder="Ta réponse" disabled>
+        <button class="suite" id="btnValider" disabled>Valider</button>
+      </form>
+      <div id="choix" hidden></div>
+      <button class="suite" id="btnAction" type="button" hidden></button>
+      <div id="retour" class="vide"></div>
+      <button class="suite" id="btnSuiteCorrection" type="button" hidden>Continuer →</button>
+      <div id="chrono" hidden></div>
+      <div class="compteur" id="compteur"></div>
+      <div id="lexique" role="note" aria-live="polite" hidden></div>
+      <button class="second" id="btnTestChouette" type="button" title="Mode test : appeler Anubis tout de suite">⚖️ Appeler Anubis (test)</button>
+      <button class="second" id="btnPasser" type="button" title="Mode test : le plateau s'ouvre, sans compter de réponses">⏭ Passer les questions (test)</button>
+    </aside>
+    <aside class="papier">
+      <h3 class="titre-grec">Plateaux</h3>
+      <div class="plateaux" id="plateaux"></div>
+      <p class="aide-test">Mode test : clique sur un plateau pour y aller.</p>
+      <p style="margin:12px 0 0"><button class="second" id="btnRecommencer" type="button">↺ Recommencer le plateau</button></p>
+    </aside>
+  </div>
+</main>
+<script src="js/questions.js?v=213"></script>
+<script src="js/dessin.js?v=213"></script>
+<script src="js/decor.js?v=213"></script>
+<script src="js/escales.js?v=213"></script>
+<script src="js/moteur.js?v=213"></script>
+</body>
+</html>
