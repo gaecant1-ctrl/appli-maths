@@ -76,6 +76,7 @@ main{flex:1;display:flex;flex-direction:column}
 .fig text{font:700 18px system-ui,-apple-system,sans-serif;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
 .fig text.nom{font-weight:500}
 .fig text.mesure{font-weight:600;font-size:16px}
+.fig text.legende{text-anchor:start;font-weight:500;font-size:14px}
 .fig text.codetxt{fill:var(--code);font-size:11px;font-weight:800}
 
 /* QCM */
@@ -85,7 +86,7 @@ main{flex:1;display:flex;flex-direction:column}
 .bar>div{height:100%;background:var(--accent);width:100%}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(560px,100%)}
 .choices.long{grid-template-columns:1fr}
-.choices.vf .choice:last-child{grid-column:1/-1}
+.choices.vf .choice:nth-child(3){grid-column:1/-1}   /* « Indécidable » sur toute la largeur ; Vrai / Faux côte à côte */
 .phrase{font-size:clamp(1.4rem,5.5vw,2.1rem);font-weight:700;text-align:center}
 .choice{min-height:60px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-size:clamp(1.25rem,5vw,1.7rem);font-weight:700;box-shadow:var(--shadow);padding:6px 10px}
 .choice.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
@@ -116,6 +117,25 @@ main{flex:1;display:flex;flex-direction:column}
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
 
 /* Paramètres */
+.flag{color:#b3261e;border-color:#e3a19c}
+.flag:disabled{opacity:.4}
+.cell .flagc{flex:none;margin-left:auto;font:600 14px system-ui,sans-serif;padding:4px 8px;border-radius:8px;border:1px solid #e3a19c;background:#fff;color:#b3261e;cursor:pointer}
+.cell .flagc.on{background:#b3261e;color:#fff}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;font:600 15px system-ui,sans-serif;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.on{opacity:1}
+.sig{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px;margin:8px 0}
+.sig .fig{width:150px;flex:none;box-shadow:none}
+.sig .txt{flex:1;font-size:15px;line-height:1.35}
+.sig .txt small{color:#777}
+.poids{display:grid;grid-template-columns:1fr auto auto auto auto;gap:6px 10px;align-items:center;margin-top:8px}
+.poids .pc{color:var(--muted);font-size:.9em;min-width:3.2em;text-align:right}
+.poids .val{font-weight:700;min-width:1.4em;text-align:center}
+.poids button{min-height:34px;padding:4px 12px}
+.poids .zero{opacity:.45}
+.revinfo{width:min(640px,100%);font:14px system-ui,sans-serif;color:#555;background:#fff8e6;border:1px dashed #e3c25a;border-radius:10px;padding:6px 10px;line-height:1.5}
+.revinfo b{color:#8a5a00}
+.revinfo .moi{background:#ffe49a;border-radius:4px;padding:0 3px}
+.cell .pw{flex:none;font:600 13px system-ui,sans-serif;color:#8a5a00;background:#fff8e6;border:1px dashed #e3c25a;border-radius:6px;padding:2px 6px}
 .overlay{position:fixed;inset:0;background:rgba(15,20,35,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
 .sheet{background:var(--card);border-radius:18px;width:min(560px,100%);max-height:100%;overflow:auto;padding:16px 18px 20px}
 .sheet-head{display:flex;align-items:center;gap:8px;position:sticky;top:-16px;background:var(--card);padding:6px 0}
@@ -140,6 +160,8 @@ main{flex:1;display:flex;flex-direction:column}
     <h1 id="hTitle">Géométrie mentale</h1>
     <span id="hProg" class="prog hidden"></span><span id="hScore" class="score hidden"></span>
     <span class="grow"></span>
+    <button class="btn flag hidden" id="bFlag" title="Signaler cette carte (mode revue)">⚑ Signaler</button>
+    <button class="btn flag hidden" id="bFlags" title="Voir les cartes signalées">⚑ Signalements</button>
     <button class="btn hidden" id="bPause">⏸ Pause</button>
     <button class="btn" id="bParams">⚙ Paramètres</button>
     <button class="btn hidden" id="bHome">↩ Accueil</button>
@@ -167,6 +189,7 @@ main{flex:1;display:flex;flex-direction:column}
         <div class="consigne" id="flConsigne"></div>
         <div id="flFig"></div>
         <div class="flchoix" id="flChoix"></div>
+        <div class="revinfo hidden" id="flRev"></div>
         <div class="bar"><div id="flBar"></div></div>
       </div>
       <div class="stage hidden" id="flEnd" style="justify-content:center">
@@ -184,6 +207,7 @@ main{flex:1;display:flex;flex-direction:column}
         <div class="consigne" id="qConsigne"></div>
         <div id="qFig"></div>
         <div class="phrase hidden" id="qPhrase"></div>
+        <div class="revinfo hidden" id="qRev"></div>
         <div class="bar" id="qBarWrap"><div id="qBar"></div></div>
         <div class="choices" id="qChoices"></div>
         <div class="fb" id="qFb"></div>
@@ -205,7 +229,7 @@ main{flex:1;display:flex;flex-direction:column}
 <div class="overlay hidden" id="ov">
   <div class="sheet">
     <div class="sheet-head"><h2>Paramètres</h2><button class="btn primary" id="ovClose">OK</button></div>
-    <h3>Questions</h3>
+    <h3>Thèmes</h3>
     <div class="seg" id="grpSeg"></div>
     <h3>Nombre de questions</h3>
     <div class="seg" id="nbSeg"></div>
@@ -213,9 +237,24 @@ main{flex:1;display:flex;flex-direction:column}
     <div class="seg" id="flDurSeg"></div>
     <h3>QCM et Vrai / Faux : durée par question</h3>
     <div class="seg" id="durSeg"></div>
+    <h3>Mode revue (professeur)</h3>
+    <div class="seg" id="revSeg"></div>
+    <p style="color:var(--muted);margin:6px 0 0">Ajoute un bouton « ⚑ Signaler » pour noter les cartes à revoir. Lien direct : adresse de l’appli + <b>?revue</b></p>
   </div>
 </div>
 
+<div class="overlay hidden" id="sigOv">
+  <div class="sheet" style="width:min(760px,100%)">
+    <div class="sheet-head"><h2>Cartes signalées</h2><button class="btn primary" id="sigClose">OK</button></div>
+    <div id="sigList"></div>
+    <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" id="sigCopy">📋 Copier le texte</button>
+      <button class="btn" id="sigDl">⬇ Télécharger (.json)</button>
+      <button class="btn" id="sigClear">Tout effacer</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
 <div class="overlay hidden" id="qrOv"><div class="qr-grand" id="qrBig"></div></div>
 
 <script>
@@ -303,6 +342,9 @@ class Fig {
     return best ? this.txt(best, `(<tspan font-style="italic">${s}</tspan>)`, 'nom') : this;
   }
   // nom du cercle : autour du cercle, à l'endroit le plus éloigné des points et étiquettes (obstacles)
+  // légende en haut à gauche, ex. « (c) : cercle de centre O »
+  legende(t) { this.g.push(`<text class="legende" x="8" y="14">${t}</text>`); return this; }
+  legendeLibre(pts) { return pts.concat(this.etiq).every(p => p.x > 190 || p.y > 32); }
   nomCercle(o, r, s, obstacles) {
     let best = null, bestD = -1;
     for (let a = 0; a < 360; a += 5) {
@@ -312,6 +354,11 @@ class Fig {
       if (dd > bestD) { bestD = dd; best = q; }
     }
     return best ? this.txt(best, `(<tspan font-style="italic">${s}</tspan>)`, 'nom') : this;
+  }
+  // arc d'angle de sommet v, de la direction u1 à la direction u2 (sens : sg = ±1)
+  arcAngle(v, u1, u2, sg, r = 20) {
+    const a = add(v, mul(u1, r)), b = add(v, mul(u2, r));
+    this.g.push(`<path class="code" d="M${f(a.x)},${f(a.y)}A${r},${r} 0 0 ${sg > 0 ? 1 : 0} ${f(b.x)},${f(b.y)}"/>`); return this;
   }
   angleDroit(v, u1, u2) {
     const a = add(v, mul(u1, 13)), b = add(a, mul(u2, 13)), c = add(v, mul(u2, 13));
@@ -378,10 +425,52 @@ function genNotation(forme, k, force, leurres) {
   const o = mul(n, 17 * (forme === 'longueur' ? -s : s));
   fig.point(a, P, o).point(b, Q, o);
   return {
-    svg: fig, consigne: 'Quelle est la bonne notation du tracé rouge ?',
+    // longueur : on parle de la distance entre les deux points, pas d'un « tracé rouge »
+    svg: fig, consigne: forme === 'longueur' ? `La distance entre ${P} et ${Q} est notée :` : 'Quelle est la bonne notation du tracé rouge ?',
+    prefixe: forme === 'longueur' ? `La distance entre ${P} et ${Q} est notée` : 'Le tracé rouge se note',
     juste: ecrire(k, P, Q), correction: ecrireTout(k, P, Q),
     faux: force.concat(shuffle(leurres.slice())).map(x => ecrire(x, P, Q)),
   };
+}
+
+/* ---------- Vocabulaire ---------- */
+// le même tracé rouge que les cartes de notation, mais avec les mots : « Le tracé rouge est une demi-droite »
+function genVocabTrace() {
+  const [P, Q] = lettres(2), forme = pick(['droite', 'segment', 'demi']);
+  let a, b;
+  do { a = V(R(45, 255), R(40, 160)); b = V(R(45, 255), R(40, 160)); } while (len(sub(b, a)) < 110);
+  const u = unit(sub(b, a)), n = nrm(u), s = pick([1, -1]), fig = new Fig();
+  if (forme === 'droite') fig.droite(a, u, 'rouge');
+  if (forme === 'segment') fig.seg(a, b, 'rouge');
+  if (forme === 'demi') fig.demi(a, u, 'rouge');
+  fig.point(a, P, mul(n, 17 * s)).point(b, Q, mul(n, 17 * s));
+  const MOTS = { droite: 'une droite', segment: 'un segment', demi: 'une demi-droite' };
+  const juste = MOTS[forme], faux = Object.values(MOTS).filter(m => m !== juste).concat(['une longueur']);
+  return { svg: fig, consigne: 'Quel est le nom du tracé rouge ?', prefixe: 'Le tracé rouge est', juste, faux: shuffle(faux),
+    poidsVF: pds([juste, 'L'], ...faux.map(m => [m, m === 'une longueur' ? 'E' : 'L'])) };
+}
+// corde, diamètre, rayon : [AB] tracé en rouge dans le cercle de centre O
+function genVocabCorde() {
+  return essai(() => {
+    const [O, A, B] = lettres(3), c = pick(CERCLE), diam = coin();
+    const o = V(R(135, 165), R(95, 105)), r = R(56, 62), aA = Math.random() * 2 * Math.PI;
+    const aB = diam ? aA + Math.PI : aA + rad(R(70, 130)) * pick([1, -1]);   // corde : loin du centre (au moins 0,4 rayon)
+    const pa = add(o, mul(dir(aA), r)), pb = add(o, mul(dir(aB), r));
+    const fig = new Fig().cercle(o, r).seg(pa, pb, 'rouge');
+    const mil = unit(add(dir(aA), dir(aB))), offO = diam ? mul(nrm(dir(aA)), 16) : mul(mil, -16);
+    fig.point(o, O, offO).point(pa, A, mul(dir(aA), 16)).point(pb, B, mul(dir(aB), 16))
+      .nomCercle(o, r, c, [pa, pb, add(pa, mul(dir(aA), 16)), add(pb, mul(dir(aB), 16)), V(90, 14)]);
+    if (!fig.legendeLibre([pa, pb])) return null;
+    fig.legende(`(<tspan font-style="italic">${c}</tspan>) : cercle de centre ${O}`);
+    const AB = `[${deux(A, B)}]`;
+    const dia = ph(`${AB} est un diamètre du cercle`), cor = ph(`${AB} est une corde du cercle`), ray = ph(`${AB} est un rayon du cercle`);
+    const oSur = ph(`${O} ∈ ${AB}`), oHors = ph(`${O} ∉ ${AB}`), dte = ph(`${AB} est une droite`);
+    // un diamètre est aussi une corde : c'est la phrase qui fait raisonner (R)
+    if (diam) return { svg: fig, sansI: true, juste: dia, faux: shuffle([ray, oHors, dte]), vraisVF: [dia, cor, oSur],
+      poidsVF: pds([dia, 'L'], [cor, 'R'], [oSur, 'E'], [ray, 'L'], [oHors, 'E'], [dte, 'E']) };
+    return { svg: fig, sansI: true, juste: cor, faux: shuffle([dia, ray, oSur]), vraisVF: [cor, oHors],
+      poidsVF: pds([cor, 'L'], [oHors, 'E'], [dia, 'L'], [ray, 'L'], [oSur, 'E']) };
+  });
 }
 
 /* ---------- Groupe 2 : phrases mathématiques (fiche) ---------- */
@@ -404,7 +493,7 @@ function genDroite() { // A ∈ (d), M ∉ (d) : 3 points, sur ou hors de la dro
     pts.forEach((p, k) => fig.point(p, noms[k], mul(n, (sur[k] ? -16 : 16) * s)));
     const vrai = noms.map((x, k) => ph(`${x} ${sur[k] ? '∈' : '∉'} ${D}`));
     const faux = noms.map((x, k) => ph(`${x} ${sur[k] ? '∉' : '∈'} ${D}`));
-    return { svg: fig, juste: pick(vrai), faux };
+    return { svg: fig, juste: pick(vrai), faux, vraisVF: vrai, poidsVF: pds(...vrai.concat(faux).map(t => [t, 'L'])) };
   });
 }
 function genSegment() { // B milieu de [AC], codé une fois sur deux : sans codage on ne peut affirmer que B ∈ [AC]
@@ -418,10 +507,15 @@ function genSegment() { // B milieu de [AC], codé une fois sur deux : sans coda
     if (code) fig.marques(a, b, 2).marques(b, c, 2);
     fig.point(a, A, mul(n, 16 * s)).point(b, B, mul(n, 16 * s)).point(c, C, mul(n, 16 * s));
     const BA = deux(B, A), BC = deux(B, C), AC = deux(A, C);
-    const egal = eg(BA, BC), vrai = [`${B} ∈ [${AC}]`].concat(code ? [egal, egal] : []);
-    const faux = [`${B} ∉ [${AC}]`, `${A} ∈ [${BC}]`, `${C} ∈ [${deux(A, B)}]`, eg(deux(A, B), AC)];
-    if (!code) faux.push(egal, egal);   // le leurre clé quand il n'y a pas de codage
-    return { svg: fig, juste: ph(pick(vrai)), faux: [...new Set(shuffle(faux))].map(x => ph(x)), indec: code ? [] : [ph(egal)] };
+    const egal = eg(BA, BC), sur = `${B} ∈ [${AC}]`, vrai = [sur].concat(code ? [egal, egal] : []);
+    const hors = `${B} ∉ [${AC}]`, aDans = `${A} ∈ [${BC}]`, cDans = `${C} ∈ [${deux(A, B)}]`, moitie = eg(deux(A, B), AC);
+    const mil = `${B} est le milieu de [${AC}]`;                            // codé : la définition du milieu ; sinon : Indécidable
+    if (code) vrai.push(mil, mil);
+    const faux = [hors, aDans, cDans, moitie];
+    if (!code) faux.push(egal, mil);   // les leurres clés quand il n'y a pas de codage
+    return { svg: fig, juste: ph(pick(vrai)), faux: [...new Set(shuffle(faux))].map(x => ph(x)), indec: code ? [] : [ph(egal), ph(mil)],
+      vraisVF: (code ? [egal, sur, mil] : [sur]).map(x => ph(x)),
+      poidsVF: pds([ph(egal), 'L'], [ph(mil), code ? 'R' : 'L'], [ph(sur), 'E'], [ph(hors), 'E'], [ph(aDans), 'L'], [ph(cDans), 'L'], [ph(moitie), 'L']) };
   });
 }
 function genDemi() { // V ∉ [OT), V ∈ (OT), V ∈ [TO)…
@@ -433,9 +527,13 @@ function genDemi() { // V ∉ [OT), V ∈ (OT), V ∈ [TO)…
     const fig = new Fig().droite(o, u, 'trait tirets').demi(o, u, 'trait epais')
       .point(o, O, mul(n, 16 * s)).point(t, T, mul(n, 16 * s)).point(v, Vn, mul(n, 16 * s));
     const OT = deux(O, T);
+    const v1 = ph(`${Vn} ∉ [${O}${T})`), v2 = ph(`${Vn} ∈ (${OT})`), v3 = ph(`${Vn} ∈ [${T}${O})`);
+    const f1 = ph(`${Vn} ∈ [${O}${T})`), f2 = ph(`${Vn} ∉ (${OT})`), f3 = ph(`${Vn} ∉ [${T}${O})`), f4 = ph(`${T} ∉ [${O}${T})`);
+    // pertinence : l'autre demi-droite, celle qui n'est pas tracée en gras ([TO), [OT) côté V), compte plus
+    // que la droite entière ou que le point T, évident
     return {
-      svg: fig, juste: ph(pick([`${Vn} ∉ [${O}${T})`, `${Vn} ∉ [${O}${T})`, `${Vn} ∈ (${OT})`, `${Vn} ∈ [${T}${O})`])),
-      faux: shuffle([ph(`${Vn} ∈ [${O}${T})`), ph(`${Vn} ∉ (${OT})`), ph(`${Vn} ∉ [${T}${O})`), ph(`${T} ∉ [${O}${T})`)]),
+      svg: fig, juste: pick([v1, v1, v2, v3]), faux: shuffle([f1, f2, f3, f4]),
+      vraisVF: [v1, v2, v3], poidsVF: pds([v1, 'L'], [v2, 'E'], [v3, 'L'], [f1, 'L'], [f2, 'E'], [f3, 'L'], [f4, 'E']),
     };
   });
 }
@@ -448,8 +546,14 @@ function genCercle() { // E ∉ (c), F ∈ (c)
     if (!inside(pe)) return null;
     const lf = add(pf, mul(dir(aF), 16)), le = add(pe, mul(dir(aE), 16));
     const fig = new Fig().cercle(o, r).point(o, O, V(0, 16)).point(pf, F, mul(dir(aF), 16)).point(pe, E, mul(dir(aE), 16))
-      .nomCercle(o, r, c, [pf, pe, lf, le]);
-    return { svg: fig, juste: ph(pick([`${E} ∉ ${C}`, `${F} ∈ ${C}`])), faux: [ph(`${E} ∈ ${C}`), ph(`${F} ∉ ${C}`), ph(`${O} ∈ ${C}`)] };
+      .nomCercle(o, r, c, [pf, pe, lf, le, V(90, 14)]);
+    if (!fig.legendeLibre([pf, pe])) return null;
+    fig.legende(`(<tspan font-style="italic">${c}</tspan>) : cercle de centre ${O}`);
+    const eHors = ph(`${E} ∉ ${C}`), fSur = ph(`${F} ∈ ${C}`), centre = ph(`${O} ∈ ${C}`);
+    // pertinence : « le centre est-il sur le cercle ? » est le vrai piège
+    const eSur = ph(`${E} ∈ ${C}`), fHors = ph(`${F} ∉ ${C}`);
+    return { svg: fig, juste: pick([eHors, fSur]), faux: [eSur, fHors, centre],
+      vraisVF: [eHors, fSur], poidsVF: pds([eHors, 'E'], [fSur, 'L'], [eSur, 'E'], [fHors, 'L'], [centre, 'R']) };
   });
 }
 /* Angle droit commun à Intersection et Perpendiculaires (toujours exactement 90° : seul le codage compte) :
@@ -459,22 +563,6 @@ function genCercle() { // E ∉ (c), F ∈ (c)
 function reponsesAngle(code, perp, para, appVraies, appFausses) {
   if (code) return { juste: ph(perp), faux: shuffle(appFausses.slice()).slice(0, 2).concat([para]).map(x => ph(x)) };
   return { juste: ph(pick(appVraies)), faux: [perp, para, pick(appFausses)].map(x => ph(x)), indec: [ph(perp)] };
-}
-function genInter() { // (d) et (d′) perpendiculaires en I, angle droit codé ou non
-  return essai(() => {
-    const [In] = lettres(1), [d1, d2] = pick(PAIRES), code = coin();
-    const i = V(R(120, 180), R(85, 115)), a1 = rad(R(-60, 60)), u1 = dir(a1);
-    const u2 = dir(a1 + rad(90) * pick([1, -1]));
-    const off = mul(unit(sub(u1, u2)), 18);
-    const fig = new Fig().droite(i, u1).droite(i, u2);
-    if (code) fig.angleDroit(i, u1, u2);
-    fig.point(i, In, off).nomDroite(i, u1, d1, 1).nomDroite(i, u2, d2, -1);
-    const A = nomH(d1), B = nomH(d2), [x, y] = shuffle([A, B]);
-    return {
-      svg: fig, ...reponsesAngle(code, `${x} ⊥ ${y}`, `${x} // ${y}`,
-        [`${In} ∈ ${A}`, `${In} ∈ ${B}`], [`${In} ∉ ${A}`, `${In} ∉ ${B}`]),
-    };
-  });
 }
 function genPerp() { // (EF) et (FG), angle droit en F codé ou non (droites ou triangle)
   return essai(() => {
@@ -491,24 +579,9 @@ function genPerp() { // (EF) et (FG), angle droit en F codé ou non (droites ou 
     return {
       svg: fig, ...reponsesAngle(code, `${x} ⊥ ${y}`, `${x} // ${y}`,
         [`${G} ∉ (${EF})`, `${E} ∉ (${FG})`], [`${G} ∈ (${EF})`, `${E} ∈ (${FG})`]),
-    };
-  });
-}
-function genPara() { // (d₁) // (d₂) codées, coupées par une troisième droite (d₃) nettement oblique
-  return essai(() => {
-    const [d1, d2, d3] = shuffle(pick(TRIPLES).slice());
-    const c = V(R(130, 170), R(90, 110)), u = dir(rad(R(-30, 30))), n = nrm(u), gap = R(70, 90);
-    const c1 = add(c, mul(n, -gap / 2)), c2 = add(c, mul(n, gap / 2));
-    const w = dir(Math.atan2(u.y, u.x) + rad(R(40, 65)) * pick([1, -1]));   // (d₃) : ni parallèle, ni perpendiculaire
-    const p3 = add(c, mul(u, R(45, 70))), t = -R(55, 75);                   // codage // loin de (d₃)
-    const fig = new Fig().droite(c1, u).droite(c2, u).droite(p3, w)
-      .paralleles(add(c1, mul(u, t)), add(c2, mul(u, t)))
-      .nomDroite(c1, u, d1, -1).nomDroite(c2, u, d2, 1).nomDroite(p3, w, d3, pick([1, -1]));
-    const A = nomH(d1), B = nomH(d2), C = nomH(d3);
-    const par = (x, y) => coin() ? `${x} // ${y}` : `${y} // ${x}`, nonPerp = ph(`${pick([A, B])} ⊥ ${C}`);
-    return {
-      svg: fig, juste: ph(par(A, B)),
-      faux: shuffle([ph(par(A, C)), ph(par(B, C)), nonPerp, ph(`${A} = ${B}`)]), horsVF: [nonPerp],
+      cible: [ph(`${x} ⊥ ${y}`)],
+      poidsVF: pds([ph(`${x} ⊥ ${y}`), 'L'], [ph(`${x} // ${y}`), 0],
+        ...[`${G} ∉ (${EF})`, `${E} ∉ (${FG})`, `${G} ∈ (${EF})`, `${E} ∈ (${FG})`].map(t => [ph(t), 0])),
     };
   });
 }
@@ -524,19 +597,26 @@ function genRayons() { // cercle de centre O : une seule égalité (OP = OQ) ou 
     fig.point(o, O, mul(moy, -16));
     const noms = [P, Q, Rn].slice(0, pts.length);
     noms.forEach((nm, k) => fig.point(pts[k], nm, mul(dir(angs[k]), 16)));
-    fig.nomCercle(o, r, c, pts.concat(pts.map((p, k) => add(p, mul(dir(angs[k]), 16)))));
+    fig.nomCercle(o, r, c, pts.concat(pts.map((p, k) => add(p, mul(dir(angs[k]), 16)))).concat([V(90, 14)]));
+    if (!fig.legendeLibre(pts)) return null;
+    fig.legende(`(<tspan font-style="italic">${c}</tspan>) : cercle de centre ${O}`);
     // vrai : deux rayons égaux, ou un point du cercle ; faux : corde = rayon, points confondus, centre sur le cercle…
     const paires = noms.flatMap((x, k) => noms.slice(k + 1).map(y => [x, y]));
     const [x, y] = pick(paires);
-    const vrai = coin() || coin() ? eg(deux(O, x), deux(O, y)) : `${pick(noms)} ∈ ${C}`;
+    const rayons = eg(deux(O, x), deux(O, y)), surC = `${pick(noms)} ∈ ${C}`, vrai = coin() || coin() ? rayons : surC;
     const corde1 = eg(deux(O, x), deux(x, y)), corde2 = eg(deux(O, y), deux(x, y));
-    const faux = [corde1, corde2, eg(x, y), `${O} ∈ ${C}`, `${pick(noms)} ∉ ${C}`, `${O} ∈ [${deux(x, y)}]`];
-    return { svg: fig, juste: ph(vrai), faux: shuffle(faux).map(x => ph(x)), horsVF: [ph(corde1), ph(corde2)] };
+    const pasSur = `${pick(noms)} ∉ ${C}`;                                  // « A ∉ (c) » : retiré du Vrai/Faux à la demande
+    const confondus = eg(x, y), centre = `${O} ∈ ${C}`, entre = `${O} ∈ [${deux(x, y)}]`;
+    const faux = [corde1, corde2, confondus, centre, pasSur, entre];
+    // pertinence : deux rayons égaux avant tout ; « le centre est sur le cercle » est un bon piège ;
+    // points confondus, corde = rayon : jamais
+    return { svg: fig, juste: ph(vrai), faux: shuffle(faux).map(x => ph(x)), horsVF: [ph(corde1), ph(corde2), ph(pasSur)],
+      vraisVF: [ph(rayons), ph(surC)], poidsVF: pds([ph(rayons), 'R'], [ph(surC), 'L'], [ph(confondus), 0], [ph(centre), 'R'], [ph(entre), 'E']) };
   });
 }
 function genCodage() { // triangle équilatéral parfait ; deux côtés codés (NQ = NR) ou aucun codage
   return essai(() => {
-    const [Nn, Q, Rn] = lettres(3), code = coin(), L = R(122, 136);
+    const [Nn, Q, Rn] = lettres(3), code = mode === 'qcm' ? coin() : Math.random() < 0.65, L = R(122, 136);
     // triangle équilatéral parfait (un écart serait invérifiable) : seul le codage compte
     const nq = L, nr = L, qr = L;
     // Q et R sur une base tournée au hasard, N par intersection de cercles
@@ -556,40 +636,72 @@ function genCodage() { // triangle équilatéral parfait ; deux côtés codés (
     const [X, Y, Z] = pick([[Nn, Q, Rn], [Q, Nn, Rn], [Rn, Nn, Q]]), YZ = deux(Y, Z), forme = pick(['[]', '()']);
     const objet = forme === '[]' ? `[${YZ}]` : `(${YZ})`;
     const egalites = [eg(NQ, NR), eg(NQ, QR), eg(NR, QR)];
-    if (code) return { svg: fig, juste: ph(egalites[0]), faux: [egalites[1], egalites[2], `${X} ∈ ${objet}`].map(t => ph(t)), indec: [ph(egalites[1]), ph(egalites[2])] };
-    return { svg: fig, juste: ph(`${X} ∉ ${objet}`), faux: egalites.map(t => ph(t)), indec: egalites.map(t => ph(t)) };
+    // pertinence : l'égalité codée, et surtout les côtés NON codés (indécidable) ; l'appartenance d'un sommet au côté opposé : jamais
+    const dans = ph(`${X} ∈ ${objet}`), pasDans = ph(`${X} ∉ ${objet}`);
+    if (code) return { svg: fig, juste: ph(egalites[0]), faux: [egalites[1], egalites[2], `${X} ∈ ${objet}`].map(t => ph(t)), indec: [ph(egalites[1]), ph(egalites[2])],
+      poidsVF: pds([ph(egalites[0]), 'L'], [ph(egalites[1]), 'L'], [ph(egalites[2]), 'L'], [dans, 0]) };
+    return { svg: fig, juste: pasDans, faux: egalites.map(t => ph(t)), indec: egalites.map(t => ph(t)), poidsVF: pds([pasDans, 0], ...egalites.map(t => [ph(t), 'L'])) };
   });
 }
-/* Quadrilatère : toujours un carré parfait (les écarts seraient de toute façon invérifiables).
-   Seul le codage compte : une phrase codée est la bonne réponse, les phrases non codées sont les leurres. */
+/* Quadrilatère codé : carré, losange (angles nettement aigus/obtus) ou rectangle (nettement allongé).
+   Côtés k = [Pk Pk+1], angle au sommet k entre les côtés k−1 et k.
+   - codé → Vrai ; dessiné égal/droit mais non codé → Indécidable ; visiblement faux (losange, rectangle) → Faux ;
+   - parallèles : deux côtés opposés perpendiculaires à un même côté (deux angles droits codés à ses extrémités)
+     → Vrai (propriété) ; sinon Indécidable ; deux côtés consécutifs parallèles → Faux. */
 function genCarre() {
   return essai(() => {
-    const noms = lettres(4), L = R(100, 115), th = Math.random() * 2 * Math.PI;
-    const nCotes = pick([0, 2, 2, 3]), nAngles = pick([0, 1, 1, 2]);
-    if (!nCotes && !nAngles) return null;
-    const cotesCodes = shuffle([0, 1, 2, 3]).slice(0, nCotes), angles = shuffle([0, 1, 2, 3]).slice(0, nAngles);
-    const u = dir(th), v = nrm(u), c0 = V(R(135, 165), R(95, 105));
-    const centre = mul(add(u, v), 0.5), Q = [V(0, 0), u, add(u, v), v].map(p => add(c0, mul(sub(p, centre), L)));
-    if (!Q.every(p => inside(p))) return null;
-    const g = mul(Q.reduce(add, V(0, 0)), 1 / 4), fig = new Fig(), nb = pick([1, 2]);
-    for (let k = 0; k < 4; k++) fig.seg(Q[k], Q[(k + 1) % 4]);
-    cotesCodes.forEach(k => fig.marques(Q[k], Q[(k + 1) % 4], nb));
-    angles.forEach(k => fig.angleDroit(Q[k], unit(sub(Q[(k + 3) % 4], Q[k])), unit(sub(Q[(k + 1) % 4], Q[k]))));
-    Q.forEach((p, k) => fig.point(p, noms[k], mul(unit(sub(p, g)), 17)));
-    // phrases : égalités de côtés (côté k = [Pk Pk+1]) et perpendicularités de côtés consécutifs (au sommet k)
-    const cote = k => deux(noms[k], noms[(k + 1) % 4]);
-    const perpAu = k => { const [x, y] = shuffle([`(${cote((k + 3) % 4)})`, `(${cote(k)})`]); return `${x} ⊥ ${y}`; };
-    const egVrai = [], egFaux = [];
-    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++)
-      (cotesCodes.includes(a) && cotesCodes.includes(b) ? egVrai : egFaux).push(eg(cote(a), cote(b)));
-    const perpVrai = angles.map(perpAu), perpFaux = [0, 1, 2, 3].filter(k => !angles.includes(k)).map(perpAu);
-    const juste = pick(egVrai.concat(perpVrai));
-    // toujours au moins une égalité et une perpendicularité parmi les 4 réponses
-    const autre = juste.includes('⊥') ? egFaux : perpFaux, meme = juste.includes('⊥') ? perpFaux : egFaux;
-    if (!autre.length) return null;
-    const faux = [...new Set([pick(autre)].concat(shuffle(autre.concat(meme))))];
-    if (faux.length < 3) return null;
-    return { svg: fig, juste: ph(juste), faux: faux.map(x => ph(x)), indec: faux.map(x => ph(x)) };   // non codé = non affirmable
+    const forme = pick(['carre', 'carre', 'losange', 'rectangle']), noms = lettres(4);
+    const th = forme === 'rectangle' ? rad(R(-20, 20)) : Math.random() * 2 * Math.PI, u = dir(th), v = nrm(u);
+    let P, longs;
+    if (forme === 'carre') { const L = R(100, 115); P = [V(0, 0), mul(u, L), mul(add(u, v), L), mul(v, L)]; longs = [1, 1, 1, 1]; }
+    if (forme === 'rectangle') { const Lw = R(140, 160), Lh = Lw / (R(160, 190) / 100); P = [V(0, 0), mul(u, Lw), add(mul(u, Lw), mul(v, Lh)), mul(v, Lh)]; longs = [2, 1, 2, 1]; }
+    if (forme === 'losange') { const L = R(95, 110), w = dir(th + rad(R(55, 68))); P = [V(0, 0), mul(u, L), add(mul(u, L), mul(w, L)), mul(w, L)]; longs = [1, 1, 1, 1]; }
+    const droit = forme !== 'losange', c0 = V(R(135, 165), R(95, 105)), g0 = mul(P.reduce(add, V(0, 0)), 1 / 4);
+    P = P.map(p => add(sub(p, g0), c0));
+    if (!P.every(p => inside(p))) return null;
+    // codage des côtés (seulement des côtés vraiment égaux) et des angles droits (seulement s'ils sont droits)
+    const cotesCodes = forme === 'rectangle' ? pick([[], [0, 2], [1, 3]]) : shuffle([0, 1, 2, 3]).slice(0, pick([0, 2, 2, 3, 4]));
+    let angles = [];
+    if (droit) {
+      const n = pick([0, 1, 2, 2, 3]), k = R(0, 3);
+      angles = n === 2 && Math.random() < .7 ? [k, (k + 1) % 4] : shuffle([0, 1, 2, 3]).slice(0, n);
+    }
+    if (!cotesCodes.length && !angles.length) return null;
+    const fig = new Fig(), nb = pick([1, 2]), g = c0;
+    for (let k = 0; k < 4; k++) fig.seg(P[k], P[(k + 1) % 4]);
+    cotesCodes.forEach(k => fig.marques(P[k], P[(k + 1) % 4], nb));
+    angles.forEach(k => fig.angleDroit(P[k], unit(sub(P[(k + 3) % 4], P[k])), unit(sub(P[(k + 1) % 4], P[k]))));
+    P.forEach((p, k) => fig.point(p, noms[k], mul(unit(sub(p, g)), 17)));
+    const cote = k => deux(noms[k], noms[(k + 1) % 4]), dr = k => `(${cote(k)})`;
+    const L = [];   // { t : phrase, s : statut, w : pertinence }
+    const ajoute = (t, st, w) => L.push({ t: ph(t), s: st, w });
+    // égalités de côtés
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) {
+      const t = eg(cote(a), cote(b)), ca = cotesCodes.includes(a), cb = cotesCodes.includes(b);
+      if (ca && cb) ajoute(t, 'V', 'L');                            // codés tous les deux
+      else if (longs[a] !== longs[b]) ajoute(t, 'F', 'E');         // rectangle : visiblement différents
+      else ajoute(t, 'I', ca || cb ? 'L' : 'E');                   // un seul codé : le piège de prolonger le codage ; aucun : évident
+    }
+    // angles droits (côtés consécutifs)
+    for (let k = 0; k < 4; k++) {
+      const [x, y] = shuffle([dr((k + 3) % 4), dr(k)]), t = `${x} ⊥ ${y}`;
+      if (angles.includes(k)) ajoute(t, 'V', 'L');
+      else ajoute(t, droit ? 'I' : 'F', droit ? 'L' : 'E');            // carré/rectangle : « ça a l'air droit » ; losange : visiblement faux
+    }
+    // parallèles : côtés opposés (0, 2) et (1, 3)
+    [[0, 2], [1, 3]].forEach(([i, j]) => {
+      // i et j sont perpendiculaires à un même côté m si les deux angles aux extrémités de m sont codés
+      const m1 = (i + 1) % 4, m2 = (i + 3) % 4;                     // les deux côtés qui relient i et j
+      const prouve = [m1, m2].some(m => angles.includes(m) && angles.includes((m + 1) % 4));
+      const [x, y] = shuffle([dr(i), dr(j)]);
+      ajoute(`${x} // ${y}`, prouve ? 'V' : 'I', 'R');   // propriété, appliquée ou incomplète
+    });
+    for (let k = 0; k < 4; k++) { const [x, y] = shuffle([dr(k), dr((k + 1) % 4)]); ajoute(`${x} // ${y}`, 'F', 'E'); }   // consécutifs : jamais parallèles
+    const Vs = L.filter(c => c.s === 'V'), Fs = L.filter(c => c.s === 'F'), Is = L.filter(c => c.s === 'I');
+    if (!Vs.length) return null;
+    const autres = shuffle(Fs.concat(Is));
+    return { svg: fig, juste: pick(Vs).t, faux: autres.map(c => c.t), indec: Is.map(c => c.t),
+      vraisVF: Vs.map(c => c.t), poidsVF: pds(...L.map(c => [c.t, c.w])) };
   });
 }
 function genMesure() { // HJ = 4 cm
@@ -610,40 +722,31 @@ const cmTxt = v => `${String(v).replace('.', ',')} cm`;
 const inf = (x, y) => coin() ? `${x} < ${y}` : `${y} > ${x}`;   // AB < CD ou CD > AB
 const uniques = t => [...new Set(t)];
 
-function genDistComparer() { // cercle de centre O passant par A, N à l'intérieur, P à l'extérieur : ON < OA < OP
+function genDistComparer() { // cercle de centre O : A et B sur le cercle, N juste dedans, P juste dehors
   return essai(() => {
-    const [O, A, Nn, P] = lettres(4), c = pick(CERCLE);
+    const [O, A, B, Nn, P] = lettres(5), c = pick(CERCLE);
     const o = V(R(135, 165), R(95, 105)), r = R(56, 62);
-    const aA = Math.random() * 2 * Math.PI, aN = aA + rad(R(100, 150)), aP = aN + rad(R(90, 120));
-    const pa = add(o, mul(dir(aA), r)), pn = add(o, mul(dir(aN), R(26, 32))), pp = add(o, mul(dir(aP), r + R(28, 38)));
+    const aA = Math.random() * 2 * Math.PI, aB = aA + rad(R(85, 130)), aN = aB + rad(R(65, 95)), aP = aN + rad(R(60, 85));
+    // N et P tout près du cercle, dans des directions différentes : l'œil ne compare pas ON et OP, le cercle si
+    const pa = add(o, mul(dir(aA), r)), pb = add(o, mul(dir(aB), r));
+    const pn = add(o, mul(dir(aN), r - R(11, 14))), pp = add(o, mul(dir(aP), r + R(11, 15)));
     if (!inside(pp)) return null;
-    const la = add(pa, mul(dir(aA), 16)), lp = add(pp, mul(dir(aP), 16));
-    const fig = new Fig().cercle(o, r).point(o, O, mul(dir(aN), -16)).point(pa, A, mul(dir(aA), 16))
-      .point(pn, Nn, mul(dir(aN), 16)).point(pp, P, mul(dir(aP), 16)).nomCercle(o, r, c, [pa, pp, la, lp, pn]);
-    const OA = deux(O, A), ON = deux(O, Nn), OP = deux(O, P);
-    const vrai = [inf(ON, OA), inf(OA, OP), inf(ON, OP)];
-    const faux = [inf(OA, ON), inf(OP, OA), inf(OP, ON), eg(ON, OA), eg(OP, OA)];
-    return { svg: fig, juste: ph(pick(vrai)), faux: shuffle(faux).map(x => ph(x)) };
-  });
-}
-function genDistDiametre() { // [AB] diamètre du cercle de centre O : on donne le rayon ou le diamètre
-  return essai(() => {
-    const [O, A, B] = lettres(3), rayonDonne = coin();
-    const o = V(R(135, 165), R(95, 105)), r = R(55, 62), u = dir(rad(R(-35, 35))), n = nrm(u), s = pick([1, -1]);
-    const pa = add(o, mul(u, -r)), pb = add(o, mul(u, r));
-    const fig = new Fig().cercle(o, r).seg(pa, pb);
-    const OA = deux(O, A), OB = deux(O, B), AB = deux(A, B);
-    fig.point(o, O, mul(n, -16 * s)).point(pa, A, mul(u, -16)).point(pb, B, mul(u, 16));
-    if (rayonDonne) {
-      const x = pick([2, 3, 4, 5, 6, 7, 2.5, 3.5, 4.5]);
-      fig.txt(add(mid(o, pa), mul(n, 17 * s)), cmTxt(x), 'mesure');
-      return { svg: fig, juste: ph(pick([`${AB} = ${cmTxt(2 * x)}`, `${OB} = ${cmTxt(x)}`])),
-        faux: shuffle([`${AB} = ${cmTxt(x)}`, `${OB} = ${cmTxt(2 * x)}`, `${AB} = ${cmTxt(4 * x)}`, `${OB} = ${cmTxt(x + 1)}`]).map(t => ph(t)) };
-    }
-    const dia = pick([3, 4, 5, 6, 7, 8, 9, 10, 12]);
-    fig.txt(add(o, mul(n, 17 * s)), cmTxt(dia), 'mesure');
-    return { svg: fig, juste: ph(pick([`${OA} = ${cmTxt(dia / 2)}`, `${OB} = ${cmTxt(dia / 2)}`])),
-      faux: shuffle([`${OA} = ${cmTxt(dia)}`, `${OB} = ${cmTxt(2 * dia)}`, `${AB} = ${cmTxt(dia / 2)}`, `${OA} = ${cmTxt(dia + 1)}`]).map(t => ph(t)) };
+    const lab = (p, a, sens = 1) => add(p, mul(dir(a), 16 * sens));
+    const fig = new Fig().cercle(o, r).point(o, O, mul(unit(add(dir(aA), dir(aB))), -16))
+      .point(pa, A, mul(dir(aA), 16)).point(pb, B, mul(dir(aB), 16))
+      .point(pn, Nn, mul(dir(aN), -16)).point(pp, P, mul(dir(aP), 16))
+      .nomCercle(o, r, c, [pa, pb, pn, pp, lab(pa, aA), lab(pb, aB), lab(pn, aN, -1), lab(pp, aP), V(90, 14)]);
+    if (!fig.legendeLibre([pa, pb, pn, pp])) return null;
+    fig.legende(`(<tspan font-style="italic">${c}</tspan>) : cercle de centre ${O}`);
+    const OA = deux(O, A), OB = deux(O, B), ON = deux(O, Nn), OP = deux(O, P);
+    const rayons = ph(eg(OA, OB)), nP = ph(inf(ON, OP)), nA = ph(inf(ON, OA)), pB = ph(inf(OB, OP));          // vraies
+    const nEgA = ph(eg(ON, OA)), pEgB = ph(eg(OP, OB)), aInfB = ph(inf(OA, OB));                                  // fausses tentantes
+    const pN = ph(inf(OP, ON)), aN2 = ph(inf(OA, ON)), bP = ph(inf(OP, OB));                                      // fausses inversées
+    const vraies = [rayons, nP, nA, pB], fausses = [nEgA, pEgB, aInfB, pN, aN2, bP];
+    // pertinence : deux rayons égaux et ON < OP (par le cercle) avant tout ; comparer au rayon ensuite ;
+    // les égalités fausses sont tentantes (points tout près du cercle) ; les inversions, rares
+    return { svg: fig, juste: pick(vraies), faux: shuffle(fausses.slice()), vraisVF: vraies,
+      poidsVF: pds([rayons, 'R'], [nP, 'R'], [nA, 'R'], [pB, 'R'], [nEgA, 'R'], [pEgB, 'R'], [aInfB, 'R'], [pN, 'E'], [aN2, 'E'], [bP, 'E']) };
   });
 }
 // Segment [AB] et droite (d) : toujours sa vraie médiatrice, seul le codage permet de l'affirmer
@@ -653,58 +756,49 @@ function baseMediatrice() {
 }
 function genDistMediatrice() { // M sur (d) : MA = MB seulement si le codage dit que (d) est la médiatrice
   return essai(() => {
-    const [A, B, Mn] = lettres(3), d = pick(LIGNE), D = nomH(d), code = pick(['deux', 'deux', 'deux', 'angle', 'traits', 'aucun']);
+    // en QCM, seulement le codage complet (sinon la bonne réponse serait « M ∈ (d) », trop évidente)
+    const code = mode === 'qcm' ? 'deux' : pick(['deux', 'deux', 'deux', 'angle', 'traits', 'aucun']);
+    const [A, B, Mn] = lettres(3), d = pick(LIGNE), D = nomH(d);
     const { c, u, n, a, b, k } = baseMediatrice(), s = pick([1, -1]), m = add(c, mul(n, s * R(55, 68)));
     if (!inside(m) || !inside(a) || !inside(b)) return null;
-    const fig = new Fig().seg(a, b).droite(c, n);
+    const fig = new Fig().seg(a, b).droite(c, n).seg(m, a).seg(m, b);   // [MA] et [MB] tracés, non codés
     if (code === 'deux' || code === 'angle') fig.angleDroit(c, u, mul(n, -s));
     if (code === 'deux' || code === 'traits') fig.marques(a, c, k).marques(c, b, k);
     fig.point(a, A, mul(n, -16 * s)).point(b, B, mul(n, -16 * s)).point(m, Mn, mul(u, 18)).nomDroite(c, n, d, -1);
     const MA = deux(Mn, A), MB = deux(Mn, B), AB = deux(A, B);
     if (code === 'deux') {
       // évident (« ça se voit ») : jamais posé en Vrai/Faux
-      const visibles = [eg(MA, AB), eg(MB, AB), `${Mn} ∈ [${AB}]`, `${Mn} ∉ ${D}`];
-      return { svg: fig, juste: ph(eg(MA, MB)), horsVF: visibles.map(t => ph(t)),
-        faux: [inf(MA, MB)].concat(shuffle(visibles.slice())).map(t => ph(t)) };
+      const visibles = [eg(MA, AB), eg(MB, AB), `${Mn} ∈ [${AB}]`, `${Mn} ∉ ${D}`], egalC = ph(eg(MA, MB)), plusC = ph(inf(MA, MB));
+      return { svg: fig, juste: egalC, horsVF: visibles.map(t => ph(t)),
+        faux: [plusC].concat(shuffle(visibles.slice()).map(t => ph(t))), poidsVF: pds([egalC, 'R'], [plusC, 'R']) };
     }
     const egal = eg(MA, MB), plus = inf(MA, MB), evidents = [`${Mn} ∈ ${D}`, `${Mn} ∉ ${D}`, `${Mn} ∈ [${AB}]`];
     return { svg: fig, juste: ph(evidents[0]), faux: [egal, evidents[1], evidents[2]].map(t => ph(t)),
-      indec: [ph(egal), ph(plus)], horsVF: evidents.map(t => ph(t)) };
-  });
-}
-function genDistRegion() { // M du côté de A par rapport à la médiatrice de [AB] : MA < MB
-  return essai(() => {
-    const [A, B, Mn] = lettres(3), d = pick(LIGNE), D = nomH(d);
-    const { c, u, n, a, b, k } = baseMediatrice(), cote = pick([1, -1]), s = pick([1, -1]);
-    const m = add(add(c, mul(u, cote * R(32, 58))), mul(n, s * R(38, 62)));
-    if (!inside(m) || !inside(a) || !inside(b)) return null;
-    const fig = new Fig().seg(a, b).droite(c, n).angleDroit(c, mul(u, -cote), mul(n, s)).marques(a, c, k).marques(c, b, k);
-    fig.point(a, A, mul(n, -16 * s)).point(b, B, mul(n, -16 * s)).point(m, Mn, mul(n, 16 * s)).nomDroite(c, n, d, -cote);
-    const MA = deux(Mn, A), MB = deux(Mn, B), [pres, loin] = cote < 0 ? [MA, MB] : [MB, MA];
-    const surD = ph(`${Mn} ∈ ${D}`);
-    return { svg: fig, juste: ph(inf(pres, loin)), faux: shuffle([inf(loin, pres), eg(MA, MB)]).map(t => ph(t)).concat([surD]), horsVF: [surD] };
+      indec: [ph(egal), ph(plus)], horsVF: evidents.map(t => ph(t)), poidsVF: pds([ph(egal), code === 'aucun' ? 'L' : 'R'], [ph(plus), 'L']) };   // médiatrice incomplète : raisonnement
   });
 }
 
-// Rayons : A et B sur le cercle de centre O donnent OA = OB. N à l'intérieur (ON < OA),
-// ou N posé « sur » le cercle par une simple croix : on ne peut pas affirmer ON = OA.
-function genDistRayons() {
+
+// Réciproque : (d) médiatrice codée de [AB], tracée courte (elle n'atteint pas M).
+// MA = MB codé : M ∈ (d) est vrai ; sans ce codage, on ne peut pas savoir.
+function genDistSurMediatrice() {
   return essai(() => {
-    const [O, A, B, Nn] = lettres(4), c = pick(CERCLE), cas = pick(['dedans', 'croix']);
-    const o = V(R(135, 165), R(95, 105)), r = R(56, 62), a0 = Math.random() * 2 * Math.PI;
-    const aA = a0, aB = a0 + rad(R(95, 150)), aN = aB + rad(R(70, 110));
-    const pa = add(o, mul(dir(aA), r)), pb = add(o, mul(dir(aB), r));
-    const pn = add(o, mul(dir(aN), cas === 'dedans' ? R(26, 36) : r + R(-15, 15) / 10));
-    const fig = new Fig().cercle(o, r).point(o, O, mul(dir(aN), -16))   // nom du centre à l'opposé de N
-      .point(pa, A, mul(dir(aA), 16)).point(pb, B, mul(dir(aB), 16)).point(pn, Nn, mul(dir(aN), 16), true);
-    fig.nomCercle(o, r, c, [pa, pb, pn, add(pa, mul(dir(aA), 16)), add(pb, mul(dir(aB), 16)), add(pn, mul(dir(aN), 16))]);
-    const OA = deux(O, A), OB = deux(O, B), ON = deux(O, Nn), AB = deux(A, B);
-    const corde = ph(eg(OA, AB));                                         // corde = rayon : se voit, jamais en Vrai/Faux
-    const base = [ph(inf(OA, OB)), ph(inf(OB, OA)), corde];
-    if (cas === 'dedans') return { svg: fig, juste: coin() ? ph(eg(OA, OB)) : ph(inf(ON, OA)),
-      faux: shuffle([ph(eg(ON, OA)), ph(inf(OA, ON)), ph(inf(OA, OB))]).concat([corde]), horsVF: [corde] };
-    return { svg: fig, juste: ph(eg(OA, OB)), faux: shuffle(base.slice(0, 2)).concat([corde]), horsVF: [corde],
-      indec: [ph(eg(ON, OA)), ph(eg(ON, OB))], raison: 'une croix posée sur le cercle n’est pas une intersection.' };
+    const code = mode === 'qcm' ? true : pick([true, true, false]);
+    const [A, B, Mn] = lettres(3), d = pick(LIGNE), D = nomH(d);
+    const { c, u, n, a, b, k } = baseMediatrice(), s = pick([1, -1]), m = add(c, mul(n, s * R(62, 72)));
+    const bas = add(c, mul(n, -s * R(34, 42))), haut = add(c, mul(n, s * R(22, 28)));   // (d) s'arrête bien avant M
+    if (![m, a, b, bas].every(p => inside(p))) return null;
+    const fig = new Fig().seg(a, b).seg(bas, haut).seg(m, a).seg(m, b)
+      .angleDroit(c, u, mul(n, -s)).marques(a, c, k).marques(c, b, k);
+    if (code) fig.marques(m, a, 3 - k).marques(m, b, 3 - k);
+    fig.point(a, A, mul(n, -16 * s)).point(b, B, mul(n, -16 * s)).point(m, Mn, mul(n, 16 * s))
+      .txt(add(bas, add(mul(n, -12 * s), mul(u, 14))), `(<tspan font-style="italic">${d}</tspan>)`, 'nom');
+    const MA = deux(Mn, A), MB = deux(Mn, B), AB = deux(A, B);
+    const sur = ph(`${Mn} ∈ ${D}`), hors = ph(`${Mn} ∉ ${D}`), dansAB = ph(`${Mn} ∈ [${AB}]`);
+    const plus = ph(inf(MA, MB));
+    // pertinence : M sur la médiatrice (la réciproque) ; « MA < MB » s'éloigne de la question : rare
+    if (code) return { svg: fig, juste: sur, faux: [hors, plus, dansAB], horsVF: [dansAB], poidsVF: pds([sur, 'R'], [hors, 'R'], [plus, 'L']) };
+    return { svg: fig, juste: null, faux: [], indec: [sur, hors], poidsVF: pds([sur, 'R'], [hors, 'L']) };
   });
 }
 
@@ -712,9 +806,9 @@ function genDistRayons() {
 const plusTxt = (x, y) => `${x} + ${y}`;
 function genDistTriangle() {
   return essai(() => {
-    const [A, B, Cn] = lettres(3), surSeg = coin(), x = pick([2, 3, 4, 5]), y = pick([2, 3, 4]), k = 22;   // 22 px pour 1 cm
+    const [A, B, Cn] = lettres(3), surSeg = coin(), x = pick([2, 3, 4, 5]), y = pick([2, 3, 4]), k = 28;   // 28 px pour 1 cm
     const AB = deux(A, B), BC = deux(B, Cn), AC = deux(A, Cn), somme = plusTxt(AB, BC);
-    const u = dir(rad(R(-20, 20))), a = V(R(30, 70), R(60, 140));
+    const u = dir(rad(R(-20, 20))), a = V(R(28, 60), R(50, 150));
     const tour = surSeg ? 0 : pick([1, -1]) * rad(R(55, 110));          // triangle franchement non aplati
     const b = add(a, mul(u, x * k)), c = add(b, mul(dir(Math.atan2(u.y, u.x) + tour), y * k));
     if (![a, b, c].every(p => inside(p))) return null;
@@ -728,12 +822,17 @@ function genDistTriangle() {
     const off = q => surSeg ? mul(nrm(u), 16) : mul(unit(sub(q, g)), 16);
     fig.point(a, A, off(a)).point(b, B, off(b)).point(c, Cn, off(c));
     const lg = v => ph(`${AC} = ${cmTxt(v)}`);
-    if (surSeg) return { svg: fig, juste: coin() ? ph(eg(AC, somme)) : lg(x + y),
-      faux: shuffle([ph(`${AC} < ${somme}`), lg(Math.abs(x - y) || x + y + 2), lg(x + y + 1), ph(`${AC} > ${somme}`)]) };
-    const reel = Math.round(len(sub(c, a)) / k);                         // AC n'est pas écrit : on ne peut pas le donner
-    return { svg: fig, juste: coin() ? ph(`${AC} < ${somme}`) : ph(`${AC} < ${cmTxt(x + y)}`),
-      faux: shuffle([ph(eg(AC, somme)), lg(x + y), lg(x + y + pick([1, 2])), ph(`${AC} > ${somme}`)]),
-      indec: reel !== x + y && reel > 0 && R(0, 2) === 0 ? [lg(reel)] : [] };   // pas trop souvent
+    // les longueurs sont écrites : les phrases ne portent que sur des longueurs (« AC = 7 cm »)
+    if (surSeg) {
+      const vS = lg(x + y), fInf = ph(`${AC} < ${cmTxt(x + y)}`), fDiff = lg(Math.abs(x - y) || x + y + 2), fPlus1 = lg(x + y + 1), fSup = ph(`${AC} > ${cmTxt(x + y)}`);
+      // pertinence : l'égalité AC = AB + BC ; « AC < 7 cm » (confusion avec le triangle) ; la différence au lieu de la somme
+      return { svg: fig, juste: vS, faux: shuffle([fInf, fDiff, fPlus1, fSup]),
+        poidsVF: pds([vS, 'R'], [fInf, 'R'], [fDiff, 'R'], [fPlus1, 'L'], [fSup, 'E']) };
+    }
+    // triangle : on compare AC à la longueur x + y (« AC < 7 cm »), pas à la somme écrite en lettres
+    const vT = ph(`${AC} < ${cmTxt(x + y)}`), fEg = lg(x + y), fTrop = lg(x + y + pick([1, 2])), fSupT = ph(`${AC} > ${cmTxt(x + y)}`);
+    // pertinence : « AC = 7 cm » est LA confusion (on additionne comme si B était sur [AC])
+    return { svg: fig, juste: vT, faux: shuffle([fEg, fTrop, fSupT]), poidsVF: pds([vT, 'R'], [fEg, 'R'], [fTrop, 'L'], [fSupT, 'L']) };   // pas de longueur « AC = … » indécidable : sans intérêt
   });
 }
 
@@ -753,70 +852,64 @@ function genLimLongueurs() { // deux segments de même longueur, ou écrits à 0
     fig.point(a, A, mul(n, -1)).point(b, B, mul(n, -1)).point(c, Cn, n).point(d, Dn, V(16, 0));
     if (cas === 'code') {
       fig.marques(a, b, k).marques(c, d, k);
-      return { svg: fig, juste: ph(eg(AB, CD)), faux: [inf(AB, CD), inf(CD, AB)].map(t => ph(t)) };
+      const e1 = ph(eg(AB, CD)), i1 = ph(inf(AB, CD)), i2 = ph(inf(CD, AB));
+      return { svg: fig, juste: e1, faux: [i1, i2], poidsVF: pds([e1, 'L'], [i1, 'E'], [i2, 'E']) };
     }
     if (cas === 'ecrit') {
       fig.txt(add(mid(a, b), V(0, 18)), cmTxt(xAB), 'mesure').txt(add(mid(c, d), V(-34, -6)), cmTxt(xCD), 'mesure');
       const [p, g] = abPetit ? [AB, CD] : [CD, AB];
-      return { svg: fig, juste: ph(inf(p, g)), faux: [eg(AB, CD), inf(g, p)].map(t => ph(t)) };
+      const v = ph(inf(p, g)), e2 = ph(eg(AB, CD)), f2 = ph(inf(g, p));
+      // pertinence : « AB = CD » alors que 5 cm et 5,1 cm sont écrits : la figure trompe, les nombres non
+      return { svg: fig, juste: v, faux: [e2, f2], poidsVF: pds([v, 'L'], [e2, 'L'], [f2, 'E']) };
     }
-    return { svg: fig, juste: null, faux: [], indec: [eg(AB, CD), inf(AB, CD), inf(CD, AB)].map(t => ph(t)) };
+    const e3 = ph(eg(AB, CD)), j1 = ph(inf(AB, CD)), j2 = ph(inf(CD, AB));
+    return { svg: fig, juste: null, faux: [], indec: [e3, j1, j2], poidsVF: pds([e3, 'L'], [j1, 'E'], [j2, 'E']) };
   });
 }
 function genLimAngle() { // deux droites presque perpendiculaires
   return essai(() => {
     const [In] = lettres(1), [d1, d2] = pick(PAIRES), cas = pick(['code', 'ecrit', 'rien', 'rien']);
     const i = V(R(125, 175), R(90, 110)), a1 = rad(R(-45, 45)), u1 = dir(a1), sg = pick([1, -1]);
-    const val = cas === 'code' ? 90 : cas === 'ecrit' ? pick([87, 88, 89, 90, 91, 92, 93]) : R(87, 93);
-    const u2 = dir(a1 + rad(val) * sg), fig = new Fig().droite(i, u1).droite(i, u2);
+    // le dessin est TOUJOURS un angle droit exact : sans codage, on ne peut pas savoir ; avec « 89° » écrit, c'est le nombre qui dit Faux
+    const val = cas === 'code' ? 90 : cas === 'ecrit' ? pick([87, 88, 89, 90, 91, 92, 93]) : 90;
+    const u2 = dir(a1 + rad(90) * sg), fig = new Fig().droite(i, u1).droite(i, u2);
     if (cas === 'code') fig.angleDroit(i, u1, u2);
-    if (cas === 'ecrit') fig.txt(add(i, mul(unit(add(u1, u2)), 36)), `${val}°`, 'mesure');
+    if (cas === 'ecrit') fig.arcAngle(i, u1, u2, sg).txt(add(i, mul(unit(add(u1, u2)), 38)), `${val}°`, 'mesure');
     fig.point(i, In, mul(unit(add(u1, u2)), -18)).nomDroite(i, u1, d1, 1).nomDroite(i, u2, d2, -1);
     const A = nomH(d1), B = nomH(d2), [x, y] = shuffle([A, B]), perp = ph(`${x} ⊥ ${y}`), para = ph(`${x} // ${y}`), sur = ph(`${In} ∈ ${pick([A, B])}`);
-    if (cas === 'rien') return { svg: fig, juste: sur, faux: [para], indec: [perp] };
-    return val === 90 ? { svg: fig, juste: perp, faux: [para] } : { svg: fig, juste: sur, faux: [perp, para] };
-  });
-}
-function genLimParalleles() { // deux droites presque parallèles, qui ne se coupent pas dans le cadre
-  return essai(() => {
-    const [d1, d2] = pick(PAIRES), cas = pick(['code', 'angles', 'rien', 'rien']);
-    const c = V(R(140, 160), R(95, 105)), a0 = R(-14, 14), u = dir(rad(a0)), n = nrm(u), gap = R(74, 90);
-    const c1 = add(c, mul(n, -gap / 2)), c2 = add(c, mul(n, gap / 2));
-    const u2 = cas === 'rien' ? dir(rad(a0 + R(-15, 15) / 10)) : u;
-    const fig = new Fig().droite(c1, u).droite(c2, u2);
-    if (cas === 'code') fig.paralleles(add(c1, mul(u, -70)), add(c2, mul(u, -70)));
-    if (cas === 'angles') {
-      const p = add(c, mul(u, R(-50, 50))), p1 = add(p, mul(n, -gap / 2)), p2 = add(p, mul(n, gap / 2));
-      fig.droite(p, n).angleDroit(p1, u, n).angleDroit(p2, u, mul(n, -1));
-    }
-    fig.nomDroite(c1, u, d1, -1).nomDroite(c2, u2, d2, 1);
-    const [x, y] = shuffle([nomH(d1), nomH(d2)]), para = ph(`${x} // ${y}`), perp = ph(`${x} ⊥ ${y}`);
-    if (cas === 'rien') return { svg: fig, juste: null, faux: [], indec: [para], horsVF: [perp] };
-    return { svg: fig, juste: para, faux: [perp] };
+    const pw = pds([perp, 'L'], [para, 0], [sur, 0]);
+    if (cas === 'rien') return { svg: fig, juste: sur, faux: [para], indec: [perp], cible: [perp], poidsVF: pw };
+    return val === 90 ? { svg: fig, juste: perp, faux: [para], cible: [perp], poidsVF: pw } : { svg: fig, juste: sur, faux: [perp, para], cible: [perp], poidsVF: pw };
   });
 }
 function genLimAlignes() { // trois points presque alignés : sans droite tracée, on ne peut pas savoir
   return essai(() => {
     const [A, B, Cn] = lettres(3), trace = coin(), u = dir(rad(R(-30, 30))), n = nrm(u), a = V(R(40, 70), R(55, 145));
-    const c = add(a, mul(u, R(180, 205))), b = add(add(a, mul(u, R(70, 120))), mul(n, trace ? 0 : R(-2, 2)));
+    const c = add(a, mul(u, R(180, 205))), b = add(add(a, mul(u, R(70, 120))), mul(n, 0));   // toujours exactement aligné : seul le tracé (ou son absence) compte
     if (!inside(a) || !inside(c)) return null;
     const fig = new Fig();
     if (trace) fig.droite(a, u);
     fig.point(a, A, mul(n, -16)).point(b, B, mul(n, -16)).point(c, Cn, mul(n, -16));
     const AC = deux(A, Cn), sur = ph(`${B} ∈ (${AC})`), hors = ph(`${B} ∉ (${AC})`);
-    return trace ? { svg: fig, juste: sur, faux: [hors] } : { svg: fig, juste: null, faux: [], indec: [sur, hors] };
+    return trace ? { svg: fig, juste: sur, faux: [hors], poidsVF: pds([sur, 'L'], [hors, 'L']) }
+                 : { svg: fig, juste: null, faux: [], indec: [sur, hors], poidsVF: pds([sur, 'L'], [hors, 'L']) };
   });
 }
 function genLimTriangle() { // B presque sur [AC] : sans segment tracé, on ne peut pas savoir si AC = AB + BC
   return essai(() => {
     const [A, B, Cn] = lettres(3), trace = coin(), u = dir(rad(R(-30, 30))), n = nrm(u), a = V(R(40, 70), R(55, 145));
-    const c = add(a, mul(u, R(180, 205))), b = add(add(a, mul(u, R(70, 120))), mul(n, trace ? 0 : R(-2, 2)));
+    const c = add(a, mul(u, R(180, 205))), b = add(add(a, mul(u, R(70, 120))), mul(n, 0));   // toujours exactement aligné : seul le tracé (ou son absence) compte
     if (!inside(a) || !inside(c)) return null;
     const fig = new Fig();
     if (trace) fig.seg(a, c);
     fig.point(a, A, mul(n, -16)).point(b, B, mul(n, -16)).point(c, Cn, mul(n, -16));
     const AC = deux(A, Cn), somme = plusTxt(deux(A, B), deux(B, Cn)), egal = ph(eg(AC, somme)), plus = ph(`${AC} < ${somme}`);
-    return trace ? { svg: fig, juste: egal, faux: [plus] } : { svg: fig, juste: null, faux: [], indec: [egal, plus] };
+    const auPlus = ph(`${AC} ≤ ${somme}`);                                  // toujours vrai (inégalité triangulaire)
+    const partie = ph(`${pick([deux(A, B), deux(B, Cn)])} < ${AC}`);         // B ∈ [AC] : AB < AC et BC < AC
+    // pertinence : segment tracé → l'égalité ; pas tracé → « ≤ » toujours vrai, « = » et « < » indécidables
+    return trace ? { svg: fig, juste: pick([egal, auPlus, partie]), faux: [plus], vraisVF: [egal, auPlus, partie],
+                     poidsVF: pds([egal, 'R'], [auPlus, 'R'], [partie, 'R'], [plus, 'R']) }
+                 : { svg: fig, juste: auPlus, faux: [], indec: [egal, plus], poidsVF: pds([auPlus, 'R'], [egal, 'R'], [plus, 'R']) };   // la propriété d'abord (choix du professeur)
   });
 }
 function genLimEquidistance() { // M à égale distance de A et B, ou écrit à 0,1 cm près et tracé à l'échelle
@@ -833,19 +926,155 @@ function genLimEquidistance() { // M à égale distance de A et B, ou écrit à 
     const MA = deux(Mn, A), MB = deux(Mn, B);
     if (cas === 'code') {
       fig.marques(m, a, k).marques(m, b, k);
-      return { svg: fig, juste: ph(eg(MA, MB)), faux: [inf(MA, MB), inf(MB, MA)].map(t => ph(t)) };
+      const e1 = ph(eg(MA, MB)), i1 = ph(inf(MA, MB)), i2 = ph(inf(MB, MA));
+      return { svg: fig, juste: e1, faux: [i1, i2], poidsVF: pds([e1, 'L'], [i1, 'E'], [i2, 'E']) };
     }
     if (cas === 'ecrit') {
       fig.txt(add(mid(m, a), mul(u, -30)), cmTxt(xMA), 'mesure').txt(add(mid(m, b), mul(u, 30)), cmTxt(xMB), 'mesure');
       const [p, g] = grandA ? [MB, MA] : [MA, MB];
-      return { svg: fig, juste: ph(inf(p, g)), faux: [eg(MA, MB), inf(g, p)].map(t => ph(t)) };
+      const v = ph(inf(p, g)), e2 = ph(eg(MA, MB)), f2 = ph(inf(g, p));
+      return { svg: fig, juste: v, faux: [e2, f2], poidsVF: pds([v, 'L'], [e2, 'L'], [f2, 'E']) };
     }
-    return { svg: fig, juste: null, faux: [], indec: [eg(MA, MB), inf(MA, MB), inf(MB, MA)].map(t => ph(t)) };
+    const e3 = ph(eg(MA, MB)), j1 = ph(inf(MA, MB)), j2 = ph(inf(MB, MA));
+    return { svg: fig, juste: null, faux: [], indec: [e3, j1, j2], poidsVF: pds([e3, 'L'], [j1, 'E'], [j2, 'E']) };
   });
 }
+
+/* Une seule phrase à juger. indec : ni codée ni écrite, sur une figure où l'œil ne tranche pas ;
+   horsVF : ni codée ni écrite mais visiblement fausse, jamais posée (« ça se voit »). */
+const STATUTS = { V: 'Vrai', F: 'Faux', I: 'Indécidable' };
+const RAISONS = {
+  V: 'c’est codé, écrit ou donné par une intersection.',
+  F: 'c’est contredit par la figure, le codage ou les mesures.',
+  I: 'rien n’est codé ni écrit, et l’œil ne suffit pas.',
+};
+/* Étiquette de chaque phrase, posée par le générateur de la carte — c'est elle qui donne le poids :
+     R : raisonnement — il faut une propriété du cours (appliquée, incomplète, ou l'erreur de raisonnement à éviter) ;
+     L : lecture — ce qui la tranche est sur la figure (un codage, un nombre écrit, ou rien de codé → Indécidable) ;
+     E : évident — se voit sans rien savoir : jamais posée en Vrai/Faux (reste un distracteur du QCM).
+   Un nombre fixe est aussi accepté (0 : phrase retirée). */
+const POIDS_ETIQ = { R: 3, L: 1, E: 0 }, ETIQNOM = { R: 'Raisonnement', L: 'Lecture', E: 'Évident' };
+const poidsPhrase = v => typeof v === 'number' ? { w: v, cat: null } : { w: POIDS_ETIQ[v] ?? 1, cat: v ?? null };
+/* poidsVF : l'étiquette de chaque phrase (ou un poids fixe).
+   vraisVF : toutes les phrases vraies à proposer en Vrai/Faux (le QCM, lui, n'en garde qu'une : juste). */
+const pds = (...l) => Object.fromEntries(l);
+function pertinentes(q, hors) {
+  const l = [];
+  (q.vraisVF || (q.juste ? [q.juste] : [])).filter(h => !(q.horsVF || []).includes(h)).forEach(h => l.push({ h, s: 'V' }));
+  q.faux.filter(h => !hors.has(h)).forEach(h => l.push({ h, s: 'F' }));
+  (q.indec || []).forEach(h => l.push({ h, s: 'I' }));
+  const vus = new Set();
+  return l.filter(c => !vus.has(c.h) && vus.add(c.h)).map(c => ({ ...c, ...poidsPhrase(q.poidsVF[c.h]) })).filter(c => c.w > 0);
+}
+/* cible : les phrases qui portent sur la notion de la carte (ex. « (d) ⊥ (e) » pour un angle presque droit).
+   Quand une carte en donne, le Vrai/Faux ne pose que celles-là ; les autres restent des choix du QCM. */
+function enVraiFaux(q) {
+  const hors = new Set([...(q.indec || []), ...(q.horsVF || [])]);
+  let phrases = { V: q.juste && !hors.has(q.juste) ? [q.juste] : [], F: q.faux.filter(x => !hors.has(x)), I: q.indec || [] };
+  if (q.cible) {
+    const c = new Set(q.cible), fil = { V: phrases.V.filter(x => c.has(x)), F: phrases.F.filter(x => c.has(x)), I: phrases.I.filter(x => c.has(x)) };
+    if (fil.V.length + fil.F.length + fil.I.length) phrases = fil;
+  }
+  let s, h, pert = null;
+  const choix = q.poidsVF ? pertinentes(q, hors) : null;
+  if (choix && choix.length) {
+    // 1. le statut (V, F, I), selon la meilleure phrase qu'il propose : un statut qui n'a que de l'évident ne sort pas
+    const st = ['V', 'F', 'I'].map(k => ({ k, w: Math.max(0, ...choix.filter(c => c.s === k).map(c => c.w)) })).filter(x => x.w > 0);
+    let t = Math.random() * st.reduce((a, x) => a + x.w, 0);
+    const k = (st.find(x => (t -= x.w) < 0) || st[st.length - 1]).k, dans = choix.filter(c => c.s === k);
+    // 2. la phrase de ce statut, selon son poids
+    let u = Math.random() * dans.reduce((a, c) => a + c.w, 0);
+    const c = dans.find(c => (u -= c.w) < 0) || dans[dans.length - 1];
+    s = c.s; h = c.h; pert = c.w; var categ = c.cat;
+  } else {
+    const dispo = Object.keys(phrases).filter(k => phrases[k].length);
+    s = phrases.I.length && coin() ? 'I' : pick(dispo); h = pick(phrases[s]);   // indécidable favorisé quand il est possible
+  }
+  const texteQ = q.consigne ? `${q.prefixe || 'Le tracé rouge se note'} ${h}` : h;
+  // cartes de tracé (notations) : on ne sait pas toujours ce qui est tracé en rouge → pas de bouton « Indécidable »
+  const vfSeul = !!(q.consigne || q.sansI);   // tracés, corde/diamètre : seulement Vrai / Faux
+  const statuts = vfSeul ? ['V', 'F'] : ['V', 'F', 'I'];
+  return {
+    svg: q.svg, vf: true, statut: s, raison: s === 'I' ? q.raison : undefined, phrase: texteQ,
+    consigne: vfSeul ? 'Vrai ou faux ?' : 'Vrai, faux ou indécidable ?', sansI: vfSeul,
+    juste: STATUTS[s], correction: `${texteQ} : <span class="r">${STATUTS[s]}</span>`,
+    pertinence: pert, categorie: typeof categ === 'undefined' ? null : categ,
+    possibles: choix && choix.length ? choix.map(c => ({ h: c.h, s: c.s, w: c.w, cat: c.cat })) : null,   // pour le mode revue
+    choix: statuts.map(k => ({ h: STATUTS[k], ok: k === s })),
+  };
+}
+
+function genInter() { // (d) et (d′) franchement obliques, sécantes en E ; F sur (d) seulement
+  return essai(() => {
+    const [En, Fn] = lettres(2), [d1, d2] = shuffle(pick(PAIRES).slice()), sg = pick([1, -1]);
+    const i = V(R(120, 180), R(85, 115)), a1 = rad(R(-40, 40)), u1 = dir(a1), u2 = dir(a1 + sg * rad(R(40, 65)));   // ni droit, ni presque
+    const pf = add(i, mul(u1, pick([1, -1]) * R(70, 100)));                // F sur (d) seulement, loin de E
+    if (!inside(pf)) return null;
+    const n1 = nrm(u1), cote = (n1.x * u2.x + n1.y * u2.y) > 0 ? -1 : 1;    // nom de F du côté opposé à (d′)
+    const fig = new Fig().droite(i, u1).droite(i, u2)
+      .point(i, En, mul(unit(sub(u1, u2)), 18)).point(pf, Fn, mul(n1, 16 * cote))
+      .nomDroite(i, u1, d1, 1).nomDroite(i, u2, d2, -1);
+    const A = nomH(d1), B = nomH(d2);
+    const eB = ph(`${En} ∈ ${B}`), eA = ph(`${En} ∈ ${A}`), fA = ph(`${Fn} ∈ ${A}`);          // vraies
+    const fB = ph(`${Fn} ∈ ${B}`), eNonA = ph(`${En} ∉ ${A}`), eNonB = ph(`${En} ∉ ${B}`), fNonA = ph(`${Fn} ∉ ${A}`);   // fausses
+    // pertinence : le point d'intersection est sur LES DEUX droites (3) ; F, sur une seule, n'est pas sur l'autre (3)
+    return { svg: fig, juste: pick([eB, eA, fA]), faux: shuffle([fB, eNonA, eNonB, fNonA]),
+      vraisVF: [eB, eA, fA], poidsVF: pds([eB, 'R'], [eA, 'E'], [fA, 'L'], [fB, 'R'], [eNonA, 'E'], [eNonB, 'E'], [fNonA, 0]) };
+  });
+}
+
+function genPara() { // (d₁) et (d₂) perpendiculaires à une même sécante (d₃) : seul le codage des angles droits compte
+  return essai(() => {
+    const [d1, d2, d3] = shuffle(pick(TRIPLES).slice());
+    // deux angles codés : (d₁) // (d₂) par la propriété ; un seul : on ne peut pas conclure ; aucun : non plus
+    const cas = mode === 'qcm' ? pick(['deux', 'deux', 'un']) : pick(['deux', 'deux', 'deux', 'un', 'un', 'aucun']);
+    const c = V(R(135, 165), R(95, 105)), u = dir(rad(R(-25, 25))), n = nrm(u), gap = R(72, 90);
+    const p3 = add(c, mul(u, R(-45, 45))), i1 = add(p3, mul(n, -gap / 2)), i2 = add(p3, mul(n, gap / 2));
+    const fig = new Fig().droite(i1, u).droite(i2, u).droite(p3, n);
+    const code1 = cas !== 'aucun', code2 = cas === 'deux', s = pick([1, -1]);
+    const [k1, k2] = coin() ? [code1, code2] : [code2, code1];            // le seul angle codé, sur l'une ou l'autre
+    if (k1) fig.angleDroit(i1, mul(u, s), n);
+    if (k2) fig.angleDroit(i2, mul(u, s), mul(n, -1));
+    fig.nomDroite(i1, u, d1, -1).nomDroite(i2, u, d2, 1).nomDroite(p3, n, d3, pick([1, -1]));
+    const A = nomH(d1), B = nomH(d2), C = nomH(d3), dbl = (x, y, o) => coin() ? `${x} ${o} ${y}` : `${y} ${o} ${x}`;
+    const para = ph(dbl(A, B, '//')), perpA = ph(dbl(A, C, '⊥')), perpB = ph(dbl(B, C, '⊥'));
+    const perpAB = ph(dbl(A, B, '⊥')), paraAC = ph(dbl(A, C, '//')), paraBC = ph(dbl(B, C, '//'));
+    const fausses = [perpAB, paraAC, paraBC];                             // visiblement fausses
+    const perps = [[perpA, k1], [perpB, k2]];
+    const vraies = (cas === 'deux' ? [para] : []).concat(perps.filter(x => x[1]).map(x => x[0]));
+    const indec = (cas === 'deux' ? [] : [para]).concat(perps.filter(x => !x[1]).map(x => x[0]));
+    // pertinence : « (d₁) // (d₂) » avant tout (propriété, ou Indécidable si un angle manque) ;
+    // un angle non codé : Indécidable (2) ; un angle codé : il suffit de le lire (1) ; le visiblement faux : 1
+    const w = {}; w[para] = cas === 'aucun' ? 'L' : 'R';                  // propriété appliquée (deux angles) ou incomplète (un seul)
+    perps.forEach(([t]) => { w[t] = 'L'; });
+    fausses.forEach(t => { w[t] = 'E'; });
+    if (!vraies.length) return { svg: fig, juste: null, faux: fausses, indec, poidsVF: w };
+    return { svg: fig, juste: vraies[0], faux: shuffle(indec.concat(fausses)), indec, vraisVF: vraies, poidsVF: w };
+  });
+}
+
+function genLimParalleles() { // deux droites presque parallèles, qui ne se coupent pas dans le cadre
+  return essai(() => {
+    const [d1, d2] = pick(PAIRES), cas = 'rien';   // seulement des codages d'angle droit dans l'appli : plus de pastille « // » ; le cas « angles » est dans « Perpendiculaires à une même droite »
+    const c = V(R(140, 160), R(95, 105)), a0 = R(-14, 14), u = dir(rad(a0)), n = nrm(u), gap = R(74, 90);
+    const c1 = add(c, mul(n, -gap / 2)), c2 = add(c, mul(n, gap / 2));
+    const u2 = u;   // toujours exactement parallèles : seul le codage compte
+    const fig = new Fig().droite(c1, u).droite(c2, u2);
+    if (cas === 'code') fig.paralleles(add(c1, mul(u, -70)), add(c2, mul(u, -70)));
+    if (cas === 'angles') {
+      const p = add(c, mul(u, R(-50, 50))), p1 = add(p, mul(n, -gap / 2)), p2 = add(p, mul(n, gap / 2));
+      fig.droite(p, n).angleDroit(p1, u, n).angleDroit(p2, u, mul(n, -1));
+    }
+    fig.nomDroite(c1, u, d1, -1).nomDroite(c2, u2, d2, 1);
+    const [x, y] = shuffle([nomH(d1), nomH(d2)]), para = ph(`${x} // ${y}`), perp = ph(`${x} ⊥ ${y}`);
+    if (cas === 'rien') return { svg: fig, juste: null, faux: [], indec: [para], horsVF: [perp] };
+    return { svg: fig, juste: para, faux: [perp], horsVF: [perp] };   // « ⊥ » : trop évident, jamais posé
+  });
+}
+
 function genLimSurTrait() { // croix posée sur un trait : ce n'est pas une intersection, on ne peut pas affirmer
   return essai(() => {
-    const [Mn, O] = lettres(2), cas = pick(['trait', 'croix', 'croix', 'loin']), cercle = coin();
+    const [Mn, O] = lettres(2), cas = pick(['trait', 'loin'])   /* plus de croix posée sur le trait : trop précis */, cercle = coin();
     const fig = new Fig(), ecart = cas === 'croix' ? R(-15, 15) / 10 : cas === 'loin' ? pick([1, -1]) * R(30, 42) : 0;
     let nom, m, off;
     if (cercle) {
@@ -869,53 +1098,32 @@ function genLimSurTrait() { // croix posée sur un trait : ce n'est pas une inte
   });
 }
 
-/* Une seule phrase à juger. indec : ni codée ni écrite, sur une figure où l'œil ne tranche pas ;
-   horsVF : ni codée ni écrite mais visiblement fausse, jamais posée (« ça se voit »). */
-const STATUTS = { V: 'Vrai', F: 'Faux', I: 'Indécidable' };
-const RAISONS = {
-  V: 'c’est codé, écrit ou donné par une intersection.',
-  F: 'c’est contredit par la figure, le codage ou les mesures.',
-  I: 'rien n’est codé ni écrit, et l’œil ne suffit pas.',
-};
-function enVraiFaux(q) {
-  const hors = new Set([...(q.indec || []), ...(q.horsVF || [])]);
-  const phrases = { V: q.juste && !hors.has(q.juste) ? [q.juste] : [], F: q.faux.filter(x => !hors.has(x)), I: q.indec || [] };
-  const dispo = Object.keys(phrases).filter(k => phrases[k].length);
-  const s = phrases.I.length && coin() ? 'I' : pick(dispo), h = pick(phrases[s]);   // indécidable favorisé quand il est possible
-  const texteQ = q.consigne ? `Le tracé rouge se note ${h}` : h;
-  return {
-    svg: q.svg, vf: true, statut: s, raison: s === 'I' ? q.raison : undefined, phrase: texteQ, consigne: 'Vrai, faux ou indécidable ?',
-    juste: STATUTS[s], correction: `${texteQ} : <span class="r">${STATUTS[s]}</span>`,
-    choix: ['V', 'F', 'I'].map(k => ({ h: STATUTS[k], ok: k === s })),
-  };
-}
-
 const TYPES = [
   { id: 'nDroite',   groupe: 1, label: 'Droite',      ex: '(AB)', gen: () => genNotation('droite', 'droite', [], ['segment', 'ddPQ', 'ddQP', 'longueur']) },
   { id: 'nSegment',  groupe: 1, label: 'Segment',     ex: '[AB]', gen: () => genNotation('segment', 'segment', [], ['droite', 'ddPQ', 'ddQP', 'longueur']) },
   { id: 'nDemi',     groupe: 1, label: 'Demi-droite', ex: '[AB)', gen: () => genNotation('demi', 'ddPQ', ['ddQP'], ['droite', 'segment', 'longueur']) },
   { id: 'nLongueur', groupe: 1, label: 'Longueur',    ex: 'AB',   gen: () => genNotation('longueur', 'longueur', [], ['segment', 'droite', 'ddPQ']) },
+  { id: 'vTrace',  groupe: 1, label: 'Droite, demi-droite, segment (mots)', ex: 'une demi-droite', gen: genVocabTrace },
+  { id: 'vCorde',  groupe: 2, label: 'Corde, diamètre, rayon', ex: '[AB] est une corde', gen: genVocabCorde },
   { id: 'droite',  groupe: 2, label: 'Point et droite',       ex: 'A ∈ (d)',           gen: genDroite },
   { id: 'segment', groupe: 2, label: 'Point et segment, milieu', ex: 'B ∈ [AC], BA = BC',          gen: genSegment },
   { id: 'demi',    groupe: 2, label: 'Droite et demi-droite', ex: 'V ∉ [OT)',          gen: genDemi },
   { id: 'cercle',  groupe: 2, label: 'Point et cercle',       ex: 'E ∉ (c)',           gen: genCercle },
-  { id: 'inter',   groupe: 2, label: 'Intersection',          ex: 'I ∈ (d)', gen: genInter },
+  { id: 'inter',   groupe: 2, label: 'Intersection',          ex: 'E ∈ (d′)', gen: genInter },
   { id: 'perp',    groupe: 2, label: 'Perpendiculaires',      ex: '(EF) ⊥ (FG)',       gen: genPerp },
-  { id: 'para',    groupe: 2, label: 'Parallèles',            ex: '(d₁) // (d₂)',      gen: genPara },
+  { id: 'para',    groupe: 2, label: 'Perpendiculaires à une même droite', ex: '(d₁) // (d₂)', gen: genPara },
   { id: 'rayons',  groupe: 2, label: 'Rayons d’un cercle',    ex: 'OP = OQ',           gen: genRayons },
   { id: 'codage',  groupe: 2, label: 'Longueurs codées',      ex: 'NQ = NR',           gen: genCodage },
-  { id: 'carre',   groupe: 2, label: 'Quadrilatère codé', ex: 'AB = BC, (AB) ⊥ (BC)',       gen: genCarre },
+  { id: 'carre',   groupe: 2, label: 'Quadrilatère codé', ex: 'AB = BC, (AB) ⊥ (BC), (AD) // (BC)', gen: genCarre },
   { id: 'mesure',  groupe: 2, label: 'Longueur mesurée',      ex: 'HJ = 4 cm',         gen: genMesure },
-  { id: 'dComparer', groupe: 4, label: 'Comparer au rayon',      ex: 'ON < OA',          gen: genDistComparer },
-  { id: 'dRayons',   groupe: 4, label: 'Rayons d’un cercle',     ex: 'OA = OB',          gen: genDistRayons },
-  { id: 'dDiametre', groupe: 4, label: 'Rayon et diamètre',      ex: 'AB = 8 cm',        gen: genDistDiametre },
+  { id: 'dComparer', groupe: 4, label: 'Comparer au rayon',      ex: 'OA = OB, ON < OP', gen: genDistComparer },
   { id: 'dMediat',   groupe: 4, label: 'Médiatrice codée',       ex: 'MA = MB',          gen: genDistMediatrice },
-  { id: 'dRegion',   groupe: 4, label: 'Côté de la médiatrice',  ex: 'MA < MB',          gen: genDistRegion },
+  { id: 'dSurMed',   groupe: 4, label: 'Sur la médiatrice (non prolongée)', ex: 'M ∈ (d)', gen: genDistSurMediatrice },
   { id: 'dTriangle', groupe: 4, label: 'Inégalité triangulaire', ex: 'AC < AB + BC',     gen: genDistTriangle },
   // vf : figures limites, seulement dans le mode Vrai/Faux/Indécidable
   { id: 'lLong',   groupe: 2, vf: true, label: 'Longueurs presque égales', ex: 'AB = CD',    gen: genLimLongueurs },
   { id: 'lAngle',  groupe: 2, vf: true, label: 'Angle presque droit',      ex: '(d) ⊥ (e)',  gen: genLimAngle },
-  { id: 'lPara',   groupe: 2, vf: true, label: 'Presque parallèles',       ex: '(d) // (e)', gen: genLimParalleles },
+  { id: 'lPara', poids: 0,   groupe: 2, vf: true, label: 'Presque parallèles',       ex: '(d) // (e)', gen: genLimParalleles },
   { id: 'lAlign',  groupe: 2, vf: true, label: 'Presque alignés',          ex: 'B ∈ (AC)',   gen: genLimAlignes },
   { id: 'lTrait',  groupe: 2, vf: true, label: 'Croix sur un trait',       ex: 'M ∈ (d)',    gen: genLimSurTrait },
   { id: 'lTriang', groupe: 4, vf: true, label: 'Presque sur le segment',   ex: 'AC = AB + BC', gen: genLimTriangle },
@@ -926,31 +1134,68 @@ const TYPES = [
 const KEY = 'geometrieMentale6e-v2';
 const DUREES = [0, 10, 15, 20, 30];
 // questions : 1 = notations, 2 = phrases mathématiques, 4 = distances, 3 = tout
-const QUESTIONS = [[1, 'Notations'], [2, 'Phrases mathématiques'], [4, 'Distances'], [3, 'Tout']];
+// thèmes : on en choisit un ou plusieurs (« Tout » les coche tous) ; chaque carte appartient à un thème
+const THEMES = [
+  ['notations', 'Notations',                         ['nDroite', 'nSegment', 'nDemi', 'nLongueur']],
+  ['vocab',     'Vocabulaire',                       ['vTrace', 'vCorde', 'segment']],
+  ['points',    'Points, droites, segments',         ['droite', 'demi', 'inter', 'lAlign', 'lTrait']],
+  ['longueurs', 'Longueurs codées ou écrites',       ['codage', 'mesure', 'lLong']],
+  ['perp',      'Perpendiculaires et parallèles',    ['perp', 'para', 'lAngle', 'lPara']],
+  ['quadri',    'Quadrilatères codés',               ['carre']],
+  ['cercle',    'Cercle',                            ['cercle', 'rayons', 'dComparer']],
+  ['mediat',    'Médiatrice',                        ['dMediat', 'dSurMed', 'lEquid']],
+  ['triang',    'Inégalité triangulaire',            ['dTriangle', 'lTriang']],
+], TOUS = THEMES.map(t => t[0]);
+const themeDe = id => (THEMES.find(t => t[2].includes(id)) || [])[0];
 const NOMBRES = [5, 10, 15, 20], DUREES_FLASH = [10, 15, 20, 30];
-const settings = { questions: 3, duree: 0, nb: 10, flDuree: 15 };
+const settings = { themes: TOUS.slice(), duree: 0, nb: 10, flDuree: 15 };
 try {
   const s = JSON.parse(localStorage.getItem(KEY) || 'null');
   if (s) {
-    if ([1, 2, 3, 4].includes(s.questions)) settings.questions = s.questions;
+    if (Array.isArray(s.themes) && s.themes.every(t => TOUS.includes(t))) settings.themes = s.themes;
     if (DUREES.includes(s.duree)) settings.duree = s.duree;
     if (NOMBRES.includes(s.nb)) settings.nb = s.nb;
     if (DUREES_FLASH.includes(s.flDuree)) settings.flDuree = s.flDuree;
+    if (typeof s.revue === 'boolean') settings.revue = s.revue;
   }
 } catch (e) {}
+// poids d'une carte, calculé : 1 + 2 × (part de ses questions Vrai/Faux étiquetées R « raisonnement »),
+// mesurée une fois sur 60 tirages. Une carte de pure lecture vaut 1, une carte de raisonnement 3.
+// Seul un poids 0 inscrit dans TYPES retire une carte.
+const partR = {};
+function poidsDe(t) {
+  if (t.poids === 0) return 0;
+  if (!(t.id in partR)) {
+    const ancien = mode; mode = 'vf'; let r = 0, n = 0;
+    for (let i = 0; i < 60; i++) { try { const v = enVraiFaux(t.gen()); n++; if (v.categorie === 'R') r++; } catch (e) {} }
+    mode = ancien; partR[t.id] = n ? r / n : 0;
+  }
+  return 1 + 2 * partR[t.id];
+}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} };
-const activeTypes = () => TYPES.filter(t => (!t.vf || mode === 'vf' || mode === 'flash') && (settings.questions === 3 || t.groupe === settings.questions));
+const activeTypes = () => TYPES.filter(t => (!t.vf || mode === 'vf' || mode === 'flash') && settings.themes.includes(themeDe(t.id)));
 
 function renderSettings() {
-  $('grpSeg').innerHTML = QUESTIONS.map(([g, l]) =>
-    `<button class="btn ${g === settings.questions ? 'on' : ''}" data-g="${g}">${l}</button>`).join('');
+  $('grpSeg').innerHTML = THEMES.map(([k, l]) =>
+    `<button class="btn ${settings.themes.includes(k) ? 'on' : ''}" data-g="${k}">${l}</button>`).join('') +
+    `<button class="btn ${settings.themes.length === TOUS.length ? 'on' : ''}" data-g="tout">Tout</button>` +
+    `<button class="btn ${settings.themes.length ? '' : 'on'}" data-g="aucun">Aucun</button>`;
   $('nbSeg').innerHTML = NOMBRES.map(v => `<button class="btn ${v === settings.nb ? 'on' : ''}" data-v="${v}">${v}</button>`).join('');
   $('flDurSeg').innerHTML = DUREES_FLASH.map(v => `<button class="btn ${v === settings.flDuree ? 'on' : ''}" data-v="${v}">${v} s</button>`).join('');
+  $('revSeg').innerHTML = [[true, 'Oui'], [false, 'Non']].map(([v, l]) =>
+    `<button class="btn ${!!settings.revue === v ? 'on' : ''}" data-r="${v}">${l}</button>`).join('');
   $('durSeg').innerHTML = DUREES.map(d =>
     `<button class="btn ${d === settings.duree ? 'on' : ''}" data-d="${d}">${d ? d + ' s' : 'Sans'}</button>`).join('');
 }
-const majParams = () => { save(); renderSettings(); renderHome(); };
-$('grpSeg').addEventListener('click', e => { const g = +e.target.dataset.g; if (g) { settings.questions = g; majParams(); } });
+const majParams = () => { save(); renderSettings(); renderHome(); majFlag(); };
+$('grpSeg').addEventListener('click', e => {   // un clic coche ou décoche un thème ; « Aucun » vide tout pour n'en choisir qu'un
+  const v = e.target.dataset.g; if (!v) return;
+  if (v === 'tout') settings.themes = TOUS.slice();
+  else if (v === 'aucun') settings.themes = [];
+  else { const on = settings.themes.includes(v);
+    settings.themes = on ? settings.themes.filter(x => x !== v) : TOUS.filter(x => x === v || settings.themes.includes(x)); }
+  majParams();
+});
 $('nbSeg').addEventListener('click', e => { const v = e.target.dataset.v; if (v != null) { settings.nb = +v; majParams(); } });
 $('flDurSeg').addEventListener('click', e => { const v = e.target.dataset.v; if (v != null) { settings.flDuree = +v; majParams(); } });
 $('durSeg').addEventListener('click', e => { const d = e.target.dataset.d; if (d != null) { settings.duree = +d; majParams(); } });
@@ -961,19 +1206,36 @@ $('ov').addEventListener('click', e => { if (e.target.id === 'ov') $('ov').class
 /* ================= Série ================= */
 function makeSeries() {
   const types = activeTypes(), out = [];
-  let bag = [], prev = null;
-  while (out.length < settings.nb) {
-    if (!bag.length) bag = shuffle(types.concat(types.filter(x => x.vf)));   // figures limites : deux fois plus présentes
-    let t = bag.pop();
-    if (t === prev && bag.length) { bag.unshift(t); t = bag.pop(); } // pas deux fois le même type de suite
+  const question = t => {   // une question de la carte t, prête pour le mode choisi (null si la figure est introuvable)
     let q;
-    try { q = t.gen(); } catch (e) { bag.unshift(t); continue; }   // figure introuvable (très rare) : autre tirage
+    try { q = t.gen(); } catch (e) { return null; }
     q.svg = String(q.svg);
     if (mode === 'vf' || mode === 'flash') q = enVraiFaux(q);   // Flash : une phrase, vrai / faux / indécidable
-    else q.choix = shuffle([{ h: q.juste, ok: true }, ...q.faux.slice(0, 3).map(h => ({ h, ok: false }))]);
-    out.push(q); prev = t;
+    q.typeId = t.id; q.typeLabel = t.label;                          // pour le mode revue (signaler une carte)
+    if (mode === 'qcm') q.choix = shuffle([{ h: q.juste, ok: true }, ...q.faux.slice(0, 3).map(h => ({ h, ok: false }))]);
+    return q;
+  };
+  // 1. au moins une question de chaque carte importante (au moins un quart de raisonnement : poids ≥ 1,5),
+  //    tirées au hasard s'il y en a trop : elles occupent au plus la moitié de la série (le reste suit les poids)
+  shuffle(types.filter(t => poidsDe(t) >= 1.5)).slice(0, Math.ceil(settings.nb / 2)).forEach(t => { const q = question(t); if (q) out.push(q); });
+  // 2. le reste au hasard, selon le poids des cartes
+  let bag = [], essais = 0;
+  while (out.length < settings.nb && essais++ < 1000) {
+    if (!bag.length) {   // chaque carte apparaît « poids » fois dans le sac (poids 0 : jamais)
+      bag = shuffle(types.flatMap(x => Array(Math.round(poidsDe(x) * 2)).fill(x)));   // ×2 : demi-poids arrondis
+      if (!bag.length) bag = shuffle(types.slice());
+    }
+    const q = question(bag.pop());
+    if (q) out.push(q);
   }
-  return out;
+  // 3. on mélange, sans deux questions de la même carte à la suite quand c'est possible
+  const reste = shuffle(out.slice()), serie = [];
+  while (reste.length) {
+    const der = serie.length ? serie[serie.length - 1].typeId : null;
+    let i = reste.findIndex(q => q.typeId !== der); if (i < 0) i = 0;
+    serie.push(reste.splice(i, 1)[0]);
+  }
+  return serie;
 }
 
 /* ================= Navigation ================= */
@@ -992,13 +1254,15 @@ function show(id) {
   $('bPause').classList.add('hidden');
 }
 function renderHome() {
-  const quoi = { 1: 'notations', 2: 'phrases mathématiques', 3: 'notations, phrases et distances', 4: 'distances' }[settings.questions];
+  const n = settings.themes.length, quoi = !n ? 'aucun thème choisi' : n === TOUS.length ? 'tous les thèmes'
+    : n <= 2 ? THEMES.filter(([k]) => settings.themes.includes(k)).map(([, l]) => l.toLowerCase()).join(', ') : `${n} thèmes`;
   $('homeInfo').textContent = `${settings.nb} questions · ${quoi} · Flash : ${settings.flDuree} s · QCM et Vrai / Faux : ${settings.duree ? settings.duree + ' s' : 'sans temps'}`;
 }
 function goHome() { stopTimer(); clearTimeout(nextTO); show('sHome'); renderHome(); }
 $('bHome').onclick = goHome;
 document.querySelectorAll('.mode').forEach(b => b.onclick = () => start(b.dataset.mode));
 function start(m = mode) {
+  if (!settings.themes.length) { renderSettings(); $('ov').classList.remove('hidden'); toast('Choisis au moins un thème'); return; }
   mode = m; series = makeSeries(); idx = 0; score = 0; errors = [];
   if (m === 'flash') flashIntro(); else { show('sQcm'); qcmShow(); }
 }
@@ -1032,7 +1296,7 @@ function flashShow() {
   setProg();
   $('flNum').textContent = `n° ${idx + 1}`;
   $('flFig').innerHTML = q.svg;
-  $('flConsigne').textContent = 'Vrai, faux ou indécidable ? Écris V, F ou I.';
+  $('flConsigne').textContent = q.sansI ? 'Vrai ou faux ? Écris V ou F.' : 'Vrai, faux ou indécidable ? Écris V, F ou I.';
   $('flChoix').className = 'flchoix vf';
   $('flChoix').innerHTML = `<div><span>${q.phrase}</span></div>`;
   $('bPause').textContent = '⏸ Pause';
@@ -1141,6 +1405,92 @@ function installerQr() {
   $('qrBox').onclick = () => $('qrOv').classList.remove('hidden');
   $('qrOv').onclick = () => $('qrOv').classList.add('hidden');
 }
+
+/* ================= Mode revue : signaler une carte =================
+   Réglage « Mode revue » (ou ?revue dans l'adresse). Le bouton ⚑ Signaler enregistre la question
+   affichée (type, phrase, réponse, figure) dans ce navigateur ; ⚑ Signalements les liste,
+   avec copie du texte et téléchargement en .json. */
+const SIGKEY = 'geometrieMentale6e-signalements';
+let courant = null;
+if (/[?&]revue\b/.test(location.search)) { settings.revue = true; save(); }
+const lireSig = () => { try { return JSON.parse(localStorage.getItem(SIGKEY) || '[]'); } catch (e) { return []; } };
+const ecrireSig = l => { try { localStorage.setItem(SIGKEY, JSON.stringify(l)); } catch (e) {} };
+const texteSimple = h => String(h).replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.to); toast.to = setTimeout(() => e.classList.remove('on'), 1600); }
+function majFlag() {
+  const n = lireSig().length;
+  $('bFlags').textContent = `⚑ Signalements${n ? ' (' + n + ')' : ''}`;
+  $('bFlags').classList.toggle('hidden', !settings.revue || !$('sHome').offsetParent && !$('sRes').offsetParent && !$('flCorr').offsetParent);
+  $('bFlag').classList.toggle('hidden', !settings.revue || !courant);
+}
+function signaler(q) {
+  if (!q) return;
+  const l = lireSig();
+  l.push({ type: q.typeId, carte: q.typeLabel, mode, question: texteSimple(q.vf ? q.phrase : q.consigne || ''),
+           reponse: texteSimple(q.vf ? q.juste : q.juste), choix: q.vf ? undefined : (q.choix || []).map(c => texteSimple(c.h)),
+           pertinence: q.pertinence ?? null, categorie: q.categorie ? ETIQNOM[q.categorie] : null,
+           possibles: q.possibles ? q.possibles.map(c => `${texteSimple(c.h)} (${c.s}, ${c.cat || c.w})`) : null,
+           svg: q.svg, date: new Date().toISOString() });
+  ecrireSig(l); majFlag(); toast('⚑ Carte signalée');
+}
+$('bFlag').onclick = () => signaler(courant);
+$('revSeg').addEventListener('click', e => { const r = e.target.dataset.r; if (r != null) { settings.revue = r === 'true'; majParams(); } });
+// la question affichée devient « courante » ; à l'accueil, plus aucune
+const _qcmShow = qcmShow, _flashShow = flashShow, _goHome = goHome, _show = show;
+qcmShow = function () { _qcmShow(); courant = series[idx]; majFlag(); infoPert('qRev', courant); };
+flashShow = function () { _flashShow(); courant = series[idx]; majFlag(); infoPert('flRev', courant); };
+// mode revue : la pertinence de la phrase posée, et les autres phrases possibles de la carte avec leur poids
+function infoPert(id, q) {
+  const el = $(id);
+  if (!settings.revue || !q || !q.vf) { el.classList.add('hidden'); return; }
+  const L = { V: 'Vrai', F: 'Faux', I: 'Indéc.' };
+  el.innerHTML = q.pertinence == null
+    ? `<b>${q.typeLabel}</b> · pertinence : <b>non pondérée</b> (tirage par défaut de la carte)`
+    : `<b>${q.typeLabel}</b> · cette phrase : <b>${q.categorie ? ETIQNOM[q.categorie] : 'poids fixe'} (${q.pertinence})</b><br>` +
+      q.possibles.map(c => `<span class="${q.phrase.endsWith(c.h) ? 'moi' : ''}">${c.h} <small>(${L[c.s]}, ${c.cat || c.w})</small></span>`).join(' · ');
+  el.classList.remove('hidden');
+}
+goHome = function () { courant = null; _goHome(); majFlag(); };
+show = function (id) { _show(id); if (id !== 'sQcm' && id !== 'sFlash') courant = null; majFlag(); };
+$('bHome').onclick = goHome;
+// correction du Flash : un ⚑ par case
+const _flShow = $('flShow').onclick;
+$('flShow').onclick = () => {
+  _flShow(); courant = null; majFlag();
+  if (!settings.revue) return;
+  [...$('flGrid').children].forEach((cell, i) => {
+    const b = document.createElement('button'); b.className = 'flagc'; b.textContent = '⚑';
+    b.title = 'Signaler cette carte';
+    b.onclick = () => { if (b.classList.contains('on')) return; signaler(series[i]); b.classList.add('on'); };
+    const q = series[i];
+    if (q.vf) { const w = document.createElement('span'); w.className = 'pw'; w.title = 'Pertinence de la phrase';
+      w.textContent = q.pertinence == null ? 'p. —' : 'p. ' + +q.pertinence.toFixed(2); cell.appendChild(w); }
+    cell.appendChild(b);
+  });
+};
+// liste des signalements
+function ouvrirSig() {
+  const l = lireSig();
+  $('sigList').innerHTML = l.length ? l.map((x, i) => `<div class="sig"><div class="fig-wrap" style="width:150px;flex:none">${x.svg}</div>
+    <div class="txt"><b>${x.carte}</b> <small>(${x.mode}${x.pertinence != null ? ', pertinence ' + x.pertinence : ''})</small><br>${x.question ? x.question + '<br>' : ''}${x.choix ? x.choix.join(' · ') + '<br>' : ''}Réponse : <b>${x.reponse}</b></div>
+    <button class="btn" data-i="${i}" title="Retirer de la liste">✕</button></div>`).join('') : '<p>Aucune carte signalée.</p>';
+  $('sigList').querySelectorAll('.fig-wrap svg').forEach(e => { e.style.width = '100%'; e.style.height = 'auto'; });
+  $('sigOv').classList.remove('hidden');
+}
+$('bFlags').onclick = ouvrirSig;
+$('sigClose').onclick = () => $('sigOv').classList.add('hidden');
+$('sigList').addEventListener('click', e => { const i = e.target.dataset.i; if (i == null) return;
+  const l = lireSig(); l.splice(+i, 1); ecrireSig(l); majFlag(); ouvrirSig(); });
+$('sigClear').onclick = () => { if (confirm('Effacer toutes les cartes signalées ?')) { ecrireSig([]); majFlag(); ouvrirSig(); } };
+$('sigCopy').onclick = () => {
+  const t = lireSig().map((x, i) => `${i + 1}. ${x.carte} [${x.type}] (${x.mode}${x.pertinence != null ? ', ' + (x.categorie ? x.categorie + ' ' : '') + 'pertinence ' + x.pertinence : ''}) : ${x.question || ''}${x.choix ? ' ' + x.choix.join(' | ') : ''} → ${x.reponse}`).join('\n');
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Texte copié'), () => prompt('Copier ce texte :', t));
+};
+$('sigDl').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(lireSig(), null, 1)], { type: 'application/json' }));
+  a.download = 'signalements-geometrie-mentale.json'; a.click(); URL.revokeObjectURL(a.href);
+};
 
 installerQr();
 goHome();
