@@ -40,9 +40,17 @@
   @media (min-width:901px){
     html{font-size:clamp(16px, calc(.6vw + 10px), 22px);}   /* plus grand sur grand écran / vidéoprojecteur */
     main{max-width:none;grid-template-columns:minmax(0,1fr) clamp(240px,22vw,360px);padding:12px 20px;gap:16px;}
-    .scene{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:18px;padding:14px 18px;}
+    .scene{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding:14px 18px;}
     .scene h3{margin:10px 0 6px;}
-    .droite h3:first-child,.droite>div:first-child>h3{margin-top:0;}
+    /* « Mon expression » : fenêtre flottante qu'on déplace en la tirant par son titre,
+       pour laisser toute la largeur à l'image, l'énoncé et les pièces (vidéoprojection) */
+    .droite{display:contents;}
+    #bloc-calcul{position:fixed;z-index:50;width:clamp(340px,32vw,620px);max-height:calc(100dvh - 16px);overflow:auto;
+      background:var(--panel);border:2px solid var(--accent);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:0 12px 12px;}
+    #bloc-calcul>h3{margin:0 -12px 10px;padding:8px 12px;cursor:move;user-select:none;-webkit-user-select:none;touch-action:none;
+      background:var(--accent);color:#fff;border-radius:11px 11px 0 0;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:1;}
+    #bloc-calcul>h3::after{content:"✥ déplacer";margin-left:auto;font-size:.75rem;font-weight:600;opacity:.8;}
+    #bloc-calcul.tire{opacity:.92;box-shadow:0 16px 40px rgba(0,0,0,.35);}
     /* La page occupe la hauteur de la fenêtre ; l'image prend la place qui reste (elle rétrécit si l'énoncé est long) */
     body{height:100vh;height:100dvh;display:flex;flex-direction:column;}
     main{flex:1;min-height:0;width:100%;}
@@ -120,6 +128,8 @@
   .lig .rendu{font-size:1.25rem;font-weight:600;}
   .lig .msg{font-size:.9rem;font-weight:600;}
   .lig .msg.ko{color:var(--ko);} .lig .msg.ok{color:var(--ok);} .lig .msg.info{color:var(--accent);}
+  .etape-titre{font-size:.85rem;font-weight:700;color:var(--muted);margin-top:4px;}
+  .etape-titre:not(:first-child){margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
   .aide-saisie{font-size:.85rem;color:var(--muted);margin:4px 0 0;}
 
   .colonne{display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px;}
@@ -446,6 +456,15 @@ function div3(n, L = 'P') {
   if (q > 0 && r > 0) l.push(`${L} = (${3 * q} € + ${r} €) : 3`);
   return l;
 }
+/* Fraction t/3 € → nombre mixte, sans division : « P = (2 × 3/3 €) + 2/3 € »
+   (parenthèses : pas de priorités en 6e ; la dernière ligne, « P = 2 € + 2/3 € », est ajoutée à part) */
+function decomp3(t, L = 'P') {
+  const q = Math.floor(t / 3), r = t % 3;
+  if (q === 0) return [];
+  const e = `${q} × ${fr(3, 3)} €`;
+  return [`${L} = ` + (r ? `(${e}) + ${fr(r, 3)} €` : e)];
+}
+const titreEtape = t => `<span class="etape-titre">${t}</span>`;
 const pieces = n => n === 1 ? '1 pièce' : `${n} pièces`;
 
 /* ================= Image de l'épicerie (SVG) ================= */
@@ -565,7 +584,7 @@ const GEN = {
       scene: { prix: [['Bonbons', `1 bonbon : ${g} €`]], objets: bocal(280, n), enfants: [COUL[0]] },
       manip: { mode: 'payer' },
       aide: k === 1 ? `3 pièces de ${T13} € font 1 €.` : `Un bonbon : 2 pièces de ${T13} €.<br>3 pièces de ${T13} € font 1 €.`,
-      corr: [`P = ${n} × ${fr(k, 3)} €`, `P = ${fr(t, 3)} €`, ...div3(t), `<span class="fin">P = ${eur(t)}</span>`] };
+      corr: [`P = ${n} × ${fr(k, 3)} €`, `P = ${fr(t, 3)} €`, ...decomp3(t), `<span class="fin">P = ${eur(t)}</span>`] };
   },
 
   payerPrix() {
@@ -599,7 +618,7 @@ const GEN = {
       scene: { prix: [['Bonbons', `1 bonbon : ${g} €`]], objets: bocal(280, n), enfants: [COUL[0]] },
       manip: { mode: 'payer' },
       aide: `Commence par : P = ${n} × ${k}/3 €.<br>3 pièces de ${T13} € font 1 €.`,
-      corr: [`P = ${n} × ${fr(k, 3)} €`, `P = ${fr(t, 3)} €`, ...div3(t), `<span class="fin">P = ${eur(t)}</span>`] };
+      corr: [`P = ${n} × ${fr(k, 3)} €`, `P = ${fr(t, 3)} €`, ...decomp3(t), `<span class="fin">P = ${eur(t)}</span>`] };
   },
 
   payeAvecPieces() {
@@ -609,7 +628,7 @@ const GEN = {
       scene: { prix: [[court, '? €']], objets: objets(205, emo, 1, 60) + piecesComptoir(310, n), enfants: [COUL[2]] },
       manip: { mode: 'payer' },
       aide: `Commence par : P = ${n} × 1/3 €.<br>3 pièces de ${T13} € font 1 €.`,
-      corr: [`P = ${n} × ${T13} €`, `P = ${fr(n, 3)} €`, ...div3(n), `<span class="fin">P = ${eur(n)}</span>`] };
+      corr: [`P = ${n} × ${T13} €`, `P = ${fr(n, 3)} €`, ...decomp3(n), `<span class="fin">P = ${eur(n)}</span>`] };
   },
   combienPieces() {
     const q = alea(1, 9), r = alea(1, 2), n = 3 * q + r, [nom, emo, court] = choix(OBJETS);
@@ -617,9 +636,11 @@ const GEN = {
       texte: `Un enfant veut acheter ${nom} à ${eur(n)}.<br>Il n'a que des pièces de ${T13} €. Combien lui en faut-il ?`,
       scene: { prix: [[court, eurSVG(n)]], objets: objets(280, emo, 1, 70), enfants: [COUL[1]] },
       manip: { mode: 'payer' },
-      aide: `1 € fait 3 pièces de ${T13} €.`,
-      corr: [`1 € fait 3 pièces.`, `${q} € font ${q} × 3 = ${3 * q} pièces.`, `${fr(r, 3)} € fait ${pieces(r)}.`,
-        `<span class="fin">N = ${3 * q} + ${r} = ${n} pièces</span>`] };
+      etapes: [{ lettre: 'P', titre: TITRES.P, sorte: 'euro', rep: n, finTiers: true },
+        { lettre: 'N', titre: `Nombre de pièces de ${T13} €`, sorte: 'pieces', rep: n, unite: 'pièces' }],
+      aide: `Commence par : P = ${eurTxt(n)}.<br>Réécris le prix en tiers d'euro : 1 € = 3/3 €.<br>P = …/3 € : il faut … pièces de ${T13} €.`,
+      corr: [titreEtape(TITRES.P), `P = ${eur(n)}`, ...decomp3(n), `P = ${fr(3 * q, 3)} € + ${fr(r, 3)} €`, `P = ${fr(n, 3)} €`,
+        titreEtape(`Nombre de pièces de ${T13} €`), `<span class="fin">N = ${n}</span>`] };
   },
 
   /* --- Niveau 2 : partager un prix --- */
@@ -638,7 +659,7 @@ const GEN = {
     return { sorte: 'euro', lettre: 'P', rep: T, court: `${c.c} pour ${T} €`, expr: `${T} € : 3`, texte: c.t,
       scene: { prix: c.prix, objets: c.o, enfants: c.e || [COUL[0]] },
       manip: { mode: 'payer' },
-      aide: `Commence par : P = ${T} € : 3.<br>Puis écris ${T} comme une somme : (… + …) : 3.<br>Pièces : pose une pièce de 1 € sur 🔁 pour l'échanger.`,
+      aide: `Commence par : P = ${T} € : 3.<br>Puis écris ${T} comme une somme : (… + …) : 3.`,
       corr: [...div3(T), `<span class="fin">P = ${eur(T)}</span>`] };
   },
 
@@ -675,14 +696,16 @@ const GEN = {
     let B, n, p;
     do { B = choix([5, 10]); n = alea(2, Math.floor((3 * B - 4) / k)); p = 3 * B - k * n; } while (p < 4 || p % 3 === 0);
     const t = k * n, g = k === 1 ? '⅓' : '⅔';
-    const corr = [`Reste : ${B} € − (${eur(p)}) = ${eur(t)}`, `${eur(t)} font ${t} pièces de ${T13} €.`];
-    if (k === 2) corr.push(`Un bonbon coûte 2 pièces, donc ${t} : 2 = ${n} bonbons.`);
-    corr.push(`<span class="fin">N = ${n} bonbons</span>`);
+    const R = "Expression de l'argent qui reste";
+    const corr = [titreEtape(R), `R = ${B} € − (${eur(p)})`, `R = ${fr(3 * B, 3)} € − ${fr(p, 3)} €`, `R = ${fr(t, 3)} €`,
+      titreEtape('Nombre de bonbons'), `<span class="fin">N = ${k === 2 ? `${t} : 2 = ` : ''}${n}</span>`];
     return { sorte: 'pieces', lettre: 'N', rep: n, unite: 'bonbons', court: `Bonbons à ${k}/3 € avec le reste de ${B} €`, expr: `(${B} € − (${eur(p)})) : ${fr(k, 3)} €`,
       texte: `Un enfant a ${B} €. Il achète ${nom} à ${eur(p)}.<br>Avec le reste, il achète des bonbons à ${fr(k, 3)} €. Combien de bonbons ?`,
       scene: { prix: [[court, eurSVG(p)], ['Bonbons', `1 bonbon : ${g} €`]], objets: objets(220, emo, 1, 56) + bocal(330, 40), enfants: [COUL[0]], billet: B },
       manip: { mode: 'payer' },
-      aide: `Calcule d'abord l'argent qui reste.<br>1 € fait 3 pièces de ${T13} €.` + (k === 2 ? `<br>Un bonbon : 2 pièces de ${T13} €.` : ''),
+      etapes: [{ lettre: 'R', titre: R, sorte: 'euro', rep: t, finTiers: true },
+        { lettre: 'N', titre: 'Nombre de bonbons', sorte: 'pieces', rep: n, unite: 'bonbons' }],
+      aide: `Commence par : R = ${B} € − (${eurTxt(p)}).<br>Réécris en tiers d'euro : 1 € = 3/3 €.` + (k === 2 ? `<br>Un bonbon : 2 pièces de ${T13} €.` : ''),
       corr };
   },
 
@@ -875,16 +898,24 @@ function miniPieces(t) {
 }
 
 /* ================= Lignes de calcul ================= */
-let lignesOk = 0;
+/* Chaque exercice se fait en une ou plusieurs étapes, chacune avec son titre et sa lettre :
+   « Expression du prix à payer : P = … », puis éventuellement « Nombre de pièces de 1/3 € : N = … ».
+   finTiers : l'étape se termine sur une fraction en tiers d'euro (« P = 10/3 € ») au lieu d'un nombre mixte. */
+const TITRES = { P: 'Expression du prix à payer', M: 'Expression de la monnaie rendue' };
+const etapesDe = q => q.etapes || [{ lettre: q.lettre, titre: TITRES[q.lettre], sorte: q.sorte, rep: q.rep, unite: q.unite }];
+let lignesOk = 0, ie = 0;
 function nouvelleLigne() {
+  const et = etapesDe(q)[ie];
+  if (lignesOk === 0) $('calcul').insertAdjacentHTML('beforeend', `<div class="etape-titre">${et.titre}</div>`);
   const lig = document.createElement('div');
   lig.className = 'lig';
-  lig.innerHTML = `<span class="pre">${lignesOk === 0 ? q.lettre + ' =' : '='}</span><input autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${lignesOk === 0 ? 'Écris ton expression ici' : 'Continue le calcul'}"><span class="msg"></span>`;
+  lig.innerHTML = `<span class="pre">${lignesOk === 0 ? et.lettre + ' =' : '='}</span><input autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${lignesOk === 0 ? 'Écris ton expression ici' : 'Continue le calcul'}"><span class="msg"></span>`;
   $('calcul').appendChild(lig);
   const inp = lig.querySelector('input');
   inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); verifierLigne(lig); } });
   inp.addEventListener('input', () => { inp.classList.remove('faux'); lig.querySelector('.msg').textContent = ''; });
   setTimeout(() => inp.focus({ preventScroll: true }), 30);
+  if (typeof poserCalcul === 'function') poserCalcul();
 }
 function verifierLigne(lig) {
   const inp = lig.querySelector('input'), msg = lig.querySelector('.msg');
@@ -893,25 +924,30 @@ function verifierLigne(lig) {
   let r;
   try { r = analyser(inp.value); }
   catch (e) { if (e instanceof Erreur) { q.donne = echapper(inp.value); inp.classList.add('faux'); return dire(e.m, 'info'); } throw e; }
-  q.donne = rendre(r.jetons) + (q.sorte === 'pieces' && !r.arbre.v.u ? ` ${q.unite}` : '');
-  const v = r.arbre.v;
-  if (q.sorte === 'euro' && v.u !== 1) { inp.classList.add('faux'); return dire("Il manque l'unité : €.", 'info'); }
-  if (q.sorte === 'pieces' && v.u !== 0) { inp.classList.add('faux'); return dire(`Pas de € : on compte des ${q.unite}.`, 'info'); }
-  const juste = q.sorte === 'euro' ? v.n * 3 === q.rep * v.d : v.d === 1 && v.n === q.rep;
+  const etapes = etapesDe(q), et = etapes[ie], a = r.arbre, v = a.v;
+  q.donne = rendre(r.jetons);   // N = 25, sans unité derrière
+  if (et.sorte === 'euro' && v.u !== 1) { inp.classList.add('faux'); return dire("Il manque l'unité : €.", 'info'); }
+  if (et.sorte === 'pieces' && v.u !== 0) { inp.classList.add('faux'); return dire(`Pas de € : on compte des ${et.unite}.`, 'info'); }
+  const juste = et.sorte === 'euro' ? v.n * 3 === et.rep * v.d : v.d === 1 && v.n === et.rep;
   if (!juste) {
     erreurs++; inp.classList.add('faux');
-    return dire(q.sorte === 'euro' ? "Ce n'est pas le bon prix." : "Ce n'est pas le bon nombre.", 'ko');
+    return dire(et.sorte === 'euro' ? "Ce n'est pas le bon prix." : "Ce n'est pas le bon nombre.", 'ko');
   }
   // ligne juste : figée
   lignesOk++;
-  inp.replaceWith(Object.assign(document.createElement('span'), { className: 'rendu pop', innerHTML: rendre(r.jetons) + (q.sorte === 'pieces' ? ` ${q.unite}` : '') }));
+  inp.replaceWith(Object.assign(document.createElement('span'), { className: 'rendu pop', innerHTML: rendre(r.jetons) }));
   lig.querySelector('.pre').classList.add('ok');
-  if (estMixte(r.arbre, q.sorte)) {
+  const finEtape = et.finTiers ? a.k === 'num' && a.euro && a.b === 3 : estMixte(a, et.sorte);
+  if (!finEtape) {
+    dire(et.finTiers ? 'Juste. Continue jusqu’aux tiers d’euro : … /3 €.' : et.sorte === 'euro' ? 'Juste. Continue jusqu’au nombre mixte.' : 'Juste. Continue.', 'ok');
+    nouvelleLigne();
+  } else if (ie + 1 < etapes.length) {
+    dire('✓', 'ok');
+    ie++; lignesOk = 0;
+    nouvelleLigne();
+  } else {
     dire('✓', 'ok');
     terminer(true);
-  } else {
-    dire(q.sorte === 'euro' ? 'Juste. Continue jusqu’au nombre mixte.' : 'Juste. Continue.', 'ok');
-    nouvelleLigne();
   }
 }
 
@@ -946,15 +982,15 @@ function demarrer(n) {
   poser();
 }
 function poser() {
-  q = serie[iq]; fini = false; bloque = false; erreurs = 0; lignesOk = 0;
+  q = serie[iq]; fini = false; bloque = false; erreurs = 0; lignesOk = 0; ie = 0;
   // espace insécable avant € : « 17 € » ne se coupe pas en fin de ligne
   $('question').innerHTML = `<span class="num">Exercice ${iq + 1}</span>${q.texte.replace(/ €/g, '&nbsp;€')}`;
   if (typeof placerPanneau === 'function') placerPanneau();
   dessinerImage(q.scene);
   installerManip(q.manip);
-  // réponse qui n'est pas un prix (un nombre de pièces, de bonbons) : pas de porte-monnaie
-  $('bloc-pieces').hidden = q.sorte === 'pieces';
+  // porte-monnaie seulement quand on paie avec les pièces (Échauffement) ; dès qu'on demande une expression, il disparaît
   const porte = q.sorte === 'porte';
+  $('bloc-pieces').hidden = !porte;
   $('bloc-calcul').hidden = porte;
   $('valider').hidden = !porte;
   $('voir-corr').hidden = false;
@@ -963,6 +999,7 @@ function poser() {
   afficherRetour('');
   $('calcul').innerHTML = '';
   if (!porte) nouvelleLigne();
+  if (typeof poserCalcul === 'function') poserCalcul();
   dessinerNav();
 }
 function afficherRetour(html, cls = 'info') {
@@ -987,7 +1024,9 @@ function terminer(reussi) {
   fini = true; bloque = true;
   q.reussi = reussi; q.erreurs = erreurs; q.aides = nbAides;
   $('valider').hidden = true; $('voir-corr').hidden = true; $('voir-aide').hidden = true; $('aide').innerHTML = '';
+  if (!reussi) $('bloc-calcul').hidden = true;   // correction demandée avant d'avoir fini : on ferme « Mon expression » (rouvert à l'exercice suivant)
   $('calcul').querySelectorAll('input').forEach(i => i.closest('.lig').remove());
+  $('calcul').querySelectorAll('.etape-titre').forEach(t => { if (!t.nextElementSibling?.classList.contains('lig')) t.remove(); });   // titre d'étape resté sans ligne
   if (reussi) {
     afficherRetour(`<b>${choix(['Bravo !', 'Exact !', 'Parfait !'])}</b>${erreurs ? ` <span style="color:var(--muted)">(${erreurs} erreur${erreurs > 1 ? 's' : ''})</span>` : ''}`
       + `<details style="margin-top:8px"><summary>Voir une correction</summary>${correctionHTML()}</details>`, 'ok');
@@ -1004,7 +1043,7 @@ function bilan() {
   $('diplome').hidden = !NIVEAUX[niveau].diplome;
   const NB = nbQ(), emo = score === NB ? '🏆' : score >= .8 * NB ? '😃' : score >= .5 * NB ? '🙂' : '💪';
   $('bilan-score').textContent = `${emo} ${score} / ${NB}`;
-  const rep = x => x.sorte === 'pieces' ? `${x.rep} ${x.unite}` : eur(x.rep);
+  const rep = x => x.sorte === 'pieces' ? `${x.rep}` : eur(x.rep);
   $('bilan-liste').innerHTML = serie.map(x => `<div class="bl ${x.reussi ? 'ok' : 'ko'}"><span class="m">${x.reussi ? '✓' : '✗'}</span>`
     + `<span class="q">${x.expr ? `${x.expr} = ` : ''}<b>${rep(x)}</b></span>`
     + `<span class="y">Ta réponse : ${x.donne || '—'}</span></div>`).join('');
@@ -1028,7 +1067,7 @@ let nbAides = 0;
 function indices() {
   const l = q.aide.split('<br>');
   if (q.sorte === 'euro') l.push('Mets € après chaque prix.', 'Mets des parenthèses.', 'Termine par un nombre mixte : 1 € + 2/3 €.');
-  if (q.sorte === 'pieces') l.push('Termine par un nombre entier.');
+  if (q.sorte === 'pieces') l.push('Mets € après chaque prix.', 'Arrête le prix sur une fraction : … /3 €.', 'Pour N, termine par un nombre entier.');
   return l;
 }
 $('voir-aide').onclick = () => {
@@ -1075,7 +1114,30 @@ function montrerDiplome() {
   ouvrirDiplome({ nom: `${eleve.prenom} ${eleve.initiale}.`, serie, familles: NIVEAUX[niveau].familles });
 }
 $('diplome').onclick = montrerDiplome;
-$('onglet').onclick = () => window.open(location.href, '_blank', 'noopener');
+/* Nouvel onglet : même élève. Si window.open est bloqué (iframe Trinket), on affiche un lien à cliquer. */
+function urlOnglet() {
+  const url = new URL(location.href);
+  if (eleve.prenom) { url.searchParams.set('prenom', eleve.prenom); url.searchParams.set('initiale', eleve.initiale); }
+  return url.toString();
+}
+const repliOnglet = document.createElement('span');
+repliOnglet.hidden = true;
+repliOnglet.style.fontSize = '.8rem';
+$('onglet').after(repliOnglet);
+$('onglet').onclick = () => {
+  const w = window.open(urlOnglet(), '_blank');
+  if (w) { w.opener = null; return; }
+  repliOnglet.innerHTML = `Bloqué ici — <a href="${urlOnglet()}" target="_blank" rel="noopener">clique ici</a>`;
+  repliOnglet.hidden = false;
+};
+{ // élève transmis par le bouton « Nouvel onglet »
+  const p = new URLSearchParams(location.search);
+  if (p.get('prenom')) {
+    eleve.prenom = p.get('prenom').slice(0, 25);
+    eleve.initiale = (p.get('initiale') || '').slice(0, 1).toUpperCase();
+    $('eleve-nom').textContent = `👤 ${eleve.prenom} ${eleve.initiale}.`;
+  }
+}
 
 /* Fenêtre étroite (une seule colonne) : boutons et retours juste sous l'expression, avant les pièces */
 const uneColonne = matchMedia('(max-width:900px)');
@@ -1087,6 +1149,38 @@ function placerPanneau() {
 }
 uneColonne.addEventListener('change', placerPanneau);
 placerPanneau();
+
+/* Grand écran : « Mon expression » flotte au-dessus de la scène. On le déplace en tirant son titre ;
+   la position est retenue (dans ce navigateur) et le panneau reste toujours dans la fenêtre. */
+const CLE_POS = 'mamieMaths.posCalcul';
+let posCalcul = null;
+try { posCalcul = JSON.parse(localStorage.getItem(CLE_POS)); } catch (e) {}
+function poserCalcul() {
+  const b = $('bloc-calcul');
+  if (uneColonne.matches) { b.style.left = b.style.top = ''; return; }
+  if (b.hidden) return;
+  const r = b.getBoundingClientRect(), sc = document.querySelector('.scene').getBoundingClientRect();
+  let { x, y } = posCalcul || { x: sc.right - r.width - 16, y: sc.bottom - r.height - 16 };   // par défaut : en bas à droite de la scène (le tableau des prix reste visible)
+  x = Math.max(0, Math.min(x, innerWidth - r.width));
+  y = Math.max(0, Math.min(y, innerHeight - Math.min(r.height, innerHeight - 8) - 8));   // remonte s'il grandit vers le bas
+  b.style.left = x + 'px'; b.style.top = y + 'px';
+}
+$('bloc-calcul').querySelector('h3').addEventListener('pointerdown', e => {
+  if (uneColonne.matches) return;
+  e.preventDefault();
+  const b = $('bloc-calcul'), r = b.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+  b.classList.add('tire');
+  const bouge = ev => { posCalcul = { x: ev.clientX - dx, y: ev.clientY - dy }; poserCalcul(); };
+  const lache = () => {
+    b.classList.remove('tire');
+    document.removeEventListener('pointermove', bouge); document.removeEventListener('pointerup', lache); document.removeEventListener('pointercancel', lache);
+    try { localStorage.setItem(CLE_POS, JSON.stringify(posCalcul)); } catch (e) {}
+    b.querySelector('input')?.focus({ preventScroll: true });
+  };
+  document.addEventListener('pointermove', bouge); document.addEventListener('pointerup', lache); document.addEventListener('pointercancel', lache);
+});
+addEventListener('resize', poserCalcul);
+uneColonne.addEventListener('change', poserCalcul);
 
 demarrer(0);
 </script>
