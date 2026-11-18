@@ -782,7 +782,15 @@
     if(type==='point') return {kind:'point', v:xy(name)};
     if(type==='line'){ const l = lineOf(name); return l && {kind:'line', v:l}; }
     if(type==='segment'){
-      const [p,q] = cmdArgs(name);
+      // Only a stand-alone Segment(P, Q). A polygon's sides are
+      // Segment(R, F, triangle): they may legitimately overlap a segment the
+      // pupil already drew (e.g. [RF] for the perpendicular bisector) —
+      // rejecting one would delete the whole triangle (« déjà tracé »).
+      const cs = ggbApplet.getCommandString(name, false) || '';
+      if(!/^Segment[\[(]/.test(cs)) return null;
+      const args = cmdArgs(name);
+      if(args.length !== 2) return null;
+      const [p,q] = args;
       if(!isPoint(p) || !isPoint(q)) return null;
       const ends = [xy(p), xy(q)].sort((u,w)=>u[0]-w[0] || u[1]-w[1]);
       return {kind:'segment', v:[...ends[0], ...ends[1]]};
@@ -826,14 +834,31 @@
     // Deferred like setMode() in maybeReturnToArrow: deleting from inside
     // the add-listener would cut into the click GeoGebra is still handling.
     setTimeout(()=>{
-      if(ggbApplet.exists(name)) ggbApplet.deleteObject(name);
+      if(ggbApplet.exists(name)){
+        // An object that comes with siblings from the same command (both
+        // points of Intersect(c, d)): deleting it would delete the whole
+        // command, siblings included — e.g. the treasure X along with a
+        // copy of B. Hide the copy instead.
+        const cs = ggbApplet.getCommandString(name, false);
+        const siblings = cs && safeNames(()=>ggbApplet.getAllObjectNames())
+          .some(n=>n!==name && n!==twin && ggbApplet.getCommandString(n, false)===cs);
+        if(siblings) ggbApplet.setVisible(name, false);
+        else ggbApplet.deleteObject(name);
+      }
       if(ggbApplet.getMode() !== 0) ggbApplet.setMode(0);
+      // The twin may be hidden — the midpoint and the line (AB) built
+      // behind the scenes by the Médiatrice tool's auto-coding: show it,
+      // so the pupil can use and rename it.
+      const wasHidden = !ggbApplet.getVisible(twin);
+      if(wasHidden) ggbApplet.setVisible(twin, true);
       safe(()=>ggbApplet.evalCommand(`SelectObjects(${twin})`), 'sélection');
       const isPt = ggbApplet.getObjectType(twin)==='point';
       const shown = visibleName(twin);
-      const head = isPt
-        ? (shown ? `Ce point existe déjà : c'est ${shown}.` : 'Ce point existe déjà.')
-        : (shown ? `Déjà tracé : c'est ${shown}.` : 'Déjà tracé !');
+      const head = wasHidden
+        ? (isPt ? 'Ce point existait déjà (caché) : le voici.' : 'Déjà tracé (caché) : le voici.')
+        : isPt
+          ? (shown ? `Ce point existe déjà : c'est ${shown}.` : 'Ce point existe déjà.')
+          : (shown ? `Déjà tracé : c'est ${shown}.` : 'Déjà tracé !');
       toast(`${head} Pour le nommer : clic droit dessus → Renommer.`, 4000);
     }, 0);
   }
