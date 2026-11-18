@@ -178,6 +178,7 @@ function anubis(x, base, s, t, parle) {
 // ---------- Charger une escale ----------
 function chargerNiveau(n, recommence = false) {
   partie.niveau = n;
+  if (typeof fermerTablette === "function") fermerTablette();
   if (n === 0 && !recommence) { parcours = { reponses: 0, bonnes: 0, points: POINTS_DEPART }; eleve.points = POINTS_DEPART; dejaPosees.clear(); }
   partie.fin = null; partie.chouetteUtilisee = recommence && !!partie.chouetteUtilisee; partie.chouette = null; partie.minuteurs = [];
   enigme = null; questionSauvee = null; question = null; questionCorrigee = null;
@@ -273,7 +274,7 @@ function pas() {
   if (c.x < 0) c.x = 0;
   if (c.x > L - HW) c.x = L - HW;
   // vertical
-  const basAvant = c.y + HH;
+  const basAvant = c.y + HH, hautAvant = c.y;
   c.y += c.vy;
   c.auSol = false; c.sur = null;
   for (const o of obs) if (recouvre(boiteHeros(), o)) {
@@ -282,7 +283,8 @@ function pas() {
       // à cheval sur deux appuis : c'est celui qui est sous le milieu du crapaud qui compte
       if (o.id != null) { const d = Math.abs(o.x + o.w / 2 - (c.x + HW / 2)); if (!c.sur || d < c.dSur) { c.sur = o.id; c.dSur = d; } }
     }
-    else if (c.vy < 0 && !o.traversable) { c.y = o.y + o.h; c.vy = 0; }
+    else if (c.vy < 0 && !o.traversable && hautAvant >= o.y + o.h - 7) {   // pas si on était déjà dedans : il passerait sous le sol
+      c.y = o.y + o.h; c.vy = 0; }
   }
   if (niv.apresMouvement) niv.apresMouvement(P);
   if (c.etat !== "libre") return;
@@ -359,7 +361,7 @@ function afficherQuestion() {
   if (q.choix) {
     // les réponses à choisir ; après une erreur, la bonne en vert et celle qu'on a choisie en rouge
     $("formReponse").style.display = "none"; champ.disabled = true; champ.blur();
-    choix.hidden = !!(q.steles && !suiteEnAttente);   // au plateau 10, on répond en allant toucher une stèle
+    choix.hidden = !!(q.steles && !suiteEnAttente);   // au plateau 9, on répond en allant toucher une stèle
     choix.innerHTML = q.choix.map((c, i) => `<button type="button" data-i="${i}"${suiteEnAttente ? " disabled" : ""} class="${suiteEnAttente ? (i === q.bonne ? "bonne" : i === choixFait ? "mauvaise" : "") : ""}"><span class="lettre">${niv.lettres ? "ABCD"[i] : i + 1}</span><span>${fr(esc(c))}</span></button>`).join("");
     return;
   }
@@ -382,6 +384,7 @@ $("formReponse").addEventListener("submit", ev => {
   const q = question;
   if (!q || partie.fin || !q.lire) return;
   const lu = q.lire($("champReponse").value, q), r = $("retour");
+  if (lu && lu.encore) { if (niv.encore) niv.encore(P, lu); r.className = "ok"; r.textContent = fr("✔ " + lu.encore); $("champReponse").focus(); $("champReponse").select(); return; }   // juste mais pas fini : on garde la question
   if (!lu || lu.aide) { r.className = "aide"; r.textContent = fr(lu && lu.aide || "Écris ta réponse."); $("champReponse").focus(); return; }
   traiterReponse(lu.ok, q, lu.presque);
 });
@@ -566,15 +569,107 @@ function bip(freq, duree, type = "square", fin = freq, volume = .06, retard = 0)
 // une lyre : une corde pincée (triangle + harmoniques qui s'éteignent vite)
 function lyre(f, retard = 0, v = .07, d = .9) { bip(f, d, "triangle", f * .998, v, retard); bip(f * 2, d * .5, "sine", f * 2, v * .3, retard); }
 const DORIEN = [293.66, 329.63, 349.23, 392, 440, 493.88, 523.25, 587.33];
+// ------------------------------------------------------------
+//  LA MUSIQUE DU LEVER DE SOLEIL (plateau 11), composée et jouée par le navigateur, calée sur la scène :
+//  la nuit (un bourdon grave) → les compagnons arrivent (la harpe et le tambour sur cadre, en mode hijaz, la couleur
+//  « orientale » avec sa seconde augmentée) → l'ibis paraît (la flûte de roseau, le ney, chante) → « Crapaud d'or »
+//  (un gong, le sistre, et tout bascule en ré majeur, lumineux) → un dernier accord qui s'éteint sur l'écran de fin.
+// ------------------------------------------------------------
 let musiqueFinale = null;
-function arreterMusique() { if (musiqueFinale) { clearInterval(musiqueFinale); musiqueFinale = null; } }
+function arreterMusique() {
+  if (!musiqueFinale) return;
+  const m = musiqueFinale; musiqueFinale = null;
+  try { const t = audio.currentTime; m.gain.cancelScheduledValues(t); m.gain.setValueAtTime(m.gain.value, t); m.gain.linearRampToValueAtTime(0, t + .6); setTimeout(() => m.disconnect(), 800); } catch (e) {}
+}
 function lancerMusiqueFinale() {
+  if (!sonActif || !contexteAudio()) return;
   arreterMusique();
-  const air = [0, 2, 4, 7, 4, 5, 4, 2, 3, 2, 1, 0, 1, 2, 4, 2];
-  let k = 0;
-  const jouer = () => { if (!sonActif) return; for (let i = 0; i < 4; i++, k++) { const n = air[k % air.length]; lyre(DORIEN[n], i * .28, .06); if (i === 0) lyre(DORIEN[n] / 2, 0, .05, 1.2); } };
-  jouer(); musiqueFinale = setInterval(jouer, 1120);
-  setTimeout(arreterMusique, 30000);
+  const A = audio, t0 = A.currentTime + .08, ré = 293.66, hz = n => ré * Math.pow(2, n / 12);
+  // le bus : un compresseur doux, et une salle (réverbération faite de bruit qui s'éteint)
+  const maitre = A.createGain(); maitre.gain.value = .9;
+  const comp = A.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3;
+  maitre.connect(comp); comp.connect(A.destination);
+  const salle = A.createConvolver(), n = Math.floor(A.sampleRate * 3.2), ir = A.createBuffer(2, n, A.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6); }
+  salle.buffer = ir; const retour = A.createGain(); retour.gain.value = .35; salle.connect(retour); retour.connect(maitre);
+  const sortie = (noeud, sec = .4) => { noeud.connect(maitre); const s = A.createGain(); s.gain.value = sec; noeud.connect(s); s.connect(salle); };
+  const enveloppe = (t, att, tenue, dec, v) => { const g = A.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + att); g.gain.setValueAtTime(v, t + att + tenue); g.gain.exponentialRampToValueAtTime(.0001, t + att + tenue + dec); return g; };
+  const osc = (type, f, t, fin) => { const o = A.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t); o.start(t); o.stop(fin); return o; };
+  let bruitBuf = null;
+  const bruit = (t, d) => { if (!bruitBuf) { bruitBuf = A.createBuffer(1, A.sampleRate, A.sampleRate); const x = bruitBuf.getChannelData(0); for (let i = 0; i < x.length; i++) x[i] = Math.random() * 2 - 1; } const s = A.createBufferSource(); s.buffer = bruitBuf; s.start(t); s.stop(t + d); return s; };
+  // les instruments
+  const bourdon = (f, t, d, v) => {                       // deux cordes frottées, légèrement désaccordées, qui respirent
+    const filtre = A.createBiquadFilter(); filtre.type = "lowpass"; filtre.frequency.value = 520;
+    const g = A.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 3); g.gain.setValueAtTime(v, t + d - 4); g.gain.linearRampToValueAtTime(0, t + d);
+    for (const det of [-4, 5]) { const o = osc("sawtooth", f, t, t + d); o.detune.value = det; o.connect(filtre); }
+    filtre.connect(g); sortie(g, .5);
+  };
+  const harpe = (f, t, v = .07, d = 1.6) => {             // une corde pincée : le son clair, puis le grave qui reste
+    const g = enveloppe(t, .004, 0, d, v), o = osc("triangle", f, t, t + d + .1), h = osc("sine", f * 2, t, t + d * .5);
+    const gh = enveloppe(t, .003, 0, d * .4, v * .35); o.connect(g); h.connect(gh); sortie(g, .45); sortie(gh, .45);
+  };
+  const ney = (f, t, d, v = .05) => {                      // la flûte de roseau : un souffle chaud, un vibrato qui s'installe
+    const o = osc("sawtooth", f, t, t + d + .4), s = osc("sine", f, t, t + d + .4), filtre = A.createBiquadFilter();
+    filtre.type = "lowpass"; filtre.frequency.value = 1500; filtre.Q.value = 1.5;
+    const lfo = osc("sine", 5.2, t, t + d + .4), prof = A.createGain(); prof.gain.setValueAtTime(0, t); prof.gain.linearRampToValueAtTime(f * .012, t + Math.min(.5, d));
+    lfo.connect(prof); prof.connect(o.frequency); prof.connect(s.frequency);
+    const g = A.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .09); g.gain.setValueAtTime(v, t + d - .05); g.gain.linearRampToValueAtTime(0, t + d + .3);
+    const gs = A.createGain(); gs.gain.value = .25; o.connect(filtre); filtre.connect(gs); gs.connect(g); s.connect(g); sortie(g, .6);
+    const souffle = bruit(t, .25), fb = A.createBiquadFilter(); fb.type = "bandpass"; fb.frequency.value = f * 2; fb.Q.value = 2;
+    const gb = enveloppe(t, .02, 0, .2, v * .5); souffle.connect(fb); fb.connect(gb); sortie(gb, .3);
+  };
+  const tambour = (t, fort, v = .22) => {                 // le tambour sur cadre : « doum » (grave) et « tak » (sec)
+    if (fort) { const o = osc("sine", 120, t, t + .5); o.frequency.exponentialRampToValueAtTime(55, t + .25); const g = enveloppe(t, .003, 0, .4, v); o.connect(g); sortie(g, .2); }
+    else { const s = bruit(t, .1), f = A.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = .8; const g = enveloppe(t, .002, 0, .08, v * .45); s.connect(f); f.connect(g); sortie(g, .25); }
+  };
+  const sistre = (t, v = .05) => {                         // le sistre d'Hathor : des disques de métal qui tintent
+    for (let k = 0; k < 4; k++) { const s = bruit(t + k * .045, .12), f = A.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 6500; const g = enveloppe(t + k * .045, .002, 0, .1, v * (1 - k * .18)); s.connect(f); f.connect(g); sortie(g, .5); }
+  };
+  const gong = (t, v = .16) => {                           // un gong grave, qui roule longtemps
+    [[73.4, 1], [146.8 * 1.01, .5], [220 * 1.03, .3], [311 * .99, .2]].forEach(([f, a]) => { const o = osc("sine", f, t, t + 7); const g = enveloppe(t, .01, 0, 6.5, v * a); o.connect(g); sortie(g, .7); });
+  };
+  // ---- la partition (en secondes depuis le début de l'aube : la scène dure ~21 s, puis l'écran de fin)
+  const T = s => t0 + s;
+  const HIJAZ = [0, 1, 4, 5, 7, 8, 10, 12];               // ré, mi♭, fa♯, sol, la, si♭, do, ré
+  bourdon(hz(-24), T(0), 27, .05); bourdon(hz(-17), T(1.5), 25.5, .03);    // ré et la graves, dans la nuit
+  // les compagnons arrivent : la harpe égrène le mode, le tambour bat doucement
+  const motif = [0, 2, 4, 2, 1, 2, 5, 2], pas = .3;
+  for (let k = 0; k < 40; k++) { const s = 2.7 + k * pas; harpe(hz(HIJAZ[motif[k % 8]] - 12), T(s), .05 + Math.min(.03, k * .001)); }
+  for (let b = 0; b < 10; b++) { const s = 2.7 + b * 1.2, v = .1 + b * .012; tambour(T(s), true, v); tambour(T(s + .6), true, v * .7); tambour(T(s + .3), false, v); tambour(T(s + .9), false, v); }
+  // l'ibis paraît : le ney chante une phrase en hijaz qui descend se poser sur ré
+  [[12, .6], [10, .3], [8, .3], [7, .9], [8, .3], [7, .3], [5, .3], [4, .6], [1, .3], [0, 1.1]].reduce((s, [n, d]) => { ney(hz(n), T(s), d * .95); return s + d; }, 9.6);
+  // « Crapaud d'or » : le gong, le sistre, et la lumière du ré majeur
+  gong(T(14.6)); sistre(T(14.6), .06);
+  [-12, -5, 0, 4, 7, 12, 16].forEach((n, k) => harpe(hz(n), T(14.6 + k * .06), .07, 3));
+  [[7, .45], [12, .45], [14, .45], [16, 1.35], [14, .45], [12, .45], [14, .45], [19, 1.8], [16, .45], [14, .45], [12, 2.4]].reduce((s, [n, d]) => { ney(hz(n), T(s), d * .95, .055); return s + d; }, 15.2);
+  for (let b = 0; b < 7; b++) { const s = 14.6 + b * 1.2; tambour(T(s), true, .2); tambour(T(s + .3), false, .2); tambour(T(s + .6), true, .14); tambour(T(s + .9), false, .2); if (b % 2) sistre(T(s + .6), .04); }
+  const majeur = [0, 4, 7, 12, 7, 4];
+  for (let k = 0; k < 28; k++) harpe(hz(majeur[k % 6] + (k % 12 < 6 ? 0 : 5) - 12), T(14.6 + k * .3), .04);
+  // sur l'écran de fin, l'hymne : trois tours de ré – sol – la – ré, la flûte chante, monte, puis revient
+  const phrase = (notes, s, v = .05) => notes.reduce((x, [n, d]) => { ney(hz(n), T(x), d * .95, v); return x + d; }, s);
+  const A1 = [[12, 1.2], [14, .6], [16, .6], [17, 1.2], [16, .6], [14, .6], [16, .6], [14, .6], [12, .6], [11, .6], [12, 2.4]];
+  const B1 = [[16, .6], [19, .6], [21, 1.2], [19, .6], [17, .6], [16, .6], [14, .6], [16, 1.2], [19, 1.2], [21, .6], [19, .6], [16, 1.2]];
+  [A1, B1, A1].forEach((ph, c) => {
+    const s0 = 24.4 + c * 9.6;
+    sistre(T(s0), .045); phrase(ph, s0, c === 1 ? .055 : .048);
+    [0, 5, 7, 0].forEach((r, a) => {
+      const s = s0 + a * 2.4;
+      [0, 4, 7, 12, 16, 12, 7, 4].forEach((n, k) => harpe(hz(r + n - 12), T(s + k * .3), .045));
+      tambour(T(s), true, .13); tambour(T(s + .6), false, .12); tambour(T(s + 1.2), true, .09); tambour(T(s + 1.8), false, .12);
+    });
+  });
+  // un souvenir de la nuit : la harpe reprend doucement le mode du début, la flûte aussi, plus grave
+  for (let k = 0; k < 40; k++) harpe(hz(HIJAZ[motif[k % 8]] - 12), T(53.2 + k * .3), .04);
+  phrase([[7, .6], [8, .3], [7, .3], [5, .3], [4, .9], [5, .3], [4, .3], [1, .3], [0, 1.8]], 55.6, .04);
+  for (let b = 0; b < 5; b++) tambour(T(53.2 + b * 2.4), true, .07);
+  // le dernier accord, en pleine lumière, qui s'éteint lentement
+  gong(T(65.2), .13); sistre(T(65.2), .05);
+  [-24, -12, -5, 0, 4, 7, 12, 16].forEach((n, k) => harpe(hz(n), T(65.2 + k * .09), .07, 4.5));
+  ney(hz(12), T(65.5), 4, .045);
+  bourdon(hz(-24), T(26), 46, .05); bourdon(hz(-17), T(26), 46, .03);   // les bourdons tiennent jusqu'au bout
+  maitre.gain.setValueAtTime(.9, T(68.5)); maitre.gain.linearRampToValueAtTime(0, T(72.5));
+  musiqueFinale = maitre;
+  setTimeout(() => { if (musiqueFinale === maitre) musiqueFinale = null; }, 74000);
 }
 function son(s) {
   if (s === "saut") bip(300, .14, "square", 640, .04);

@@ -693,9 +693,59 @@ function panneauBalance(P) {
       <li>Verser à gauche pendant ${b("g-", "−", P.tg <= 0)} <b>${P.tg} s</b> ${b("g+", "+", P.tg >= 10)}</li>
       <li>Verser à droite pendant ${b("d-", "−", P.td <= 0)} <b>${P.td} s</b> ${b("d+", "+", P.td >= 10)}</li>
     </ol>
-    <div class="prog-actions">${b("lancer", "▶ Donner les instructions au babouin", !P.tg || !P.td)}</div>
+    <div class="prog-actions">${b("tablette", "📜 Tablette des multiples")}${b("lancer", "▶ Donner les instructions au babouin", !P.tg || !P.td)}</div>
   </div>`;
 }
+// ------------------------------------------------------------
+// LA TABLETTE DU SCRIBE : en overlay sur le jeu, deux colonnes à remplir, les multiples du débit de gauche et ceux du
+// débit de droite (1 s, 2 s… 10 s). Chaque case juste devient verte ; quand le même nombre apparaît dans les deux
+// colonnes, les deux cases s'allument en or : c'est un multiple commun. À l'élève de lire les temps sur les lignes
+// et de les régler lui-même dans le panneau.
+// ------------------------------------------------------------
+const LIGNES_TAB = 10;
+function ouvrirTablette(P) {
+  const Q = P.pb[P.etape];
+  if (!P.tab || P.tab.etape !== P.etape) P.tab = { etape: P.etape, g: [Q.g], d: [Q.d] };       // la ligne « 1 s » est donnée (le débit) ; le reste est à compléter
+  fermerTablette();
+  const T = document.createElement("div"); T.id = "tablette"; T.className = "tablette";
+  const ligne = k => `<tr><th>${k} s</th>${["g", "d"].map(c => { const v = P.tab[c][k - 1]; return `<td><input inputmode="numeric" autocomplete="off" data-tab="${c}" data-k="${k}" value="${v != null ? v : ""}"${k === 1 ? " readonly" : ""} aria-label="${c === "g" ? "gauche" : "droite"}, ${k} seconde${k > 1 ? "s" : ""}"></td>`; }).join("")}</tr>`;
+  T.innerHTML = `<div class="tab-barre"><span>📜 Tablette du scribe</span><button type="button" data-tab-fermer aria-label="Fermer">×</button></div>
+    <table><thead><tr><th>temps</th><th>à gauche<br>(deben)</th><th>à droite<br>(deben)</th></tr></thead>
+    <tbody>${Array.from({ length: LIGNES_TAB }, (_, i) => ligne(i + 1)).join("")}</tbody></table>
+`;
+  $("cadreJeu").appendChild(T);
+  majTablette(P);
+  const premier = T.querySelector("input[data-tab]:not([readonly])"); if (premier && !premier.value) premier.focus();
+}
+function fermerTablette() { const T = document.getElementById("tablette"); if (T) T.remove(); }
+function majTablette(P) {
+  const T = document.getElementById("tablette"); if (!T || !P.tab) return;
+  const Q = P.pb[P.etape], justes = { g: new Map(), d: new Map() };
+  T.querySelectorAll("input[data-tab]").forEach(inp => {
+    const c = inp.dataset.tab, k = +inp.dataset.k, v = inp.value.trim(), attendu = (c === "g" ? Q.g : Q.d) * k;
+    inp.classList.remove("juste", "faux", "commun");
+    if (v === "") return;
+    // rouge dès que ce qui est tapé ne peut plus mener au bon multiple, ou quand on quitte la case sans l'avoir trouvé
+    if (+v === attendu) { inp.classList.add("juste"); justes[c].set(attendu, k); } else if (!String(attendu).startsWith(v) || document.activeElement !== inp) inp.classList.add("faux");
+  });
+  // les multiples communs trouvés : le plus petit d'abord
+  const communs = [...justes.g.keys()].filter(v => justes.d.has(v)).sort((a, b) => a - b);
+  T.querySelectorAll("input.juste").forEach(inp => { if (communs.includes(+inp.value)) inp.classList.add("commun"); });
+}
+document.addEventListener("input", e => {
+  const inp = e.target.closest("#tablette input[data-tab]"); if (!inp || !niv || niv.sorte !== "temple" || !P.tab) return;
+  inp.value = inp.value.replace(/[^0-9]/g, "").slice(0, 4);
+  P.tab[inp.dataset.tab][+inp.dataset.k - 1] = inp.value === "" ? null : +inp.value;
+  majTablette(P);
+});
+document.addEventListener("focusout", e => { if (e.target.closest && e.target.closest("#tablette input[data-tab]") && niv && niv.sorte === "temple") setTimeout(() => majTablette(P)); });
+document.addEventListener("keydown", e => {   // Entrée : on passe à la case suivante de la même colonne
+  const inp = e.target.closest && e.target.closest("#tablette input[data-tab]"); if (!inp || e.key !== "Enter") return;
+  const suiv = document.querySelector(`#tablette input[data-tab="${inp.dataset.tab}"][data-k="${+inp.dataset.k + 1}"]`); if (suiv) suiv.focus(); e.preventDefault();
+});
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-tab-fermer]")) fermerTablette();
+});
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-bal]");
   if (!b || b.disabled || !niv || niv.sorte !== "temple" || P.pesee || gardien.etat === "fini") return;
@@ -703,7 +753,8 @@ document.addEventListener("click", e => {
   if (c === "g-") P.tg = Math.max(0, P.tg - 1); else if (c === "g+") P.tg = Math.min(10, P.tg + 1);
   else if (c === "d-") P.td = Math.max(0, P.td - 1); else if (c === "d+") P.td = Math.min(10, P.td + 1);
   else if (c === "montrer") P.montre = true;
-  else if (c === "lancer") { P.pesee = { tg: P.tg, td: P.td, t: 0 }; $("retour").className = "vide"; son("sable"); }
+  else if (c === "tablette") { ouvrirTablette(P); return; }
+  else if (c === "lancer") { fermerTablette(); P.pesee = { tg: P.tg, td: P.td, t: 0 }; $("retour").className = "vide"; son("sable"); }
   afficherQuestion();
 });
 // la pesée : les jarres versent, chacune pendant son temps ; puis le verdict
@@ -767,10 +818,10 @@ function sommeFractions(k) {
 const fracHTML = (a, b) => `<span class="frac"><span>${a}</span><span>${b}</span></span>`;
 function qThot(k, P) {
   const F = sommeFractions(k);
-  P.cour = F; P.res = false;
+  P.cour = F; P.res = false; P.enAttente = null;
   const etapes = `Dénominateur commun : ${F.Lc} (c'est un multiple de ${F.b} et de ${F.d}). ${F.a}/${F.b} = ${F.a * F.Lc / F.b}/${F.Lc} et ${F.c}/${F.d} = ${F.c * F.Lc / F.d}/${F.Lc}, donc la somme vaut ${F.n}/${F.Lc}` + (F.g > 1 ? `, qu'on simplifie par ${F.g} : ${F.rn}/${F.rd}.` : ", et elle est déjà irréductible.");
   return qMaths(`Thot pointe son calame sur le papyrus : donne le résultat sous forme de <b>fraction irréductible</b>.`,
-    F.rn / F.rd, etapes, { lire: lireFraction, a: F.rn, b: F.rd, irreductible: true, placeholder: "ta fraction" });
+    F.rn / F.rd, etapes, { lire: lireFraction, a: F.rn, b: F.rd, irreductible: true, reduireEnsuite: "Thot", placeholder: "ta fraction" });
 }
 // la bibliothèque de Thot : des niches pleines de rouleaux, le plafond étoilé, deux colonnes au premier plan
 function peindreThot() {
@@ -850,10 +901,14 @@ function papyrusThot(P, t) {
     ctx.fillStyle = couleur; ctx.font = "bold 13px Georgia, serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
     ctx.fillText(String(a), x, y0 + 24); ctx.fillText(String(b), x, y0 + 41); ctx.fillRect(x - 7, y0 + 27.6, 14, 1.4);
   };
-  const avecRes = P.res, xs = avecRes ? [x0 + 14, x0 + 40, x0 + 82] : [x0 + 22, x0 + 54, x0 + 86];
+  const avecRes = P.res || !!P.enAttente, xs = avecRes ? [x0 + 14, x0 + 40, x0 + 82] : [x0 + 22, x0 + 54, x0 + 86];
   frac(xs[0], F.a, F.b); ctx.font = "bold 13px Georgia, serif"; ctx.fillText("+", (xs[0] + xs[1]) / 2, y0 + 32); frac(xs[1], F.c, F.d);
   ctx.fillText("=", (xs[1] + xs[2]) / 2 + (avecRes ? -4 : 0), y0 + 32);
-  if (avecRes) frac(xs[2] - 4, F.rn, F.rd, "#2a7a3a"); else { ctx.fillStyle = "#b5402a"; ctx.fillText("?", xs[2], y0 + 33 + Math.sin(t / 8)); }
+  if (P.res) frac(xs[2] - 4, F.rn, F.rd, "#2a7a3a");
+  else if (P.enAttente) {   // juste, mais pas encore simplifiée : écrite en ocre, qui palpite, en attendant la forme irréductible
+    ctx.save(); ctx.globalAlpha = .6 + .3 * Math.sin(t / 7); frac(xs[2] - 4, P.enAttente[0], P.enAttente[1], "#b0701a"); ctx.restore();
+    ctx.fillStyle = "#b0701a"; ctx.font = "italic 5px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText("à simplifier…", xs[2] - 4, y0 + 45.5);
+  } else { ctx.fillStyle = "#b5402a"; ctx.fillText("?", xs[2], y0 + 33 + Math.sin(t / 8)); }
   ctx.textAlign = "left";
 }
 function decorThot(P, t) {
@@ -871,7 +926,7 @@ function devantThot(P, t) {
   ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
 }
 // ============================================================
-//  PLATEAU 4 — LE SANCTUAIRE DU SOLEIL (vu de dessus)
+//  PLATEAU RETIRÉ DU PARCOURS — LE SANCTUAIRE DU SOLEIL (vu de dessus) ; voir PLATEAU_SOLEIL_RETIRE, après NIVEAUX
 //  Un rayon de Rê entre par une fente du mur : on le voit en permanence, il rebondit sur les miroirs de bronze.
 //  Le scarabée de Khépri, compagnon de passage, vole de miroir en miroir et les tourne selon les instructions du
 //  crapaud : un sens (gauche ou droite) et un angle, de 5° en 5°. Le rayon doit atteindre la statue du pharaon.
@@ -1256,7 +1311,7 @@ function bougerSoleil(P) {
   if (E.phase === "rate") { if (++E.t >= 70) { P.exec = null; P.or = orientationsMiroirs(S, S.init); afficherQuestion(); } }
 }
 // ============================================================
-//  PLATEAU 5 — LES CHAMPS APRÈS LA CRUE (dehors !)
+//  PLATEAU 6 — LES CHAMPS APRÈS LA CRUE (dehors !)
 //  Le Nil s'est retiré : les bornes des champs ont disparu sous le limon. Comme les arpenteurs égyptiens, on retrace les
 //  champs avec une corde à nœuds. L'oie du Nil, compagne de passage, tire la corde selon un programme façon Scratch :
 //  « avancer de … coudées », « tourner à droite / à gauche de 90° ». Trois champs : les dimensions données, puis l'aire
@@ -1533,7 +1588,7 @@ function blocRepeter(I, ch, rendre, actif) {
   return `<div class="be-bloc be-rep${dedans ? " actif-rep" : ""}" data-be-bloc="${ch}" data-t="rep"><div class="be-rep-tete">répéter ${nombreBloc(ch, I.n)} fois</div>
     <div class="be-corps${pal ? " be-corps-pal" : ""}"${pal ? "" : ` data-be="corps" data-chemin="${ch}"`}>${pal ? "" : blocsHTML(I.corps, ch, rendre, actif) + (I.corps.length ? "" : `<div class="be-vide">glisse des blocs ici</div>`)}</div><div class="be-rep-pied"></div></div>`;
 }
-// --- l'éditeur à blocs, commun à la gerboise (plateau 1) et à l'oie (plateau 5) : chaque plateau décrit son programme
+// --- l'éditeur à blocs, commun à la gerboise (plateau 1) et à l'oie (plateau 6) : chaque plateau décrit son programme
 function editeurActif() {
   if (!niv || !P) return null;
   const repeter = () => ({ t: "rep", type: "rep", n: P.nRep || 2, corps: [] });
@@ -1662,15 +1717,15 @@ function bougerCrue(P) {
   if (E.phase === "rate") { if (++E.t >= 60) { P.exec = null; afficherQuestion(); } }
 }
 // ============================================================
-//  PLATEAU 6 — LE PUITS ET LA DALLE DE GRANIT (calcul astucieux, chronométré par le sable)
+//  PLATEAU 10 — LE PUITS ET LA DALLE DE GRANIT (calcul astucieux, chronométré par le sable)
 //  Le crapaud glisse au fond d'un puits : il est enfermé. Le sable coule de la gueule d'une tête de lion sculptée, et
 //  (par un mécanisme qu'on ne voit pas) une dalle de granit descend dans ses rainures : elle risque de l'écraser. À droite, un
-//  tunnel est bouché par cinq pierres en file : chaque calcul juste en fait s'effondrer une (la 5, puis la 4…), la 1 libère le passage.
+//  tunnel est bouché par cinq pierres en file : chaque calcul juste en fait s'effondrer une (la 1, puis la 2…), la 5 libère le passage.
 //  Si la dalle arrive en bas, elle remonte un peu… mais une pierre retombe dans le passage.
 // ============================================================
 const SAL = { sol: 152, mg: 58, md: 182, haut: -10, ech: 1.5, lion: [58, 66], porte: { x: 182, y: 128, w: 58, h: 24 } };   // le puits entre x = 58 et 182
 SAL.hb = 42; SAL.bas = SAL.sol - HH * SAL.ech - SAL.hb - 1;            // la dalle fait 42 de haut ; en bas, elle touche le crapaud
-const NB_PIERRES = 5;                                                    // cinq pierres en file dans le tunnel ; elles s'effondrent de la 5 (la plus loin) à la 1
+const NB_PIERRES = 5;                                                    // cinq pierres en file dans le tunnel ; elles s'effondrent de la 1 (la plus loin) à la 5
 // --- les calculs astucieux
 function qAstucieux(k) {
   const h = (a, b) => a + Math.floor(Math.random() * (b - a + 1)), sep = n => n.toLocaleString("fr-FR");
@@ -1706,22 +1761,34 @@ function blocsAppareil(x0, x1, y0, y1, graine, clair, sombre) {         // un mu
     }
   }
 }
+// la cheminée en biais : [haut du plafond, bas du plafond (au puits), bas du fond (au puits), haut du fond]
+const CHEMINEE = [[11, 0], [SAL.mg, 106], [SAL.mg, SAL.sol], [-10, 0]];   // deux bords parallèles (pente 68 / 152), larges pour le crapaud
+// la glissade : le long du conduit (en accélérant), puis sur les dalles du puits, jusqu'à sa place
+const GLISSE = { conduit: 26, sol: 46 };
+function posGlisse(g) {
+  if (g <= GLISSE.conduit) { const u = (g / GLISSE.conduit) ** 1.8, y = -16 + (SAL.sol + 16) * u; return [-10 + (SAL.mg + 10) * y / SAL.sol + 3, y, 1]; }   // le long du fond du conduit
+  const u = Math.min(1, (g - GLISSE.conduit) / (GLISSE.sol - GLISSE.conduit)), e = 1 - (1 - u) ** 3;
+  return [SAL.mg - 2 + (104 - SAL.mg + 2) * e, SAL.sol, .95 * (1 - Math.min(1, u * 4))];
+}
 function peindreSalleBloc() {
   ctx.fillStyle = "#2a1a0e"; ctx.fillRect(0, 0, L, H);
-  // le fond du puits
-  blocsAppareil(SAL.mg, SAL.md, 0, SAL.sol, 11, "b8945e", "6a4a2e");
-  for (let c = 0, x = SAL.mg + 4; x < SAL.md; x += 8, c++) for (let r = 0, y = 70; y < SAL.sol - 6; y += 8, r++) hieroglyphe(x, y, 1.1, Math.floor(bruit(c * 37 + r * 13) * 9), "rgba(40,22,8,.2)");
-  // une frise peinte, à moitié effacée par le temps
-  for (let x = SAL.mg, k = 0; x < SAL.md; x += 5, k++) { if (bruit(k + 70) < .3) continue; ctx.fillStyle = ["rgba(31,78,140,.55)", "rgba(181,64,42,.55)", "rgba(58,154,122,.5)", "rgba(212,165,53,.6)"][k % 4]; ctx.fillRect(x, 56, 4, 3); }
-  ctx.fillStyle = "rgba(212,165,53,.35)"; ctx.fillRect(SAL.mg, 54.6, SAL.md - SAL.mg, .8); ctx.fillRect(SAL.mg, 59.6, SAL.md - SAL.mg, .8);
-  // l'ombre du haut du puits : plus on monte, plus il fait sombre… sauf le rai de lumière
-  const go = ctx.createLinearGradient(0, 0, 0, SAL.sol); go.addColorStop(0, "rgba(10,5,2,.65)"); go.addColorStop(.5, "rgba(10,5,2,.2)"); go.addColorStop(1, "rgba(10,5,2,.35)"); ctx.fillStyle = go; ctx.fillRect(SAL.mg, 0, SAL.md - SAL.mg, SAL.sol);
+  // le fond du puits : le noir
+  ctx.fillStyle = "#070504"; ctx.fillRect(SAL.mg, 0, SAL.md - SAL.mg, SAL.sol);
   // les deux murs coupés : plus clairs (on est devant), avec la rainure sombre où glisse la dalle
   for (const [x0, x1, g] of [[0, SAL.mg, 31], [SAL.md, L, 47]]) {
-    blocsAppareil(x0, x1, 0, H, g, "c8a46e", "8a6a44");
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, H); ctx.clip(); blocsAppareil(x0, x1, 0, H, g, "c8a46e", "8a6a44"); ctx.restore();   // coupé net au bord du puits
     const bord = x0 === 0 ? x1 : x0, sens = x0 === 0 ? -1 : 1;
     const gr = ctx.createLinearGradient(bord, 0, bord + sens * 10, 0); gr.addColorStop(0, "rgba(10,5,2,.55)"); gr.addColorStop(1, "rgba(10,5,2,0)"); ctx.fillStyle = gr; ctx.fillRect(Math.min(bord, bord + sens * 10), 0, 10, H);
     ctx.fillStyle = "#140a04"; ctx.fillRect(bord + (sens < 0 ? -3 : 0), 0, 3, SAL.sol);       // la rainure
+  }
+  // la cheminée : un conduit en biais qui traverse le mur de gauche, du haut de l'image jusqu'au pied du puits
+  { const [a, b, c, d] = CHEMINEE;
+    const g = ctx.createLinearGradient(a[0], 0, b[0], 0); g.addColorStop(0, "#0e0703"); g.addColorStop(1, "#1e1208");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(...c); ctx.lineTo(...d); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#7a5634"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(...d); ctx.lineTo(...c); ctx.stroke();            // le fond du conduit, poli par les glissades
+    ctx.strokeStyle = "rgba(255,226,170,.25)"; ctx.lineWidth = .5; ctx.beginPath(); ctx.moveTo(d[0], d[1] - 1); ctx.lineTo(c[0], c[1] - 1); ctx.stroke();
+    ctx.strokeStyle = "rgba(216,180,122,.6)"; ctx.lineWidth = .7; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();      // l'arête du plafond
+    for (let k = 1; k < 7; k++) { const u = k / 7, p = [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u], q = [d[0] + (c[0] - d[0]) * u, d[1] + (c[1] - d[1]) * u]; ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = .4; ctx.beginPath(); ctx.moveTo(...p); ctx.lineTo(...q); ctx.stroke(); }   // les joints des blocs
   }
   // le sol : de grandes dalles, un peu de sable
   ctx.fillStyle = degrade(SAL.sol, H, "#a8845a", "#5a4028"); ctx.fillRect(SAL.mg, SAL.sol, SAL.md - SAL.mg, H - SAL.sol);
@@ -1729,9 +1796,7 @@ function peindreSalleBloc() {
   ctx.strokeStyle = "rgba(30,16,6,.35)"; ctx.lineWidth = .5; for (let x = SAL.mg + 20; x < SAL.md; x += 26) { ctx.beginPath(); ctx.moveTo(x, SAL.sol); ctx.lineTo(x - 4, H); ctx.stroke(); }
   // le tunnel voûté, à droite, à hauteur du crapaud : au bout, la lumière du dehors
   const D = SAL.porte;
-  ctx.fillStyle = "#1a0e06"; ctx.beginPath(); ctx.moveTo(D.x - 2, D.y + D.h); ctx.lineTo(D.x - 2, D.y + 6); ctx.quadraticCurveTo(D.x - 2, D.y - 4, D.x + 10, D.y - 4); ctx.lineTo(L, D.y - 4); ctx.lineTo(L, D.y + D.h); ctx.fill();
-  const gl = ctx.createLinearGradient(D.x, 0, L, 0); gl.addColorStop(0, "rgba(255,236,170,0)"); gl.addColorStop(1, "rgba(255,244,210,.95)"); ctx.fillStyle = gl; ctx.fillRect(D.x, D.y - 3, L - D.x, D.h + 3);
-  ctx.strokeStyle = "#d8b47a"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(D.x - 3, D.y + D.h); ctx.lineTo(D.x - 3, D.y + 6); ctx.quadraticCurveTo(D.x - 3, D.y - 5, D.x + 10, D.y - 5); ctx.lineTo(L, D.y - 5); ctx.stroke();
+  ctx.fillStyle = "#070504"; ctx.fillRect(D.x, D.y - 2, L - D.x, D.h + 2);   // le tunnel, derrière les pierres : le noir
 }
 // la tête de lion, sculptée dans le mur gauche, tournée vers le puits, la gueule grande ouverte
 function teteLion(lx, ly) {
@@ -1761,7 +1826,8 @@ function pierreMur(x, y, w, h, n) {
 }
 const descenteBloc = P => SAL.haut + (SAL.bas - SAL.haut) * Math.min(1, P.bloc);
 function decorBloc(P, t) {
-  ctx.drawImage(fondPeint("salleBloc2", peindreSalleBloc), 0, 0, L, H);
+  if (P.entree) { decorEntree(P, t); return; }
+  ctx.drawImage(fondPeint("salleBloc8", peindreSalleBloc), 0, 0, L, H);
   const D = SAL.porte, pw = (L - D.x) / NB_PIERRES, [lx, ly] = SAL.lion;
   // le rai de soleil qui tombe de l'ouverture du puits, en biais, et la poussière qui y danse
   ctx.save(); ctx.globalCompositeOperation = "lighter";
@@ -1772,10 +1838,10 @@ function decorBloc(P, t) {
   // la torche, au-dessus du tunnel
   { const x = D.x - 8, y = D.y - 22, f = Math.sin(t / 3) * .6 + Math.sin(t / 1.7) * .4, g = ctx.createRadialGradient(x, y, 1, x, y, 38); g.addColorStop(0, "rgba(255,170,80,.4)"); g.addColorStop(1, "rgba(255,140,60,0)"); ctx.fillStyle = g; ctx.fillRect(x - 38, y - 38, 76, 76);
     ctx.fillStyle = "#5a3a1e"; ctx.fillRect(x - .8, y + 2, 1.6, 8); ctx.fillStyle = "rgba(255,120,40,.95)"; ovale(x, y - 1 - f * .4, 2.2, 3.4 + f); ctx.fillStyle = "rgba(255,226,130,.95)"; ovale(x, y, 1, 1.8); }
-  // les cinq pierres du tunnel, de 1 (contre le puits) à 5 (au bout) ; elles s'effondrent de la 5 à la 1
+  // les cinq pierres du tunnel, de 5 (contre le puits) à 1 (au bout) ; elles s'effondrent de la 1 à la 5
   for (let i = 0; i < NB_PIERRES; i++) {
     const rang = NB_PIERRES - 1 - i, x = D.x + i * pw;
-    if (rang >= P.otees) pierreMur(x, D.y - 2, pw, D.h + 2, i + 1);
+    if (rang >= P.otees) pierreMur(x, D.y - 2, pw, D.h + 2, NB_PIERRES - i);
     else if (P.chute && P.chute.k === rang) {
       const u = Math.min(1, P.chute.t / 24);
       for (let e = 0; e < 9; e++) { const ex = x + pw * bruit(e + i * 7), ey = D.y + D.h * bruit(e + i * 7 + 3) * (1 - u) + u * u * D.h; ctx.fillStyle = `rgba(200,164,110,${1 - u * .7})`; ctx.fillRect(ex, Math.min(D.y + D.h - 2, ey), 2.6, 2.2); }
@@ -1802,18 +1868,161 @@ function decorBloc(P, t) {
   ctx.fillStyle = degrade(SAL.sol - 16, SAL.sol, "#e2c07a", "#b8904a"); ctx.beginPath(); ctx.moveTo(SAL.mg, SAL.sol); ctx.quadraticCurveTo(lx + 22, SAL.sol - 3 - 16 * tas, lx + 40 + 34 * tas, SAL.sol); ctx.fill();
   ctx.fillStyle = "rgba(255,244,210,.5)"; for (let k = 0; k < 8; k++) rond(SAL.mg + 6 + bruit(k + 90) * (24 + 30 * tas), SAL.sol - 1 - bruit(k + 91) * 8 * tas, .4);
   // le crapaud, plus grand ; écrasé, il s'aplatit un instant ; libéré, il file dans le tunnel
-  const ex = P.sortie ? Math.min(L + 10, 104 + P.sortie * 1.6) : 104;
-  const yGl = P.glisse ? -30 + (SAL.sol + 30) * Math.min(1, (P.glisse / 30) ** 2) : SAL.sol;
-  ctx.save(); ctx.translate(ex, yGl); ctx.scale(SAL.ech, SAL.ech);
+  const [gx, gy, pente] = P.glisse ? posGlisse(P.glisse) : [P.sortie ? Math.min(L + 10, 104 + P.sortie * 1.6) : 104, SAL.sol, 0];
+  if (P.glisse > GLISSE.conduit - 2 && P.glisse < GLISSE.sol) { const u = (P.glisse - GLISSE.conduit + 2) / 20; for (let k = 0; k < 7; k++) { ctx.fillStyle = `rgba(226,200,150,${.5 * (1 - u)})`; rond(SAL.mg + 4 + bruit(k + 300) * 30 * u + 6 * u, SAL.sol - 2 - bruit(k + 301) * 8 * u, .8 + u); } }   // la poussière à la sortie du conduit
+  ctx.save(); ctx.translate(gx, gy); ctx.rotate(pente * 1.05); ctx.scale(SAL.ech, SAL.ech);
   if (P.ecrase) { const e = Math.max(.35, 1 - P.ecrase / 10); ctx.scale(1 + (1 - e) * .8, e); }
-  dessinerCrapaud({ x: -HW / 2, y: -HH, auSol: !P.glisse, dir: 1, vx: P.sortie ? 1 : 0, vy: P.glisse ? 2 : 0 }, t); ctx.restore();
+  dessinerCrapaud({ x: -HW / 2, y: -HH, auSol: !P.glisse || P.glisse > GLISSE.conduit, dir: 1, vx: P.sortie ? 1 : 0, vy: P.glisse && P.glisse <= GLISSE.conduit ? 2 : 0 }, t); ctx.restore();
   // la jauge du danger : la place qui reste sous la dalle
   if (!P.sortie && !P.glisse) { const reste = 1 - Math.min(1, P.bloc); ctx.fillStyle = "rgba(20,12,6,.65)"; arrondi(8, 8, 46, 6, 2); ctx.fill(); ctx.fillStyle = reste > .3 ? "#7aa844" : "#d8503a"; ctx.fillRect(9, 9, 44 * reste, 4); }
   // le cadre sombre, pour l'ambiance
   const v = ctx.createRadialGradient(L / 2, H / 2, 70, L / 2, H / 2, 160); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)"); ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
 }
+// ------------------------------------------------------------
+// L'ARRIVÉE DANS LA GRANDE PYRAMIDE : vue à hauteur de crapaud, la grande galerie de Khéops, en perspective à un point
+// de fuite (ses murs se resserrent en sept gradins vers le plafond). Le chacal y attend à mi-pente, entre deux torches,
+// et annonce l'enjeu ; puis le sol gronde, la dalle bascule… et le crapaud glisse au fond du puits.
+// ------------------------------------------------------------
+const GAL = { fuite: [120, 62], loin: .16 };
+const ENTREE_PU = { fondu: 24, entre: 16, sauts: 5, saut: 22, l1: 130, l2: 265, l3: 400, gronde: 510, cri: 516, chute: 532, fin: 585 };
+const POS_CRAPAUD_GAL = [1.08, .68];   // d'où il entre (au bord de l'image) et où il s'arrête, en profondeur
+const REPLIQUES_PU = [
+  ["l1", "chacal", "« Nous voici dans la grande pyramide, petit crapaud. Cette galerie monte vers la chambre du roi. »"],
+  ["l2", "chacal", "« Mais nous, nous allons tout en bas : sous la pyramide coule le fleuve de la nuit, et c'est là que t'attend la barque du soleil. »"],
+  ["l3", "chacal", "« Les bâtisseurs ont fermé les passages par des herses de granit : pour passer, il faudra calculer vite. Avance… et regarde où tu poses les pattes ! »"],
+  ["cri", "crapaud", "« Euh… pourquoi le sol tremble ? Aaaah ! »"]
+];
+// la coupe de la galerie, au premier plan : les banquettes, les murs, les sept gradins, le plafond étroit
+function profilGalerie() {
+  const g = [[48, 180], [48, 168], [30, 168], [30, 128]];
+  for (let k = 0; k < 7; k++) { const x = 30 + k * 7, y = 128 - k * 16; g.push([x, y - 16], [x + 7, y - 16]); }
+  const d = g.slice().reverse().map(([x, y]) => [240 - x, y]);
+  return [...g, ...d];
+}
+const versFuite = ([x, y], f) => [GAL.fuite[0] + (x - GAL.fuite[0]) * f, GAL.fuite[1] + (y - GAL.fuite[1]) * f];
+function peindreGalerie() {
+  const [vx, vy] = GAL.fuite, R = profilGalerie();
+  ctx.fillStyle = "#0c0906"; ctx.fillRect(0, 0, L, H);
+  // chaque face : du premier plan jusqu'au fond, de plus en plus sombre
+  for (let i = 0; i < R.length; i++) {
+    const a = R[i], b = R[(i + 1) % R.length], a2 = versFuite(a, GAL.loin), b2 = versFuite(b, GAL.loin);
+    const horiz = a[1] === b[1], dessous = horiz && a[1] < vy, sol = horiz && a[1] > vy;
+    const base = sol ? [120, 96, 66] : dessous ? [70, 56, 40] : [150, 122, 86];
+    const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], g = ctx.createLinearGradient(m[0], m[1], vx, vy);
+    g.addColorStop(0, `rgb(${base.join(",")})`); g.addColorStop(.75, `rgb(${base.map(c => c * .3 | 0).join(",")})`); g.addColorStop(1, "rgb(14,10,8)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(...b2); ctx.lineTo(...a2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(20,14,8,.5)"; ctx.lineWidth = .5; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...a2); ctx.stroke();   // les arêtes fuient vers le point de fuite
+  }
+  // les joints des blocs : des anneaux de plus en plus serrés vers le fond (la perspective)
+  for (let i = 1; i < 9; i++) {
+    const f = 1 / (1 + i * .62); ctx.strokeStyle = `rgba(20,14,8,${.45 - i * .03})`; ctx.lineWidth = .5;
+    ctx.beginPath(); R.forEach((p, k) => { const q = versFuite(p, f); k ? ctx.lineTo(...q) : ctx.moveTo(...q); }); ctx.closePath(); ctx.stroke();
+  }
+  // les rainures des banquettes, où l'on calait les poutres : de petites encoches régulières
+  for (let i = 1; i < 9; i++) { const f = 1 / (1 + (i - .5) * .62); for (const x of [36, 204]) { const [ex, ey] = versFuite([x, 168], f); ctx.fillStyle = "rgba(10,8,6,.55)"; ctx.fillRect(ex - 2 * f, ey - 1.6 * f, 4 * f, 2.4 * f); } }
+  // le fond : le noir, et une lueur très loin, en haut de la pente
+  const fond = R.map(p => versFuite(p, GAL.loin)); ctx.fillStyle = "#050403"; ctx.beginPath(); fond.forEach((q, k) => k ? ctx.lineTo(...q) : ctx.moveTo(...q)); ctx.closePath(); ctx.fill();
+  const lu = ctx.createRadialGradient(vx, vy - 6, 0, vx, vy - 6, 10); lu.addColorStop(0, "rgba(255,200,120,.35)"); lu.addColorStop(1, "rgba(255,200,120,0)"); ctx.fillStyle = lu; ctx.fillRect(vx - 10, vy - 16, 20, 20);
+}
+const TORCHES_GAL = [[30, 140, .62], [210, 140, .62], [30, 140, .34], [210, 140, .34]].map(([x, y, f]) => [...versFuite([x, y], f), f]);
+function decorEntree(P, t) {
+  const f = P.entree, E = ENTREE_PU, chute = Math.max(0, (f - E.chute) / (E.fin - E.chute));
+  const secousse = f > E.gronde ? Math.min(1, (f - E.gronde) / 30) * 1.6 : 0;
+  ctx.save(); ctx.translate((Math.random() - .5) * secousse, (Math.random() - .5) * secousse);
+  ctx.drawImage(fondPeint("galerie", peindreGalerie), 0, 0, L, H);
+  // les torches : la flamme, et la lumière qui danse sur la pierre
+  ctx.save(); ctx.globalCompositeOperation = "lighter";
+  TORCHES_GAL.forEach(([x, y, k], i) => { const r = 46 * k * (1 + .08 * Math.sin(t / 3 + i * 2)), g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, "rgba(255,170,80,.42)"); g.addColorStop(1, "rgba(255,120,40,0)"); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); });
+  ctx.restore();
+  TORCHES_GAL.forEach(([x, y, k], i) => { ctx.fillStyle = "#3a2614"; ctx.fillRect(x - .6 * k * 2, y, 1.2 * k * 2, 7 * k * 2); const h = 4 * k * 2 * (1 + .15 * Math.sin(t / 2 + i)); ctx.fillStyle = "#ffcf6a"; ovale(x, y - h * .4, 1.3 * k * 2, h * .6, 0); ctx.fillStyle = "#fff2c0"; ovale(x, y - h * .25, .6 * k * 2, h * .3, 0); });
+  // la poussière qui flotte dans la lumière
+  for (let k = 0; k < 18; k++) { const x = 40 + bruit(k + 400) * 160 + Math.sin(t / 40 + k) * 4, y = 40 + ((bruit(k + 401) * 120 + t * .1 * (1 + bruit(k))) % 120); ctx.fillStyle = `rgba(255,220,160,${.12 + .1 * Math.sin(t / 9 + k)})`; rond(x, y, .5); }
+  // le chacal, à mi-pente, tourné vers le crapaud ; il se retourne quand le sol gronde
+  const [jx, jy] = versFuite([120, 180], .46);
+  const dit = REPLIQUES_PU.filter(([k]) => f >= E[k]).pop(), parleChacal = dit && dit[1] === "chacal" && f < E.gronde;
+  ctx.save(); ctx.translate(jx, jy - (parleChacal ? Math.abs(Math.sin(t / 5)) * .5 : 0)); ctx.scale(1.15, 1.15); chacal(0, 0, t, false, f > E.gronde ? 1 : -1); ctx.restore();
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(jx, jy + .5, 10, 1.6, 0);
+  // le crapaud entre dans l'image par le bas et monte la galerie, de dos, en quelques bonds ; il s'arrête sur une dalle
+  const [fa, fb] = POS_CRAPAUD_GAL, k = Math.max(0, f - E.entre), n = Math.min(E.sauts, k / E.saut), bond = Math.floor(n), u = n - bond;
+  const fc = n >= E.sauts ? fb : fa + (fb - fa) * (bond + u) / E.sauts, haut = n >= E.sauts ? 0 : Math.sin(Math.PI * u);
+  const [cx, cy] = versFuite([120, 180], fc), ech = fc * 1.75;
+  // la dalle sous ses pattes : elle se fend quand le sol gronde, puis bascule et s'ouvre sur le noir
+  const bord = (dx, ff) => versFuite([120 + dx, 180], ff), pres = fb * 1.07, loin = fb * .94;
+  if (f > E.gronde) {
+    const v = Math.min(1, (f - E.gronde) / 30); ctx.strokeStyle = `rgba(10,6,4,${.85 * v})`; ctx.lineWidth = .6;
+    const a = bord(-22, pres), b = bord(-20, loin), c = bord(22, loin), d = bord(20, pres);
+    ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(...c); ctx.lineTo(...d); ctx.closePath(); ctx.stroke();
+  }
+  const ouvre = f > E.chute ? Math.min(1, (f - E.chute) / 10) : 0;
+  if (ouvre > 0) { const a = bord(-22, pres), b = bord(-20, loin), c = bord(20, loin), d = bord(22, pres), mi = loin + (pres - loin) * (1 - ouvre); const b2 = bord(-20, mi), c2 = bord(20, mi);
+    ctx.fillStyle = "#050302"; ctx.beginPath(); ctx.moveTo(...b2); ctx.lineTo(...c2); ctx.lineTo(...d); ctx.lineTo(...a); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(120,96,66,.9)"; ctx.beginPath(); ctx.moveTo(...b); ctx.lineTo(...c); ctx.lineTo(...c2); ctx.lineTo(...b2); ctx.closePath(); ctx.fill(); }   // la dalle qui pivote
+  const tombe = f > E.chute ? ((f - E.chute) / 22) ** 2 * 30 : 0;
+  if (tombe < 30) {
+    ctx.save();
+    if (tombe > 0) { const d = bord(0, pres); ctx.beginPath(); ctx.rect(0, 0, L, d[1]); ctx.clip(); }   // il disparaît derrière le bord du trou
+    if (!tombe) { ctx.fillStyle = "rgba(0,0,0,.35)"; ovale(cx, cy + .4, 6 * ech, 1.3 * ech, 0); }
+    crapaudDeDos(cx, cy - haut * 7 * fc + tombe, ech, haut, t, f > E.gronde && !tombe);
+    ctx.restore();
+  }
+  ctx.restore();
+  // ce qui se dit : une bulle en haut de la galerie, avec sa pointe vers celui qui parle
+  if (dit && f < E.chute + 20) {
+    const [k, qui, txt] = dit, a = Math.min(1, (f - E[k]) / 8);
+    bulleGalerie(txt, qui === "chacal" ? [jx + 8, jy - 24] : [cx, cy - 12 * ech], a);
+  }
+  // le fondu du début, et le noir après la chute
+  const noir = Math.max(f < E.fondu ? 1 - f / E.fondu : 0, Math.min(1, Math.max(0, (f - E.chute - 14) / 30)));
+  if (noir > 0) { ctx.fillStyle = `rgba(0,0,0,${noir})`; ctx.fillRect(0, 0, L, H); }
+}
+function bulleGalerie(txt, [px, py], a) {
+  ctx.save(); ctx.globalAlpha = a; ctx.font = "5.4px Georgia, serif";
+  const mots = txt.split(" "), lignes = [""], lw = 200;
+  for (const m of mots) { const essai = lignes[lignes.length - 1] ? lignes[lignes.length - 1] + " " + m : m; if (ctx.measureText(essai).width > lw) lignes.push(m); else lignes[lignes.length - 1] = essai; }
+  const h = 6 + lignes.length * 7, x = 120 - lw / 2 - 5, y = 6, w = lw + 10;
+  ctx.fillStyle = "rgba(248,238,212,.96)"; ctx.strokeStyle = "rgba(120,86,40,.9)"; ctx.lineWidth = .6;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 3); ctx.fill(); ctx.stroke();
+  const bx = Math.max(x + 10, Math.min(x + w - 10, px)); ctx.beginPath(); ctx.moveTo(bx - 4, y + h - .3); ctx.lineTo(px, py); ctx.lineTo(bx + 4, y + h - .3); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(bx - 4, y + h); ctx.lineTo(px, py); ctx.lineTo(bx + 4, y + h); ctx.stroke();
+  ctx.fillStyle = "#3a2410"; ctx.textAlign = "center"; lignes.forEach((l, i) => ctx.fillText(l, 120, y + 9 + i * 7)); ctx.textAlign = "left";
+  ctx.restore();
+}
+// le crapaud vu de dos : le dos verruqueux, les deux bosses des yeux, les pattes arrière repliées (ou tendues pendant le bond)
+function crapaudDeDos(x, base, ech, bond, t, tremble) {
+  ctx.save(); ctx.translate(x + (tremble ? Math.sin(t * 2.3) * .3 : 0), base); ctx.scale(ech, ech);
+  ctx.shadowColor = "rgba(255,226,160,.7)"; ctx.shadowBlur = 2 * echelle;
+  const peau = "#a2863a", fonce = "#7d6830", tend = bond;
+  // les pattes arrière : repliées en Z sur les côtés ; pendant le bond, elles se tendent vers l'arrière (vers nous)
+  for (const c of [-1, 1]) {
+    ctx.strokeStyle = fonce; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(c * 4.2, -2.4); ctx.lineTo(c * (7.4 - tend * 2), -.6 + tend * 2.4); ctx.lineTo(c * (4.8 - tend * 1.6), .3 + tend * 3.6); ctx.stroke();
+    ctx.fillStyle = fonce; ovale(c * (4.2 - tend * 1.4), .5 + tend * 3.8, 2, .8, 0);
+  }
+  // le corps, large et rond
+  const g = ctx.createRadialGradient(-1.4, -7, .5, 0, -4.6, 8);
+  g.addColorStop(0, "#d4b45a"); g.addColorStop(.55, "#9a7f34"); g.addColorStop(1, "#5b4b1f");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -4.6, 6.6, 4.8 - tend * .4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(60,45,15,.55)";
+  for (const [wx, wy, r] of [[-2.6, -5.6, .55], [1.8, -6.2, .5], [-.4, -3.8, .5], [3.4, -3.8, .45], [-3.8, -3.4, .45], [.8, -7.6, .4], [-1.6, -7.4, .35]]) rond(wx, wy, r);
+  ctx.strokeStyle = "rgba(255,228,160,.5)"; ctx.lineWidth = .35; ctx.beginPath(); ctx.ellipse(0, -4.6, 6.2, 4.4, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+  // les bosses des yeux, en haut de la tête, et un reflet doré sur leur bord
+  for (const c of [-1, 1]) { ctx.fillStyle = peau; ovale(c * 3.4, -8.3, 2.1, 1.05, c * .25); ctx.fillStyle = "#c8a24a"; ovale(c * 3.6, -8.7, 1.2, .45, c * .25); }
+  ctx.strokeStyle = "rgba(70,55,20,.45)"; ctx.lineWidth = .5; ctx.beginPath(); ctx.moveTo(0, -8.8); ctx.quadraticCurveTo(.3, -5, 0, -1.4); ctx.stroke();   // la ligne du dos
+  ctx.restore();
+}
+function bougerEntree(P) {
+  const f = ++P.entree, r = $("retour");
+  for (const [k, qui, txt] of REPLIQUES_PU) if (f === ENTREE_PU[k]) (r.querySelector(".replique") || (r.className = "ok", r.innerHTML = ""), r).insertAdjacentHTML("beforeend", `<div class="replique" style="animation:repliqueApres .4s both"><img src="${portrait(qui)}" alt=""><span>${txt}</span></div>`);
+  if (f > ENTREE_PU.entre && f <= ENTREE_PU.entre + ENTREE_PU.sauts * ENTREE_PU.saut && (f - ENTREE_PU.entre) % ENTREE_PU.saut === 1) son("saut");
+  if (f === ENTREE_PU.gronde) son("rocher");
+  if (f === ENTREE_PU.chute) son("vent");
+  if (f >= ENTREE_PU.fin) finEntree(P);
+}
+function finEntree(P) { P.entree = 0; P.glisse = 1; apres(60, poserQuestion); afficherQuestion(); }
 function bougerBloc(P) {
-  if (P.glisse) { if (++P.glisse >= 40) { P.glisse = 0; son("plouf"); afficherQuestion(); } return; }
+  if (P.entree) { bougerEntree(P); return; }
+  if (P.glisse) { ++P.glisse; if (P.glisse === 2) son("vent"); if (P.glisse === GLISSE.conduit) son("sable"); if (P.glisse >= GLISSE.sol + 4) { P.glisse = 0; afficherQuestion(); } return; }
   if (P.chute && ++P.chute.t >= 26) P.chute = null;
   if (P.sortie) { if (++P.sortie === 80) plateauFranchi(); return; }
   if (P.ecrase) { if (++P.ecrase >= 40) { P.ecrase = 0; P.bloc = .2; } return; }
@@ -1900,6 +2109,7 @@ function portrait(qui) {
   try {
     if (qui === "guide" || qui === "crapaud") { if (qui === "guide") ctx.filter = "hue-rotate(70deg) saturate(.8)"; dessinerCrapaud({ x: 2, y: 4, auSol: true, dir: 1, vx: 0, vy: 0 }, 0); }
     else if (qui === "sobek") ctx.drawImage(IMG_SOBEK, 836, 96, 140, 140, 0, 0, 16, 16);
+    else if (qui === "anubis") { if (!IMG_TETE_ANUBIS.complete || !IMG_TETE_ANUBIS.naturalWidth) return ""; ctx.fillStyle = "#1b1530"; ctx.fillRect(0, 0, 16, 16); ctx.drawImage(IMG_TETE_ANUBIS, 96, 170, 270, 270, 0, 0, 16, 16); }
     else if (qui === "chacal") { ctx.fillStyle = degrade(0, 16, "#1c2244", "#3a3058"); ctx.fillRect(0, 0, 16, 16); ctx.translate(-4, 0); ctx.scale(1.25, 1.25); chacal(4, 14, 0, false); }
     else if (qui === "croco") { ctx.fillStyle = degrade(0, 16, "#6a4a78", "#e0905a"); ctx.fillRect(0, 0, 16, 16); crocoMarche(-9, 12.5, 0, false); }
     else ibis(7.5, 9.5, .95, 0, 0, 1);
@@ -2106,6 +2316,29 @@ function bougerDessus(P) {
   if (D.sur === "droite") { D.phase = "script"; D.comp = nouvelleGrenouille(D.depart); son("allume"); afficherQuestion(); return; }   // la gerboise attend son programme
   if (typeof D.sur === "number") { const C = D.crocs[D.sur]; D.x = C.x; D.y = C.y + TD.crocL / 2; son("bois"); }
 }
+// l'angle du saut, comme sur un rapporteur : la direction « tout droit » (0°), des repères tous les 30°, et l'angle
+// entre « tout droit » et la visée, découpé en parts de 30° (une part par appui sur ← ou →), avec sa mesure
+function angleVisee(x, y, ang) {
+  const deg = Math.round(((ang / DEG) % 360 + 540) % 360 - 180), n = Math.round(Math.abs(deg) / 30), s = Math.sign(deg), R = 18, P30 = Math.PI / 6;
+  ctx.save();
+  // les repères, de −90° à 90°
+  ctx.strokeStyle = "rgba(255,255,255,.45)"; ctx.lineWidth = .35;
+  for (let k = -3; k <= 3; k++) { const a = k * P30; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * (R - 1.6), y + Math.sin(a) * (R - 1.6)); ctx.lineTo(x + Math.cos(a) * (R + 1.2), y + Math.sin(a) * (R + 1.2)); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, R, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+  // « tout droit » : la demi-droite de référence
+  ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = .5; ctx.setLineDash([1.2, 1.2]); ctx.beginPath(); ctx.moveTo(x + 6, y); ctx.lineTo(x + R + 6, y); ctx.stroke(); ctx.setLineDash([]);
+  // l'angle : n parts de 30°, en deux tons, séparées par un trait
+  for (let k = 0; k < n; k++) {
+    const a0 = s * k * P30, a1 = s * (k + 1) * P30;
+    ctx.fillStyle = k % 2 ? "rgba(255,214,110,.32)" : "rgba(255,214,110,.5)"; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, R - .5, Math.min(a0, a1), Math.max(a0, a1)); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(255,226,140,.95)"; ctx.lineWidth = .4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a1) * (R - .5), y + Math.sin(a1) * (R - .5)); ctx.stroke();
+  }
+  if (n) { ctx.strokeStyle = "rgba(255,226,140,1)"; ctx.lineWidth = .7; ctx.beginPath(); ctx.arc(x, y, R - .5, Math.min(0, s * n * P30), Math.max(0, s * n * P30)); ctx.stroke(); }
+  // la mesure, au bout de l'arc
+  const am = s * n * P30 / 2, tx = x + Math.cos(am) * (R + 7), ty = y + Math.sin(am) * (R + 7) + 1.6;
+  ctx.font = "bold 5px Georgia, serif"; ctx.textAlign = "center"; ctx.lineWidth = 1.4; ctx.strokeStyle = "rgba(10,30,32,.85)"; ctx.strokeText(Math.abs(deg) + "°", tx, ty); ctx.fillStyle = "#ffe08a"; ctx.fillText(Math.abs(deg) + "°", tx, ty); ctx.textAlign = "left";
+  ctx.restore();
+}
 function tombeDessus(D, texte) {
   D.chute = 1; D.sur = null; son("plouf");
   const r = $("retour"); r.className = "aide"; r.textContent = texte;
@@ -2196,6 +2429,7 @@ function decorNilDessus(P, t) {
   // la visée : la trajectoire du saut et le point d'arrivée
   if (D.phase === "crapaud" && !D.saut && !D.chute && !P.bascule && !suiteEnAttente) {
     const x1 = D.x + Math.cos(D.ang) * TD.saut, y1 = D.y + Math.sin(D.ang) * TD.saut, cible = surQuoiDessus(D, x1, y1);
+    angleVisee(D.x, D.y, D.ang);
     ctx.strokeStyle = cible === null ? "rgba(255,130,120,.9)" : mordu(cible) ? "rgba(255,170,60,.95)" : "rgba(170,240,120,.95)"; ctx.lineWidth = .7; ctx.setLineDash([1.6, 1.6]);
     ctx.beginPath(); ctx.moveTo(D.x + Math.cos(D.ang) * 7, D.y + Math.sin(D.ang) * 7); ctx.lineTo(x1, y1); ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(x1, y1, 4 + Math.sin(t / 6) * .5, 0, Math.PI * 2); ctx.stroke();
@@ -2421,7 +2655,7 @@ function qSobek(k, P) {
   const G = P.grille = grilleSobek(k), g = pgcd(G.nb, G.n);
   return qMaths(`<b>Quelle fraction du rectangle est coloriée ?</b> Donne-la sous forme <b>irréductible</b>.`, G.nb / G.n,
     `Le rectangle est partagé en ${G.n} parts égales${G.type === "carres" ? "" : " (des triangles)"}, et ${G.nb} ${G.nb > 1 ? "sont coloriées" : "est coloriée"} : ${G.nb}/${G.n}` + (g > 1 ? `, c'est-à-dire ${G.nb / g}/${G.n / g}.` : "."),
-    { lire: lireFraction, a: G.nb / g, b: G.n / g, irreductible: true, placeholder: "ta fraction" });
+    { lire: lireFraction, a: G.nb / g, b: G.n / g, irreductible: true, reduireEnsuite: "Sobek", placeholder: "ta fraction" });
 }
 // au crépuscule, au bord du Nil : pyramides et felouques au loin, le pylône d'un temple à droite
 // la stèle, dressée sur des rochers au bord de l'eau, à gauche du dieu ; dessinée une fois (fond transparent), puis posée
@@ -2735,8 +2969,8 @@ function devantSobek(P, t) {
 }
 // ============================================================
 //  LES BALADES VERS LE MONDE OBSCUR (vue de côté, le décor défile)
-//  Plateau 8 : au crépuscule, un crocodile de Sobek mène le crapaud le long du Nil jusqu'au temple de son maître.
-//  Plateau 10 : la nuit, un chacal noir, Oupouaout « l'ouvreur des chemins », le mène jusqu'aux pyramides.
+//  Plateau 7 : au crépuscule, un crocodile de Sobek mène le crapaud le long du Nil jusqu'au temple de son maître.
+//  Plateau 9 : la nuit, un chacal noir, Oupouaout « l'ouvreur des chemins », le mène jusqu'aux pyramides.
 //  Trois fois, le compagnon demande un mot (numération pour le crocodile, calcul pour le chacal).
 //  Juste : +1 point, et le chemin s'éclaire ; faux : −3 points, l'obscurité se resserre.
 // ============================================================
@@ -2773,7 +3007,7 @@ const COMPAGNONS = {
   croco: { mots: MOTS_NUMERATION, intro: "Je suis un crocodile de Sobek. Mon maître t'attend au bout du fleuve. Réponds-moi en chemin. ", bien: "« Bien, petit crapaud. Sobek sera content. »", faux: "« Grrr… Sobek n'aimerait pas ça. »" },
   chacal: { mots: MOTS_NOMBRES, intro: "Pour avancer dans la nuit, réponds-moi. ", bien: "« Bien. Le chemin s'ouvre. »", faux: "« Non… La nuit se referme sur toi. »" }
 };
-// Plateau 8 : le crocodile s'arrête devant une borne gravée d'un nombre décimal (6 chiffres tous différents)
+// Plateau 7 : le crocodile s'arrête devant une borne gravée d'un nombre décimal (6 chiffres tous différents)
 // et demande un chiffre (dixièmes, centièmes, unités…) ou un nombre (de dizaines, de centaines).
 function nombreBorne() {
   const ch = melanger([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 6), e = +ch.slice(0, 4).join(""), d = ch.slice(4).join("");
@@ -2944,7 +3178,7 @@ function borne(x, sol, texte) {
   ctx.strokeStyle = "#3e2c1e"; ctx.lineWidth = .6; ctx.stroke();
   ctx.fillStyle = "#3a2410"; ctx.font = "bold 6.5px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText(texte, x, sol - 9); ctx.textAlign = "left";
 }
-// Plateau 10 : les quatre réponses gravées sur quatre stèles le long de la piste, dans le noir ; on va toucher la bonne (↓)
+// Plateau 9 : les quatre réponses gravées sur quatre stèles le long de la piste, dans le noir ; on va toucher la bonne (↓)
 function stelesNuit(P, t) {
   const q = question || questionCorrigee; if (!q || !q.choix) return;
   P.steles.W.forEach((W, j) => {
@@ -3090,7 +3324,7 @@ function fBalade(qui, theme, extra) {
   }, extra);
 }
 // ============================================================
-//  PLATEAU 12 — LA BARQUE DU SOLEIL (vue de dessus, dans les souterrains)
+//  PLATEAU 11 — LA BARQUE DU SOLEIL (vue de dessus, dans les souterrains)
 //  Chaque nuit, la barque de Rê traverse le fleuve souterrain et ressort à l'aube. Le crapaud y monte avec l'ibis,
 //  à la proue. On programme la barque en blocs (avancer de … cases, tourner ↻ / ↺ de 90°, répéter) pour la mener,
 //  section après section, jusqu'à la porte de l'aube. La 3e section est un escalier : 6 blocs seulement, il faut « répéter ».
@@ -3135,13 +3369,13 @@ function peindreCaverne() {
   ctx.fillStyle = degrade(0, H, "#1c1626", "#100c16"); ctx.fillRect(0, 0, L, H);
   for (let k = 0; k < 160; k++) { ctx.fillStyle = `rgba(${bruit(k + 1100) < .5 ? "60,50,80" : "8,6,12"},${.2 + bruit(k + 1101) * .3})`; ovale(bruit(k + 1102) * L, bruit(k + 1103) * H, 1 + bruit(k + 1104) * 4, .6 + bruit(k + 1105) * 2.4, bruit(k + 1106) * 3); }
 }
-function barqueRe(x, y, ang, t) {   // la barque de Rê, vue de dessus : coque de papyrus aux bouts relevés, le disque du soleil, l'ibis à la proue
+function barqueRe(x, y, ang, t, allume = 1) {   // la barque de Rê, vue de dessus : coque de papyrus aux bouts relevés, le disque du soleil, l'ibis à la proue
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-  const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 26); g.addColorStop(0, "rgba(255,190,90,.35)"); g.addColorStop(1, "rgba(255,160,60,0)"); ctx.fillStyle = g; ctx.fillRect(-26, -26, 52, 52);
+  const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 26 * (.4 + .6 * allume)); g.addColorStop(0, `rgba(255,190,90,${.35 * allume})`); g.addColorStop(1, "rgba(255,160,60,0)"); ctx.fillStyle = g; ctx.fillRect(-26, -26, 52, 52);
   ctx.fillStyle = "#c89a4a"; ctx.beginPath(); ctx.moveTo(-9, 0); ctx.quadraticCurveTo(-7, -3.6, 0, -3.4); ctx.quadraticCurveTo(7, -3.6, 9, 0); ctx.quadraticCurveTo(7, 3.6, 0, 3.4); ctx.quadraticCurveTo(-7, 3.6, -9, 0); ctx.fill();
   ctx.strokeStyle = "#7a5a24"; ctx.lineWidth = .4; for (let k = -6; k <= 6; k += 2) { ctx.beginPath(); ctx.moveTo(k, -3); ctx.lineTo(k, 3); ctx.stroke(); }
   ctx.fillStyle = "#e0b860"; rond(-9.4, 0, 1.2); rond(9.4, 0, 1.2);
-  ctx.fillStyle = "#e85a24"; rond(-1.4, 0, 2.4); ctx.strokeStyle = "#f6d070"; ctx.lineWidth = .6; ctx.beginPath(); ctx.arc(-1.4, 0, 2.4, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = allume > .5 ? "#e85a24" : "#5a3a30"; rond(-1.4, 0, 2.4); ctx.strokeStyle = allume > .5 ? "#f6d070" : "#806040"; ctx.lineWidth = .6; ctx.beginPath(); ctx.arc(-1.4, 0, 2.4, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = "#f4efe4"; ovale(5.4, 0, 1.4, 1, 0); ctx.fillStyle = "#1e1a18"; rond(6.8, 0, .6); trait([[7.2, 0], [8.6, .7]], "#1e1a18", .3);   // l'ibis, à la proue
   ctx.restore();
 }
@@ -3152,6 +3386,9 @@ function decorBarque(P, t) {
   // l'eau, case par case, et ses reflets
   for (const [i, j] of F.eau) { const x = FL.x + i * FL.c, y = FL.y + j * FL.c; ctx.fillStyle = "#1c3a4a"; ctx.fillRect(x - .3, y - .3, FL.c + .6, FL.c + .6); }
   for (const [i, j] of F.eau) { const x = FL.x + i * FL.c, y = FL.y + j * FL.c; for (let k = 0; k < 2; k++) { ctx.fillStyle = `rgba(160,210,230,${.12 + .1 * Math.sin(t / 10 + i + j * 2 + k)})`; ctx.fillRect(x + 2 + ((t * .15 + k * 5 + i * 3) % 7), y + 3 + k * 5, 3, .4); } }
+  // les cases : un fin quadrillage sur l'eau, pour compter les « avancer »
+  ctx.strokeStyle = "rgba(170,215,235,.32)"; ctx.lineWidth = .4;
+  for (const [i, j] of F.eau) ctx.strokeRect(FL.x + i * FL.c + .5, FL.y + j * FL.c + .5, FL.c - 1, FL.c - 1);
   // les rives : un liseré clair au bord de l'eau
   ctx.strokeStyle = "rgba(170,150,190,.35)"; ctx.lineWidth = .6;
   for (const [i, j] of F.eau) DIRS_CH.forEach(([dx, dy]) => { if (F.vus.has((i + dx) + "," + (j + dy))) return; const [cx, cy] = [FL.x + i * FL.c + FL.c / 2, FL.y + j * FL.c + FL.c / 2], hc = FL.c / 2; ctx.beginPath(); if (dx) { ctx.moveTo(cx + dx * hc, cy - hc); ctx.lineTo(cx + dx * hc, cy + hc); } else { ctx.moveTo(cx - hc, cy + dy * hc); ctx.lineTo(cx + hc, cy + dy * hc); } ctx.stroke(); });
@@ -3162,8 +3399,43 @@ function decorBarque(P, t) {
   // le trajet déjà parcouru, et la barque
   if (E && E.trace.length > 1) { ctx.strokeStyle = "rgba(255,210,130,.5)"; ctx.lineWidth = .8; ctx.setLineDash([2, 2]); ctx.beginPath(); E.trace.forEach((c, k) => { const [x, y] = caseFl(...c); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]); }
   const pos = E ? E.px : caseFl(...F.depart), ang = E ? E.ang : 0;
-  barqueRe(pos[0], pos[1] + Math.sin(t / 12) * .3, ang, t);
+  barqueRe(pos[0], pos[1] + Math.sin(t / 12) * .3, ang, t, P.intro < INTRO_BA.allume ? 0 : Math.min(1, (P.intro - INTRO_BA.allume) / 20));
+  if (P.intro < INTRO_BA.fin) introBarque(P, t, pos);
   if (E && E.phase === "rate") { ctx.fillStyle = `rgba(200,60,40,${.25 * Math.sin(E.t / 4) ** 2})`; ctx.fillRect(0, 0, L, H); }
+}
+// L'ACCROCHE : au pied du puits, tout est noir. Anubis, gardien des chemins de la nuit, monte de l'ombre et pose l'enjeu :
+// le pilote de la barque de Rê s'est perdu ; sans pilote, pas d'aube. Puis le soleil s'allume sur la barque, et c'est à toi.
+const INTRO_BA = { parait: 20, l1: 50, l2: 150, l3: 260, allume: 330, part: 370, fin: 420 };
+const REPLIQUES_BA = [
+  ["l1", "« Petit crapaud, je suis Anubis, le gardien des chemins de la nuit. »"],
+  ["l2", "« Chaque nuit, Rê traverse le monde d'en bas sur sa barque. Mais cette nuit, son pilote s'est perdu dans les bras du fleuve… »"],
+  ["l3", "« Sans pilote, pas d'aube : le soleil ne se lèvera pas. C'est toi qui vas tracer la route de la barque. »"]
+];
+function introBarque(P, t, pos) {
+  const f = P.intro, I = INTRO_BA, e = Math.min(1, (f - I.parait) / 40) * (1 - Math.min(1, Math.max(0, (f - I.part) / 40)));
+  // la nuit, d'abord presque totale, qui s'ouvre quand le soleil s'allume
+  const nuit = .8 * (1 - Math.min(1, Math.max(0, (f - I.allume) / 60)));
+  ctx.fillStyle = `rgba(6,4,10,${nuit})`; ctx.fillRect(0, 0, L, H);
+  if (e <= 0) return;
+  const tete = teteAnubis(), cx = L * .72;
+  const g = ctx.createRadialGradient(cx, 70, 4, cx, 70, 100); g.addColorStop(0, `rgba(255,206,110,${.3 * e})`); g.addColorStop(1, "rgba(255,190,90,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, L, H);
+  ctx.save(); ctx.globalAlpha = e;
+  if (tete) {
+    const T = TETE_ANUBIS, sc = H * .82 / T.h, w = T.w * sc, x0 = cx - w / 2, y0 = 18 + (1 - e) * 26 + Math.sin(t / 25);
+    ctx.drawImage(tete, x0, y0, w, T.h * sc);
+    const parle = REPLIQUES_BA.some(([k]) => f >= I[k] && f < I[k] + 70);
+    if (parle) for (const [u, v] of YEUX_ANUBIS) { const ex = x0 + u * sc, ey = y0 + v * sc, gg = ctx.createRadialGradient(ex, ey, 0, ex, ey, 3.5); gg.addColorStop(0, `rgba(255,210,90,${.5 + .3 * Math.sin(t / 8)})`); gg.addColorStop(1, "rgba(255,170,50,0)"); ctx.fillStyle = gg; ctx.fillRect(ex - 4, ey - 4, 8, 8); }
+  } else anubis(cx, H + 4, .95, t, true);
+  ctx.restore();
+  // quand Anubis désigne la barque : un fil d'or vers elle
+  if (f > I.l3 + 30 && f < I.part + 30) { const a = Math.min(1, (f - I.l3 - 30) / 20) * e; ctx.strokeStyle = `rgba(255,214,130,${.5 * a})`; ctx.lineWidth = .6; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(cx - 30, 100); ctx.quadraticCurveTo((cx + pos[0]) / 2, pos[1] - 30, pos[0] + 6, pos[1] - 4); ctx.stroke(); ctx.setLineDash([]); }
+}
+function bougerIntroBarque(P) {
+  const f = ++P.intro, r = $("retour");
+  if (f === 1) { r.className = "ok"; r.innerHTML = ""; son("chouette"); }
+  for (const [k, txt] of REPLIQUES_BA) if (f === INTRO_BA[k]) r.insertAdjacentHTML("beforeend", `<div class="replique" style="animation:repliqueApres .4s both"><img src="${portrait("anubis")}" alt=""><span>${txt}</span></div>`);
+  if (f === INTRO_BA.allume) son("magie");
+  if (f === INTRO_BA.fin) afficherQuestion();
 }
 function blocBa(I, k, actif) {
   const nombre = I.t === "av" ? `<span class="be-nombre"><button type="button" data-be-n="${k}" data-d="-1">−</button><b>${I.n}</b><button type="button" data-be-n="${k}" data-d="1">+</button></span>` : "";
@@ -3197,13 +3469,15 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-ba]");
   if (!b || b.disabled || !niv || niv.sorte !== "barque" || P.exec || gardien.etat === "fini") return;
   const c = b.dataset.ba, F = P.fleuves[P.salle];
-  if (c === "montrer") P.montre = true;
+  if (c === "intro") { P.intro = INTRO_BA.fin - 1; const r = $("retour"); r.innerHTML = REPLIQUES_BA.map(([, txt]) => `<div class="replique"><img src="${portrait("anubis")}" alt=""><span>${txt}</span></div>`).join(""); }
+  else if (c === "montrer") P.montre = true;
   else if (c === "effacer") P.prog = [];
   else if (c === "lancer") { P.exec = { plat: aplatir(P.prog), i: 0, phase: "pause", t: 0, pos: [...F.depart], dir: 1, ang: 0, trace: [[...F.depart]], px: caseFl(...F.depart) }; $("retour").className = "vide"; son("allume"); }
   afficherQuestion();
 });
 function bougerBarque(P) {
   if (P.aube) { bougerAube(P); return; }
+  if (P.intro < INTRO_BA.fin) { bougerIntroBarque(P); return; }
   if (P.attente) { if (--P.attente === 0) { P.salle++; Object.assign(P, { montre: false, prog: [] }); afficherQuestion(); } return; }
   const E = P.exec; if (!E) return;
   const F = P.fleuves[P.salle];
@@ -3298,7 +3572,7 @@ function decorAube(P, t) {
 }
 function bougerAube(P) {
   const f = ++P.aube, ligne = (qui, txt) => $("retour").insertAdjacentHTML("beforeend", `<div class="replique" style="animation:repliqueApres .4s both"><img src="${portrait(qui)}" alt=""><span>${txt}</span></div>`);
-  if (f === 2) { const r = $("retour"); r.className = "ok"; r.innerHTML = ""; afficherQuestion(); }
+  if (f === 2) { const r = $("retour"); r.className = "ok"; r.innerHTML = ""; afficherQuestion(); lancerMusiqueFinale(); }
   if (f === AUBE.ibisParle) ligne("ibis", "« Tu as traversé la nuit, petit crapaud. Le soleil se lève, et tous tes compagnons sont là : te voilà crapaud d'or ! »");
   if (f === AUBE.fin) plateauFranchi();
 }
@@ -3341,7 +3615,7 @@ const NIVEAUX = [
         const B = P.bascule; B.t++;
         if (B.t === 20) {
           if (B.vers === "dessus") { P.vue = "dessus"; for (const k in touches) touches[k] = false; P.td = nouvelleTraversee(); }
-          else { P.vue = "cote"; for (const k in touches) touches[k] = false; Object.assign(heros, { x: 194, y: 126 - HH, vx: 0, vy: 0, etat: "libre", auSol: true }); P.reprise = [194, 126 - HH]; P.compagnon = true; P.relais = 1; gardien.justes = 1; gardien.etat = "fini"; majCompteur(); Object.assign(P.gerb, { x: 190, dir: 1, trace: [], bond: 0 }); }
+          else { P.vue = "cote"; for (const k in touches) touches[k] = false; Object.assign(heros, { x: 191, y: 126 - HH, vx: 0, vy: 0, etat: "libre", auSol: true }); P.reprise = [191, 126 - HH]; P.compagnon = true; P.relais = 1; gardien.justes = 1; gardien.etat = "fini"; majCompteur(); Object.assign(P.gerb, { x: 190, dir: 1, trace: [], bond: 0 }); }
           $("aideTouches").textContent = P.vue === "dessus" ? "Clavier : ← → tourner de 30°, ↑ ↓ avancer ou reculer d'un pas (sur la rive), espace : sauter." : "Clavier : ← → pour marcher, espace ou ↑ pour sauter (flèche + espace : saut en avançant).";
           afficherQuestion();
         }
@@ -3402,7 +3676,8 @@ const NIVEAUX = [
     init: () => ({ cour: null, res: false, nod: 0, secoue: 0, parle: 0, sortie: 0 }),
     demarrer: () => apres(40, poserQuestion),
     question: (k, P) => { P.parle = 40; return qThot(k, P); },
-    effetBon: P => { P.nod = 40; P.res = true; son("bravo"); },
+    effetBon: P => { P.nod = 40; P.res = true; P.enAttente = null; son("bravo"); },
+    encore: (P, lu) => { P.enAttente = [lu.a, lu.b]; P.nod = 20; },
     effetFaux: P => { P.secoue = 30; },
     finir: P => { P.sortie = 1; },
     passer: P => { P.sortie = 1; },
@@ -3414,31 +3689,10 @@ const NIVEAUX = [
     attente: P => P.sortie ? "Thot range son papyrus et hoche sa tête d'ibis : « Tu sais additionner les fractions, petit crapaud. » Le babouin applaudit…" : "Thot lève les yeux de son papyrus…",
     lexique: [["Thot", "le dieu à tête d'ibis, inventeur de l'écriture et maître du calcul.", "thot"], ["Le calame", "un roseau taillé qui sert de plume, trempé dans l'encre noire ou rouge.", "calame"], ["Le papyrus", "on y écrivait aussi les mathématiques : le papyrus Rhind, copié par le scribe Ahmès il y a plus de 3 500 ans, est rempli de fractions.", "papyrus"], ["Le scribe", "celui qui sait lire, écrire et compter : un métier rare et respecté.", "scribe"]],
     aide: "Thot déroule son papyrus et t'interroge : écris ta réponse dans le panneau, sous forme de fraction irréductible. Quatre réponses justes, et le dieu des scribes te laisse passer.",
-    transition: "Thot referme son papyrus. Le babouin reste auprès de son maître ; au sanctuaire du soleil, un scarabée de Khépri t'attend…"
+    transition: "Thot referme son papyrus. Le babouin reste auprès de son maître ; le crapaud ressort du temple, au bord du Nil."
   },
   {
-    titre: "Plateau 4", nom: "Le sanctuaire du soleil", court: "Le soleil", sorte: "soleil",
-    fixe: true, attendre: true, depart: [8, 140], blocs: [],
-    bonnes: 3, compteur: "Salles :",
-    touches: "Vu de dessus : prépare les instructions dans le panneau, puis donne-les au scarabée.",
-    init: () => { const salles = [0, 1, 2].map(genererSalle); return Object.assign({ salles, vue: "face", bascule: null, salle: 0, montre: false, exec: null, attente: 0, sortie: 0, scara: { x: 196, y: 158, ang: Math.PI, vole: false } }, nouvelleSalle(salles[0])); },
-    maj: bougerSoleil,
-    dessinerDevant: devantSoleil,
-    passer: P => { Object.assign(P, { exec: null, sortie: 1, vue: "dessus" }); },
-    attente: P => {
-      if (gardien.etat === "fini") return "Les trois statues sont éclairées : le sanctuaire du soleil s'ouvre devant toi…";
-      const E = P.exec;
-      if (E && E.phase === "fin") return "Le rayon de Rê frappe la statue !";
-      if (E && E.phase === "rate") return "Le rayon s'arrête contre la pierre…";
-      if (P.attente) return "Salle suivante…";
-      return panneauSoleil(P) + boutonAchat(8, "les salles de Rê");
-    },
-    lexique: [["Rê", "le dieu du soleil, le plus grand des dieux égyptiens ; chaque jour, il traversait le ciel dans sa barque.", "rê"], ["Khépri", "le soleil du matin, à tête de scarabée : comme le bousier roule sa boule, il pousse le soleil dans le ciel.", "scarabée"], ["Les miroirs", "les miroirs égyptiens étaient des disques de bronze ou de cuivre, polis jusqu'à briller.", "miroirs"], ["Abou Simbel", "deux fois par an, le soleil levant traverse ce temple de Ramsès II et vient éclairer les statues du fond.", "statue"]],
-    aide: "Si c'est trop difficile, tu peux acheter le passage des salles contre 8 points. Le rayon part toujours de A, vers le haut (0°). Clique sur « Donner les instructions » : la figure montre le trajet qu'il doit suivre jusqu'au pharaon, avec l'angle en B. Donne au scarabée l'orientation du miroir, comme dans Scratch : 0° vers le haut, 90° vers la droite (la rose des directions est dans le coin de la salle).",
-    transition: "La lumière de Rê remplit le sanctuaire… Le crapaud ressort du temple, au bord du Nil."
-  },
-  {
-    titre: "Plateau 5", nom: "La sortie du temple", court: "La sortie", sorte: "sortie",
+    titre: "Plateau 4", nom: "La sortie du temple", court: "La sortie", sorte: "sortie",
     depart: [4, 106 - HH], blocs: [NIL_M.quai, NIL_M.marche, NIL_M.parvis, NIL_M.rive, [FELOUQUE_M.x0, FELOUQUE_M.deck, FELOUQUE_M.x1 - FELOUQUE_M.x0, 3]],
     eau: { x0: 52, x1: 188, y: EAU_NIL },
     attendre: true, bonnes: 1, compteur: "Vitesse :",
@@ -3484,7 +3738,7 @@ const NIVEAUX = [
     transition: "Le crapaud du ponton t'emmène à travers les champs…"
   },
   {
-    titre: "Plateau 6", nom: "Au milieu des champs", court: "Les champs", sorte: "promenade",
+    titre: "Plateau 5", nom: "Au milieu des champs", court: "Les champs", sorte: "promenade",
     depart: [24, 140 - HH], blocs: PROM_BLOCS,
     cacher: P => P.scene && P.scene.s > SCENE_IBIS.envol,
     dessinerDevant: apartéIbis,
@@ -3528,7 +3782,7 @@ const NIVEAUX = [
     transition: "L'oie du Nil te montre la parcelle : les bornes ont disparu sous le limon…"
   },
   {
-    titre: "Plateau 7", nom: "Les champs après la crue", court: "La crue", sorte: "crue",
+    titre: "Plateau 6", nom: "Les champs après la crue", court: "La crue", sorte: "crue",
     fixe: true, attendre: true, depart: [8, 140], blocs: [],
     bonnes: 3, compteur: "Champs :",
     touches: "Prépare le programme de l'oie dans le panneau, puis donne-le-lui.",
@@ -3549,7 +3803,7 @@ const NIVEAUX = [
     transition: "Les champs sont retracés. Au bord du Nil, un crocodile sort des roseaux : « Suis-moi. »"
   },
   fBalade("croco", "crepuscule", {
-    titre: "Plateau 8", nom: "Le long du fleuve", court: "Le fleuve", porte: true,
+    titre: "Plateau 7", nom: "Le long du fleuve", court: "Le fleuve", porte: true,
     touches: "Le crocodile te porte sur son dos : réponds à ses questions dans le panneau.",
     attente: P => gardien.etat === "fini" ? "Le crocodile t'amène jusqu'à la porte du temple de son maître…" : "Le soleil se couche sur le Nil. Un crocodile te porte sur son dos, le long du fleuve…",
     lexique: [["Les crocodiles sacrés", "dans les temples de Sobek, on nourrissait des crocodiles parés de bracelets d'or ; à leur mort, on les momifiait.", "crocodile"], ["Le Nil", "le seul grand fleuve d'Égypte : toute la vie du pays se tenait sur ses rives.", "fleuve"]],
@@ -3557,7 +3811,7 @@ const NIVEAUX = [
     transition: "Le crocodile plonge dans le bassin sacré… Son maître t'attend."
   }),
   {
-    titre: "Plateau 9", nom: "Le bassin de Sobek", court: "Sobek", sorte: "sobek",
+    titre: "Plateau 8", nom: "Le bassin de Sobek", court: "Sobek", sorte: "sobek",
     fixe: true, depart: [8, 140], blocs: [],
     bonnes: 3, compteur: "Stèles :", delai: 50,
     touches: "Au bord du Nil, Sobek t'interroge : écris la fraction coloriée, irréductible, dans le panneau.",
@@ -3584,39 +3838,39 @@ const NIVEAUX = [
     transition: "L'ibis te dépose sur la route des pyramides. Un chacal noir t'y attend…"
   },
   fBalade("chacal", "nuit", {
-    titre: "Plateau 10", nom: "La route des pyramides", court: "La nuit", depose: true, portail: true, steles: true,
+    titre: "Plateau 9", nom: "La route des pyramides", court: "La nuit", depose: true, portail: true, steles: true,
     attente: P => P.portail ? "Au fond de la pyramide, entre Sobek et Anubis, le portail des souterrains s'ouvre…" : gardien.etat === "fini" ? "Le chacal s'arrête devant l'entrée de la grande pyramide, entre les braseros. Entre." : P.intro ? "L'ibis te dépose sur la route des pyramides…" : "La nuit est tombée sur le désert. Le chacal noir marche devant toi, vers les pyramides…",
     lexique: [["Oupouaout", "« celui qui ouvre les chemins » : un dieu chacal qui guide les morts dans la nuit.", "chacal"], ["La Douat", "le monde de la nuit et des morts, que le soleil traverse chaque nuit avant de renaître le matin.", "nuit"]],
     aide: "← → pour marcher. Le chacal te pose des questions sur les mots du calcul ; les réponses sont gravées sur quatre stèles le long de la piste, dans le noir : va devant la bonne et appuie sur ↓ (juste : +1 point ; faux : −3 points). Au bout du chemin, entre dans la pyramide.",
-    transition: "Tu franchis le portail. Dans les souterrains, le sol se dérobe… un trou !"
+    transition: "Tu franchis le portail : te voici à l'intérieur de la grande pyramide."
   }),
   {
-    titre: "Plateau 11", nom: "Le puits", court: "Le puits", sorte: "bloc",
+    titre: "Plateau 10", nom: "Le puits", court: "Le puits", sorte: "bloc",
     fixe: true, depart: [8, 140], blocs: [],
     bonnes: NB_PIERRES, compteur: "Pierres :", delai: 40,
     touches: "Calcule vite et juste : chaque bonne réponse fait s'effondrer une pierre du tunnel.",
-    init: () => ({ otees: 0, chute: null, bloc: 0, tas: 0, ecrase: 0, sortie: 0, glisse: 1 }),
-    demarrer: () => apres(60, poserQuestion),
+    init: () => ({ otees: 0, chute: null, bloc: 0, tas: 0, ecrase: 0, sortie: 0, glisse: 0, entree: 1 }),
     question: k => qAstucieux(k),
     effetBon: P => { P.chute = { k: P.otees, t: 0 }; P.otees++; son("sable"); },
     finir: P => { P.sortie = 1; son("victoire"); },
-    passer: P => { Object.assign(P, { otees: NB_PIERRES, sortie: 1 }); },
+    passer: P => { Object.assign(P, { otees: NB_PIERRES, sortie: 1, entree: 0, glisse: 0 }); },
     maj: bougerBloc,
-    attente: P => P.sortie ? "La dernière pierre est tombée : le passage est libre ! Le crapaud file vers la lumière." : P.glisse ? "Oups ! Le crapaud glisse au fond d'un puits…" : question ? "" : "Une pierre roule hors du passage…",
-    lexique: [["La gargouille", "sur les toits des temples, l'eau de pluie s'écoulait par des gargouilles en forme de tête de lion.", "lion"], ["La herse de granit", "dans la pyramide de Khéops, de lourdes dalles de granit descendaient dans des rainures pour fermer l'accès à la chambre du roi.", "dalle"], ["Le sable", "les Égyptiens se servaient de sable pour monter, descendre et caler les lourds blocs de pierre.", "sable"]],
-    aide: "Tu es enfermé au fond d'un puits. Tant que le sable coule de la gueule du lion, la dalle de granit descend. Chaque calcul juste fait s'effondrer une des cinq pierres qui bouchent le tunnel, à droite : la 5, puis la 4… quand la 1 tombe, le passage est libre. Si la dalle arrive en bas, une pierre retombe. Calcule astucieusement pour aller vite.",
+    attente: P => P.entree ? "Le crapaud entre dans la grande pyramide…" : P.sortie ? "La dernière pierre est tombée : le passage est libre ! Le crapaud file vers la lumière." : P.glisse ? "Le crapaud dévale une cheminée… et atterrit au fond d'un puits !" : question ? "" : "Une pierre roule hors du passage…",
+    lexique: [["La grande galerie", "dans la pyramide de Khéops, un couloir en pente haut de plus de 8 mètres, dont les murs se resserrent en gradins jusqu'au plafond.", "galerie"], ["La gargouille", "sur les toits des temples, l'eau de pluie s'écoulait par des gargouilles en forme de tête de lion.", "lion"], ["La herse de granit", "dans la pyramide de Khéops, de lourdes dalles de granit descendaient dans des rainures pour fermer l'accès à la chambre du roi.", "dalle"], ["Le sable", "les Égyptiens se servaient de sable pour monter, descendre et caler les lourds blocs de pierre.", "sable"]],
+    aide: "Tu es enfermé au fond d'un puits. Tant que le sable coule de la gueule du lion, la dalle de granit descend. Chaque calcul juste fait s'effondrer une des cinq pierres qui bouchent le tunnel, à droite : la 1, puis la 2… quand la 5 tombe, le passage est libre. Si la dalle arrive en bas, une pierre retombe. Calcule astucieusement pour aller vite.",
     transition: "Au fond du tunnel, un fleuve coule sous la terre… La barque du soleil t'attend, l'ibis à la proue."
   },
   {
-    titre: "Plateau 12", nom: "La barque du soleil", court: "La barque", sorte: "barque",
+    titre: "Plateau 11", nom: "La barque du soleil", court: "La barque", sorte: "barque",
     fixe: true, attendre: true, depart: [8, 140], blocs: [],
     bonnes: 3, compteur: "Sections :",
     touches: "Vu de dessus : prépare le programme de la barque, puis largue les amarres.",
-    init: () => ({ fleuves: [0, 1, 2].map(genererFleuve), salle: 0, montre: false, prog: [], n: 2, exec: null, attente: 0, aube: 0 }),
+    init: () => ({ fleuves: [0, 1, 2].map(genererFleuve), salle: 0, montre: false, prog: [], n: 2, exec: null, attente: 0, aube: 0, intro: 0 }),
     maj: bougerBarque,
-    passer: P => { Object.assign(P, { exec: null, aube: 1 }); },
+    passer: P => { Object.assign(P, { exec: null, aube: 1, intro: INTRO_BA.fin }); },
     attente: P => {
       if (P.aube) return "Le soleil se lève sur le Nil…";
+      if (P.intro < INTRO_BA.fin) return `Dans le noir, au bord du fleuve souterrain, quelqu'un t'attend… <div class="prog-actions"><button type="button" data-ba="intro">Passer ›</button></div>`;
       const E = P.exec;
       if (E && E.phase === "fin") return "La barque passe la porte de l'aube !";
       if (E && E.phase === "rate") return "La barque revient au quai…";
@@ -3629,3 +3883,33 @@ const NIVEAUX = [
   },
 ];
 NIVEAUX.forEach(n => { n.dessiner = (P, t) => ({ nil: decorNil, temple: decorTemple, thot: decorThot, soleil: decorSoleil, crue: decorCrue, bloc: decorBloc, sortie: decorSortie, promenade: decorPromenade, sobek: decorSobek, balade: decorBalade, barque: decorBarque })[n.sorte](P, t); });
+
+// ------------------------------------------------------------
+//  PLATEAU RETIRÉ DU PARCOURS (novembre 2026) : les salles de Rê, avec les miroirs (angles et lumière).
+//  On le garde dans le code : pour le remettre, il suffit de replacer cet objet dans NIVEAUX, après « La salle de Thot »
+//  (et de remettre la transition de Thot vers le sanctuaire du soleil). Tout son code (genererSalle, bougerSoleil,
+//  decorSoleil, panneauSoleil, boutonAchat…) est toujours là.
+// ------------------------------------------------------------
+const PLATEAU_SOLEIL_RETIRE = {
+    titre: "Plateau (retiré)", nom: "Le sanctuaire du soleil", court: "Le soleil", sorte: "soleil",
+    fixe: true, attendre: true, depart: [8, 140], blocs: [],
+    bonnes: 3, compteur: "Salles :",
+    touches: "Vu de dessus : prépare les instructions dans le panneau, puis donne-les au scarabée.",
+    init: () => { const salles = [0, 1, 2].map(genererSalle); return Object.assign({ salles, vue: "face", bascule: null, salle: 0, montre: false, exec: null, attente: 0, sortie: 0, scara: { x: 196, y: 158, ang: Math.PI, vole: false } }, nouvelleSalle(salles[0])); },
+    maj: bougerSoleil,
+    dessinerDevant: devantSoleil,
+    passer: P => { Object.assign(P, { exec: null, sortie: 1, vue: "dessus" }); },
+    attente: P => {
+      if (gardien.etat === "fini") return "Les trois statues sont éclairées : le sanctuaire du soleil s'ouvre devant toi…";
+      const E = P.exec;
+      if (E && E.phase === "fin") return "Le rayon de Rê frappe la statue !";
+      if (E && E.phase === "rate") return "Le rayon s'arrête contre la pierre…";
+      if (P.attente) return "Salle suivante…";
+      return panneauSoleil(P) + boutonAchat(8, "les salles de Rê");
+    },
+    lexique: [["Rê", "le dieu du soleil, le plus grand des dieux égyptiens ; chaque jour, il traversait le ciel dans sa barque.", "rê"], ["Khépri", "le soleil du matin, à tête de scarabée : comme le bousier roule sa boule, il pousse le soleil dans le ciel.", "scarabée"], ["Les miroirs", "les miroirs égyptiens étaient des disques de bronze ou de cuivre, polis jusqu'à briller.", "miroirs"], ["Abou Simbel", "deux fois par an, le soleil levant traverse ce temple de Ramsès II et vient éclairer les statues du fond.", "statue"]],
+    aide: "Si c'est trop difficile, tu peux acheter le passage des salles contre 8 points. Le rayon part toujours de A, vers le haut (0°). Clique sur « Donner les instructions » : la figure montre le trajet qu'il doit suivre jusqu'au pharaon, avec l'angle en B. Donne au scarabée l'orientation du miroir, comme dans Scratch : 0° vers le haut, 90° vers la droite (la rose des directions est dans le coin de la salle).",
+    transition: "La lumière de Rê remplit le sanctuaire… Le crapaud ressort du temple, au bord du Nil."
+  };
+PLATEAU_SOLEIL_RETIRE.dessiner = (P, t) => decorSoleil(P, t);
+

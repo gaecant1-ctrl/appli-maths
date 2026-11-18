@@ -30,6 +30,8 @@ function lireFraction(t, q) {
   const a = +m[1], b = +m[2];
   if (!b) return { aide: "Le dénominateur ne peut pas être 0." };
   const egal = a * q.b === b * q.a;
+  // chez Thot et chez Sobek : une fraction juste mais pas simplifiée est acceptée… et le dieu demande de la réduire
+  if (egal && q.irreductible && q.reduireEnsuite && pgcd(a, b) !== 1) return { a, b, encore: `${a}/${b}, c'est juste ! Mais ${q.reduireEnsuite} veut la forme irréductible : simplifie-la.` };
   if (egal && q.irreductible && pgcd(a, b) !== 1) return { ok: false, presque: `${a}/${b} est bien égale à la bonne réponse, mais elle n'est pas simplifiée.` };
   return { ok: egal };
 }
