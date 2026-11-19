@@ -70,7 +70,7 @@ function appelerChouette(test) {
   enigme = nouvelleEnigme();
   questionSauvee = question; question = null;
   partie.chouette = { t: 0, phase: "arrive", x: L + 20, y: 20, texte: enigme.texte };
-  majDanger(); panneauChouette("arrive"); son("chouette");
+  majDanger(); panneauChouette("arrive"); son("chouette"); majBoutonTestAnubis();
 }
 function panneauChouette(etape) {
   $("titreQuestions").textContent = "Anubis"; $("btnAide").hidden = true; montrerAide(false); $("lexique").hidden = true; $("compteur").hidden = true; $("bulle").hidden = true;
@@ -92,7 +92,7 @@ function repondreChouette() {
   if (partie.chouette) { partie.chouette.phase = ok ? "benit" : "part"; partie.chouette.tp = 0; partie.chouette.rate = !ok; }
   r.className = ok ? "ok" : "ko";
   r.textContent = fr(ok ? "Juste ! Anubis hoche la tête : +3 points." : lignes("❌ " + enigme.correction + " — Anubis retourne dans l'ombre : −2 points."));
-  enigme = null;
+  enigme = null; majBoutonTestAnubis();
   $("formReponse").style.display = "none"; $("champReponse").disabled = true;
   suiteEnAttente = () => { if (partie.chouette) { partie.chouette.phase = "part"; partie.chouette.tp = 0; } question = questionSauvee; questionSauvee = null; majPanneau(); };
   const b = $("btnSuiteCorrection"); b.textContent = parcours.points <= 0 ? "Tu n'as plus de points… →" : "Continuer →"; b.hidden = false; b.focus();
@@ -107,7 +107,15 @@ function sceauAnubis() {
   document.documentElement.style.setProperty("--sceau-anubis", `url(${c.toDataURL()})`);
 }
 setTimeout(() => { sceauAnubis(); IMG_TETE_ANUBIS.onload = sceauAnubis; });   // une fois tout le fichier lu
-$("btnTestChouette").onclick = () => appelerChouette(true);
+// en mode test, le même bouton appelle Anubis… puis, tant que son énigme attend, en tire une autre
+function majBoutonTestAnubis() { $("btnTestChouette").textContent = enigme ? "🔄 Autre énigme d'Anubis (test)" : "⚖️ Appeler Anubis (test)"; }
+$("btnTestChouette").onclick = () => {
+  if (!enigme) { appelerChouette(true); return; }
+  enigme = nouvelleEnigme();
+  if (partie.chouette) partie.chouette.texte = enigme.texte;
+  if (partie.chouette && partie.chouette.phase === "pose") panneauChouette("enigme");
+  $("retour").className = "vide";
+};
 // le vol de la chouette : elle arrive de la droite, se pose en haut de l'écran ; « benit » : une pluie de lumière
 function bougerChouette() {
   const C = partie.chouette; if (!C) return;
@@ -205,7 +213,7 @@ function chargerNiveau(n, recommence = false) {
   if (typeof fermerTablette === "function") fermerTablette();
   if (n === 0 && !recommence) { parcours = { reponses: 0, bonnes: 0, points: POINTS_DEPART }; eleve.points = POINTS_DEPART; dejaPosees.clear(); }
   partie.fin = null; partie.chouetteUtilisee = recommence && !!partie.chouetteUtilisee; partie.chouette = null; partie.minuteurs = [];
-  enigme = null; questionSauvee = null; question = null; questionCorrigee = null;
+  enigme = null; questionSauvee = null; question = null; questionCorrigee = null; majBoutonTestAnubis();
   niv = NIVEAUX[n];
   const [x, y] = niv.depart || [0, 0];
   heros = { x, y, vx: 0, vy: 0, auSol: false, dir: 1, etat: "libre", pas: 0 };
