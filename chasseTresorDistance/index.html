@@ -261,6 +261,7 @@
       <h1>Chasse au trésor : distances</h1>
       <p class="sub">Construis le point <b>X</b> qui respecte toutes les contraintes de distance : c'est là que se cache le trésor, dans la zone jaune.</p>
       <div class="row"><button id="btn-new-tab" class="wide">Ouvrir dans un nouvel onglet ↗</button></div>
+      <button id="btn-score-reset" class="wide nouvel-eleve" title="À faire quand un nouvel élève s'installe sur cet ordinateur">🧹 Nouvel élève : effacer les trésors</button>
     </div>
 
     <div class="group">
@@ -269,7 +270,6 @@
         <span>Trésors trouvés : <b id="hunt-score-val">0 / 10</b></span>
       </div>
       <div id="eleve-nom"></div>
-      <button id="btn-score-reset" class="wide nouvel-eleve" title="À faire quand un nouvel élève s'installe sur cet ordinateur">🧹 Nouvel élève : effacer les trésors</button>
       <button id="btn-diplome" class="wide diplome-btn">🎓 Mon diplôme</button>
       <div class="row" id="hunt-picker"></div>
       <div id="hunt-body" hidden>
@@ -741,6 +741,16 @@
           ggbApplet.setLabelStyle(newName, 0); // 0 = name
         }
       }, 'nom entre parenthèses');
+    });
+    // « Annuler » / « Refaire » reload a snapshot taken before neutralRename
+    // ran: the pupil's objects come back as c, f, A… (and no add event
+    // fires). Then « Renommer → c » on that circle would change nothing and
+    // no label would show — so give them their neutral names back.
+    ggbApplet.registerClientListener(e=>{
+      if(e.type !== 'undo' && e.type !== 'redo') return;
+      setTimeout(()=>safeNames(()=>ggbApplet.getAllObjectNames())
+        .filter(n=>n !== HUNT_ZONE && !huntNames.has(n))
+        .forEach(neutralRename), 0);
     });
   }
 
@@ -1230,9 +1240,21 @@
   });
 
   // Opens this same app in a new browser tab (handy when it's embedded).
-  document.getElementById('btn-new-tab').addEventListener('click', ()=>{
-    window.open(location.href, '_blank', 'noopener');
-  });
+  // The new tab does not share the embedded page's storage: the pupil's name
+  // and treasures travel in the URL
+  // fragment — never sent to the server — and are picked up on arrival
+  // (see recevoirDepuisOnglet).
+  function ouvrirNouvelOnglet(nomTape){
+    // nomTape : le prénom juste validé, transmis même si le stockage de la
+    // page intégrée est bloqué (lireNom() serait alors vide).
+    const nom = (typeof nomTape === 'string' && nomTape) || lireNom();
+    const p = new URLSearchParams();
+    if(nom.length >= 2) p.set('nom', nom);
+    if(solved.size) p.set('tresors', [...solved].join(','));
+    const q = p.toString();
+    window.open(location.href.split('#')[0] + (q ? '#' + q : ''), '_blank', 'noopener');
+  }
+  document.getElementById('btn-new-tab').addEventListener('click', ouvrirNouvelOnglet);
 
   // Rayon tapé par les élèves dans la fenêtre « Cercle (centre, rayon) » :
   // « 3cm », « 3 cm », « 2,5 » ou « 2,5 cm » → 3 ou 2.5. Le champ est corrigé juste
@@ -1285,6 +1307,13 @@
       facts:['X est le point de la droite (EF) le plus proche de A.'],
       cons:[{proche:['A',['E','F']]}],
       targets:{ X:[5.108,2.89] } },
+    { level:'Deux égales distances',
+      // Intersection de la médiatrice de [AB] et de celle de [CD] (angle de 54° entre elles).
+      points:{ A:[1.4,2.0,GREEN], B:[4.2,8.6,BLUE], C:[7.6,8.8,RED], D:[10.8,3.4,PURPLE] },
+      goal:'Construire le point X sachant que :',
+      facts:['X est à égale distance de A et de B.', 'X est à égale distance de C et de D.'],
+      cons:[{eq:['A','B']}, {eq:['C','D']}],
+      targets:{ X:[5.743,4.051] } },
     { level:'Trois points',
       // Intersection de deux médiatrices (centre du cercle passant par A, B et C).
       points:{ A:[1.8,2.2,GREEN], B:[9.6,3.4,BLUE], C:[4.6,8.8,RED] },
@@ -1299,13 +1328,6 @@
       facts:['X est à égale distance de A et de B.', 'X est le plus près possible de C.'],
       cons:[{eq:['A','B']}, {procheMed:['C',['A','B']]}],
       targets:{ X:[8.796,7.571] } },
-    { level:'Distance à une droite',
-      // Parallèle à (AB) à 3 cm (côté de C et D) et médiatrice de [CD] ; l'autre parallèle donne (1,90 ; -1,69), hors de la zone.
-      points:{ A:[1.0,1.2,GREEN], B:[11.0,2.8,BLUE], C:[3.0,8.6,RED], D:[8.6,6.2,PURPLE] },
-      goal:'Construire le point X sachant que :',
-      facts:['X est à 3 cm de la droite (AB).', 'X est à égale distance de C et de D.'],
-      cons:[{dl:[['A','B'],3]}, {eq:['C','D']}],
-      targets:{ X:[4.699,4.83] } },
     // --- Calées sur la fiche « Constructions et mesures » (cas isocèles 2 et 3), figures agrandies (x 1,3) ---
     { level:'Triangle isocèle',
       // Médiatrice de [RF] et droite (MT) : une seule intersection.
@@ -1345,9 +1367,21 @@
   // recharge la page par erreur ne perd rien). Sur les ordinateurs du collège,
   // sans session individuelle, le bouton « Nouvel élève » efface le compteur
   // (avec confirmation) avant que l'élève suivant ne commence.
-  const SCORE_KEY = 'chasseTresorDistance.solved.v1';
+  const SCORE_KEY = 'chasseTresorDistance.solved.v2';
   let solved = new Set();
   try{ solved = new Set(JSON.parse(localStorage.getItem(SCORE_KEY) || '[]')); }catch(_){}
+  // v1 → v2 : l'ancien exercice 7 (parallèle à 3 cm) a été retiré et
+  // « Deux égales distances » inséré en 5 : les exercices 5 et 6 deviennent
+  // 6 et 7, les 8 à 10 gardent leur numéro (indices à partir de 0).
+  try{
+    const OLD_KEY = 'chasseTresorDistance.solved.v1', old = localStorage.getItem(OLD_KEY);
+    if(old !== null){
+      const MAP = {0:0, 1:1, 2:2, 3:3, 4:5, 5:6, 7:7, 8:8, 9:9};
+      JSON.parse(old).forEach(i=>{ if(i in MAP) solved.add(MAP[i]); });
+      localStorage.setItem(SCORE_KEY, JSON.stringify([...solved]));
+      localStorage.removeItem(OLD_KEY);
+    }
+  }catch(_){}
   function saveScore(){
     try{ localStorage.setItem(SCORE_KEY, JSON.stringify([...solved])); }catch(_){}
   }
@@ -1463,19 +1497,36 @@
     } finally {
       huntBuilding = false;
     }
-    // Like the original files: only the given points may be used.
-    setFlyPoints(i < 0);
-    ggbApplet.setMode(0);
-    renderHunt();
-    if(i >= 0){
-      fitZone();
-      setTimeout(fitZone, 150);
-      toast(`Exercice ${i+1}`);
-    } else {
-      toast('Construction libre');
+    const token = ++loadHunt._token;
+    const finish = ()=>{
+      if(token !== loadHunt._token) return; // another exercise was loaded meanwhile
+      huntBuilding = false;
+      // Like the original files: only the given points may be used.
+      setFlyPoints(i < 0);
+      ggbApplet.setMode(0);
+      renderHunt();
+      if(i >= 0){
+        fitZone();
+        setTimeout(fitZone, 150);
+        toast(`Exercice ${i+1}`);
+      } else {
+        toast('Construction libre');
+      }
+      reapplyDisplayState();
+    };
+    if(i < 0){ finish(); return; }
+    // GeoGebra's undo history starts at the empty newConstruction(): enough
+    // clicks on « Annuler » erased the zone and the given points too. Reloading
+    // the figure as a file makes it the first state of the history instead.
+    try{
+      huntBuilding = true; // the re-added zone and points keep their own style
+      ggbApplet.setBase64(ggbApplet.getBase64(), finish);
+    }catch(e){
+      console.error('historique', e);
+      finish();
     }
-    reapplyDisplayState();
   }
+  loadHunt._token = 0;
 
   // --- Vérification contrainte par contrainte ---
   // Comme en classe : chaque contrainte devient verte (✓) ou rouge (✗), sans mesure affichée.
@@ -1585,7 +1636,14 @@
     try{ localStorage.setItem(NOM_KEY, nom); }catch(_){}
     nomDlg.classList.remove('show');
     afficherNom();
-    toast(`Bonne chasse, ${nom} !`);
+    // Intégrée (Trinket…) : la chasse part directement dans un nouvel onglet,
+    // plus grand, qui reçoit le prénom (ouvrirNouvelOnglet) — rien à retaper.
+    let integree = false;
+    try{ integree = window.self !== window.top; }catch(_){ integree = true; }
+    if(integree){
+      ouvrirNouvelOnglet(nom);
+      toast(`Bonne chasse, ${nom} ! La chasse s'ouvre dans un nouvel onglet.`, 4000);
+    } else toast(`Bonne chasse, ${nom} !`);
   });
   function voirDiplome(){
     const nom = lireNom();
@@ -1595,6 +1653,21 @@
   }
   document.getElementById('btn-diplome').addEventListener('click', voirDiplome);
   document.getElementById('btn-win-diplome').addEventListener('click', voirDiplome);
+  // Arrivée par « Ouvrir dans un nouvel onglet » : reprend le prénom et les
+  // trésors transmis dans l'adresse (#nom=…&tresors=…), puis nettoie l'adresse
+  // (un rechargement ou un favori ne les réimporte pas).
+  (function recevoirDepuisOnglet(){
+    if(!location.hash) return;
+    const p = new URLSearchParams(location.hash.slice(1));
+    const nom = (p.get('nom') || '').trim();
+    if(nom.length >= 2 && !lireNom()){ try{ localStorage.setItem(NOM_KEY, nom.slice(0, 40)); }catch(_){} }
+    (p.get('tresors') || '').split(',').map(Number)
+      .filter(i=>Number.isInteger(i) && i >= 0 && i < HUNTS.length)
+      .forEach(i=>solved.add(i));
+    saveScore();
+    renderScore();
+    try{ history.replaceState(null, '', location.href.split('#')[0]); }catch(_){}
+  })();
   exigerNom();
 
   document.getElementById('btn-hunt-check').addEventListener('click', ()=>safe(checkHunt, 'vérification'));

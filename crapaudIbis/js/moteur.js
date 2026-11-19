@@ -12,7 +12,7 @@ let eleve = { nom: "", plateaux: 0, record: 0, reponses: 0, bonnes: 0, points: P
 let enregistre = null;
 function empreinte(e) {
   const m = e.meilleur;
-  const t = "ibis✦" + [e.nom, e.plateaux, e.record, e.reponses, e.bonnes, e.points].join("✦") + (m ? "✦" + [m.points, m.reponses, m.bonnes].join("✦") : "");
+  const t = "ibis✦" + [e.nom, e.plateaux, e.record, e.reponses, e.bonnes, e.points].join("✦") + (m ? "✦" + [m.points, m.reponses, m.bonnes].join("✦") : "") + (e.test ? "✦test" : "");   // la trace du mode test fait partie de l'empreinte
   let h = 2166136261;
   for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
   return h.toString(36);
@@ -20,7 +20,7 @@ function empreinte(e) {
 try {
   const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
   if (e && typeof e.nom === "string" && e.cle === empreinte(e))
-    enregistre = { nom: e.nom, plateaux: e.plateaux | 0, record: e.record | 0, reponses: e.reponses | 0, bonnes: e.bonnes | 0, points: e.points | 0, meilleur: e.meilleur || null };
+    enregistre = { nom: e.nom, plateaux: e.plateaux | 0, record: e.record | 0, reponses: e.reponses | 0, bonnes: e.bonnes | 0, points: e.points | 0, meilleur: e.meilleur || null, test: !!e.test };
 } catch (e) {}
 const sauverEleve = () => { try { localStorage.setItem(CLE_ELEVE, JSON.stringify({ ...eleve, cle: empreinte(eleve) })); } catch (e) {} };
 const prenom = () => eleve.nom.split(" ")[0];
@@ -69,7 +69,7 @@ function appelerChouette(test) {
   for (const k in touches) touches[k] = false;
   enigme = nouvelleEnigme();
   questionSauvee = question; question = null;
-  partie.chouette = { t: 0, phase: "arrive", x: L + 20, y: 20 };
+  partie.chouette = { t: 0, phase: "arrive", x: L + 20, y: 20, texte: enigme.texte };
   majDanger(); panneauChouette("arrive"); son("chouette");
 }
 function panneauChouette(etape) {
@@ -149,8 +149,32 @@ function dessinerChouetteVol(t) {
     if (parle) for (const [u0, v0] of YEUX_ANUBIS) { const u = u0 - T.x, v = v0 - T.y, ex = x0 + u * sc, ey = y0 + v * sc, gg = ctx.createRadialGradient(ex, ey, 0, ex, ey, 3.5); gg.addColorStop(0, `rgba(255,210,90,${.5 + .3 * Math.sin(t / 8)})`); gg.addColorStop(1, "rgba(255,170,50,0)"); ctx.fillStyle = gg; rond(ex, ey, 3.5); }
   } else anubis(cx, bas, .95, t, parle);
   ctx.globalAlpha = 1;
+  if (C.texte && C.phase !== "arrive") parcheminEnigme(C, e, t);
   if (C.phase === "benit") for (let k = 0; k < 50; k++) { const u = ((t * (.9 + bruit(k) * .8) + bruit(k + 40) * 70) % 70) / 70, x = L * (.15 + .7 * bruit(k + 80)), y = 10 + (H - 16) * u; ctx.fillStyle = `rgba(255,236,170,${(1 - u) * .8})`; rond(x + Math.sin(k + t / 7) * 3, y, 1.2 * (1 - u) + .4); }
   ctx.restore();
+}
+// l'énigme écrite dans la scène, sur un papyrus face à Anubis (lisible au vidéoprojecteur) ; après la réponse : juste ou faux
+function parcheminEnigme(C, e, t) {
+  ctx.save(); ctx.globalAlpha = e * Math.min(1, (C.t - 50) / 15);
+  const lw = 116, x = 6, w = lw + 12, taille = 7.6, pas = 9.4;
+  ctx.font = `italic ${taille}px Georgia, serif`;
+  const lignes = [""];
+  for (const m of ("«\u00a0" + C.texte.replace(/ ([?:;!%])/g, "\u00a0$1") + "\u00a0»").split(" ")) { const essai = lignes[lignes.length - 1] ? lignes[lignes.length - 1] + " " + m : m; if (ctx.measureText(essai).width > lw) lignes.push(m); else lignes[lignes.length - 1] = essai; }
+  const h = 12 + lignes.length * pas + 12, y = Math.max(6, (H - h) / 2 - 6);
+  // le papyrus, ses deux rouleaux, et une queue de bulle vers la gueule d'Anubis
+  ctx.fillStyle = "rgba(244,230,196,.97)"; ctx.strokeStyle = "rgba(120,86,40,.9)"; ctx.lineWidth = .7;
+  ctx.beginPath(); ctx.moveTo(x + w - .4, y + 22); ctx.lineTo(L * .74 - 26, 62); ctx.lineTo(x + w - .4, y + 34); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 2); ctx.fill(); ctx.stroke();
+  for (const yy of [y, y + h]) { ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.roundRect(x - 2, yy - 2.2, w + 4, 4.4, 2.2); ctx.fill(); ctx.stroke(); }
+  ctx.fillStyle = "#3a2410"; ctx.textAlign = "left";
+  lignes.forEach((l, i) => ctx.fillText(l, x + 6, y + 9 + taille + i * pas));
+  // la réponse attendue : un sceau ; après la réponse, juste (or) ou faux (rouge)
+  ctx.font = `bold ${taille}px Georgia, serif`; ctx.textAlign = "center";
+  const yb = y + h - 6;
+  if (C.phase === "pose") { ctx.fillStyle = `rgba(150,96,30,${.65 + .3 * Math.sin(t / 7)})`; ctx.fillText("Ta réponse ?", x + w / 2, yb); }
+  else if (C.rate) { ctx.fillStyle = "#b8321e"; ctx.fillText("✗ Faux : −2 points", x + w / 2, yb); }
+  else { ctx.fillStyle = "#2f7a2a"; ctx.fillText("✓ Juste : +3 points", x + w / 2, yb); }
+  ctx.textAlign = "left"; ctx.restore();
 }
 // Anubis en buste, de profil vers la gauche (à l'égyptienne) : tête de chacal noire, hautes oreilles, perruque rayée, grand collier
 function anubis(x, base, s, t, parle) {
@@ -701,11 +725,14 @@ addEventListener("keydown", () => { if (contexteAudio() && audio.state === "susp
 function majEntete() {
   $("eleveInfo").textContent = eleve.nom ? eleve.nom + " · " + eleve.record + " plateau" + (eleve.record > 1 ? "x" : "") + " franchi" + (eleve.record > 1 ? "s" : "") : "";
 }
+const enTest = () => new URLSearchParams(location.search).has("test");
 function choisirEleve(nom) {
   if (nom !== eleve.nom) {
     eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, plateaux: 0, record: 0, reponses: 0, bonnes: 0, points: POINTS_DEPART };
     enregistre = eleve; sauverEleve();
   }
+  // le mode test laisse une trace durable sur ce parcours : le diplôme le dira, même si l'on revient ensuite sans ?test
+  if (enTest() && !eleve.test) { eleve.test = true; sauverEleve(); }
   document.body.classList.remove("sans-nom");
   majEntete();
 }
@@ -730,7 +757,7 @@ $("voileConfirm").addEventListener("click", e => { if (e.target === $("voileConf
 addEventListener("keydown", e => { if (e.key === "Escape" && !$("voileConfirm").hidden) fermerConfirm(); });
 $("btnOuiReinit").onclick = () => {
   fermerConfirm();
-  Object.assign(eleve, { plateaux: 0, record: 0, reponses: 0, bonnes: 0, points: POINTS_DEPART, meilleur: null });
+  Object.assign(eleve, { plateaux: 0, record: 0, reponses: 0, bonnes: 0, points: POINTS_DEPART, meilleur: null, test: enTest() });   // repartir de zéro sans ?test efface la trace du mode test
   sauverEleve(); majEntete(); chargerNiveau(0);
 };
 
@@ -751,7 +778,7 @@ const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(20,14,10
 #overlayFiche .d-sceau{position:absolute;top:12mm;width:22mm;height:22mm;border-radius:50%;background:#c8642c;color:#1b130e;display:flex;align-items:center;justify-content:center;font-family:"Cinzel",serif;font-weight:800;font-size:14mm;box-shadow:inset 0 0 0 1mm #1b130e;}
 #overlayFiche .d-sceau.g{left:14mm;} #overlayFiche .d-sceau.d{right:14mm;font-size:12mm;}
 #overlayFiche .d-athena{position:absolute;left:50%;top:34mm;width:100mm;transform:translateX(-50%);opacity:.14;mix-blend-mode:multiply;pointer-events:none;}
-#overlayFiche .d-cadre > :not(.d-athena):not(.d-frise):not(.d-sceau){position:relative;}
+#overlayFiche .d-cadre > :not(.d-athena):not(.d-frise):not(.d-sceau):not(.d-test){position:relative;}
 #overlayFiche .d-titre{font-family:"Cinzel",Georgia,serif;font-size:46pt;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8f3f17;line-height:1.05;margin-top:4mm;}
 #overlayFiche .d-sous{font-size:14pt;color:#6b4a2e;letter-spacing:.04em;margin-top:1mm;}
 #overlayFiche .d-sous b{color:#8f3f17;}
@@ -768,6 +795,9 @@ const FICHE_CSS = `#overlayFiche{position:fixed;inset:0;background:rgba(20,14,10
 #overlayFiche .d-med-nom{font-size:9pt;color:#6b4a2e;text-transform:uppercase;letter-spacing:.04em;}
 #overlayFiche .d-med-pts{font-size:15pt;font-weight:700;color:#8f3f17;}
 #overlayFiche .d-bas{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:0 6mm 6mm;font-size:12pt;}
+#overlayFiche .d-cadre > .d-test{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;}
+#overlayFiche .d-test span{transform:rotate(-18deg);font-family:"Cinzel",Georgia,serif;font-weight:800;font-size:64pt;letter-spacing:.12em;color:rgba(200,30,30,.28);border:2mm solid rgba(200,30,30,.28);padding:2mm 10mm;border-radius:4mm;white-space:nowrap;}
+#overlayFiche .d-test-note{font-size:14pt;font-weight:700;color:#b81e1e;margin-top:3mm;}
 #overlayFiche .d-signature{min-width:70mm;border-top:.3mm solid #1b130e;padding-top:1mm;text-align:center;margin-top:10mm;color:#4a4a4a;}
 body.fiche-ouverte{overflow:hidden;}
 @media print{
@@ -808,6 +838,7 @@ function ouvrirDiplome() {
   const n = eleve.record, date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const medailles = NIVEAUX.map((niveau, k) => `<div class="d-med${n > k ? " complete" : ""}"><div class="d-med-nom">${niveau.court || niveau.nom}</div><div class="d-med-pts">${n > k ? "✓" : "—"}</div></div>`).join("");
   const Q = eleve.meilleur || parcours;
+  const test = !!eleve.test || enTest();
   const taux = Q.reponses ? Math.round(100 * Q.bonnes / Q.reponses) : 0;
   const ov = ouvrirOverlay(`<div class="diplome"><div class="d-cadre">
     <div class="d-frise haut"></div><div class="d-frise bas"></div>
@@ -821,9 +852,11 @@ function ouvrirDiplome() {
       <div class="d-pour">pour avoir guidé le crapaud d'or le long du Nil, au pays des pharaons.</div>
       <div class="d-pour"><b>${Q.reponses}</b> réponse${Q.reponses > 1 ? "s" : ""}, dont <b>${Q.bonnes}</b> juste${Q.bonnes > 1 ? "s" : ""}${Q.reponses ? ` (${taux} %)` : ""} · <b>${n}</b> plateau${n > 1 ? "x" : ""} franchi${n > 1 ? "s" : ""} sur ${NIVEAUX.length}.</div>
       <div class="d-points">Points : <b>${Q.points}</b></div>
-      <div class="d-mention">${["Continue tes efforts", "Bien", "Très bien", "Félicitations !"][Math.round(3 * n / NIVEAUX.length)]}</div>
+      ${test ? `<div class="d-test-note">⚠ Parcours fait en mode test : des plateaux ont pu être ouverts sans répondre.</div>`   // en test, pas de mention
+        : `<div class="d-mention">${["Continue tes efforts", "Bien", "Très bien", "Félicitations !"][Math.round(3 * n / NIVEAUX.length)]}</div>`}
     </div>
     <div class="d-meds">${medailles}</div>
+    ${test ? `<div class="d-test"><span>Mode test</span></div>` : ""}
     <div class="d-bas"><div>Fait le ${date}</div><div class="d-signature">Signature du professeur</div></div>
   </div></div>`);
   const d = ov.querySelector(".diplome"), carte = getComputedStyle(d.parentElement);
