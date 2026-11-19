@@ -212,7 +212,7 @@ function chargerNiveau(n, recommence = false) {
   partie.niveau = n;
   if (typeof fermerTablette === "function") fermerTablette();
   if (n === 0 && !recommence) { parcours = { reponses: 0, bonnes: 0, points: POINTS_DEPART }; eleve.points = POINTS_DEPART; dejaPosees.clear(); }
-  partie.fin = null; partie.chouetteUtilisee = recommence && !!partie.chouetteUtilisee; partie.chouette = null; partie.minuteurs = [];
+  partie.fin = null; partie.finJeu = false; partie.chouetteUtilisee = recommence && !!partie.chouetteUtilisee; partie.chouette = null; partie.minuteurs = [];
   enigme = null; questionSauvee = null; question = null; questionCorrigee = null; majBoutonTestAnubis();
   niv = NIVEAUX[n];
   const [x, y] = niv.depart || [0, 0];
@@ -376,6 +376,7 @@ function majBulle() {
 }
 function afficherQuestion() {
   if (enigme) return;
+  if (partie.finJeu) { afficherFinal(); return; }
   const zone = $("calcul"), champ = $("champReponse"), choix = $("choix");
   majCompteur(); majBulle();
   // le bouton d'action de l'escale (« Lever l'ancre », « Mon navire est ici »…)
@@ -516,18 +517,22 @@ function montrerEcran(sorte) {
       <p>Réponses justes : <b>${parcours.bonnes}</b> sur ${parcours.reponses}.</p>
       <p><button class="suite" id="btnSuite">↺ Recommencer</button></p>`;
     $("btnSuite").onclick = () => chargerNiveau(0);
-  } else {
-    const qui = prenom() ? `, ${esc(prenom())}` : "";
-    c.innerHTML = `<h3 class="titre-grec">Bravo${qui} !</h3><p>Tu as traversé l'Égypte des pharaons, petit crapaud d'or !</p>
-      <p>Réponses justes : <b>${parcours.bonnes}</b> sur ${parcours.reponses}.</p>
-      <p>Points : <b>${parcours.points}</b>.</p>
-      <p><button class="suite" id="btnSuite">↺ Rejouer</button> <button class="suite" id="btnFinDiplome">🎓 Diplôme</button></p>`;
-    $("btnSuite").onclick = () => chargerNiveau(0);
-    $("btnFinDiplome").onclick = ouvrirDiplome;
-  }
+  } else { partie.finJeu = true; afficherFinal(); return; }   // le final : l'illustration reste à l'écran, le bravo va dans le panneau
   $("ecranJeu").classList.toggle("final", sorte === "fin");
   $("ecranJeu").classList.add("visible");
   setTimeout(() => { const b = c.querySelector("button"); if (b) b.focus(); }, 0);
+}
+function afficherFinal() {
+  const zone = $("calcul"), qui = prenom() ? `, ${esc(prenom())}` : "";
+  $("titreQuestions").textContent = "Crapaud d'or"; $("compteur").hidden = true; $("btnAction").hidden = true; $("choix").hidden = true;
+  $("formReponse").style.display = "none"; $("champReponse").disabled = true; $("bulle").hidden = true;
+  $("btnAide").hidden = true; montrerAide(false); $("aideTouches").textContent = "Le soleil s'est levé : le voyage est terminé.";
+  zone.className = "calcul fin-jeu";
+  zone.innerHTML = fr(`<div class="fin-titre">Bravo${qui} !</div><p>Tu as traversé l'Égypte des pharaons, petit crapaud d'or !</p>
+    <p>Réponses justes : <b>${parcours.bonnes}</b> sur ${parcours.reponses} · Points : <b>${parcours.points}</b></p>
+    <p class="prog-actions"><button type="button" class="suite" id="btnSuite">↺ Rejouer</button> <button type="button" class="suite" id="btnFinDiplome">🎓 Diplôme</button></p>`);
+  $("btnSuite").onclick = () => chargerNiveau(0);
+  $("btnFinDiplome").onclick = ouvrirDiplome;
 }
 function fermerEcran() { $("ecranJeu").classList.remove("visible"); }
 

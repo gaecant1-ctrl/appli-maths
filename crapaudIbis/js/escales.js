@@ -714,9 +714,27 @@ function ouvrirTablette(P) {
     <tbody>${Array.from({ length: LIGNES_TAB }, (_, i) => ligne(i + 1)).join("")}</tbody></table>
 `;
   $("cadreJeu").appendChild(T);
+  if (P.tabPos) placerTablette(T, ...P.tabPos);   // elle revient là où on l'avait laissée
   majTablette(P);
   const premier = T.querySelector("input[data-tab]:not([readonly])"); if (premier && !premier.value) premier.focus();
 }
+// la tablette se déplace en la tenant par sa barre de titre ; elle reste dans la zone de jeu
+function placerTablette(T, x, y) {
+  const C = $("cadreJeu");
+  x = Math.max(0, Math.min(C.clientWidth - T.offsetWidth, x)); y = Math.max(0, Math.min(C.clientHeight - T.offsetHeight, y));
+  Object.assign(T.style, { left: x + "px", top: y + "px", transform: "none" });
+  return [x, y];
+}
+document.addEventListener("pointerdown", e => {
+  const barre = e.target.closest("#tablette .tab-barre"); if (!barre || e.target.closest("button")) return;
+  // (positions prises à l'écran : au départ la tablette est centrée par un transform, que offsetLeft ignore)
+  const T = barre.parentElement, rt = T.getBoundingClientRect(), rc = $("cadreJeu").getBoundingClientRect(), bord = $("cadreJeu").clientLeft;
+  const dx = e.clientX - (rt.left - rc.left - bord), dy = e.clientY - (rt.top - rc.top - bord);
+  e.preventDefault(); barre.setPointerCapture(e.pointerId); T.classList.add("tenue");
+  const bouge = ev => { const pos = placerTablette(T, ev.clientX - dx, ev.clientY - dy); if (typeof P !== "undefined" && P) P.tabPos = pos; };
+  const lache = () => { T.classList.remove("tenue"); barre.removeEventListener("pointermove", bouge); barre.removeEventListener("pointerup", lache); barre.removeEventListener("pointercancel", lache); };
+  barre.addEventListener("pointermove", bouge); barre.addEventListener("pointerup", lache); barre.addEventListener("pointercancel", lache);
+});
 function fermerTablette() { const T = document.getElementById("tablette"); if (T) T.remove(); }
 function majTablette(P) {
   const T = document.getElementById("tablette"); if (!T || !P.tab) return;
@@ -2637,10 +2655,15 @@ const PARTAGES = [
   [["diag", 3, 2], ["diag", 4, 2], ["croix", 2, 2], ["croix", 3, 1], ["carres", 4, 3]]
 ];
 const PAR_CASE = { carres: 1, diag: 2, croix: 4 };
-function grilleSobek(k) {
-  const [type, c, r] = choisir(PARTAGES[Math.min(k, 2)]), n = c * r * PAR_CASE[type];
+// 5 stèles : niveau facile, puis deux moyennes, puis deux difficiles (celles-là se simplifient) ;
+// jamais deux fois le même partage dans le plateau (même après une erreur)
+const NIVEAU_SOBEK = [0, 1, 1, 2, 2];
+function grilleSobek(k, P) {
+  const niveau = NIVEAU_SOBEK[Math.min(k, NIVEAU_SOBEK.length - 1)], vus = P.partagesVus || (P.partagesVus = new Set());
+  let libres = PARTAGES[niveau].filter(p => !vus.has(p.join())); if (!libres.length) libres = PARTAGES[niveau];
+  const partage = choisir(libres), [type, c, r] = partage, n = c * r * PAR_CASE[type]; vus.add(partage.join());
   const possibles = [...Array(n - 1).keys()].map(i => i + 1), simplifiables = possibles.filter(i => pgcd(i, n) > 1);
-  const nb = k === 2 && simplifiables.length ? choisir(simplifiables) : choisir(possibles);   // la dernière se simplifie
+  const nb = niveau === 2 && simplifiables.length ? choisir(simplifiables) : choisir(possibles);   // les deux dernières se simplifient
   const cases = new Set(melanger([...Array(n).keys()]).slice(0, nb));
   return { type, c, r, n, nb, cases, sens: hasard(2) };
 }
@@ -2652,7 +2675,7 @@ function partsCase(type, x, y, a, sens) {
   return [[A, B, O], [B, C, O], [C, D, O], [D, A, O]];
 }
 function qSobek(k, P) {
-  const G = P.grille = grilleSobek(k), g = pgcd(G.nb, G.n);
+  const G = P.grille = grilleSobek(k, P), g = pgcd(G.nb, G.n);
   return qMaths(`<b>Quelle fraction du rectangle est coloriée ?</b> Donne-la sous forme <b>irréductible</b>.`, G.nb / G.n,
     `Le rectangle est partagé en ${G.n} parts égales${G.type === "carres" ? "" : " (des triangles)"}, et ${G.nb} ${G.nb > 1 ? "sont coloriées" : "est coloriée"} : ${G.nb}/${G.n}` + (g > 1 ? `, c'est-à-dire ${G.nb / g}/${G.n / g}.` : "."),
     { lire: lireFraction, a: G.nb / g, b: G.n / g, irreductible: true, reduireEnsuite: "Sobek", placeholder: "ta fraction" });
@@ -2971,7 +2994,7 @@ function devantSobek(P, t) {
 //  LES BALADES VERS LE MONDE OBSCUR (vue de côté, le décor défile)
 //  Plateau 7 : au crépuscule, un crocodile de Sobek mène le crapaud le long du Nil jusqu'au temple de son maître.
 //  Plateau 9 : la nuit, un chacal noir, Oupouaout « l'ouvreur des chemins », le mène jusqu'aux pyramides.
-//  Trois fois, le compagnon demande un mot (numération pour le crocodile, calcul pour le chacal).
+//  Le compagnon pose ses questions en chemin (5 bornes pour le crocodile, 3 mots pour le chacal).
 //  Juste : +1 point, et le chemin s'éclaire ; faux : −3 points, l'obscurité se resserre.
 // ============================================================
 const BALADE = { sol: 140, fin: 440, ecran: 96, paroles: [20, 160, 300] };
@@ -3017,14 +3040,24 @@ function qBorne(k, P) {
   const N = P.nombres[k], C = COMPAGNONS.croco, intro = k === 0 ? C.intro : "";
   const [m, c, dz, u, di, ce] = N.ch, autres = x => melanger(N.ch.filter(v => v !== x)).slice(0, 3);
   let q, bonne, choix, expl;
-  if (k === 0 || (k === 1 && Math.random() < .3)) {
-    const [nom, v, ou] = choisir([["des dixièmes", di, "le premier chiffre après la virgule"], ["des centièmes", ce, "le deuxième chiffre après la virgule"]]);
+  // jamais deux fois exactement la même question dans le plateau (même après une erreur) :
+  // on tire le type dans la famille prévue pour ce rang, parmi ceux pas encore posés ; sinon dans une autre famille
+  const vus = P.vuesBorne || (P.vuesBorne = new Set());
+  const familles = { dec: ["dixièmes", "centièmes"], ent: ["unités", "dizaines", "centaines", "milliers"], nb: ["de dizaines", "de centaines"] };
+  // rangs : 0 après la virgule · 1 et 3 avant la virgule (parfois après, au 1) · 2 et 4 « combien de… »
+  const voulue = k === 0 || (k === 1 && Math.random() < .3) ? "dec" : k === 1 || k === 3 ? "ent" : "nb";
+  let libres = familles[voulue].filter(x => !vus.has(x));
+  if (!libres.length) libres = Object.values(familles).flat().filter(x => !vus.has(x));
+  if (!libres.length) { vus.clear(); libres = familles[voulue]; }
+  const type = choisir(libres); vus.add(type);
+  if (familles.dec.includes(type)) {
+    const [nom, v, ou] = type === "dixièmes" ? ["des dixièmes", di, "le premier chiffre après la virgule"] : ["des centièmes", ce, "le deuxième chiffre après la virgule"];
     q = `quel est le chiffre ${nom} ?`; bonne = v; choix = [v, ...autres(v)]; expl = `Le chiffre ${nom}, c'est ${ou} : ${v}.`;
-  } else if (k === 1) {
-    const [nom, v, ou] = choisir([["des unités", u, "juste avant la virgule"], ["des dizaines", dz, "deux rangs avant la virgule"], ["des centaines", c, "trois rangs avant la virgule"], ["des milliers", m, "quatre rangs avant la virgule"]]);
+  } else if (familles.ent.includes(type)) {
+    const [nom, v, ou] = { "unités": ["des unités", u, "juste avant la virgule"], "dizaines": ["des dizaines", dz, "deux rangs avant la virgule"], "centaines": ["des centaines", c, "trois rangs avant la virgule"], "milliers": ["des milliers", m, "quatre rangs avant la virgule"] }[type];
     q = `quel est le chiffre ${nom} ?`; bonne = v; choix = [v, ...autres(v)]; expl = `Le chiffre ${nom} est ${ou} : ${v}.`;
   } else {
-    const [nom, div] = choisir([["de dizaines", 10], ["de centaines", 100]]), v = Math.floor(N.e / div);
+    const [nom, div] = type === "de dizaines" ? ["de dizaines", 10] : ["de centaines", 100], v = Math.floor(N.e / div);
     const pieges = [div === 100 ? c : dz, Math.floor(N.e / (div * 10)), Math.floor(N.e / (div / 10))].filter((x, i, t) => x !== v && t.indexOf(x) === i);
     while (pieges.length < 3) pieges.push(v + pieges.length + 1);
     q = `combien y a-t-il ${nom} dans ce nombre ?`; bonne = v; choix = [v, ...pieges.slice(0, 3)];
@@ -3178,25 +3211,36 @@ function borne(x, sol, texte) {
   ctx.strokeStyle = "#3e2c1e"; ctx.lineWidth = .6; ctx.stroke();
   ctx.fillStyle = "#3a2410"; ctx.font = "bold 6.5px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText(texte, x, sol - 9); ctx.textAlign = "left";
 }
-// Plateau 9 : les quatre réponses gravées sur quatre stèles le long de la piste, dans le noir ; on va toucher la bonne (↓)
+// Plateau 9 : les quatre réponses gravées sur quatre stèles le long de la piste, dans le noir ; on va toucher la bonne (↓).
+// Les stèles font partie du décor dès le départ (un groupe de quatre par question) : elles arrivent avec la piste et
+// repartent avec elle. Quand le chacal pose sa question, les réponses s'y gravent en s'allumant ; après, elles s'éteignent.
+const groupeSteles = k => [0, 1, 2, 3].map(j => niv.balade.paroles[k] + 150 + j * 34);
 function stelesNuit(P, t) {
-  const q = question || questionCorrigee; if (!q || !q.choix) return;
-  P.steles.W.forEach((W, j) => {
-    const x = W - P.dist; if (x < -20 || x > L + 20) return;
-    const bonne = suiteEnAttente && j === q.bonne, mauvaise = suiteEnAttente && j === choixFait && j !== q.bonne;
-    if (bonne || mauvaise) { const g = ctx.createRadialGradient(x, 122, 2, x, 122, 24); g.addColorStop(0, bonne ? "rgba(140,230,140,.55)" : "rgba(240,90,70,.5)"); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.fillRect(x - 24, 98, 48, 48); }
-    ctx.fillStyle = degrade(100, 140, "#8a7e98", "#4a4258"); ctx.beginPath(); ctx.moveTo(x - 13, 140); ctx.lineTo(x - 13, 108); ctx.quadraticCurveTo(x, 98, x + 13, 108); ctx.lineTo(x + 13, 140); ctx.fill();
-    ctx.strokeStyle = "#1a1622"; ctx.lineWidth = .6; ctx.stroke();
-    const mots = q.choix[j].replace(/^« C'est /, "").replace(/\\. »$/, "").replace(/\. »$/, "").split(" ");
-    const lignes = []; mots.forEach(m => { const l = lignes[lignes.length - 1]; if (l && (l + " " + m).length <= 9) lignes[lignes.length - 1] = l + " " + m; else lignes.push(m); });
-    ctx.fillStyle = "#f0d890"; ctx.font = "bold 5px Georgia, serif"; ctx.textAlign = "center";
-    lignes.forEach((l, i) => ctx.fillText(l, x, 116 + i * 6 - (lignes.length - 1) * 2)); ctx.textAlign = "left";
-  });
+  const S = P.steles, Sp = P.stelesPasse, maintenant = performance.now();
+  for (let k = 0; k < niv.balade.nbQ; k++) {
+    const actif = S && S.k === k, passe = !actif && Sp && Sp.k === k && maintenant - Sp.fin < 900;
+    const a = actif ? Math.min(1, (maintenant - S.t0) / 700) : passe ? 1 - (maintenant - Sp.fin) / 900 : 0;
+    groupeSteles(k).forEach((W, j) => stele(W - P.dist, j, a > 0 ? (actif ? S : Sp).choix[j] : null, a, actif));
+  }
+}
+function stele(x, j, texte, a, actif) {
+  if (x < -20 || x > L + 20) return;
+  const q = question || questionCorrigee;
+  const bonne = actif && suiteEnAttente && q && j === q.bonne, mauvaise = actif && suiteEnAttente && q && j === choixFait && j !== q.bonne;
+  if (bonne || mauvaise) { const g = ctx.createRadialGradient(x, 122, 2, x, 122, 24); g.addColorStop(0, bonne ? "rgba(140,230,140,.55)" : "rgba(240,90,70,.5)"); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.fillRect(x - 24, 98, 48, 48); }
+  ctx.fillStyle = degrade(100, 140, "#8a7e98", "#4a4258"); ctx.beginPath(); ctx.moveTo(x - 13, 140); ctx.lineTo(x - 13, 108); ctx.quadraticCurveTo(x, 98, x + 13, 108); ctx.lineTo(x + 13, 140); ctx.fill();
+  ctx.strokeStyle = "#1a1622"; ctx.lineWidth = .6; ctx.stroke();
+  if (!texte || a <= 0) return;
+  const mots = texte.replace(/^« C'est /, "").replace(/\\. »$/, "").replace(/\. »$/, "").split(" ");
+  const lignes = []; mots.forEach(m => { const l = lignes[lignes.length - 1]; if (l && (l + " " + m).length <= 9) lignes[lignes.length - 1] = l + " " + m; else lignes.push(m); });
+  ctx.save(); ctx.globalAlpha = a; ctx.shadowColor = "rgba(255,210,120,.8)"; ctx.shadowBlur = (1 - a) * 6 * echelle + 1.5 * echelle;   // les lettres s'allument
+  ctx.fillStyle = "#f0d890"; ctx.font = "bold 5px Georgia, serif"; ctx.textAlign = "center";
+  lignes.forEach((l, i) => ctx.fillText(l, x, 116 + i * 6 - (lignes.length - 1) * 2)); ctx.restore();
 }
 function decorBalade(P, t) {
   const B = niv.balade, D = DECORS_BALADE[B.theme], d = P.dist;
   const bande = (cle, fn, v) => { const img = fondPeint(cle, fn), o = -modL(d * v); ctx.drawImage(img, o, 0, L + .6, H); ctx.drawImage(img, o + L - .3, 0, L + .3, H); };
-  const u = Math.min(1, d / BALADE.fin);
+  const u = Math.min(1, d / niv.balade.fin);
   if (B.theme === "crepuscule") {
     // le jour baisse pendant la balade : le ciel passe de l'après-midi au couchant, puis à la nuit ; le soleil descend et se couche
     ctx.drawImage(fondPeint("jourCiel", peindreCielJour), 0, 0, L, H);
@@ -3207,19 +3251,19 @@ function decorBalade(P, t) {
   } else ctx.drawImage(fondPeint(B.theme + "Ciel", D.ciel), 0, 0, L, H);
   bande(B.theme + "Loin", D.loin, .12); bande(B.theme + "Pres", D.pres, .4); bande(B.theme + "Sol", D.sol, 1);
   if (B.theme === "crepuscule") { ctx.fillStyle = `rgba(22,18,44,${u * .25})`; ctx.fillRect(0, 98, L, H - 98); }   // la terre et l'eau s'assombrissent
-  const xp = 200 + BALADE.fin - d; if (xp < L + 80) arriveeBalade(xp, t, B.theme);
+  const xp = 200 + niv.balade.fin - d; if (xp < L + 80) arriveeBalade(xp, t, B.theme);
   dessinerDepose(P, t);
-  if (P.nombres) BALADE.paroles.forEach((w, k) => { const x = 150 + w - d; if (x > -30 && x < L + 30) borne(x, BALADE.sol, P.nombres[k].texte); });
-  if (P.steles) stelesNuit(P, t);
+  if (P.nombres) niv.balade.paroles.forEach((w, k) => { const x = 150 + w - d; if (x > -30 && x < L + 30) borne(x, BALADE.sol, P.nombres[k].texte); });
+  if (B.steles) stelesNuit(P, t);
   if (B.compagnon === "croco") { ctx.save(); ctx.translate(P.guide.x, BALADE.sol); ctx.scale(1.3, 1.3); crocoMarche(0, 0, t, P.guide.vx > 0); ctx.restore();
     if (B.porte) dessinerCrapaud({ x: P.guide.x - 6, y: BALADE.sol - 9.6 - HH + (P.guide.vx ? Math.abs(Math.sin(t / 3.5)) * .6 : 0), auSol: true, dir: 1, vx: 0, vy: 0 }, t); }
   else chacal(P.guide.x, BALADE.sol, t, P.guide.vx > 0, P.intro ? -1 : 1);   // pendant l'arrivée, il regarde le crapaud
 }
 // l'obscurité qui gagne : on ne voit bien qu'autour du crapaud et des braseros ; elle se resserre quand on se trompe
 function devantBalade(P, t) {
-  const B = niv.balade, [n0, n1] = DECORS_BALADE[B.theme].nuit, xp = 200 + BALADE.fin - P.dist;
-  const peur = P.ombreT ? Math.max(0, 1 - (performance.now() - P.ombreT) / 2500) : 0, noir = n0 + (n1 - n0) * Math.min(1, P.dist / BALADE.fin);
-  const r = 80 + P.lumiere * 16 - peur * 30 + Math.sin(t / 9) * 1.5, cx = heros.x + HW / 2, cy = heros.y + HH / 2;
+  const B = niv.balade, [n0, n1] = DECORS_BALADE[B.theme].nuit, xp = 200 + niv.balade.fin - P.dist;
+  const peur = P.ombreT ? Math.max(0, 1 - (performance.now() - P.ombreT) / 2500) : 0, noir = n0 + (n1 - n0) * Math.min(1, P.dist / niv.balade.fin);
+  const r = 80 + P.lumiere * 48 / niv.balade.nbQ - peur * 30 + Math.sin(t / 9) * 1.5, cx = heros.x + HW / 2, cy = heros.y + HH / 2;
   const c = devantBalade.c || (devantBalade.c = document.createElement("canvas")); c.width = L; c.height = H;
   const g = c.getContext("2d"); g.fillStyle = `rgba(4,4,12,${noir + peur * .25})`; g.fillRect(0, 0, L, H); g.globalCompositeOperation = "destination-out";
   const halo = (x, y, rr) => { const h = g.createRadialGradient(x, y, rr * .2, x, y, rr); h.addColorStop(0, "rgba(0,0,0,1)"); h.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = h; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); };
@@ -3232,11 +3276,11 @@ function devantBalade(P, t) {
 function porterBalade(P) {
   const G = P.guide, parle = gardien.etat === "questions" || suiteEnAttente, v = parle ? 0 : .9;
   heros.etat = "fige"; heros.vx = heros.vy = 0;
-  if (P.dist < BALADE.fin) { P.dist = Math.min(BALADE.fin, P.dist + v); G.vx = v ? 1 : 0; }
-  else if (gardien.etat === "fini") { const xp = 200 + BALADE.fin - P.dist; G.vx = G.x < xp - 4 ? 1 : 0; if (G.vx) G.x += .8; else if (!P.entre) { P.entre = 1; apres(30, plateauFranchi); } }
+  if (P.dist < niv.balade.fin) { P.dist = Math.min(niv.balade.fin, P.dist + v); G.vx = v ? 1 : 0; }
+  else if (gardien.etat === "fini") { const xp = 200 + niv.balade.fin - P.dist; G.vx = G.x < xp - 4 ? 1 : 0; if (G.vx) G.x += .8; else if (!P.entre) { P.entre = 1; apres(30, plateauFranchi); } }
   // le crapaud, sur son dos (la boîte du héros suit, pour la lumière)
   heros.x = G.x - 6; heros.y = BALADE.sol - 9.6 - HH;
-  if (gardien.etat === "attend" && P.dits < 3 && !suiteEnAttente && P.dist > BALADE.paroles[P.dits]) { $("retour").className = "vide"; gardien.etat = "questions"; poserQuestion(); }
+  if (gardien.etat === "attend" && P.dits < niv.balade.nbQ && !suiteEnAttente && P.dist > niv.balade.paroles[P.dits]) { $("retour").className = "vide"; gardien.etat = "questions"; poserQuestion(); }
 }
 const DEPOSE = { pose: 70, lache: 76, ibisParle: 40, chacalParle: 110, fin: 170, x: 40 };
 function ibisPorteur(x, y, t, porte) {   // l'ibis de profil, ailes battantes, le crapaud dans les pattes
@@ -3258,7 +3302,7 @@ function dessinerDepose(P, t) {
   if (f < D.lache) { const e = Math.min(1, f / D.pose), u = 1 - (1 - e) * (1 - e); ibisPorteur(-20 + (D.x + 7 + 20) * u, 14 + (BALADE.sol - 12 - 14) * u, t, true); }
   else { const e = (f - D.lache) / (D.fin - D.lache); ibisPorteur(D.x + 7 + e * 230, BALADE.sol - 12 - e * e * 150, t, false); }
 }
-// L'entrée des souterrains : en entrant dans la pyramide, l'illustration du portail gardé par Sobek et Anubis
+// La sortie des souterrains : quand la barque a franchi la dernière section (plateau 11), l'illustration du portail gardé par Sobek et Anubis
 // apparaît en fondu ; la vue avance lentement vers la porte lumineuse, dans la brume, puis tout devient noir.
 const IMG_PORTAIL = Object.assign(new Image(), { src: "images/portail.jpg" }), PORTAIL = { x: 203, y: 0, w: 1024, h: 768, porte: [120, 96], fin: 230 };
 function dessinerPortail(P, t) {
@@ -3277,17 +3321,18 @@ function dessinerPortail(P, t) {
   ctx.restore();
 }
 function bougerBalade(P) {
-  const G = P.guide, xp = 200 + BALADE.fin - P.dist, cible = Math.min(heros.x + 28, xp - 30), dx = Math.max(-1.5, Math.min(1.5, cible - G.x));
+  const G = P.guide, xp = 200 + niv.balade.fin - P.dist, cible = Math.min(heros.x + 28, xp - 30), dx = Math.max(-1.5, Math.min(1.5, cible - G.x));
   const avance = Math.abs(cible - G.x) > 1.5; if (avance) G.x += dx; G.vx = avance || P.glisse > .2 ? 1 : 0;   // à l'arrêt, il cesse de marcher
 }
 // la fiche commune des deux balades
+const eteindreSteles = P => { if (P.steles) P.stelesPasse = { ...P.steles, fin: performance.now() }; P.steles = null; };
 function fBalade(qui, theme, extra) {
-  const C = COMPAGNONS[qui];
+  const C = COMPAGNONS[qui], nbQ = extra.nbQ || 3;   // nombre de questions en chemin (et leurs positions, et la longueur du parcours)
   return Object.assign({
-    sorte: "balade", balade: { compagnon: qui, theme, porte: !!extra.porte },
+    sorte: "balade", balade: { compagnon: qui, theme, porte: !!extra.porte, steles: !!extra.steles, nbQ, paroles: extra.paroles || BALADE.paroles, fin: extra.fin || BALADE.fin },
     depart: [24, 140 - HH], blocs: [[-20, 140, 280, 40]],
-    attendre: true, sansEnchainer: true, bonnes: 3, points: [1, 3],
-    init: () => ({ guide: { x: extra.porte ? 90 : extra.depose ? 84 : 50, vx: 0 }, dist: 0, dits: 0, glisse: 0, lumiere: 0, intro: extra.depose ? 1 : 0, nombres: qui === "croco" ? [0, 1, 2].map(nombreBorne) : null }),
+    attendre: true, sansEnchainer: true, bonnes: nbQ, points: [1, 3],
+    init: () => ({ guide: { x: extra.porte ? 90 : extra.depose ? 84 : 50, vx: 0 }, dist: 0, dits: 0, glisse: 0, lumiere: 0, intro: extra.depose ? 1 : 0, nombres: qui === "croco" ? Array.from({ length: nbQ }, nombreBorne) : null }),
     maj: extra.porte ? porterBalade : P => {
       if (P.portail) { if (++P.portail === PORTAIL.fin) plateauFranchi(); return; }
       if (P.intro) introDepose(P); else bougerBalade(P);
@@ -3300,25 +3345,25 @@ function fBalade(qui, theme, extra) {
     cacher: P => !!extra.porte || (P.intro > 0 && P.intro < DEPOSE.lache),
     question: k => qBalade(k, qui),
     effetBon: P => {
-      P.dits++; P.lumiere++; gardien.justes = P.dits; gardien.etat = P.dits >= 3 ? "fini" : "attend"; son("allume");
+      P.dits++; P.lumiere++; gardien.justes = P.dits; gardien.etat = P.dits >= niv.balade.nbQ ? "fini" : "attend"; son("allume");
       const r = $("retour"); r.className = "ok"; r.innerHTML = `<div class="replique"><img src="${portrait(qui)}" alt=""><span>${C.bien}</span></div>`;
-      attendreSuite(() => { P.steles = null; });
+      attendreSuite(() => { eteindreSteles(P); });
     },
     effetFaux: P => { P.ombreT = performance.now(); },
-    apresFaux: P => { P.steles = null; P.dits++; gardien.justes = P.dits; gardien.etat = P.dits >= 3 ? "fini" : "attend"; },
+    apresFaux: P => { eteindreSteles(P); P.dits++; gardien.justes = P.dits; gardien.etat = P.dits >= niv.balade.nbQ ? "fini" : "attend"; },
     apresMouvement: P => {
       if (extra.porte || P.intro) return;
-      let limite = gardien.etat === "fini" ? BALADE.fin : BALADE.fin - 70;
+      let limite = gardien.etat === "fini" ? niv.balade.fin : niv.balade.fin - 70;
       if (P.steles) limite = Math.min(limite, P.steles.W[3] - 112);   // on ne dépasse pas les stèles
       P.glisse = 0;
       if (heros.x > BALADE.ecran && P.dist < limite) { const g = Math.min(heros.x - BALADE.ecran, limite - P.dist); P.dist += g; heros.x -= g; P.glisse = g; }
-      heros.x = Math.max(2, Math.min(heros.x, P.dist >= BALADE.fin ? 206 : BALADE.ecran + 30));
-      if (gardien.etat === "attend" && P.dits < 3 && !suiteEnAttente && P.dist > BALADE.paroles[P.dits]) {
+      heros.x = Math.max(2, Math.min(heros.x, P.dist >= niv.balade.fin ? 206 : BALADE.ecran + 30));
+      if (gardien.etat === "attend" && P.dits < niv.balade.nbQ && !suiteEnAttente && P.dist > niv.balade.paroles[P.dits]) {
         $("retour").className = "vide"; gardien.etat = "questions";
-        if (extra.steles) P.steles = { W: [0, 1, 2, 3].map(j => P.dist + 150 + j * 34) };
         poserQuestion();
+        if (extra.steles && question) P.steles = { k: P.dits, W: groupeSteles(P.dits), choix: question.choix, t0: performance.now() };
       }
-      if (gardien.etat === "fini" && P.dist >= BALADE.fin && heros.x > 198 && !P.entre) { P.entre = 1; heros.etat = "fige"; if (extra.portail) { P.portail = 1; afficherQuestion(); } else apres(20, plateauFranchi); }
+      if (gardien.etat === "fini" && P.dist >= niv.balade.fin && heros.x > 198 && !P.entre) { P.entre = 1; heros.etat = "fige"; if (extra.portail) { P.portail = 1; afficherQuestion(); } else apres(20, plateauFranchi); }
     },
     dessinerDevant: (P, t) => { devantBalade(P, t); dessinerPortail(P, t); }
   }, extra);
@@ -3475,8 +3520,13 @@ document.addEventListener("click", e => {
   else if (c === "lancer") { P.exec = { plat: aplatir(P.prog), i: 0, phase: "pause", t: 0, pos: [...F.depart], dir: 1, ang: 0, trace: [[...F.depart]], px: caseFl(...F.depart) }; $("retour").className = "vide"; son("allume"); }
   afficherQuestion();
 });
+// la ligne sous la scène suit le moment : portail de sortie, puis lever du soleil
+const TOUCHES_BA = { portail: "La barque sort du monde de la nuit…", aube: "Le soleil se lève : tous tes compagnons arrivent." };
 function bougerBarque(P) {
+  const ligne = P.aube ? TOUCHES_BA.aube : P.portail ? TOUCHES_BA.portail : null;
+  if (ligne && !partie.finJeu && $("aideTouches").textContent !== ligne) $("aideTouches").textContent = ligne;
   if (P.aube) { bougerAube(P); return; }
+  if (P.portail) { if (++P.portail === PORTAIL.fin) { P.portail = 0; P.aube = 1; } return; }   // le portail, puis l'aube
   if (P.intro < INTRO_BA.fin) { bougerIntroBarque(P); return; }
   if (P.attente) { if (--P.attente === 0) { P.salle++; Object.assign(P, { montre: false, prog: [] }); afficherQuestion(); } return; }
   const E = P.exec; if (!E) return;
@@ -3500,7 +3550,7 @@ function bougerBarque(P) {
     E.px = [x0 + (x1 - x0) * u, y0 + (y1 - y0) * u];
     if (E.t >= 8) { E.pos = suiv; E.t = 0; E.trace.push([...suiv]); if (--E.reste <= 0) E.phase = "pause"; }
     return; }
-  if (E.phase === "fin") { if (++E.t >= 60) { P.exec = null; if (gardien.justes >= 3) { gardien.etat = "fini"; P.aube = 1; } else P.attente = 30; afficherQuestion(); } return; }
+  if (E.phase === "fin") { if (++E.t >= 60) { P.exec = null; if (gardien.justes >= 3) { gardien.etat = "fini"; P.portail = 1; } else P.attente = 30; afficherQuestion(); } return; }
   if (E.phase === "rate") { if (++E.t >= 60) { P.exec = null; afficherQuestion(); } }
 }
 // --- le lever du soleil : une scène symétrique et solennelle. Deux obélisques encadrent le Nil ; le soleil se lève au centre,
@@ -3804,6 +3854,7 @@ const NIVEAUX = [
   },
   fBalade("croco", "crepuscule", {
     titre: "Plateau 7", nom: "Le long du fleuve", court: "Le fleuve", porte: true,
+    nbQ: 5, paroles: [20, 150, 280, 410, 540], fin: 680,   // 5 bornes le long du fleuve
     touches: "Le crocodile te porte sur son dos : réponds à ses questions dans le panneau.",
     attente: P => gardien.etat === "fini" ? "Le crocodile t'amène jusqu'à la porte du temple de son maître…" : "Le soleil se couche sur le Nil. Un crocodile te porte sur son dos, le long du fleuve…",
     lexique: [["Les crocodiles sacrés", "dans les temples de Sobek, on nourrissait des crocodiles parés de bracelets d'or ; à leur mort, on les momifiait.", "crocodile"], ["Le Nil", "le seul grand fleuve d'Égypte : toute la vie du pays se tenait sur ses rives.", "fleuve"]],
@@ -3813,7 +3864,7 @@ const NIVEAUX = [
   {
     titre: "Plateau 8", nom: "Le bassin de Sobek", court: "Sobek", sorte: "sobek",
     fixe: true, depart: [8, 140], blocs: [],
-    bonnes: 3, compteur: "Stèles :", delai: 50,
+    bonnes: 5, compteur: "Stèles :", delai: 50,
     touches: "Au bord du Nil, Sobek t'interroge : écris la fraction coloriée, irréductible, dans le panneau.",
     init: () => ({ grille: null, fond: 0, nod: 0, devore: 0, parle: 0, sortie: 0 }),
     demarrer: () => apres(40, poserQuestion),
@@ -3834,15 +3885,16 @@ const NIVEAUX = [
     dessinerDevant: devantSobek,
     attente: P => P.sortie ? "La nuit tombe sur le Nil… L'ibis revient te chercher." : "Au bord du Nil, au coucher du soleil, Sobek t'attend devant sa stèle.",
     lexique: [["Sobek", "le dieu à tête de crocodile, maître des eaux du Nil. Dans ses temples, on élevait des crocodiles sacrés, parés de bijoux.", "sobek"], ["La stèle", "une grande pierre dressée, gravée de textes ou d'images.", "stèle"]],
-    aide: "Sobek montre un rectangle partagé en parts égales sur sa stèle : écris la fraction coloriée, sous forme irréductible, dans le panneau. Trois bonnes réponses, et il te laisse passer. Une erreur te coûte des points.",
+    aide: "Sobek montre un rectangle partagé en parts égales sur sa stèle : écris la fraction coloriée, sous forme irréductible, dans le panneau. Cinq bonnes réponses, et il te laisse passer. Une erreur te coûte des points.",
     transition: "L'ibis te dépose sur la route des pyramides. Un chacal noir t'y attend…"
   },
   fBalade("chacal", "nuit", {
-    titre: "Plateau 9", nom: "La route des pyramides", court: "La nuit", depose: true, portail: true, steles: true,
-    attente: P => P.portail ? "Au fond de la pyramide, entre Sobek et Anubis, le portail des souterrains s'ouvre…" : gardien.etat === "fini" ? "Le chacal s'arrête devant l'entrée de la grande pyramide, entre les braseros. Entre." : P.intro ? "L'ibis te dépose sur la route des pyramides…" : "La nuit est tombée sur le désert. Le chacal noir marche devant toi, vers les pyramides…",
+    titre: "Plateau 9", nom: "La route des pyramides", court: "La nuit", depose: true, steles: true,
+    nbQ: 5, paroles: [20, 220, 420, 620, 820], fin: 960,   // 5 questions ; les groupes de stèles assez espacés pour ne jamais en voir deux à la fois
+    attente: P => gardien.etat === "fini" ? "Le chacal s'arrête devant l'entrée de la grande pyramide, entre les braseros. Entre." : P.intro ? "L'ibis te dépose sur la route des pyramides…" : "La nuit est tombée sur le désert. Le chacal noir marche devant toi, vers les pyramides…",
     lexique: [["Oupouaout", "« celui qui ouvre les chemins » : un dieu chacal qui guide les morts dans la nuit.", "chacal"], ["La Douat", "le monde de la nuit et des morts, que le soleil traverse chaque nuit avant de renaître le matin.", "nuit"]],
     aide: "← → pour marcher. Le chacal te pose des questions sur les mots du calcul ; les réponses sont gravées sur quatre stèles le long de la piste, dans le noir : va devant la bonne et appuie sur ↓ (juste : +1 point ; faux : −3 points). Au bout du chemin, entre dans la pyramide.",
-    transition: "Tu franchis le portail : te voici à l'intérieur de la grande pyramide."
+    transition: "Derrière le chacal, tu franchis le seuil de la grande pyramide."
   }),
   {
     titre: "Plateau 10", nom: "Le puits", court: "Le puits", sorte: "bloc",
@@ -3867,8 +3919,10 @@ const NIVEAUX = [
     touches: "Vu de dessus : prépare le programme de la barque, puis largue les amarres.",
     init: () => ({ fleuves: [0, 1, 2].map(genererFleuve), salle: 0, montre: false, prog: [], n: 2, exec: null, attente: 0, aube: 0, intro: 0 }),
     maj: bougerBarque,
-    passer: P => { Object.assign(P, { exec: null, aube: 1, intro: INTRO_BA.fin }); },
+    passer: P => { Object.assign(P, { exec: null, portail: 1, intro: INTRO_BA.fin }); },
+    dessinerDevant: (P, t) => dessinerPortail(P, t),
     attente: P => {
+      if (P.portail) return "La barque glisse vers la sortie du monde de la nuit : entre Sobek et Anubis, le portail s'ouvre sur la lumière…";
       if (P.aube) return "Le soleil se lève sur le Nil…";
       if (P.intro < INTRO_BA.fin) return `Dans le noir, au bord du fleuve souterrain, quelqu'un t'attend… <div class="prog-actions"><button type="button" data-ba="intro">Passer ›</button></div>`;
       const E = P.exec;
