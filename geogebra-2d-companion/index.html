@@ -202,6 +202,11 @@
         <button id="btn-autoarrow-on" class="active">Activer</button>
         <button id="btn-autoarrow-off">Désactiver</button>
       </div>
+      <label class="field-label" style="margin-top:10px;">Unité cm (saisie « 5 cm », mesures en cm)</label>
+      <div class="row">
+        <button id="btn-unitcm-on">Activer</button>
+        <button id="btn-unitcm-off" class="active">Désactiver</button>
+      </div>
     </div>
 
     <details class="group">
@@ -238,6 +243,21 @@
       </div>
     </div>
 
+    <div class="group">
+      <h2>Arrondi</h2>
+      <label class="field-label">Décimales affichées</label>
+      <div class="row" id="rounding-btns"></div>
+    </div>
+
+    <div class="group">
+      <h2>Construction</h2>
+      <div class="row">
+        <button id="btn-refresh" class="wide">Rafraîchir les tracés</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="btn-clear" class="wide">Vider la construction</button>
+      </div>
+    </div>
 
     <div id="status">Statut : <b id="status-text">chargement de l'applet…</b></div>
   </div>
@@ -314,6 +334,7 @@
     allowStyleBar: true,
     enableRightClick: true,
     enableShiftDragZoom: true,
+    disableAutoScale: true,
     language: "fr",
     perspective: "G",
     appletOnLoad: function(api){
@@ -376,15 +397,30 @@
   // Draws the two half-segments A–M and M–B with a matching arrow mark
   // (GeoGebra's own "equal length" decoration) and hides the original
   // full segment when there was one, so it doesn't sit doubled underneath.
+  let lastHalfSegments = [];
   function markEqualLengths(A, M, B, sourceSegment){
     const decoType = 4 + (equalMarkCount++ % 2); // 4 = ">", 5 = ">>"
+    lastHalfSegments = [];
     [[A,M],[M,B]].forEach(([p,q])=>{
       const seg = ggbApplet.evalCommandGetLabels(`Segment(${p},${q})`);
       if(!seg) return;
+      lastHalfSegments.push(seg);
       ggbApplet.evalCommand(`SetDecoration(${seg},${decoType})`);
       ggbApplet.setLabelVisible(seg, false);
     });
     if(sourceSegment) safe(()=>ggbApplet.setVisible(sourceSegment, false), 'masquer segment source');
+  }
+
+  // Full coding of a perpendicular bisector: its midpoint, both halves
+  // marked equal, and the right angle where it crosses the segment. The
+  // midpoint goes through the normal Midpoint path so it gets the same
+  // equal-length marks (and alternating > / >>) as a hand-made one.
+  function codeBisector(bisector, args){
+    const mid = ggbApplet.evalCommandGetLabels(
+      args.length===1 ? `Midpoint(${args[0]})` : `Midpoint(${args[0]},${args[1]})`);
+    if(!mid) return;
+    const half = lastHalfSegments[0];
+    if(half) markRightAngle(half, bisector);
   }
 
   function applyAutoCoding(name){
@@ -398,6 +434,12 @@
         const line = point0 ? args[1] : args[0];
         if(isLineLike(ggbApplet.getObjectType(line))) markRightAngle(line, name);
       }
+      return;
+    }
+    m = cs.match(/^M[ée]diatrice\((.+)\)$/);
+    if(m && isLineLike(ggbApplet.getObjectType(name))){
+      const args = m[1].split(',').map(s=>s.trim());
+      if(args.length===1 || args.length===2) codeBisector(name, args);
       return;
     }
     m = cs.match(/^MilieuCentre\((.+)\)$/);
@@ -428,8 +470,42 @@
   // before its real output (the segment) exists.
   const POINT_OUTPUT_MODES = new Set([1, 5, 19]); // Point, Intersection, Milieu
   let returnToArrowOn = true;
+  // --- Unité cm ---
+  // GeoGebra has no length units: a hidden constant cm = 1 makes "5 cm",
+  // "5cm" or "3.5 cm" valid wherever a length is typed (radius, segment
+  // length…), and lengths shown get a "%v cm" caption. 1 unit = 1 cm.
+  const CM = 'cm';
+  let unitCmOn = false;
+  const cmSavedLabelStyle = new Map();
+  function ensureCmConstant(){
+    if(!ggbApplet.exists(CM)){
+      ggbApplet.evalCommand(`${CM}=1`);
+      ggbApplet.setVisible(CM, false);
+    }
+  }
+  function isLengthObject(name){
+    if(name === CM) return false;
+    const t = ggbApplet.getObjectType(name);
+    if(t === 'segment') return true;
+    return t === 'numeric' && /^Distance\(/.test(safeNames(()=>ggbApplet.getCommandString(name)));
+  }
+  function applyCmDisplay(name){
+    if(!isLengthObject(name)) return;
+    if(!cmSavedLabelStyle.has(name)) cmSavedLabelStyle.set(name, ggbApplet.getLabelStyle(name));
+    ggbApplet.setCaption(name, '%v cm');
+    ggbApplet.setLabelStyle(name, 3); // 3 = caption
+  }
+  function removeCmDisplay(){
+    cmSavedLabelStyle.forEach((style, name)=>{
+      if(!ggbApplet.exists(name)) return;
+      ggbApplet.setCaption(name, '');
+      ggbApplet.setLabelStyle(name, style);
+    });
+    cmSavedLabelStyle.clear();
+  }
+
   function maybeReturnToArrow(name){
-    if(!returnToArrowOn) return;
+    if(!returnToArrowOn || name === CM) return;
     const mode = ggbApplet.getMode();
     if(mode === 0) return;
     const type = ggbApplet.getObjectType(name);
@@ -454,7 +530,14 @@
         }
       }, 'style par défaut');
       if(autoCodeOn) safe(()=>applyAutoCoding(name), 'codage automatique');
+      if(unitCmOn) safe(()=>applyCmDisplay(name), 'unité cm');
       safe(()=>maybeReturnToArrow(name), 'retour à la flèche');
+    });
+    // An undo can remove the hidden cm constant: put it back so "5 cm"
+    // keeps working while the mode is on.
+    ggbApplet.registerRemoveListener(name=>{
+      if(name === CM && unitCmOn) setTimeout(()=>safe(ensureCmConstant, 'unité cm'), 0);
+      cmSavedLabelStyle.delete(name);
     });
   }
 
@@ -687,6 +770,43 @@
     toast('Retour à la flèche désactivé');
   });
 
+  // GeoGebra reads "3,5" as two arguments, so in its value dialogs (segment
+  // length, radius…) a decimal comma typed between digits becomes a point
+  // as you type. Coordinates typed elsewhere are left alone.
+  document.addEventListener('input', e=>{
+    const el = e.target;
+    if(!unitCmOn || el.tagName !== 'INPUT' || !el.closest('.inputDialogComponent')) return;
+    if(!/\d,\d/.test(el.value)) return;
+    const caret = el.selectionStart;
+    el.value = el.value.replace(/(\d),(\d)/g, '$1.$2');
+    el.setSelectionRange(caret, caret);
+  }, true);
+
+  function setUnitCmButtonsActive(id){
+    ['btn-unitcm-on','btn-unitcm-off'].forEach(b=>{
+      document.getElementById(b).classList.toggle('active', b===id);
+    });
+  }
+  document.getElementById('btn-unitcm-on').addEventListener('click', ()=>{
+    safe(()=>{
+      unitCmOn = true;
+      ensureCmConstant();
+      safeNames(()=>ggbApplet.getAllObjectNames()).forEach(n=>safe(()=>applyCmDisplay(n), 'unité cm'));
+      setUnitCmButtonsActive('btn-unitcm-on');
+      toast('Unité cm activée : tape par ex. « 5 cm »');
+    }, 'unité cm');
+  });
+  document.getElementById('btn-unitcm-off').addEventListener('click', ()=>{
+    safe(()=>{
+      unitCmOn = false;
+      removeCmDisplay();
+      // The hidden cm constant stays: deleting it would also delete every
+      // object built from a "… cm" length.
+      setUnitCmButtonsActive('btn-unitcm-off');
+      toast('Unité cm désactivée');
+    }, 'unité cm');
+  });
+
   // --- Labels (points only — other objects' labels stay under GeoGebra's own control) ---
   function setLabelsButtonsActive(id){
     ['btn-labels-show','btn-labels-hide'].forEach(b=>{
@@ -771,6 +891,63 @@
       e.target.classList.toggle('active', axesOn);
       toast(axesOn ? 'Axes affichés' : 'Axes masqués');
     }, 'axes');
+  });
+  // --- Arrondi : nombre de décimales affiché partout (angles, coordonnées…) ---
+  const ROUNDING_CHOICES = [0, 1, 2, 3, 4, 5];
+  const roundingBtns = document.getElementById('rounding-btns');
+  ROUNDING_CHOICES.forEach(n=>{
+    const b = document.createElement('button');
+    b.textContent = n;
+    b.dataset.rounding = n;
+    if(n === 2) b.classList.add('active'); // GeoGebra's own default
+    b.addEventListener('click', ()=>{
+      safe(()=>{
+        ggbApplet.setRounding(String(n));
+        roundingBtns.querySelectorAll('button').forEach(x=>x.classList.toggle('active', x === b));
+        toast(`Arrondi : ${n} décimale(s)`);
+      }, 'arrondi');
+    });
+    roundingBtns.appendChild(b);
+  });
+
+  // Trace left on screen by moved objects is only erased by a view refresh
+  // (GeoGebra's Ctrl+F).
+  document.getElementById('btn-refresh').addEventListener('click', ()=>{
+    safe(()=>{ ggbApplet.refreshViews(); toast('Tracés rafraîchis'); }, 'rafraîchir');
+  });
+
+  // Deletes every object but keeps the toolbar, grid/axes and all the
+  // mode toggles as they are (a full applet reset would drop those).
+  // Two-click confirmation on the button itself: the browser's native
+  // confirm() is blocked in some embedded browsers, which made the button
+  // silently do nothing.
+  const clearBtn = document.getElementById('btn-clear');
+  const CLEAR_LABEL = clearBtn.textContent;
+  let clearArmTimer = null;
+  function disarmClear(){
+    clearTimeout(clearArmTimer);
+    clearBtn.textContent = CLEAR_LABEL;
+    clearBtn.classList.remove('active');
+  }
+  clearBtn.addEventListener('click', ()=>{
+    safe(()=>{
+      const names = safeNames(()=>ggbApplet.getAllObjectNames()).filter(n=>n !== CM);
+      if(!names.length){ disarmClear(); toast('La construction est déjà vide'); return; }
+      if(!clearBtn.classList.contains('active')){
+        clearBtn.textContent = `Confirmer : supprimer ${names.length} objet(s) ?`;
+        clearBtn.classList.add('active');
+        clearArmTimer = setTimeout(disarmClear, 4000);
+        return;
+      }
+      disarmClear();
+      names.forEach(n=>{
+        try{ if(ggbApplet.exists(n)) ggbApplet.deleteObject(n); }catch(e){}
+      });
+      equalMarkCount = 0;
+      lastHalfSegments = [];
+      ggbApplet.setMode(0);
+      toast('Construction vidée');
+    }, 'vider la construction');
   });
   document.getElementById('btn-fullscreen').addEventListener('click', ()=>{
     const stage = document.getElementById('stage');
