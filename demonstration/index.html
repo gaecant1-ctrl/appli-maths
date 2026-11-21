@@ -3,25 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Démonstration - Parallèles et perpendiculaires</title>
+<title>Démonstration</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
-<script src="https://unpkg.com/blockly/blockly.min.js"></script>
 <script src="https://www.geogebra.org/apps/deployggb.js"></script>
 </head>
 <body>
 
 <header>
-    <span id="titre_appli"><b>Démonstration</b> : parallèles et perpendiculaires</span>
+    <span id="titre_appli"><b>Démonstration</b> : <span id="nomChapitre"></span></span>
     <div id="choixExercices"></div>
     <div class="header-actions" id="topButtonsBar"></div>
 </header>
 
 <div id="container">
     <div id="prog">
-        <div id="blocklyDiv"></div>
+        <div id="enonce" hidden></div>
+        <div id="blocs"></div>
         <div id="butFinal" hidden></div>
     </div>
 
@@ -30,7 +30,7 @@
 
         <div id="barreExecution">
             <button id="btnAjouterEtape" disabled>+ Étape</button>
-            <button id="btnVerifier" disabled>Vérifier</button>
+            <button id="btnVerifier" disabled>Valider l'étape</button>
             <button id="btnRecommencer" disabled>Recommencer</button>
         </div>
 

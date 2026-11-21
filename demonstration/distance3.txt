@@ -1,0 +1,10 @@
+% Propriété de la médiatrice, dans l'autre sens : égalité codée sur la figure
+point A (-2.5,-1)
+point B (2.5,0)
+point M (-0.5,2)
+segment [AB]
+segment [MA]
+segment [MB]
+codage MA = MB
+montrer M appartient à la médiatrice de [AB]
+cases 1

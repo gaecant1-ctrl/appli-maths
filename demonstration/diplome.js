@@ -5,11 +5,15 @@
      sa note enregistrée dans ce navigateur.
    - Chaque exercice rapporte ses points (ligne « points N » du fichier, 2 par défaut) :
      tous les points si la démonstration est juste dès le premier « Vérifier »,
-     la moitié après des vérifications ratées. On garde la meilleure note.
+     chaque validation fausse divise les points par deux, la troisième les annule
+     (tous, la moitié, le quart, puis 0). On garde la meilleure note.
    - « Recommencer » change le nom des droites : on peut retenter le premier coup.
    ============================================================ */
 
-const CLE_ELEVE = 'demonstration.eleve';
+// Une note par chapitre (elles ne se mélangent pas).
+// Une note par chapitre ET par réglage : le diplôme annonce le réglage, il ne doit donc
+// compter que les exercices réussis avec ce réglage-là.
+const cleEleve = () => CHAP.cle + (modePropositions ? '.propositions' : '') + '.eleve';
 let eleve = { nom: '', notes: {} };
 let enregistre = null;
 // Vérifications ratées sur l'exercice en cours (remis à zéro par « Recommencer »).
@@ -21,14 +25,19 @@ function empreinte(nom, notes) {
     for (let k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(36);
 }
-try {
-    const e = JSON.parse(localStorage.getItem(CLE_ELEVE));
-    if (e && typeof e.nom === 'string' && e.notes && e.cle === empreinte(e.nom, e.notes)) enregistre = { nom: e.nom, notes: e.notes };
-} catch (e) {}
+// Note enregistrée dans ce navigateur pour le chapitre et le réglage en cours (lue au
+// moment de commencer, quand les réglages de l'accueil sont fixés).
+function lireEnregistre() {
+    try {
+        const e = JSON.parse(localStorage.getItem(cleEleve()));
+        if (e && typeof e.nom === 'string' && e.notes && e.cle === empreinte(e.nom, e.notes)) return { nom: e.nom, notes: e.notes };
+    } catch (e) {}
+    return null;
+}
 
 function sauverEleve() {
     try {
-        localStorage.setItem(CLE_ELEVE, JSON.stringify({ nom: eleve.nom, notes: eleve.notes, cle: empreinte(eleve.nom, eleve.notes) }));
+        localStorage.setItem(cleEleve(), JSON.stringify({ nom: eleve.nom, notes: eleve.notes, cle: empreinte(eleve.nom, eleve.notes) }));
     } catch (e) {}
 }
 
@@ -40,10 +49,14 @@ const exerciceReussi = i => (eleve.notes[i] || 0) > 0;
 
 // Points gagnés en réussissant l'exercice i ; renvoie les points de cette réussite.
 function noterReussite(i) {
-    const p = echecs[i] ? ptsMax(i) / 2 : ptsMax(i);
+    const p = ptsMax(i) * coefficient(echecs[i] || 0);
     if (p > (eleve.notes[i] || 0)) { eleve.notes[i] = p; sauverEleve(); }
     majEleve();
     return p;
+}
+// Part des points gardée selon le nombre de validations fausses : 1, 1/2, 1/4, puis 0.
+function coefficient(erreurs) {
+    return erreurs >= 3 ? 0 : 1 / 2 ** erreurs;
 }
 function noterEchec(i) { echecs[i] = (echecs[i] || 0) + 1; }
 function oublierEchecs(i) { delete echecs[i]; }
@@ -98,6 +111,7 @@ function lireReprise() {
 
 function connecter(nom) {
     // même nom que la note enregistrée : on la retrouve ; sinon on part de zéro
+    enregistre = lireEnregistre();
     eleve = enregistre && enregistre.nom === nom ? enregistre : { nom, notes: {} };
     enregistre = eleve;
     sauverEleve();
@@ -120,11 +134,34 @@ function demanderNom(ensuite) {
                 <input id="champNom" type="text" autocomplete="off" placeholder="Prénom Nom" maxlength="40">
             </label>
             <span class="erreur-nom"></span>
+            <fieldset class="reglages">
+                <legend>Réglages de la séance</legend>
+                <label>Chapitre :
+                    <select id="reglageChapitre">${Object.values(CHAPITRES).map(c =>
+                        `<option value="${c.nom}"${c === CHAP ? ' selected' : ''}>${c.titre}</option>`).join('')}</select>
+                </label>
+                <div class="reglage-mode">Phrases :
+                    <label><input type="radio" name="reglageMode" value="construire"${modePropositions ? '' : ' checked'}> à construire par l'élève</label>
+                    <label><input type="radio" name="reglageMode" value="propositions"${modePropositions ? ' checked' : ''}> proposées dans une liste (aide)</label>
+                </div>
+                <div class="reglage-demo">Démonstration « élève qui clique au hasard » (probabilités) : exercice
+                    <select id="demoExercice">${exercicesPourDemo().map(i => `<option value="${i + 1}">${i + 1}</option>`).join('')}</select>
+                    <button type="button" id="btnDemo">▶ Lancer</button>
+                </div>
+                <p class="reglages-note">Fixés pour la séance et affichés en haut de l'écran ; pour les changer, recharger la page.</p>
+            </fieldset>
             <div class="nom-actions">
                 <button type="button" id="btnCommencer">Commencer →</button>
             </div>
         </div>`;
     document.body.appendChild(ov);
+    // Démonstration au hasard : elle prend la place de l'élève (son nom, le mode aidé).
+    ov.querySelector('#btnDemo').onclick = () => lancerDemo(parseInt(ov.querySelector('#demoExercice').value, 10));
+    // Réglages : le chapitre recharge la page (l'accueil revient sur l'autre chapitre).
+    ov.querySelector('#reglageChapitre').onchange = e => changerChapitre(e.target.value);
+    ov.querySelectorAll('input[name="reglageMode"]').forEach(r => {
+        r.onchange = () => fixerMode(r.value === 'propositions' && r.checked);
+    });
     const champ = ov.querySelector('#champNom');
     const lireNom = () => {
         const nom = champ.value.trim().replace(/\s+/g, ' ');
@@ -205,12 +242,15 @@ function diplomeContenu() {
     ${['hg', 'hd', 'bg', 'bd'].map(p => `<div class="d-c ${p}">${coin}</div>`).join('')}
     ${figure}
     <div class="d-titre">Diplôme</div>
-    <div class="d-sous">de démonstration · <b>Parallèles et perpendiculaires</b></div>
+    <div class="d-sous">de démonstration · <b>${CHAP.diplome}</b></div>
+    <div class="d-reglage">${modePropositions
+        ? 'Réglage de la séance : <b>phrases proposées dans une liste</b> (avec aide)'
+        : "Réglage de la séance : <b>phrases construites par l'élève</b> (sans aide)"}</div>
     <div class="d-milieu">
       <div class="d-texte">
         <div class="d-decerne">Ce diplôme est décerné à</div>
         <div class="d-nom">${esc(eleve.nom || '……………………')}</div>
-        <div class="d-pour">pour avoir tenu des raisonnements valides à partir des codages d'une figure.</div>
+        <div class="d-pour">pour avoir tenu des raisonnements valides à partir ${CHAP.nom === 'droites' ? "des codages d'une figure" : 'des définitions et des propriétés du cours'}.</div>
         <div class="d-mention">${mention(note, max)}</div>
       </div>
       ${sceau}
@@ -243,6 +283,8 @@ const FICHE_CSS = `
 #overlayFiche .d-titre{font-family:"Playfair Display",Georgia,serif;font-size:48pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1d3b8f;line-height:1.05;}
 #overlayFiche .d-sous{font-size:14pt;color:#6b5a2e;letter-spacing:.04em;margin-top:1mm;}
 #overlayFiche .d-sous b{color:#1d3b8f;}
+#overlayFiche .d-reglage{display:inline-block;margin-top:2mm;padding:1mm 4mm;font-size:11pt;color:#3a2f0b;background:#fff3cd;border:.3mm solid #c9a227;border-radius:2mm;}
+#overlayFiche .d-reglage b{color:#1d3b8f;}
 #overlayFiche .d-milieu{display:flex;align-items:center;gap:12mm;margin:0;width:100%;justify-content:center;}
 #overlayFiche .d-texte{text-align:center;flex:1;}
 #overlayFiche .d-decerne{font-style:italic;font-size:15pt;color:#6b5a2e;}

@@ -203,10 +203,8 @@ header {
 
 /* Exercices en deux étapes : conclusion finale attendue, en rouge comme sur la figure. */
 #butFinal {
-    position: absolute;
-    top: 1.1rem;
-    right: 1.1rem;
-    z-index: 10;
+    align-self: flex-end;
+    order: -1; /* au-dessus des blocs, sans les recouvrir */
     padding: 0.4rem 0.8rem;
     font-weight: 700;
     color: var(--erreur);
@@ -217,10 +215,14 @@ header {
 }
 #butFinal[hidden] { display: none; }
 
-#blocklyDiv {
+/* Zone des blocs : elle prend la place restante et défile si la démonstration est longue. */
+#blocs {
     flex: 1;
+    position: relative;
+    min-height: 20rem;
     border: 1px solid var(--grille);
     border-radius: var(--rayon-petit);
+    background: #fbfdfb;
 }
 
 #rendu {
@@ -347,7 +349,7 @@ sub {
 }
 
 
-/* ---------- Overlay de choix (remplace la palette Blockly) ---------- */
+/* ---------- Fenêtre de choix ---------- */
 
 .carte-choix { max-width: 38.75rem; }
 
@@ -386,7 +388,7 @@ sub {
     line-height: 1.4;
 }
 
-/* Mêmes teintes que les blocs Blockly. */
+/* Mêmes teintes que les blocs. */
 .btn-choix.on-a { background: #2f9e44; }   /* vert : ce qu'on a */
 .btn-choix.donc { background: #c0392b; }   /* rouge : ce qu'on conclut */
 .btn-choix.propriete { background: #9a5ba5; text-align: left; font-size: 0.95rem; }
@@ -426,7 +428,7 @@ sub {
     margin-left: 0.4rem;
 }
 
-.carte-nom { max-width: 32rem; }
+.carte-nom { max-width: 46rem; }
 .nom-eleve {
     display: flex;
     flex-direction: column;
@@ -446,3 +448,239 @@ sub {
 .nom-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 #btnCommencer { background: var(--accent); border-color: var(--accent); color: #fff; }
 #btnCommencer:hover { background: var(--accent-hover); }
+
+/* ---------- Chapitre « distance » ---------- */
+
+/* Énoncé au-dessus des blocs : ce qu'on sait (vert) et ce qu'il faut démontrer (rouge). */
+#prog { flex-direction: column; gap: 0.5rem; }
+#enonce {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+#enonce[hidden] { display: none; }
+#enonce div { padding: 0.35rem 0.7rem; border-radius: var(--rayon-petit); border: 1px solid; }
+#enonce .on-sait { color: var(--succes); background: var(--succes-fond); border-color: var(--accent); }
+#enonce .a-demontrer { color: var(--erreur); background: var(--erreur-fond); border-color: var(--erreur); font-weight: 700; }
+
+/* Choix des informations, rangés par rubriques. */
+.titre-rubrique { margin: 0.75rem 0 0.35rem; font-size: 0.9rem; }
+.titre-rubrique:first-child { margin-top: 0; }
+.rubrique-faits {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.4rem;
+}
+.rubrique-faits .btn-choix { font-size: 0.95rem; padding: 0.45rem 0.6rem; white-space: normal; }
+.titre-propriete { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.85; }
+
+/* ---------- Blocs de la démonstration (blocs « maison ») ---------- */
+
+.bd-defile { position: absolute; inset: 0; overflow-y: auto; padding: 0.9rem; }
+.bd-demo { display: inline-flex; flex-direction: column; align-items: stretch; max-width: 100%; }
+
+/* Le bloc « Démonstration » entoure les étapes : chapeau, bord gauche, pied. */
+.bd-chapeau {
+    align-self: flex-start;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    padding: 0.45rem 1rem 0.4rem;
+    border-radius: 0.9rem 0.9rem 0 0;
+}
+.bd-corps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.3rem 0 0.3rem 0.9rem;
+    background: var(--accent);
+    border-radius: 0 0.5rem 0 0;
+}
+.bd-pied {
+    width: 9rem;
+    height: 1rem;
+    background: var(--accent);
+    border-bottom: 3px solid var(--accent-hover);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.bd-etape {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.55rem 0.7rem 0.6rem;
+    background: #4c7fc4;
+    border-bottom: 3px solid #35609c;
+    border-radius: 0.5rem 0 0 0.5rem;
+    color: #fff;
+}
+/* Étape validée : elle s'efface un peu, on ne la modifie plus. */
+.bd-etape.validee { background: #6f8fb9; border-bottom-color: #55749c; }
+.bd-etape.fautive { box-shadow: inset 0 0 0 3px #ffd166; }
+
+.bd-ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; }
+.bd-mot { min-width: 3.4rem; font-weight: 700; }
+.bd-et { font-weight: 700; }
+
+.bd-titre {
+    align-self: flex-start;
+    margin: 0;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #3a2f0b;
+    background: #ffd166;
+    border: 1px solid #c99a1e;
+    border-radius: 999px;
+}
+.bd-titre span { margin-left: 0.35rem; font-size: 0.8em; }
+.bd-titre:hover { color: #3a2f0b; border-color: #8a6a10; filter: brightness(0.95); }
+.bd-titre:disabled { opacity: 1; cursor: default; filter: none; }
+.bd-titre:disabled span { display: none; }
+.bd-etape.validee .bd-titre { color: #14401f; background: #b7e4c0; border-color: var(--accent); }
+.bd-etape.validee .bd-titre span { display: inline; font-size: 1em; }
+
+.bd-case {
+    margin: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+    color: #fff;
+    border: none;
+    border-bottom: 3px solid rgba(0, 0, 0, 0.25);
+    border-radius: var(--rayon-petit);
+}
+.bd-case.on-a { background: #2f9e44; }
+.bd-case.donc { background: #c0392b; }
+.bd-case.propriete { background: #9a5ba5; font-weight: 600; }
+.bd-case.vide {
+    font-weight: 400;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.16);
+    border: 2px dashed rgba(255, 255, 255, 0.75);
+}
+.bd-case:hover { color: #fff; border-color: rgba(0, 0, 0, 0.25); filter: brightness(0.9); }
+.bd-case.vide:hover { border-color: #fff; background: rgba(255, 255, 255, 0.28); filter: none; }
+.bd-case:disabled { opacity: 1; cursor: default; filter: none; }
+
+.bd-erreur {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #5a3d00;
+    background: #fff3cd;
+    border-radius: var(--rayon-petit);
+}
+
+/* ---------- Construction d'une phrase mathématique ---------- */
+
+.consigne-choix { margin: 0 0 0.75rem; text-align: center; color: var(--encre-douce); }
+
+.choix-modeles { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.5rem; }
+.choix-modeles .btn-choix { display: flex; flex-direction: column; gap: 0.15rem; white-space: normal; }
+.nom-modele { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.9; }
+.exemple-modele { font-size: 1.05rem; }
+
+/* La phrase en cours, avec ses deux cases. */
+.phrase {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.9rem 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    border-radius: var(--rayon-petit);
+}
+.phrase.on-a { background: #2f9e44; }
+.phrase.donc { background: #c0392b; }
+.case-phrase {
+    margin: 0;
+    min-width: 3.2rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 1.15rem;
+    color: var(--encre);
+    background: #fff;
+    border: 2px solid transparent;
+}
+.case-phrase.vide { color: var(--encre-douce); border-style: dashed; border-color: var(--encre-douce); }
+.case-phrase.active { box-shadow: 0 0 0 3px #ffd166; }
+.case-phrase:hover { color: var(--encre); border-color: #ffd166; }
+
+/* Les objets de la figure qu'on peut écrire dans la case active. */
+.objets-phrase { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0.9rem 0 0.4rem; }
+.objet { margin: 0; min-width: 3.2rem; padding: 0.45rem 0.8rem; font-size: 1.05rem; background: var(--papier-panel); }
+.objet.choisi { background: #ffd166; border-color: #c99a1e; }
+.objet.choisi:hover { color: var(--encre); }
+
+.refus-phrase { min-height: 1.4rem; margin: 0.3rem 0; text-align: center; font-weight: 600; color: var(--erreur); }
+
+.actions-phrase { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 0.4rem; }
+.actions-phrase .btn-choix { margin: 0; width: auto; font-size: 0.9rem; }
+.btn-choix.autre { background: var(--papier); color: var(--encre); border: 1px solid var(--grille); }
+.btn-choix.ecrire { margin-left: auto; background: var(--accent); }
+.btn-choix.ecrire:hover { color: #fff; background: var(--accent-hover); }
+
+/* Choix de la relation par son symbole : = , ∈ , // , ⊥. */
+.choix-symboles { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+.btn-choix.symbole { width: 5rem; height: 4.5rem; padding: 0; font-size: 2.2rem; font-weight: 700; line-height: 1; }
+.choix-relations-mots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.9rem; }
+.choix-relations-mots:empty { display: none; }
+.choix-relations-mots .btn-choix { font-size: 0.95rem; }
+
+/* Étape validée repliée : il ne reste que son titre et sa conclusion. */
+.bd-etape.repliee { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.6rem; padding: 0.4rem 0.7rem 0.45rem; }
+.bd-etape.repliee .bd-titre { align-self: center; }
+.bd-etape.validee .bd-titre { cursor: pointer; }
+.bd-titre i { font-style: normal; margin-left: 0.25rem; font-size: 0.85em; }
+/* Repliée, la conclusion passe en vert : elle fait maintenant partie de ce qu'on sait. */
+.bd-etape.repliee { background: #cfe9d5; border-bottom-color: #9ccbaa; }
+.bd-etape.repliee .bd-case.donc { background: #2f9e44; }
+
+/* ---------- Réglages de la séance ---------- */
+
+/* Sur l'écran d'accueil : choisis avant de commencer. */
+.reglages {
+    margin: 0.9rem 0 0.6rem;
+    padding: 0.6rem 0.9rem 0.7rem;
+    border: 1px solid var(--grille);
+    border-radius: var(--rayon-petit);
+    background: var(--papier-panel);
+    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.reglages legend { padding: 0 0.4rem; font-weight: 700; color: var(--header-texte); }
+.reglages select { font: inherit; padding: 0.25rem 0.5rem; border: 1px solid var(--grille); border-radius: var(--rayon-petit); background: var(--papier); }
+.reglage-mode { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; align-items: center; }
+.reglage-mode label, .reglages > label { white-space: nowrap; }
+.reglage-mode label { cursor: pointer; }
+.reglages-note { margin: 0; font-size: 0.8rem; color: var(--encre-douce); }
+
+/* Dans l'entête : affichés, mais plus modifiables. */
+.reglage-affiche {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--header-texte);
+    padding: 0.35rem 0.7rem;
+    background: var(--accent-clair);
+    border-radius: 999px;
+}
+
+/* Noms donnés aux objets de la figure : à part de « On sait que ». */
+#enonce .notations { color: var(--encre-douce); background: var(--papier-panel); border-color: var(--grille); }
+
+/* Pastille sans « Étape n » (exercice en une étape) : juste ✓ et la flèche. */
+.bd-titre span:first-child { margin-left: 0; }
+
+/* Lancement de la démonstration « élève au hasard », dans les réglages de l'accueil. */
+.reglage-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding-top: 0.5rem; border-top: 1px dashed var(--grille); }
+.reglage-demo button { margin: 0; padding: 0.25rem 0.7rem; }

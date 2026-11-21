@@ -1,0 +1,16 @@
+% Deux étapes : définition du cercle puis propriété de la médiatrice (D est une donnée inutile)
+point O (0.5,-0.5)
+point A (-2.5,-0.5)
+point B (0.5,2.5)
+point D (2.3,-2.9)
+cercle (c) de centre O passant par A
+segment [OA]
+segment [OB]
+segment [AB]
+segment [OD]
+donnée A ∈ (c)
+donnée B ∈ (c)
+donnée D ∈ (c)
+montrer O appartient à la médiatrice de [AB]
+points 4
+cases 2 1

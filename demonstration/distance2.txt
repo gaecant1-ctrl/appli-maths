@@ -1,0 +1,16 @@
+% Propriété de la médiatrice : un point de la médiatrice (N ∈ (d) est une donnée inutile)
+point A (-2,-1)
+point B (2,1)
+point M (-1,2)
+point N (1,-2)
+segment [AB]
+segment [MA]
+segment [MB]
+droite (d) médiatrice de [AB]
+notation (d) médiatrice [AB]
+codage (d) ⊥ [AB]
+codage (d) milieu [AB]
+donnée M ∈ (d)
+donnée N ∈ (d)
+montrer MA = MB
+cases 1

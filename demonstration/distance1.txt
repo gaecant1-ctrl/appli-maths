@@ -1,0 +1,13 @@
+% Définition du cercle : deux points d'un même cercle ([AB] et sa longueur sont des données inutiles)
+point O (0,0)
+point A (-2.4,1.8)
+point B (1.8,2.4)
+cercle (c) de centre O passant par A
+segment [OA]
+segment [OB]
+segment [AB]
+donnée A ∈ (c)
+donnée B ∈ (c)
+codage AB = 4,2 cm
+montrer OA = OB
+cases 2

@@ -1,0 +1,19 @@
+% Le cerf-volant (fiche d'exercices) : quatre étapes
+%  EA = EB donc E appartient à la médiatrice de [AB] ; de même pour F ;
+%  il existe une seule droite passant par deux points distincts, donc (EF) est la médiatrice de [AB] ;
+%  donc (EF) ⊥ [AB].
+point E (-3,-1)
+point A (-0.82,2.24)
+point F (1.32,0.26)
+point B (0.58,-2.56)
+segment [EA]
+segment [EB]
+segment [FA]
+segment [FB]
+segment [AB]
+droite (EF) passant par E et F
+codage EA = EB
+codage FA = FB
+montrer (EF) ⊥ [AB]
+points 6
+cases 1
