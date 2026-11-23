@@ -383,6 +383,31 @@ function genPourcentage() {             // 25 % × 60 : pourcentage simple, rés
   // erreurs typiques : fraction unitaire seule (75 % → le quart), reste (n − a), n − p, mauvais rang (× 10, : 10)
   return { q: `${p} % × ${fmt(n)}`, a, w: [k, n - a, n - p, a * 10, a / 10, a + k, p] };
 }
+function genAstucieux() {               // mêmes calculs que le plateau du puits de crapaudIbis
+  if (Math.random() < .5) {             // regrouper deux facteurs pour faire 10, 100 ou 1 000 : 25 × 17 × 4
+    const [a, b, p] = pick([[2, 5, 10], [5, 2, 10], [4, 25, 100], [25, 4, 100], [20, 5, 100], [50, 2, 100], [8, 125, 1000], [125, 8, 1000]]);
+    const m = R(11, 99), r = m * p;
+    return { q: `${a} × ${m} × ${b}`, a: r, w: [r / 10, r * 10, (m + 1) * p, (m - 1) * p, r + p / 10] };
+  }
+  switch (R(1, 4)) {                    // partir d'un nombre presque rond ; erreurs : correction oubliée, dans le mauvais sens, faite une seule fois
+    case 1: { // 99 × 7
+      const n = pick([99, 101, 999, 98]), m = R(3, 9), rond = n > 500 ? 1000 : 100, ec = n - rond, r = n * m;
+      return { q: op(n, '×', m), a: r, w: [rond * m, rond * m - ec * m, rond * m + ec, r + 10, r - 10] };
+    }
+    case 2: { // 199 + 46
+      const n = pick([99, 199, 98, 298]), m = R(13, 87), rond = Math.round(n / 100) * 100, ec = rond - n, r = n + m;
+      return { q: op(n, '+', m), a: r, w: [rond + m, rond + m + ec, r + 10, r - 10, r - 100] };
+    }
+    case 3: { // 6 × 49
+      const n = pick([49, 51, 19, 21]), m = R(3, 9), rond = Math.round(n / 10) * 10, ec = n - rond, r = n * m;
+      return { q: op(m, '×', n), a: r, w: [rond * m, rond * m - ec * m, rond * m + ec, r + 10, r - 10] };
+    }
+    default: { // 342 − 99
+      const n = pick([99, 98, 199]), m = R(n + 21, n + 380), rond = Math.round(n / 100) * 100, ec = rond - n, r = m - n;
+      return { q: op(m, '−', n), a: r, w: [m - rond, m - rond - ec, r + 10, r - 10, r + 100] };
+    }
+  }
+}
 const TYPES = [
   { id: 'entiers', label: 'Additions, soustractions', ex: '100 − 37',     on: true,  gen: genEntiers },
   { id: 'tables',  label: 'Tables de multiplication', ex: '7 × 8',        on: true,  gen: genTables },
@@ -395,7 +420,8 @@ const TYPES = [
   { id: 'paren',   label: 'Calculs avec parenthèses', ex: '(3 × 4) + 5',  on: true,  gen: genParen },
   { id: 'fracNb',  label: 'Fraction d’un nombre',     ex: `${frac(3, 4)} × 20`, on: true, gen: genFractionNombre },
   { id: 'pourcent', label: 'Pourcentage d’un nombre', ex: '25 % × 60',    on: true,  gen: genPourcentage },
-  { id: 'mult10',  label: '× 10, × 100, × 1 000',     ex: '3,5 × 100',    on: false,  gen: genMult10 },
+  { id: 'astuce',  label: 'Calcul astucieux',         ex: '25 × 17 × 4',  on: true,  gen: genAstucieux },
+  { id: 'mult10', label: '× 10, × 100, × 1 000',     ex: '3,5 × 100',    on: false,  gen: genMult10 },
   { id: 'div10',   label: ': 10, : 100, : 1 000',     ex: '42 : 100',     on: false,  gen: genDiv10 },
   { id: 'dec',     label: 'Décimaux : + et −',        ex: '2,5 + 1,7',    on: false, gen: genDec },
 ];
