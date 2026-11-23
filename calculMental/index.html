@@ -238,6 +238,9 @@ var qrcode=function(){function i(t,r){function a(t,r){g=function(t){for(var r=ne
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// Tirage équitable : chaque valeur de la liste sort une fois (dans le désordre) avant de revenir ; les sacs sont vidés à chaque série
+let sacs = {};
+const tire = (cle, liste) => { if (!sacs[cle] || !sacs[cle].length) sacs[cle] = shuffle(liste.slice()); return sacs[cle].pop(); };
 const rnd = x => Math.round(x * 1e6) / 1e6;
 const $ = id => document.getElementById(id);
 
@@ -266,9 +269,9 @@ function genTables() {
   return { q: op(a, '×', b), a: a * b, w: [a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b, a + b] };
 }
 function genEntiers() {
-  switch (R(1, 4)) {
+  switch (tire('entiers', [1, 2, 3, 4])) {
     case 1: { // complément
-      const t = pick([100, 100, 1000]), x = t === 100 ? R(11, 89) : R(110, 890), a = t - x;
+      const t = tire('entiersT', [100, 100, 1000]), x = t === 100 ? R(11, 89) : R(110, 890), a = t - x;
       return { q: op(t, '−', x), a, w: [a + 10, a - 10, a + 1, a - 1] };
     }
     case 2: { // addition avec retenue
@@ -281,28 +284,28 @@ function genEntiers() {
       return { q: op(a, '−', b), a: d, w: [naive, d + 10, d - 10, d + 1] };
     }
     default: { // + dizaines / centaines
-      const a = R(101, 899), b = R(1, 9) * pick([10, 100]), s = a + b;
+      const a = R(101, 899), b = R(1, 9) * tire('entiersR', [10, 100]), s = a + b;
       return { q: op(a, '+', b), a: s, w: [s + 10, s - 10, s + 100, s - 100, a + b / 10] };
     }
   }
 }
 function genMult10() {
-  const p = pick([10, 100, 1000]);
-  const x = Math.random() < .5 ? R(2, 99) : rnd(R(11, 999) / pick([10, 100]));
+  const p = tire('mult10', [10, 100, 1000]);
+  const x = tire('mult10E', [0, 1]) ? R(2, 99) : rnd(R(11, 999) / pick([10, 100]));
   const a = x * p, w = [a / 10, a * 10, x + p];
   if (!Number.isInteger(x)) w.push(fmt(x) + '0'.repeat(String(p).length - 1)); // 3,5 × 10 → « 3,50 »
   else w.push(a / 100);
   return { q: op(x, '×', p), a, w };
 }
 function genDiv10() {
-  const entier = Math.random() < .6;
+  const entier = tire('div10E', [1, 1, 1, 0, 0]);
   const p = pick(entier ? [10, 100, 1000] : [10, 100]);
   const x = entier ? R(2, 9999) : rnd(R(11, 999) / 10);
   const a = x / p;
   return { q: op(x, ':', p), a, w: [a / 10, a * 10, x * p, a / 100] };
 }
 function genDec() {
-  switch (R(1, 4)) {
+  switch (tire('dec', [1, 2, 3, 4])) {
     case 1: { // 2,5 + 1,7
       const ai = R(11, 89), bi = R(11, 89), a = ai / 10, b = bi / 10, s = a + b;
       const mis = `${Math.floor(ai / 10) + Math.floor(bi / 10)},${ai % 10 + bi % 10}`; // 3,12
@@ -324,12 +327,12 @@ function genDec() {
   }
 }
 function genDouble() {
-  if (Math.random() < .5) { const x = R(13, 99), a = 2 * x; return { q: `Double de ${fmt(x)}`, a, w: [a - 10, a + 10, x + 2, a + 1, x / 2] }; }
+  if (tire('double', [0, 1])) { const x = R(13, 99), a = 2 * x; return { q: `Double de ${fmt(x)}`, a, w: [a - 10, a + 10, x + 2, a + 1, x / 2] }; }
   const x = Math.random() < .75 ? 2 * R(7, 49) : 2 * R(5, 49) + 1, a = x / 2;
   return { q: `Moitié de ${fmt(x)}`, a, w: [2 * x, a + 1, a - 1, a + 5, a - 5] };
 }
 function genQuad() {
-  if (Math.random() < .5) { const x = R(6, 30), a = 4 * x; return { q: `Quadruple de ${fmt(x)}`, a, w: [2 * x, 3 * x, a + 10, a - 10, x + 4] }; }
+  if (tire('quad', [0, 1])) { const x = R(6, 30), a = 4 * x; return { q: `Quadruple de ${fmt(x)}`, a, w: [2 * x, 3 * x, a + 10, a - 10, x + 4] }; }
   const x = 4 * R(3, 25), a = x / 4;
   return { q: `Quart de ${fmt(x)}`, a, w: [x / 2, a + 1, a - 1, 4 * x, a + 2] };
 }
@@ -344,13 +347,13 @@ function genTablesEt() {                // 7 × 13 : tables de 3 à 9 par 11 à 
 }
 const DIV60 = [2, 3, 4, 5, 6, 10, 12, 15];   // 60 : 2 … 60 : 15
 function genDiv60() {
-  const i = R(0, DIV60.length - 1), d = DIV60[i], a = 60 / d;
+  const i = tire('div60', DIV60.map((x, j) => j)), d = DIV60[i], a = 60 / d;
   const Q = DIV60.map(x => 60 / x);            // les autres quotients de 60 : erreurs typiques
   return { q: op(60, ':', d), a, w: [Q[i - 1], Q[i + 1], Q[i - 2], Q[i + 2], a + 1, a - 1].filter(x => x != null) };
 }
 function genParen() {
   const a = R(2, 9), b = R(2, 9), c = R(2, 9);
-  switch (R(1, 6)) {
+  switch (tire('paren', [1, 2, 3, 4, 5, 6])) {
     case 1: { const x = R(2, 30), r = a * b + x; return { q: `(${a} × ${b}) + ${x}`, a: r, w: [a * (b + x), r + 10, r - 1, a + b + x] }; }
     case 2: { const p = a * b, x = R(1, p - 1), r = p - x; return { q: `(${a} × ${b}) − ${x}`, a: r, w: [a * (b - x), p + x, r + 1, r - 10] }; }
     case 3: { const x = R(2, 30), r = x + b * c; return { q: `${x} + (${b} × ${c})`, a: r, w: [(x + b) * c, x + b + c, r + 10, r - 1] }; }
@@ -368,7 +371,7 @@ function genTablesZeros() {             // 3 × 50, 40 × 70, 300 × 6 : une tab
   return { q: op(x, '×', y), a: p, w: [p / 10, p * 10, a * (b + 1) * z, a * (b - 1) * z, (a + 1) * b * z] };
 }
 function genFractionNombre() {          // 3/4 × 20 : fraction irréductible et b divise c
-  const sup1 = Math.random() < .3;      // 3/2 × 8 : b et k plus petits pour rester en calcul mental
+  const sup1 = tire('fracNb', [1, 0, 0]);     // 3/2 × 8 : b et k plus petits pour rester en calcul mental
   const b = sup1 ? R(2, 6) : R(2, 10), k = sup1 ? R(2, 10) : R(2, 12), c = b * k;
   let a;
   do { a = sup1 ? R(b + 1, 2 * b - 1) : R(1, b - 1); } while (pgcd(a, b) !== 1);
@@ -376,7 +379,7 @@ function genFractionNombre() {          // 3/4 × 20 : fraction irréductible et
   return { q: `${frac(a, b)} × ${fmt(c)}`, a: p, w: [a * c, k, c, p + k, p - k, p + a] };
 }
 function genPourcentage() {             // 25 % × 60 : pourcentage simple, résultat entier
-  const p = pick([10, 20, 25, 30, 40, 50, 50, 60, 75]);
+  const p = tire('pourcent', [10, 20, 25, 30, 40, 50, 50, 60, 75]);
   const d = 100 / pgcd(p, 100), num = p / pgcd(p, 100);     // p % = num/d
   const k = d === 2 ? R(6, 60) : d === 4 ? R(3, 25) : d === 5 ? R(2, 20) : p === 10 ? R(2, 40) : R(2, 12);
   const n = d * k, a = num * k;
@@ -384,26 +387,38 @@ function genPourcentage() {             // 25 % × 60 : pourcentage simple, rés
   return { q: `${p} % × ${fmt(n)}`, a, w: [k, n - a, n - p, a * 10, a / 10, a + k, p] };
 }
 function genAstucieux() {               // mêmes calculs que le plateau du puits de crapaudIbis
-  if (Math.random() < .5) {             // regrouper deux facteurs pour faire 10, 100 ou 1 000 : 25 × 17 × 4
-    const [a, b, p] = pick([[2, 5, 10], [5, 2, 10], [4, 25, 100], [25, 4, 100], [20, 5, 100], [50, 2, 100], [8, 125, 1000], [125, 8, 1000]]);
+  const forme = tire('astuce', [0, 0, 1, 2, 3, 4, 5, 5]);   // deux regroupements, deux factorisations, un calcul de chaque autre forme
+  if (forme === 5) {                    // factoriser : (7 × 13) + (7 × 87) = 7 × 100, (6 × 108) − (6 × 8) = 6 × 100
+    const a = tire('astuceA', [3, 4, 6, 7, 8, 9, 12, 15]), S = tire('astuceS', [10, 100, 100]), plus = tire('astuceP', [1, 1, 0]);
+    let b, c;
+    do {
+      if (plus) { b = S === 10 ? R(2, 8) : R(11, 89); c = S - b; }
+      else { c = S === 10 ? R(3, 19) : R(3, 49); b = S + c; }
+    } while (b === c || b === a || c === a);                             // pas de 5 × 3 + 5 × 3 : le facteur commun doit être clair
+    const x = ' × ', gauche = tire('astuceG', [0, 1]);          // facteur commun à gauche ou à droite
+    const prod = n => `(${gauche ? a + x + n : n + x + a})`, r = a * S;   // produits entre parenthèses, comme en 6e
+    return { q: `${prod(b)} ${plus ? '+' : '−'} ${prod(c)}`, a: r, w: [S, plus ? a * b + c : a * b - c, r + a, r - a, r * 10, r / 10] };
+  }
+  if (!forme) {                         // regrouper deux facteurs pour faire 10, 100 ou 1 000 : 25 × 17 × 4
+    const [a, b, p] = tire('astuceF', [[2, 5, 10], [5, 2, 10], [4, 25, 100], [25, 4, 100], [20, 5, 100], [50, 2, 100], [8, 125, 1000], [125, 8, 1000]]);
     const m = R(11, 99), r = m * p;
     return { q: `${a} × ${m} × ${b}`, a: r, w: [r / 10, r * 10, (m + 1) * p, (m - 1) * p, r + p / 10] };
   }
-  switch (R(1, 4)) {                    // partir d'un nombre presque rond ; erreurs : correction oubliée, dans le mauvais sens, faite une seule fois
+  switch (forme) {                      // partir d'un nombre presque rond ; erreurs : correction oubliée, dans le mauvais sens, faite une seule fois
     case 1: { // 99 × 7
-      const n = pick([99, 101, 999, 98]), m = R(3, 9), rond = n > 500 ? 1000 : 100, ec = n - rond, r = n * m;
+      const n = tire('astuce1', [99, 101, 999, 98]), m = R(3, 9), rond = n > 500 ? 1000 : 100, ec = n - rond, r = n * m;
       return { q: op(n, '×', m), a: r, w: [rond * m, rond * m - ec * m, rond * m + ec, r + 10, r - 10] };
     }
     case 2: { // 199 + 46
-      const n = pick([99, 199, 98, 298]), m = R(13, 87), rond = Math.round(n / 100) * 100, ec = rond - n, r = n + m;
+      const n = tire('astuce2', [99, 199, 98, 298]), m = R(13, 87), rond = Math.round(n / 100) * 100, ec = rond - n, r = n + m;
       return { q: op(n, '+', m), a: r, w: [rond + m, rond + m + ec, r + 10, r - 10, r - 100] };
     }
     case 3: { // 6 × 49
-      const n = pick([49, 51, 19, 21]), m = R(3, 9), rond = Math.round(n / 10) * 10, ec = n - rond, r = n * m;
+      const n = tire('astuce3', [49, 51, 19, 21]), m = R(3, 9), rond = Math.round(n / 10) * 10, ec = n - rond, r = n * m;
       return { q: op(m, '×', n), a: r, w: [rond * m, rond * m - ec * m, rond * m + ec, r + 10, r - 10] };
     }
     default: { // 342 − 99
-      const n = pick([99, 98, 199]), m = R(n + 21, n + 380), rond = Math.round(n / 100) * 100, ec = rond - n, r = m - n;
+      const n = tire('astuce4', [99, 98, 199]), m = R(n + 21, n + 380), rond = Math.round(n / 100) * 100, ec = rond - n, r = m - n;
       return { q: op(m, '−', n), a: r, w: [m - rond, m - rond - ec, r + 10, r - 10, r + 100] };
     }
   }
@@ -428,7 +443,7 @@ const TYPES = [
 
 /* ================= Paramètres ================= */
 const KEY = 'calculMental6e';
-const settings = { types: Object.fromEntries(TYPES.map(t => [t.id, t.on])), duree: 10, qcmDuree: 10, saisieDuree: 15, nb: 10 };
+const settings = { types: Object.fromEntries(TYPES.map(t => [t.id, t.on])), duree: 10, qcmDuree: 10, saisieDuree: 15, nb: 20 };
 const NOMBRES = [5, 10, 15, 20];
 try {
   const s = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -466,15 +481,15 @@ $('ov').addEventListener('click', e => { if (e.target.id === 'ov') $('ov').class
 /* ================= Série ================= */
 function makeSeries() {
   const types = activeTypes(), out = [], seen = new Set();
-  let bag = [], guard = 0;
+  let guard = 0;
+  sacs = {};
   while (out.length < settings.nb && guard++ < 1000) {
-    if (!bag.length) bag = shuffle(types.slice());
-    const c = bag.pop().gen();
+    const t = tire('types', types), c = t.gen();
     c.a = rnd(c.a);
-    if (seen.has(c.q)) continue;
+    if (seen.has(c.q)) { sacs.types.push(t); continue; }   // doublon : ce type garde son tour
     seen.add(c.q); out.push(c);
   }
-  return out;
+  return shuffle(out);
 }
 // 4 réponses : la bonne + 3 erreurs typiques (complétées si besoin)
 function choices(c) {
