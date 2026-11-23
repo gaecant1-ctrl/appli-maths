@@ -375,6 +375,14 @@ function genFractionNombre() {          // 3/4 × 20 : fraction irréductible et
   const p = a * k;
   return { q: `${frac(a, b)} × ${fmt(c)}`, a: p, w: [a * c, k, c, p + k, p - k, p + a] };
 }
+function genPourcentage() {             // 25 % × 60 : pourcentage simple, résultat entier
+  const p = pick([10, 20, 25, 30, 40, 50, 50, 60, 75]);
+  const d = 100 / pgcd(p, 100), num = p / pgcd(p, 100);     // p % = num/d
+  const k = d === 2 ? R(6, 60) : d === 4 ? R(3, 25) : d === 5 ? R(2, 20) : p === 10 ? R(2, 40) : R(2, 12);
+  const n = d * k, a = num * k;
+  // erreurs typiques : fraction unitaire seule (75 % → le quart), reste (n − a), n − p, mauvais rang (× 10, : 10)
+  return { q: `${p} % × ${fmt(n)}`, a, w: [k, n - a, n - p, a * 10, a / 10, a + k, p] };
+}
 const TYPES = [
   { id: 'entiers', label: 'Additions, soustractions', ex: '100 − 37',     on: true,  gen: genEntiers },
   { id: 'tables',  label: 'Tables de multiplication', ex: '7 × 8',        on: true,  gen: genTables },
@@ -386,6 +394,7 @@ const TYPES = [
   { id: 'div60',   label: 'Divisions de 60',          ex: '60 : 12',      on: true,  gen: genDiv60 },
   { id: 'paren',   label: 'Calculs avec parenthèses', ex: '(3 × 4) + 5',  on: true,  gen: genParen },
   { id: 'fracNb',  label: 'Fraction d’un nombre',     ex: `${frac(3, 4)} × 20`, on: true, gen: genFractionNombre },
+  { id: 'pourcent', label: 'Pourcentage d’un nombre', ex: '25 % × 60',    on: true,  gen: genPourcentage },
   { id: 'mult10',  label: '× 10, × 100, × 1 000',     ex: '3,5 × 100',    on: false,  gen: genMult10 },
   { id: 'div10',   label: ': 10, : 100, : 1 000',     ex: '42 : 100',     on: false,  gen: genDiv10 },
   { id: 'dec',     label: 'Décimaux : + et −',        ex: '2,5 + 1,7',    on: false, gen: genDec },
