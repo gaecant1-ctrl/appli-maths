@@ -369,7 +369,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     <div id="titre">Expériences aléatoires</div>
     <button type="button" id="btnExp" class="cache" title="Changer d'expérience, ou régler celle-ci">Expérience ▾</button>
     <div id="resume" class="cache"></div>
-    <div class="actions"><button type="button" id="btnEnonce" class="cache principal">Énoncé</button><span id="groupeCours" class="cache"><span class="lab-cours">Cours :</span><button type="button" id="btnCoursBase">base</button><button type="button" id="btnCours">événements</button><button type="button" id="btnCoursProba">probabilités</button></span><button type="button" id="btnStats" class="cache">Statistiques</button><button type="button" id="btnReglages" class="cache" title="Tous les réglages : l'expérience et le déroulement">⚙ Réglages</button></div>
+    <div class="actions"><button type="button" id="btnEnonce" class="cache principal">Énoncé</button><span id="groupeCours" class="cache"><span class="lab-cours">Cours :</span><button type="button" id="btnCoursBase">base</button><button type="button" id="btnCours">événements</button><button type="button" id="btnCoursProba">probabilités</button></span><button type="button" id="btnStats" class="cache">Statistiques</button><button type="button" id="btnReglages" class="cache" title="Tous les réglages : l'expérience et le déroulement">⚙ Réglages</button><button type="button" id="btnOnglet" title="Ouvrir l'appli dans un nouvel onglet (par exemple pour lancer une autre expérience à côté)">↗</button></div>
 </header>
 <div id="menuExp" class="cache">
     <h2>Choisir l'expérience</h2>
@@ -1335,7 +1335,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     function afficherResume() {
         if (EXP === 'des') {
             $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> personnes</span>` : '<span class="puce"><b>Un joueur</b> qui relance</span>')
-                + '<span class="puce"><b>Deux dés</b> : <b style="color:var(--rouge)">rouge</b> et <b style="color:var(--succes)">vert</b></span>'
+                + '<span class="puce"><b>Dés</b> <b style="color:var(--rouge)">rouge</b> + <b style="color:var(--succes)">vert</b></span>'
                 + (reglages.avecGain ? `<span class="puce"><b>Jeu de gain</b>${GAGNANT ? ' : ' + GAGNANT.id + ' gagne' : ''}</span>` : '');
         }
         if (EXP === 'urne') {
@@ -1958,6 +1958,9 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         cadre.querySelector('h3').append(b);
         appliquer();
     });
+
+    // Ouvrir l'appli dans un nouvel onglet du navigateur.
+    $('btnOnglet').onclick = () => window.open(location.href.split('#')[0], '_blank');
 
     /* ============ Le menu des expériences (entête) ============ */
     const NOMS_EXP = { qcm: 'QCM au hasard', pieces: 'Deux pièces', des: 'Deux dés', urne: 'Urne avec remise' };
