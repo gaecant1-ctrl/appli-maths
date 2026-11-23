@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableaux de valeurs</title>
+<style>
+/* ==========================================================================
+   TABLEAUX DE VALEURS — structure et thème repris de l'appli "evaluation"
+   (header + panneau latéral, accent unique orange, voir evaluation/PATTERNS.md)
+   ========================================================================== */
+:root {
+  --papier:        #ffffff;
+  --papier-panel:  #fdf3e9;
+  --papier-encart: #ffffff;
+  --grille:        #f5dcc0;
+  --grille-forte:  #7a4a15;
+  --encre:         #4a2d0d;
+  --encre-douce:   #8a6a4a;
+  --accent:        #E67E22;
+  --accent-hover:  #C8690F;
+  --accent-clair:  #fcead9;
+  --header-fond:        #fdf0e2;
+  --header-bordure:     #f0c99a;
+  --header-texte:       #7a4a15;
+  --header-texte-hover: #4a2d0d;
+  --erreur:        #e74c3c;
+  --erreur-fond:   #fdecea;
+  --succes:        #28a745;
+  --succes-fond:   #e6f6ea;
+  --rayon:         12px;
+  --rayon-petit:   8px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; min-height: 100vh; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------- Header ---------- */
+header {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  width: 100%; padding: 0 20px; min-height: 54px;
+  background: var(--header-fond); border-bottom: 1px solid var(--header-bordure);
+}
+header #titre_appli { font-size: 1.2rem; letter-spacing: .2px; padding: 10px 0; }
+header #titre_appli b { font-weight: 700; color: var(--accent); }
+.header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.filet-header { width: 1px; height: 22px; background-color: var(--header-bordure); flex-shrink: 0; }
+.btn-header {
+  background: transparent; border: 0.5px solid var(--header-bordure);
+  height: 34px; padding: 0 14px; font-family: inherit; font-size: 0.82rem; font-weight: 500;
+  border-radius: var(--rayon-petit); cursor: pointer; color: var(--header-texte);
+  display: inline-flex; align-items: center; white-space: nowrap;
+  transition: border-color .12s, color .12s;
+}
+.btn-header:hover { border-color: var(--header-texte); color: var(--header-texte-hover); }
+.btn-header.active { border-color: var(--accent); color: var(--accent); }
+.btn-header.active:hover { border-color: var(--accent-hover); color: var(--accent-hover); }
+
+/* ---------- Structure : panneau latéral + contenu ---------- */
+#appBody { width: 100%; display: flex; align-items: flex-start; }
+#panneauLateral {
+  flex: 0 0 320px; width: 320px; min-height: calc(100vh - 54px);
+  background: var(--papier-encart); border-right: 1px solid var(--grille);
+  padding: 20px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+main {
+  flex: 1 1 auto; min-width: 0; min-height: calc(100vh - 54px);
+  display: flex; flex-direction: column; align-items: center; padding: 30px 20px 60px;
+}
+#container { width: 100%; max-width: 800px; margin-top: 10px; display: flex; flex-direction: column; align-items: center; }
+
+/* ---------- Panneau latéral ---------- */
+.panel-groupe { display: flex; flex-direction: column; gap: 8px; }
+.panel-groupe-label { font-size: 11.5px; font-weight: 700; color: var(--encre-douce); text-transform: uppercase; letter-spacing: 0.04em; }
+.panel-filet { height: 1px; background: var(--grille); margin: 4px 0; }
+.panel-groupe-paire { display: flex; gap: 6px; }
+.panel-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.panel-btn {
+  width: 100%; background-color: var(--papier-panel); border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit); padding: 10px 14px; font-family: inherit; font-size: 13.5px; font-weight: 700;
+  color: var(--encre); cursor: pointer; text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.panel-btn-half { flex: 1 1 0; width: auto; text-align: center; padding: 8px 6px; font-size: 12.5px; }
+.panel-btn i, .tc i { font-family: Georgia, 'Times New Roman', serif; }
+.panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+.panel-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--papier); }
+.panel-btn.active:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); color: var(--papier); }
+.panel-btn:disabled { cursor: default; background-color: var(--papier-panel); border-color: var(--grille); color: #9a9a9a; }
+.panel-btn.active:disabled { opacity: 0.55; background-color: var(--accent); border-color: var(--accent); color: #9a9a9a; }
+#score-container { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+#question-progress, #score, #skipButton {
+  width: 100%; background-color: var(--papier-panel); padding: 10px 14px; border-radius: var(--rayon-petit);
+  font-family: inherit; font-weight: 700; font-size: 13.5px; border: 2px solid var(--grille); text-align: left;
+}
+#question-progress { color: var(--encre-douce); }
+#score { color: var(--succes); border-color: var(--succes); }
+#skipButton { border-color: var(--accent); color: var(--accent); cursor: pointer; transition: background-color 0.15s, color 0.15s; }
+#skipButton:hover { background-color: var(--accent); color: var(--papier); }
+
+/* ---------- Consigne, tableau, retour ---------- */
+.valeurs-label { width: 100%; font-size: 20px; font-weight: 700; color: var(--encre-douce); margin-bottom: 10px; }
+/* Tableau : une colonne d'étiquettes puis k colonnes de valeurs */
+.tab {
+  display: grid; grid-template-columns: auto repeat(var(--k), minmax(0, 1fr)); width: 100%;
+  background: var(--papier-encart); border: 2px solid var(--grille-forte); border-radius: var(--rayon); overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  font-size: clamp(1rem, calc((100vw - 380px) / (var(--k) * 2.6 + 6)), 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums;
+  animation: slideUp 0.6s ease-out;
+}
+.tc {
+  display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 2.8em;
+  padding: .35em .3em; border-left: 2px solid var(--grille-forte); text-align: center;
+}
+.tc.sep { border-bottom: 2px solid var(--grille-forte); }
+.tc.lab { border-left: none; background: var(--accent-clair); color: var(--accent-hover); padding: .35em .7em; white-space: nowrap; }
+.tc.ok { background: var(--succes-fond); color: var(--succes); }
+.tc input {
+  width: 100%; min-width: 0; font: inherit; text-align: center; padding: .2em 0; color: var(--encre);
+  border: 2px solid var(--grille); border-radius: var(--rayon-petit); background: #fdfdfd; transition: border-color .2s;
+}
+.tc input:focus { border-color: var(--accent); background: white; outline: none; }
+.tc input.ko { border-color: var(--erreur); background: var(--erreur-fond); color: var(--erreur); }
+.feedback-zone { min-height: 1.6em; margin-top: 14px; font-size: 18px; font-style: italic; text-align: center; }
+.feedback-zone.state-success { color: var(--succes); font-style: normal; font-weight: 700; }
+.feedback-zone.state-error { color: var(--erreur); }
+.feedback-zone.state-neutral { color: var(--accent); }
+.center-button { width: 100%; display: flex; justify-content: center; margin-top: 14px; }
+.center-button button {
+  padding: 12px 40px; font-family: inherit; font-size: 18px; border-radius: 50px; border: none; color: white; cursor: pointer;
+  background-color: var(--succes); box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s ease;
+}
+.center-button button:hover { transform: scale(1.05); background-color: #218838; }
+.center-button button.valider { background-color: var(--accent); box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3); }
+.center-button button.valider:hover { background-color: var(--accent-hover); }
+.restart-btn {
+  margin-top: 25px; padding: 12px 30px; background: var(--accent); color: white; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 1.1rem; font-weight: 600; cursor: pointer;
+}
+.restart-btn:hover { background: var(--accent-hover); }
+@keyframes slideUp { 0% { transform: translateY(30px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+/* ---------- Guide ---------- */
+#overlayGuide { position: fixed; inset: 0; background: rgba(74, 45, 13, .45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+#overlayGuide.ouvert { display: flex; }
+#guideCarte { position: relative; background: var(--papier); border-radius: var(--rayon); width: min(640px, 100%); max-height: 100%; overflow: auto; padding: 22px 26px; }
+#guideCarte h2 { margin: 0 0 6px; }
+#guideCarte h3 { margin: 16px 0 4px; font-size: 1rem; color: var(--accent-hover); }
+#guideCarte p { margin: 0; line-height: 1.5; }
+#btnFermerGuide { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 28px; line-height: 1; cursor: pointer; color: var(--encre-douce); }
+
+/* ---------- Fiche papier (overlay + impression), comme evaluation/Fiche.js ---------- */
+#overlayFiche { display: none; position: fixed; inset: 0; background: rgba(20, 30, 45, 0.55); z-index: 30; align-items: center; justify-content: center; padding: 24px; overflow-y: auto; }
+#overlayFiche.visible { display: flex; }
+#ficheCarte { position: relative; background: var(--papier-encart); color: var(--encre); max-width: 950px; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 8px; border: 1px solid var(--grille-forte); padding: 28px 32px; }
+#btnFermerFiche { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 24px; line-height: 1; cursor: pointer; color: var(--encre-douce); }
+#btnFermerFiche:hover { color: var(--erreur); }
+.fiche-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 6px; }
+.fiche-actions button { padding: 9px 16px; border: none; border-radius: 4px; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.fiche-actions button:hover { background: var(--accent-hover); }
+.note-impression { text-align: center; font-size: 12.5px; color: var(--encre-douce); margin: 10px 0 0; }
+.ligne-identite { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; font-size: 15px; margin-top: 20px; }
+.trait { display: inline-block; min-width: 220px; border-bottom: 1px solid var(--grille-forte); margin-left: 6px; }
+.trait.court { min-width: 70px; }
+#ficheCarte h2 { text-align: center; margin: 40px 0 0; font-size: 1.3em; color: var(--accent); }
+.sous-titre { text-align: center; color: var(--encre-douce); margin: 0; font-size: 0.95em; }
+.fiche-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 22px; margin-top: 24px; }
+.fiche-cellule { display: flex; gap: 8px; align-items: flex-start; min-width: 0; break-inside: avoid; }
+.fiche-num { font-weight: 700; color: var(--encre-douce); padding-top: 8px; }
+.fiche-table { flex: 1; border-collapse: collapse; table-layout: fixed; font-size: 15px; font-variant-numeric: tabular-nums; }
+.fiche-table th, .fiche-table td { border: 1px solid #000; text-align: center; padding: 8px 4px; height: 38px; box-sizing: border-box; color: #000; }
+.fiche-table th { font-weight: 700; white-space: nowrap; width: 7.2em; background: #f3f3f3; }
+.fiche-table i { font-family: Georgia, 'Times New Roman', serif; }
+body.fiche-ouverte { overflow: hidden; }
+@media print {
+  @page { margin: 0.8cm; size: A4; }
+  body * { visibility: hidden; }
+  #overlayFiche, #overlayFiche * { visibility: visible; }
+  #overlayFiche { position: absolute; inset: 0; background: #fff; padding: 0; display: flex !important; align-items: flex-start; justify-content: flex-start; }
+  #ficheCarte { max-height: none; max-width: none; width: 100%; border: none; border-radius: 0; padding: 0.5cm; overflow: visible; }
+  #btnFermerFiche, .fiche-actions, .note-impression { display: none !important; }
+  #ficheCarte h2 { color: #000; }
+  .fiche-grille { gap: 1.1cm 0.8cm; }
+  .fiche-table th, .fiche-table td { height: 1.15cm; }
+}
+
+/* ---------- Petit écran : le panneau passe au-dessus ---------- */
+@media (max-width: 760px) {
+  #appBody { flex-direction: column; }
+  #panneauLateral { flex: none; width: 100%; min-height: 0; border-right: none; border-bottom: 1px solid var(--grille); padding: 12px 16px; }
+  .panel-grille { grid-template-columns: repeat(3, 1fr); }
+  main { width: 100%; min-height: 0; padding: 16px 16px 40px; }
+  .tab { font-size: clamp(.95rem, calc(100vw / (var(--k) * 2.6 + 6)), 2.2rem); }
+  .fiche-grille { grid-template-columns: 1fr; }
+  #overlayFiche { padding: 0; }
+  #ficheCarte { padding: 20px 14px; max-height: 100vh; }
+}
+</style>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">Compléter un <b>tableau de valeurs</b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+    <main>
+      <div id="container"></div>
+    </main>
+  </div>
+
+  <div id="overlayGuide">
+    <div id="guideCarte">
+      <button id="btnFermerGuide" type="button" aria-label="Fermer">×</button>
+      <h2>Mode d'emploi</h2>
+      <h3>Objectif</h3>
+      <p>Complète le tableau : la première ligne donne des valeurs de <i>n</i>, la seconde le résultat de la formule pour chacune de ces valeurs. Certains tableaux ont trois lignes : <i>a</i>, <i>b</i>, puis par exemple <i>a</i> + <i>b</i>.</p>
+      <h3>Formules</h3>
+      <p>Choisis dans le panneau de gauche les formules à travailler. Plusieurs peuvent être actives : la formule est alors tirée au hasard à chaque tableau. Quand il y a deux opérations, des parenthèses indiquent le calcul à faire en premier.</p>
+      <h3>Type de nombres</h3>
+      <p>Choisis <b>Entiers</b>, <b>Décimaux</b> ou les deux : le type est alors tiré au hasard à chaque tableau. Les décimaux s'écrivent avec une virgule (le point est accepté).</p>
+      <h3>Colonnes et cases à trouver</h3>
+      <p>Règle le nombre de colonnes (3, 4 ou 5). Avec « Dernière ligne », il faut calculer les résultats ; avec « Toutes les lignes », il faut aussi retrouver certaines valeurs de <i>n</i>, de <i>a</i> ou de <i>b</i>.</p>
+      <h3>Atelier / Quiz</h3>
+      <p><b>Atelier</b> : entraînement libre, tableaux illimités, sans score.<br>
+      <b>Quiz</b> : clique sur « Commencer le Quiz » pour compléter 10 tableaux ; le score s'affiche à la fin.</p>
+      <h3>Répondre</h3>
+      <p>Écris un nombre dans chaque case, puis valide avec la touche Entrée ou le bouton « Valider ». Les cases justes passent en vert ; corrige les cases rouges et valide à nouveau. Le bouton « Renoncer » passe au tableau suivant sans compter de point.</p>
+      <h3>Fiche papier</h3>
+      <p>Génère une fiche imprimable de 8 tableaux (à imprimer ou à exporter en LaTeX) avec les réglages actuellement sélectionnés.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+<script>
+/* ================= État ================= */
+const NB_QUESTIONS = 10;
+let questionCount = 0;
+let score = 0;
+let piocheEnCours = [];
+let etatJeu = 'atelier';   // 'atelier' | 'quiz' — atelier : rien n'est compté, tableaux illimités.
+let quizDemarre = false;   // true une fois qu'on a cliqué "Commencer le Quiz"
+let tableau = null;        // tableau en cours
+
+/* ================= Outils ================= */
+const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rnd = x => Math.round(x * 1e6) / 1e6;
+const plage = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+/** k valeurs distinctes de la liste, dans le désordre. */
+const distincts = (liste, k) => shuffle(liste.slice()).slice(0, k);
+
+/** Nombre → écriture française : 1 234,5 */
+function fmt(x) {
+  const r = rnd(x);
+  let [i, d] = Math.abs(r).toString().split('.');
+  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return (r < 0 ? '−' : '') + i + (d ? ',' + d : '');
+}
+/** Saisie élève → nombre (ou null) : virgule ou point, espaces ignorés. */
+function parseNum(s) {
+  s = String(s).replace(/[\s  ]/g, '');
+  if (!/^(\d+([.,]\d*)?|[.,]\d+)$/.test(s)) return null;
+  return parseFloat(s.replace(',', '.'));
+}
+const N_ = '<i>n</i>', A_ = '<i>a</i>', B_ = '<i>b</i>';
+
+/* ================= Tirages ================= */
+/** Décimal à un chiffre après la virgule (jamais entier), entre min et max. */
+function dec1(min, max) { let t; do { t = R(min * 10, max * 10); } while (t % 10 === 0); return t / 10; }
+/** k valeurs distinctes entre min et max : entières, ou décimales à un chiffre si dec. */
+function valeurs(min, max, k, dec) {
+  if (!dec) return distincts(plage(min, max), k);
+  const s = new Set();
+  while (s.size < k) s.add(dec1(min, max));
+  return [...s];
+}
+/** k valeurs (pas forcément distinctes), même règle. */
+const serie = (min, max, k, dec) => Array.from({ length: k }, () => dec ? dec1(min, max) : R(min, max));
+const CARRES_DEC = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.1, 1.2, 1.5, 2.5];
+
+/* ================= Formules =================
+   Chaque générateur reçoit k (nombre de colonnes) et dec (true : valeurs décimales) et renvoie
+     - soit { label, ns, f } : tableau à deux lignes, n puis la formule ;
+     - soit { lignes: [{ lab, vals }…] } : tableau à trois lignes (a, b, puis a + b…).
+   Toujours le signe × écrit, et des parenthèses dès qu'il y a deux opérations
+   (l'élève n'a pas à connaître les priorités). Résultats jamais négatifs. */
+const FORMULES = [
+  { id: 'mul', ex: `2 × ${N_}`, on: true, gen: (k, dec) => {
+      const a = R(2, 9);
+      return { label: `${a} × ${N_}`, ns: dec ? valeurs(0, 10, k, true) : valeurs(2, 12, k), f: n => a * n }; } },
+  { id: 'div', ex: `${N_} : 3`, on: true, gen: (k, dec) => {      // quotient entier, ou décimal à un chiffre si dec
+      const a = R(2, 9);
+      const ms = dec ? valeurs(0, 4, k, true) : valeurs(2, 10, k);
+      return { label: `${N_} : ${a}`, ns: ms.map(m => rnd(m * a)), f: n => n / a }; } },
+  { id: 'add', ex: `${N_} + 7`, on: true, gen: (k, dec) => {
+      const a = dec ? dec1(0, 20) : R(3, 19);
+      return { label: `${N_} + ${fmt(a)}`, ns: dec ? valeurs(0, 30, k, true) : valeurs(2, 60, k), f: n => n + a }; } },
+  { id: 'sub', ex: `${N_} − 4`, on: true, gen: (k, dec) => {      // n > a
+      const a = dec ? dec1(0, 10) : R(2, 12);
+      const ecarts = dec ? valeurs(0, 20, k, true) : valeurs(1, 40, k);
+      return { label: `${N_} − ${fmt(a)}`, ns: ecarts.map(e => rnd(a + e)), f: n => n - a }; } },
+  { id: 'mul10', ex: `${N_} × 10`, on: true, gen: (k, dec) => {   // × 10, × 100, × 1 000
+      const p = pick([10, 100, 1000]), ns = new Set();
+      while (ns.size < k) ns.add(dec ? rnd(R(11, 999) / pick([10, 100])) : R(2, 99));
+      return { label: `${N_} × ${fmt(p)}`, ns: [...ns], f: n => n * p }; } },
+  { id: 'div10', ex: `${N_} : 10`, on: false, gen: (k, dec) => {  // : 10, : 100, : 1 000
+      const p = dec ? pick([10, 100]) : pick([10, 100, 1000]), ns = new Set();
+      while (ns.size < k) ns.add(dec ? rnd(R(11, 999) / 10) : R(2, 999));
+      return { label: `${N_} : ${fmt(p)}`, ns: [...ns], f: n => n / p }; } },
+  { id: 'carre', ex: `${N_} × ${N_}`, on: true, gen: (k, dec) =>
+      ({ label: `${N_} × ${N_}`, ns: dec ? distincts(CARRES_DEC, k) : valeurs(1, 12, k), f: n => n * n }) },
+  { id: 'aff', ex: `(2 × ${N_}) + 3`, on: true, gen: (k, dec) => {
+      const a = R(2, 5), b = R(1, 9);
+      return { label: `(${a} × ${N_}) + ${b}`, ns: dec ? valeurs(0, 10, k, true) : valeurs(1, 10, k), f: n => a * n + b }; } },
+  { id: 'affM', ex: `(3 × ${N_}) − 1`, on: true, gen: (k, dec) => { // n ≥ 2 et b < 2a
+      const a = R(2, 5), b = R(1, 2 * a - 1);
+      return { label: `(${a} × ${N_}) − ${b}`, ns: valeurs(2, 10, k, dec), f: n => a * n - b }; } },
+  { id: 'carreP', ex: `(${N_} × ${N_}) + 3`, on: true, gen: (k, dec) => {
+      const b = R(1, 9);
+      return { label: `(${N_} × ${N_}) + ${b}`, ns: dec ? distincts(CARRES_DEC, k) : valeurs(1, 10, k), f: n => n * n + b }; } },
+  { id: 'carreM', ex: `(${N_} × ${N_}) − 1`, on: true, gen: (k, dec) => { // entiers : n ≥ 2 et b ≤ 3 ; décimaux : n > 1 et b = 1
+      const b = dec ? 1 : R(1, 3);
+      return { label: `(${N_} × ${N_}) − ${b}`, ns: dec ? distincts([1.1, 1.2, 1.3, 1.4, 1.5, 2.5, 3.5], k) : valeurs(2, 10, k), f: n => n * n - b }; } },
+  { id: 'paren', ex: `2 × (${N_} + 1)`, on: false, gen: (k, dec) => {
+      const a = R(2, 5), b = R(1, 5);
+      return { label: `${a} × (${N_} + ${b})`, ns: dec ? valeurs(0, 9, k, true) : valeurs(1, 9, k), f: n => a * (n + b) }; } },
+  { id: 'parenM', ex: `3 × (${N_} − 1)`, on: false, gen: (k, dec) => {
+      const a = R(2, 5), b = R(1, 5);
+      const ecarts = dec ? valeurs(0, 9, k, true) : valeurs(1, 9, k);
+      return { label: `${a} × (${N_} − ${b})`, ns: ecarts.map(e => rnd(b + e)), f: n => a * (n - b) }; } },
+  // ---- Trois lignes : a, b, puis une opération sur a et b ----
+  { id: 'abP', ex: `${A_} + ${B_}`, on: true, gen: (k, dec) => {
+      const a = dec ? serie(0, 20, k, true) : serie(2, 60, k), b = dec ? serie(0, 20, k, true) : serie(2, 60, k);
+      return { lignes: [{ lab: A_, vals: a }, { lab: B_, vals: b }, { lab: `${A_} + ${B_}`, vals: a.map((x, i) => x + b[i]) }] }; } },
+  { id: 'abM', ex: `${A_} − ${B_}`, on: false, gen: (k, dec) => { // a > b
+      const b = dec ? serie(0, 10, k, true) : serie(2, 30, k), e = dec ? serie(0, 10, k, true) : serie(1, 40, k);
+      const a = b.map((x, i) => rnd(x + e[i]));
+      return { lignes: [{ lab: A_, vals: a }, { lab: B_, vals: b }, { lab: `${A_} − ${B_}`, vals: a.map((x, i) => x - b[i]) }] }; } },
+  { id: 'abX', ex: `${A_} × ${B_}`, on: true, gen: (k, dec) => {  // décimaux : a décimal, b entier
+      const a = dec ? serie(0, 10, k, true) : serie(2, 9, k), b = serie(2, dec ? 9 : 12, k);
+      return { lignes: [{ lab: A_, vals: a }, { lab: B_, vals: b }, { lab: `${A_} × ${B_}`, vals: a.map((x, i) => x * b[i]) }] }; } },
+];
+
+/* ================= Réglages (panneau latéral) ================= */
+const formulesActives = new Set(FORMULES.filter(f => f.on).map(f => f.id)); // au moins une toujours active
+const typesNombresActifs = new Set(['entier', 'decimal']);                  // au moins un actif ; tiré au hasard par tableau
+const COLONNES = [3, 4, 5];
+let nbColonnes = 3;
+let casesATrouver = 'bas';   // 'bas' : dernière ligne | 'mix' : cases à trouver dans toutes les lignes
+
+/* ================= Génération =================
+   Un tableau : { lignes: [{ lab, vals }…], vide: [indice de la ligne à trouver, par colonne] } */
+function genererTableau() {
+  if (piocheEnCours.length === 0) piocheEnCours = shuffle(FORMULES.filter(f => formulesActives.has(f.id)));
+  const k = nbColonnes, dec = pick([...typesNombresActifs]) === 'decimal';
+  const g = piocheEnCours.shift().gen(k, dec);
+  const lignes = g.lignes || [{ lab: N_, vals: g.ns }, { lab: g.label, vals: g.ns.map(g.f) }];
+  lignes.forEach(l => { l.vals = l.vals.map(rnd); });
+  const nl = lignes.length;
+  let vide = Array(k).fill(nl - 1);
+  if (casesATrouver === 'mix')          // au moins une case à trouver dans chaque ligne
+    vide = shuffle([...plage(0, nl - 1), ...Array.from({ length: k - nl }, () => R(0, nl - 1))]);
+  return { lignes, vide };
+}
+
+/* ================= Affichage ================= */
+const cont = () => document.getElementById('container');
+const inputs = () => [...document.querySelectorAll('.tab input')];
+
+function htmlTableau(t) {
+  const dern = t.lignes.length - 1;
+  const ligne = (l, r) => {
+    const sep = r < dern ? ' sep' : '';
+    return `<div class="tc lab${sep}"><span>${l.lab}</span></div>` + l.vals.map((v, i) =>
+      t.vide[i] !== r ? `<div class="tc${sep}">${fmt(v)}</div>`
+        : `<div class="tc${sep}"><input type="text" data-v="${v}" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Ligne ${r + 1}, colonne ${i + 1}"></div>`).join('');
+  };
+  return `<div class="tab" style="--k:${t.vide.length}">${t.lignes.map(ligne).join('')}</div>`;
+}
+
+/**
+ * Point d'aiguillage central (comme dans "evaluation") :
+ *   - quiz pas encore lancé → rien à afficher avant "Commencer le Quiz" ;
+ *   - quiz terminé → écran de fin ;
+ *   - sinon → nouveau tableau (atelier : illimité, sans comptage).
+ */
+function demarrerQuestion() {
+  const c = cont();
+  c.innerHTML = '';
+  if (etatJeu === 'quiz' && !quizDemarre) return;
+  if (etatJeu === 'quiz' && questionCount >= NB_QUESTIONS) { showScore(); return; }
+
+  tableau = genererTableau();
+  c.innerHTML = `<div class="valeurs-label">Complète le tableau :</div>${htmlTableau(tableau)}
+    <div class="feedback-zone" id="retour"></div>
+    <div class="center-button" id="zoneValider"><button type="button" class="valider">Valider</button></div>`;
+  c.querySelector('.valider').onclick = valider;
+  inputs()[0].focus();
+
+  if (etatJeu === 'quiz') { questionCount++; updateScoreDisplay(); }
+  setupSkipButton();
+}
+
+/** Corrige les cases remplies : les justes sont figées en vert, les fausses restent à corriger. */
+function valider() {
+  const retour = document.getElementById('retour');
+  let fausses = 0, videsRestantes = 0;
+  inputs().forEach(inp => {
+    const txt = inp.value.trim();
+    if (!txt) { videsRestantes++; return; }
+    const v = parseNum(txt), attendu = +inp.dataset.v;
+    if (v != null && Math.abs(v - attendu) < 1e-9) {
+      const cell = inp.parentNode;
+      cell.classList.add('ok'); cell.textContent = fmt(attendu);
+    } else { inp.classList.add('ko'); fausses++; }
+  });
+
+  const restants = inputs();
+  if (restants.length === 0) {
+    retour.className = 'feedback-zone state-success'; retour.textContent = '✅ Bravo !';
+    document.getElementById('zoneValider').remove();
+    createNextBtn(cont());
+    return;
+  }
+  if (fausses) { retour.className = 'feedback-zone state-error'; retour.textContent = `≠ ${fausses} case${fausses > 1 ? 's' : ''} à corriger`; }
+  else { retour.className = 'feedback-zone state-neutral'; retour.textContent = `Il reste ${videsRestantes} case${videsRestantes > 1 ? 's' : ''} à compléter`; }
+  const cible = restants.find(x => x.classList.contains('ko')) || restants[0];
+  cible.focus(); cible.select();
+}
+
+// Entrée dans une case : case vide suivante, ou validation quand tout est rempli
+document.getElementById('container').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+  e.preventDefault();
+  const ins = inputs(), i = ins.indexOf(e.target);
+  const suivante = [...ins.slice(i + 1), ...ins.slice(0, i)].find(x => !x.value.trim());
+  if (suivante && e.target.value.trim()) suivante.focus(); else valider();
+});
+document.getElementById('container').addEventListener('input', e => e.target.classList.remove('ko'));
+
+function updateScoreDisplay() {
+  const p = document.getElementById('question-progress');
+  if (p) p.textContent = `Question ${questionCount}/${NB_QUESTIONS}`;
+  const s = document.getElementById('score');
+  if (s) s.textContent = `Score : ${score}`;
+}
+
+function setupSkipButton() {
+  const skipBtn = document.getElementById('skipButton');
+  if (skipBtn) { skipBtn.style.display = 'block'; skipBtn.onclick = e => { e.preventDefault(); demarrerQuestion(); }; }
+}
+
+function createNextBtn(c) {
+  const div = document.createElement('div');
+  div.className = 'center-button';
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.id = 'btnSuivant';
+  b.textContent = 'Suivant (Entrée)';
+  b.onclick = () => {
+    if (etatJeu === 'quiz') { score++; updateScoreDisplay(); }
+    demarrerQuestion();
+  };
+  div.appendChild(b);
+  c.appendChild(div);
+  const skipBtn = document.getElementById('skipButton');
+  if (skipBtn) skipBtn.style.display = 'none';
+}
+
+function showScore() {
+  const skipBtn = document.getElementById('skipButton');
+  if (skipBtn) skipBtn.style.display = 'none';
+  cont().innerHTML = `<div style="text-align:center; margin-top:50px;">
+      <h2>🎯 Quiz Terminé !</h2>
+      <p style="font-size:24px;">Ton score final est de : <strong>${score} / ${questionCount}</strong></p>
+      <button class="restart-btn" type="button" id="btnRecommencer">Recommencer</button>
+    </div>`;
+  document.getElementById('btnRecommencer').onclick = lancerQuiz;
+  if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+}
+
+function lancerQuiz() {
+  quizDemarre = true; questionCount = 0; score = 0; piocheEnCours = [];
+  renderPanneauLateral();
+  demarrerQuestion();
+}
+
+/* ================= Panneau latéral ================= */
+/** Tout changement de réglage régénère immédiatement le tableau. */
+function reglageChange() { piocheEnCours = []; demarrerQuestion(); }
+
+function groupe(panneau, titre, contenu) {
+  const g = document.createElement('div');
+  g.className = 'panel-groupe';
+  const l = document.createElement('div');
+  l.className = 'panel-groupe-label';
+  l.textContent = titre;
+  g.append(l, contenu);
+  panneau.appendChild(g);
+  const f = document.createElement('div');
+  f.className = 'panel-filet';
+  panneau.appendChild(f);
+}
+
+/** Formules : multi-sélection par bascule, au moins une active. */
+function construireSelecteurFormules(disabled) {
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-grille';
+  FORMULES.forEach(f => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn panel-btn-half' + (formulesActives.has(f.id) ? ' active' : '');
+    btn.innerHTML = f.ex;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => {
+      if (formulesActives.has(f.id)) {
+        if (formulesActives.size === 1) return;
+        formulesActives.delete(f.id);
+      } else formulesActives.add(f.id);
+      btn.classList.toggle('active', formulesActives.has(f.id));
+      reglageChange();
+    });
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
+/** Entiers / Décimaux : multi-sélection, au moins un actif ; le type est tiré au hasard à chaque tableau. */
+function construireSelecteurTypeNombres(disabled) {
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-groupe-paire';
+  [['entier', 'Entiers'], ['decimal', 'Décimaux']].forEach(([type, lib]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn panel-btn-half' + (typesNombresActifs.has(type) ? ' active' : '');
+    btn.textContent = lib;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => {
+      if (typesNombresActifs.has(type)) {
+        if (typesNombresActifs.size === 1) return;
+        typesNombresActifs.delete(type);
+      } else typesNombresActifs.add(type);
+      btn.classList.toggle('active', typesNombresActifs.has(type));
+      reglageChange();
+    });
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
+/** Sélection unique parmi des options [valeur, libellé]. */
+function construireChoixUnique(options, courant, choisir, disabled) {
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-groupe-paire';
+  options.forEach(([val, lib]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn panel-btn-half' + (val === courant ? ' active' : '');
+    btn.textContent = lib;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => {
+      if (val === courant) return;
+      choisir(val);
+      renderPanneauLateral();
+      reglageChange();
+    });
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
+function renderPanneauLateral() {
+  const panneau = document.getElementById('panneauLateral');
+  panneau.innerHTML = '';
+  const verrouille = etatJeu === 'quiz' && quizDemarre;
+
+  groupe(panneau, 'Formules', construireSelecteurFormules(verrouille));
+  groupe(panneau, 'Type de nombres', construireSelecteurTypeNombres(verrouille));
+  groupe(panneau, 'Nombre de colonnes',
+    construireChoixUnique(COLONNES.map(c => [c, String(c)]), nbColonnes, v => { nbColonnes = v; }, verrouille));
+  groupe(panneau, 'Cases à trouver',
+    construireChoixUnique([['bas', 'Dernière ligne'], ['mix', 'Toutes les lignes']], casesATrouver, v => { casesATrouver = v; }, verrouille));
+
+  const label = document.createElement('div');
+  label.className = 'panel-groupe-label';
+  const skipBtn = document.createElement('button');
+  skipBtn.type = 'button';
+  skipBtn.id = 'skipButton';
+  skipBtn.textContent = 'Renoncer';
+
+  if (etatJeu === 'atelier') {
+    label.textContent = 'Question en cours :';
+    const g = document.createElement('div');
+    g.className = 'panel-groupe';
+    g.append(label, skipBtn);
+    panneau.appendChild(g);
+  } else if (!quizDemarre) {
+    label.textContent = 'Quiz';
+    const btnCommencer = document.createElement('button');
+    btnCommencer.type = 'button';
+    btnCommencer.className = 'panel-btn active';
+    btnCommencer.textContent = 'Commencer le Quiz';
+    btnCommencer.onclick = lancerQuiz;
+    panneau.append(label, btnCommencer);
+  } else {
+    label.textContent = 'Quiz';
+    const scoreContainer = document.createElement('div');
+    scoreContainer.id = 'score-container';
+    const progressDiv = document.createElement('div');
+    progressDiv.id = 'question-progress';
+    const scoreDiv = document.createElement('div');
+    scoreDiv.id = 'score';
+    scoreContainer.append(progressDiv, scoreDiv, skipBtn);
+    panneau.append(label, scoreContainer);
+    updateScoreDisplay();
+  }
+  setupSkipButton();
+}
+
+/* ================= Header : Atelier / Quiz, Nouvel onglet, Guide ================= */
+function setupEtatToggle() {
+  const conteneur = document.getElementById('topButtonsBar');
+  const btnAtelier = document.createElement('button');
+  btnAtelier.type = 'button'; btnAtelier.id = 'btnAtelier'; btnAtelier.textContent = 'Atelier';
+  const btnQuiz = document.createElement('button');
+  btnQuiz.type = 'button'; btnQuiz.id = 'btnQuiz'; btnQuiz.textContent = 'Quiz';
+
+  const majClasses = () => {
+    btnAtelier.className = 'btn-header' + (etatJeu === 'atelier' ? ' active' : '');
+    btnQuiz.className = 'btn-header' + (etatJeu === 'quiz' ? ' active' : '');
+  };
+  majClasses();
+  const basculer = nouvelEtat => {
+    if (etatJeu === nouvelEtat) return;
+    etatJeu = nouvelEtat; quizDemarre = false; questionCount = 0; score = 0;
+    majClasses();
+    renderPanneauLateral();
+    demarrerQuestion();
+  };
+  btnAtelier.onclick = () => basculer('atelier');
+  btnQuiz.onclick = () => basculer('quiz');
+
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+  conteneur.append(btnAtelier, btnQuiz, filet);
+}
+
+/** Bouton "Nouvel onglet" ; repli en lien cliquable si window.open() est bloqué (iframe sandbox). */
+function setupBoutonNouvelOnglet() {
+  const conteneur = document.getElementById('topButtonsBar');
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.id = 'btnNouvelOnglet'; btn.className = 'btn-header'; btn.textContent = 'Nouvel onglet';
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
+  repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+  btn.onclick = () => { if (!window.open(window.location.href, '_blank', 'noopener')) repli.style.display = 'inline'; };
+  conteneur.append(btn, repli);
+}
+
+function setupGuide() {
+  const conteneur = document.getElementById('topButtonsBar'), overlay = document.getElementById('overlayGuide');
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'btn-header'; btn.textContent = 'Guide';
+  btn.onclick = () => overlay.classList.add('ouvert');
+  conteneur.append(filet, btn);
+  document.getElementById('btnFermerGuide').onclick = () => overlay.classList.remove('ouvert');
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('ouvert'); });
+}
+
+/* ================= Fiche papier =================
+   Même principe que evaluation/Fiche.js : overlay imprimable (window.print) de 8 tableaux
+   générés avec genererTableau() et les réglages en cours, sans toucher à la partie en cours ;
+   export LaTeX de la même série. */
+class FichePapier {
+  constructor() {
+    this.nbExercices = 8;
+    this.titre = "Fiche d'exercices — Tableaux de valeurs";
+    this.sousTitre = 'Complète chaque tableau.';
+    this._derniereSerie = null;
+    this._construireOverlay();
+  }
+
+  installerBouton(conteneur) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.id = 'btnFichePapier'; btn.className = 'btn-header'; btn.textContent = 'Fiche papier';
+    btn.addEventListener('click', () => this.ouvrir());
+    conteneur.appendChild(btn);
+  }
+
+  /** 8 tableaux tirés avec les réglages du panneau ; la pioche de la partie en cours est préservée. */
+  _genererSerie() {
+    const piocheSauvee = piocheEnCours;
+    piocheEnCours = [];
+    const liste = Array.from({ length: this.nbExercices }, () => genererTableau());
+    piocheEnCours = piocheSauvee;
+    return liste;
+  }
+
+  _construireOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'overlayFiche';
+    overlay.innerHTML = `<div id="ficheCarte">
+        <button id="btnFermerFiche" type="button" aria-label="Fermer">×</button>
+        <div class="fiche-actions">
+          <button type="button" id="ficheImprimer">🖨️ Imprimer / Enregistrer en PDF</button>
+          <button type="button" id="ficheTex">⬇️ Télécharger le LaTeX</button>
+          <button type="button" id="ficheRegen">🔀 Régénérer une nouvelle série</button>
+        </div>
+        <p class="note-impression">💡 Dans la fenêtre d'impression, pense à décocher <strong>« En-têtes et pieds de page »</strong> pour un rendu propre.</p>
+        <div class="ligne-identite">
+          <span>Nom et prénom : <span class="trait"></span></span>
+          <span>Note : <span class="trait court"></span> / ${this.nbExercices}</span>
+        </div>
+        <h2>${this.titre}</h2>
+        <p class="sous-titre">${this.sousTitre}</p>
+        <div id="ficheGrilleWrap"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    this.overlay = overlay;
+    this.grilleWrap = overlay.querySelector('#ficheGrilleWrap');
+    overlay.querySelector('#btnFermerFiche').onclick = () => this.fermer();
+    overlay.querySelector('#ficheImprimer').onclick = () => window.print();
+    overlay.querySelector('#ficheTex').onclick = () => this._telechargerLatex();
+    overlay.querySelector('#ficheRegen').onclick = () => this._regenerer();
+    overlay.addEventListener('click', e => { if (e.target === overlay) this.fermer(); });
+  }
+
+  _rendreGrille(liste) {
+    this.grilleWrap.innerHTML = '<div class="fiche-grille">' + liste.map((t, n) =>
+      `<div class="fiche-cellule"><span class="fiche-num">${n + 1}.</span><table class="fiche-table">` +
+      t.lignes.map((l, r) => `<tr><th>${l.lab}</th>${l.vals.map((v, i) => `<td>${t.vide[i] === r ? '' : fmt(v)}</td>`).join('')}</tr>`).join('') +
+      '</table></div>').join('') + '</div>';
+  }
+
+  ouvrir() {   // toujours régénérer : les réglages ont pu changer
+    this._regenerer();
+    this.overlay.classList.add('visible');
+    document.body.classList.add('fiche-ouverte');
+  }
+  fermer() {
+    this.overlay.classList.remove('visible');
+    document.body.classList.remove('fiche-ouverte');
+  }
+  _regenerer() {
+    this._derniereSerie = this._genererSerie();
+    this._rendreGrille(this._derniereSerie);
+  }
+
+  /** Étiquette ou nombre (html) → LaTeX en mode maths. */
+  _tex(html) {
+    const t = String(html).replace(/<[^>]+>/g, '').replace(/×/g, '\\times ').replace(/−/g, '-').replace(/:/g, '\\div ')
+      .replace(/(\d)[\s\u00a0\u202f](\d)/g, '$1\\,$2').replace(/,/g, '{,}');
+    return `$${t}$`;
+  }
+
+  _genererLatex() {
+    const blocs = (this._derniereSerie || []).map((t, n) => {
+      const k = t.vide.length;
+      const lignes = t.lignes.map((l, r) =>
+        [this._tex(l.lab), ...l.vals.map((v, i) => t.vide[i] === r ? '' : this._tex(fmt(v)))].join(' & ') + ' \\\\ \\hline').join('\n');
+      return `\\begin{minipage}[t]{0.49\\textwidth}
+\\textbf{${n + 1}.}\\quad
+\\begin{tabular}[t]{|c|*{${k}}{>{\\centering\\arraybackslash}p{${k > 4 ? 0.85 : 1.1}cm}|}}
+\\hline
+${lignes}
+\\end{tabular}
+\\end{minipage}`;
+    });
+    const rangees = [];
+    for (let i = 0; i < blocs.length; i += 2) rangees.push(`\\noindent ${blocs[i]}\\hfill ${blocs[i + 1] || ''}`);
+    return `\\documentclass[12pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage[a4paper,top=1.5cm,bottom=1.5cm,left=1cm,right=1cm]{geometry}
+\\usepackage{amsmath}
+\\usepackage{array}
+\\renewcommand{\\arraystretch}{2.5}
+\\pagestyle{empty}
+
+\\begin{document}
+
+\\noindent Nom et prénom : \\hrulefill \\hspace{1cm} Note : \\hrulefill\\,/\\,${this.nbExercices}
+
+\\vspace{0.9cm}
+
+\\begin{center}
+{\\Large \\textbf{${this.titre}}}\\\\[0.3em]
+{\\large ${this.sousTitre}}
+\\end{center}
+
+\\vspace{0.9cm}
+
+${rangees.join('\n\n\\vspace{1cm}\n\n')}
+
+\\end{document}
+`;
+  }
+
+  _telechargerLatex() {
+    if (!this._derniereSerie) this._regenerer();
+    const blob = new Blob([this._genererLatex()], { type: 'application/x-tex;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'fiche-tableaux.tex';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+let fiche = null;
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { document.getElementById('overlayGuide').classList.remove('ouvert'); if (fiche) fiche.fermer(); }
+  if (e.key === 'Enter' && e.target.tagName !== 'INPUT') {
+    const nextBtn = document.getElementById('btnSuivant');
+    if (nextBtn) { e.preventDefault(); nextBtn.click(); }
+  }
+});
+
+window.onload = () => {
+  setupEtatToggle();
+  renderPanneauLateral();
+  setupBoutonNouvelOnglet();
+  fiche = new FichePapier();
+  fiche.installerBouton(document.getElementById('topButtonsBar'));
+  setupGuide();
+  demarrerQuestion();
+};
+</script>
+</body>
+</html>
