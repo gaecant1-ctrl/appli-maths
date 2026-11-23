@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz au hasard</title>
+<style>
+/* Même charte que appli-maths/demonstration. Tout est en rem : la taille suit la fenêtre (vidéoprojection). */
+html { font-size: min(1.4vw, 2.5vh); scrollbar-gutter: stable; }
+* { box-sizing: border-box; }
+:root {
+    --papier: #ffffff;
+    --papier-panel: #f1f8f3;
+    --grille: #d3ead9;
+    --grille-forte: #1f5c33;
+    --encre: #23302a;
+    --encre-douce: #5f7a68;
+    --accent: #2f9e44;
+    --accent-hover: #237a35;
+    --accent-clair: #e6f7e9;
+    --rouge: #c0392b;
+    --rouge-fond: #fbeceb;
+    --bleu: #1d3b8f;
+    --bleu-fond: #e8edf8;
+    --succes: #1e7e34;
+    --jaune: #ffd166;
+    --rayon: 0.625rem;
+    --rayon-petit: 0.375rem;
+}
+body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: var(--papier-panel); color: var(--encre); min-height: 100vh; }
+button { font: inherit; cursor: pointer; border: 1px solid var(--grille); background: var(--papier); color: var(--encre);
+    border-radius: var(--rayon-petit); padding: 0.35rem 0.9rem; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button.choisi { background: var(--grille-forte); color: #fff; border-color: var(--grille-forte); }
+button.principal { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+button.principal:hover { background: var(--accent-hover); }
+.cache { display: none !important; }
+sup { font-size: 0.7em; }
+svg { width: 100%; display: block; }
+/* Hauteurs fixes (en rem) : quand la page se réduit pour tenir dans la fenêtre, les graphiques suivent. */
+#diagramme { height: 9.2rem; }
+#courbe { height: 7rem; }
+
+/* ---------- Entête ---------- */
+header { display: flex; align-items: center; justify-content: center; flex-wrap: nowrap; overflow: hidden; gap: 0.5rem 1.5rem; padding: 0.4rem 1.25rem; min-height: 3.2rem;
+    background: var(--papier-panel); border-bottom: 1px solid var(--grille); }
+#titre { font-size: 1.15rem; font-weight: 700; color: var(--grille-forte); }
+#resume { display: flex; flex-wrap: nowrap; gap: 0.35rem; font-size: 0.88rem; min-width: 0; overflow: hidden; }
+#titre { white-space: nowrap; }
+body.en-activite #titre { display: none; }
+.actions button { white-space: nowrap; }
+#groupeCours { display: flex; align-items: center; gap: 0.25rem; padding: 0 0.3rem; border: 1px solid var(--grille); border-radius: var(--rayon-petit); background: #fff; }
+#groupeCours.cache { display: none; }
+#groupeCours .lab-cours { font-weight: 700; color: var(--grille-forte); font-size: 0.9rem; padding: 0 0.2rem; }
+#groupeCours button { border-color: transparent; }
+#groupeCours button:hover { border-color: var(--accent); }
+.puce { background: var(--papier); border: 1px solid var(--grille); border-radius: 1rem; padding: 0.15rem 0.7rem; white-space: nowrap; }
+.puce b { color: var(--grille-forte); }
+.actions { display: flex; gap: 0.35rem; }
+.actions button { padding: 0.25rem 0.55rem; }
+
+/* ---------- Réglages ---------- */
+#reglages { max-width: 66rem; margin: 0.8rem auto; background: var(--papier); border: 1px solid var(--grille); border-radius: var(--rayon); padding: 0.8rem 1.5rem; }
+.explication { background: var(--accent-clair); border-radius: var(--rayon-petit); padding: 0.5rem 0.8rem; margin: 0 0 0.3rem; }
+.reglage { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0 0; }
+.reglage h2 { font-size: 1.0rem; color: var(--grille-forte); margin: 0; width: 15rem; flex-shrink: 0; }
+.choix-ligne { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.reglage .choix-ligne { flex: 1; }
+.carte-choix { flex: 1 1 18rem; text-align: left; padding: 0.45rem 0.8rem; }
+.carte-choix small { display: block; opacity: 0.8; }
+.puces-n button { min-width: 2.5rem; padding: 0.35rem 0.5rem; }
+#editeur { margin: 0.5rem 0 0 15.5rem; }
+#enteteQCM { display: flex; gap: 0.4rem; font-size: 0.85rem; color: var(--encre-douce); margin: 0 0 0.2rem 2rem; }
+#lignes { display: flex; flex-direction: column; gap: 0.3rem; max-height: 13rem; overflow-y: auto; padding-right: 0.3rem; }
+.ligne { display: flex; gap: 0.4rem; align-items: center; }
+.ligne .num { width: 1.6rem; text-align: right; color: var(--encre-douce); flex-shrink: 0; }
+.ligne input { min-width: 0; font: inherit; padding: 0.3rem 0.5rem; border: 1px solid var(--grille); border-radius: var(--rayon-petit); }
+.ligne input.q { flex: 3; }
+.ligne input.bonne { flex: 1; border: 2px solid var(--succes); }
+.ligne input.mauvaise { flex: 1; border: 2px solid #e8a39b; }
+.ligne input:focus { outline: 2px solid var(--accent); }
+.ligne .vf-reg { padding: 0.3rem 0.6rem; }
+.ligne .vf-reg.choisi.vrai { background: var(--succes); border-color: var(--succes); }
+.ligne .vf-reg.choisi.faux { background: var(--rouge); border-color: var(--rouge); }
+.ligne .suppr { color: var(--rouge); padding: 0.3rem 0.55rem; }
+#outilsEditeur { margin-top: 0.4rem; }
+#outilsEditeur button { font-size: 0.9rem; }
+#messageReglages { color: var(--rouge); font-weight: 600; min-height: 1.3rem; margin: 0.5rem 0 0.2rem; }
+#btnLancer { font-size: 1.15rem; padding: 0.5rem 1.6rem; }
+
+/* ---------- Activité ---------- */
+#activite { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; padding: 0.6rem 1.25rem; }
+#gauche, #stats { min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.cadre { background: var(--papier); border: 1px solid var(--grille); border-radius: var(--rayon); padding: 0.5rem 0.9rem; }
+.cadre h3 { margin: 0 0 0.3rem; font-size: 1.1rem; color: var(--grille-forte); display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.cadre h3 em { font-style: normal; }
+.replier { margin-left: auto; padding: 0 0.5rem; font-size: 0.9rem; line-height: 1.5; color: var(--encre-douce); flex-shrink: 0; }
+.cadre.replie > :not(h3) { display: none !important; }
+.cadre.replie h3 { margin-bottom: 0; }
+.cadre h3 span { font-weight: 400; color: var(--encre-douce); font-size: 0.95rem; white-space: nowrap; }
+#feuille { display: grid; grid-template-columns: auto minmax(0, 1fr) repeat(var(--k, 2), auto) auto; column-gap: 0.4rem; }
+#feuille .q { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; height: 2.1rem; border-bottom: 1px dashed var(--grille); }
+#feuille.serre .q { height: 1.42rem; }
+
+#feuille.serre .q .txt { font-size: 1rem; }
+
+#feuille.serre .q button { padding: 0.05rem 0.5rem; }
+#feuille .q .num { width: 1.4rem; color: var(--encre-douce); text-align: right; flex-shrink: 0; }
+#feuille .q .txt { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#feuille .q button { padding: 0.22rem 0.5rem; transition: background .1s; white-space: nowrap; }
+#feuille .q button.choisi { background: var(--grille-forte); }
+#feuille .q button.bot-clic { outline: 4px solid var(--jaune); outline-offset: 2px; }
+#feuille .q .corr { width: 1.4rem; font-size: 1.3rem; line-height: 1; font-weight: 700; text-align: center; flex-shrink: 0; }
+#feuille .q.juste .corr { color: var(--succes); }
+#feuille .q.faux .corr { color: var(--rouge); }
+#feuille .q.juste { background: #f2faf4; }
+#feuille .q.faux { background: var(--rouge-fond); }
+#feuille .q.faux button.bonne-rep { box-shadow: inset 0 0 0 2px var(--succes); }
+/* L'issue de l'expérience : un encadré à part, sous la copie. */
+#note { margin-top: 0.4rem; height: 2.3rem; display: flex; align-items: center; gap: 0.45rem; padding: 0 0.7rem; white-space: nowrap; overflow: hidden;
+    border: 2px solid var(--accent); background: var(--accent-clair); border-radius: var(--rayon-petit); font-size: 1.12rem; }
+#note .lab { font-weight: 700; color: var(--grille-forte); }
+#note .val { font-size: 1.55rem; color: var(--grille-forte); }
+#note .attente { color: var(--encre-douce); font-style: italic; font-size: 1rem; }
+#note { justify-content: center; }
+#note .badge { margin-left: 0.8rem; }
+/* La scène des deux pièces : centrée dans le cadre de l'expérience. */
+#feuille.scene { display: flex; justify-content: center; }
+.scene-pieces { width: 100%; }
+.scene-pieces { height: 12.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; }
+.pieces { display: flex; gap: 3rem; }
+.piece-bloc { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; color: var(--encre-douce); font-size: 0.95rem; }
+.piece { width: 5.6rem; height: 5.6rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 2.9rem; font-weight: 800; color: #6b4e00; background: radial-gradient(circle at 35% 30%, #fff3c4, #e2b73b 60%, #b98b16);
+    border: 4px solid #a67c12; box-shadow: 0 4px 10px rgba(0,0,0,.2); }
+.piece.tourne { animation: tourne 0.35s linear infinite; }
+@keyframes tourne { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+#reglages .cache-exp { display: none !important; }
+/* Les dés : faces à points, sur une grille 3 × 3. */
+.de { width: 5.6rem; height: 5.6rem; border-radius: 0.9rem; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 0.7rem; gap: 0.15rem;
+    box-shadow: inset -4px -5px 8px rgba(0,0,0,.25), 0 4px 10px rgba(0,0,0,.2); }
+.de.rouge { background: #c0392b; } .de.vert { background: #2f9e44; }
+.de i { border-radius: 50%; }
+.de i.pt { background: #fff; box-shadow: inset 1px 1px 2px rgba(0,0,0,.35); }
+.de.roule { animation: roule 0.3s linear infinite; }
+@keyframes roule { 0% { transform: rotate(0); } 50% { transform: rotate(12deg) translateY(-4px); } 100% { transform: rotate(0); } }
+.plus-des { align-self: center; font-size: 2.4rem; font-weight: 700; color: var(--encre-douce); margin-bottom: 1.4rem; }
+/* Les réglages en deux blocs : l'expérience (et ses réglages propres), puis le déroulement. */
+.bloc-reglages { border: 2px solid var(--accent); border-radius: var(--rayon); padding: 0.4rem 1rem 0.7rem; margin-top: 0.7rem; }
+#blocDeroule { border-color: #b9c9be; }
+.titre-bloc { margin: 0; font-size: 1.2rem; color: var(--grille-forte); text-align: center; }
+.cartes-exp .choix-ligne { flex: 1; }
+.propres { margin-top: 0.5rem; padding: 0.3rem 0.9rem 0.5rem; background: #f4f9f5; border-radius: var(--rayon-petit); }
+.propres h3 { margin: 0.1rem 0 0; font-size: 1rem; color: var(--grille-forte); }
+.aucun-reglage { margin: 0.4rem 0 0; color: var(--encre-douce); }
+#reglages.vers-exp #blocExp, #reglages.vers-deroule #blocDeroule { box-shadow: 0 0 0 4px rgba(47,158,68,.25); }
+/* Le menu des expériences, sous l'entête. */
+#btnExp { font-weight: 700; white-space: nowrap; flex: none; border: 2px solid var(--accent); color: var(--grille-forte); }
+#groupeCours .lab-cours { white-space: nowrap; }
+#menuExp { position: fixed; z-index: 1100; top: 3.4rem; left: 50%; transform: translateX(-50%); width: min(56rem, 96vw); background: #fff; border: 2px solid var(--accent);
+    border-radius: var(--rayon); box-shadow: 0 10px 40px rgba(0,0,0,.3); padding: 0.8rem 1rem 1rem; }
+#menuExp h2 { margin: 0 0 0.6rem; text-align: center; font-size: 1.2rem; color: var(--grille-forte); }
+#menuExp .cartes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+#menuExp .cartes button { text-align: left; padding: 0.6rem 0.8rem; font-size: 1rem; }
+#menuExp .cartes button small { display: block; opacity: 0.85; margin-top: 0.2rem; }
+#menuExp .bas { display: flex; justify-content: center; gap: 0.6rem; margin-top: 0.8rem; }
+#choixExperience .carte-choix { flex: 1 1 0; }
+.compo-urne { display: flex; flex-direction: column; gap: 0.35rem; }
+.compo-urne .choix-ligne { flex-wrap: nowrap; }
+.lab-urne { display: inline-block; width: 8rem; color: var(--encre-douce); }
+#choixRouges button.choisi { background: #c0392b; border-color: #c0392b; }
+#choixBleues button.choisi { background: #1d3b8f; border-color: #1d3b8f; }
+/* L'urne : les boules dedans, et les deux boules tirées. */
+.scene-urne { width: 100%; height: 12.5rem; display: flex; align-items: center; justify-content: center; gap: 2.2rem; }
+.urne { position: relative; width: 11rem; height: 9.5rem; border: 4px solid #6b5b45; border-top: none; border-radius: 0 0 4.5rem 4.5rem;
+    background: linear-gradient(#fbf7ef, #efe6d4); display: flex; flex-wrap: wrap-reverse; align-content: flex-start; justify-content: center; gap: 0.3rem; padding: 0.6rem 0.8rem; }
+.urne::before { content: ''; position: absolute; top: -0.35rem; left: -0.9rem; right: -0.9rem; height: 0.35rem; background: #6b5b45; border-radius: 0.2rem; }
+.boule { width: 1.9rem; height: 1.9rem; border-radius: 50%; box-shadow: inset -3px -4px 6px rgba(0,0,0,.3); flex: none; }
+.boule.R { background: radial-gradient(circle at 35% 30%, #f5a59b, #c0392b 65%); }
+.boule.B { background: radial-gradient(circle at 35% 30%, #9db4ec, #1d3b8f 65%); }
+.boule.prise { outline: 4px solid #ffd166; outline-offset: 2px; transform: scale(1.15); }
+.tirages { display: flex; gap: 1.6rem; }
+.tirage { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; color: var(--encre-douce); font-size: 0.95rem; }
+.tirage .place { width: 4.6rem; height: 4.6rem; border: 3px dashed #b9c9be; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: #b9c9be; }
+.tirage .place .boule { width: 4rem; height: 4rem; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.8rem; font-weight: 800; }
+
+/* Les zones : l'expérience, les commandes. */
+.zone-exp { border: 2px solid var(--accent); }
+.zone-commandes { background: #eef2ef; border-color: #b9c9be; padding: 0.25rem 0.6rem 0.4rem; }
+.zone-commandes #boutons { gap: 0.35rem; }
+.zone-titre { display: block; font-size: 0.72rem; font-weight: 700; color: var(--encre-douce); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.15rem; }
+#bilanPari { margin-top: 0.35rem; padding: 0.25rem 0.7rem; border-radius: var(--rayon-petit); border-left: 5px solid var(--c); background: #f6f7fb; font-size: 0.88rem; line-height: 1.28; height: calc(2 * 1.28em + 0.5rem + 0.1em); overflow: hidden; white-space: nowrap; text-align: center; }
+#bilanPari b.c { color: var(--c); }
+.badge { display: inline-block; margin-left: 0.6rem; padding: 0.05rem 0.7rem; border-radius: 1rem; font-weight: 700; color: #fff; }
+.badge.gagne { background: var(--succes); }
+.badge.perdu { background: var(--rouge); }
+/* Le barème du jeu de gain : un gain (positif ou négatif) pour chaque issue. */
+#blocGain { margin: 0.4rem 0 0 15.5rem; }
+#tableGains { display: inline-grid; grid-template-columns: auto repeat(var(--nb), 3.6rem); border: 1px solid #c9dccf; border-radius: var(--rayon-petit); overflow: hidden; }
+#tableGains > * { padding: 0.25rem; text-align: center; border-left: 1px solid #c9dccf; border-top: 1px solid #c9dccf; }
+#tableGains .tete { background: #f1f8f3; font-weight: 700; color: var(--grille-forte); }
+#tableGains .titre-l { border-left: none; font-weight: 700; color: var(--grille-forte); text-align: right; padding-right: 0.5rem; }
+#tableGains input { width: 100%; font: inherit; text-align: center; padding: 0.15rem 0; border: 2px solid #e2c27a; border-radius: 4px; }
+#conseilGain { margin: 0.35rem 0 0; color: var(--encre-douce); }
+.ligne-gagnant { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem; }
+.ligne-gagnant input { width: 4rem; font: inherit; text-align: center; padding: 0.2rem; border: 2px solid var(--grille); border-radius: var(--rayon-petit); }
+#choixGagnant { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+#choixGagnant button { padding: 0.15rem 0.6rem; border: 2px solid var(--c); color: var(--c); background: #fff; font-weight: 700; }
+#choixGagnant button.choisi { background: var(--c); color: #fff; }
+.badge.nul { background: #7f8c8d; }
+#bilanPari .cagnotte { font-size: 1.02rem; }
+@media (max-width: 700px) { #blocGain { margin-left: 0; } }
+#boutons { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+#boutons { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* La vitesse : un réglage, pas une action ; petit sélecteur centré sous les boutons. */
+#vitesse { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; margin-top: 0.3rem; font-size: 0.8rem; color: var(--encre-douce); }
+#vitesse > span { text-align: right; }
+#vitesse .seg { display: inline-flex; border: 2px solid var(--grille-forte); border-radius: 1rem; overflow: hidden; }
+#vitesse .seg button { border: none; border-radius: 0; padding: 0.05rem 0.9rem; font-size: 0.8rem; min-width: 4.5rem; background: #fff; color: var(--grille-forte); }
+#vitesse .seg button + button { border-left: 2px solid var(--grille-forte); }
+#vitesse .seg button.choisi { background: var(--grille-forte); color: #fff; }
+#boutons button { padding: 0.3rem 0.1rem; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#mur { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+#mur div { height: 1.45rem; border-radius: 3px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+#mur div.vide { background: #f3f6f4; }
+#mur div.tj { outline: 2px solid #e67e22; }
+
+.compteurs { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-size: 1rem; white-space: nowrap; }
+.compteurs b { font-size: 1.1rem; }
+.bleu b, b.bleu { color: var(--bleu); }
+body:not(.proba) .attendu, body:not(.proba) #legendeProba { visibility: hidden; }
+.legende { display: flex; gap: 1rem; white-space: nowrap; flex-wrap: wrap; font-size: 0.95rem; color: var(--encre-douce); }
+.legende i { display: inline-block; width: 1.1rem; height: 0.8rem; vertical-align: middle; margin-right: 0.35rem; }
+.legende .l-obs { background: rgba(192, 57, 43, .75); }
+.bascule { margin-left: auto; padding: 0.05rem 0.6rem; white-space: nowrap; flex-shrink: 0; font-size: 0.85rem; border: 2px solid var(--bleu); color: var(--bleu); background: #fff; font-weight: 600; }
+.bascule.actif { background: var(--bleu); color: #fff; }
+.bascule + .replier { margin-left: 0.4rem; }
+.legende .l-pro { height: 4px; border-radius: 2px; background: var(--bleu); }
+.suivi { padding-top: 0.45rem; padding-bottom: 0.5rem; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+/* Les deux colonnes se terminent à la même hauteur. */
+#stats > .cadre[data-cle=courbe] { flex: 1; display: flex; flex-direction: column; }
+#stats > .cadre[data-cle=courbe] #courbe { flex: 1 1 7rem; min-height: 7rem; height: auto; }
+#evenements { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 1rem; row-gap: 0.35rem; }
+#evenements button { justify-self: stretch; text-align: left; white-space: nowrap; }
+#evenements .entete { color: var(--grille-forte); font-weight: 700; font-size: 0.95rem; }
+#evenements .freq { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+#evenements button.bascule-freq { --c: var(--grille-forte); padding: 0.05rem 0.5rem; font-size: 0.9rem; font-weight: 700; justify-self: start; }
+#evenements button.bascule-freq.actif { background: var(--grille-forte); color: #fff; }
+#evenements button { padding: 0.25rem 0.7rem; font-size: 0.92rem; line-height: 1.3; border: 2px solid var(--c); color: var(--c); background: #fff; }
+#evenements button i { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 50%; border: 2px solid var(--c); margin-right: 0.35rem; vertical-align: -0.05rem; }
+#evenements button.actif { background: var(--c); color: #fff; }
+#evenements button.actif i { background: #fff; border-color: #fff; }
+#evenements button small { font-size: 0.85rem; opacity: 0.95; }
+#explication { border-radius: var(--rayon-petit); padding: 0.3rem 0.7rem; font-size: 0.95rem; line-height: 1.3; height: calc(2 * 1.3em + 0.6rem); overflow: hidden; margin-top: 0.3rem; border-left: 5px solid var(--c); background: #f6f7fb; color: var(--encre); }
+#explication b { color: var(--c); }
+
+#doigt { position: fixed; z-index: 1000; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+    background: rgba(192, 57, 43, .35); border: 3px solid var(--rouge); pointer-events: none;
+    transition: left .35s ease, top .35s ease, transform .12s; }
+#doigt.appui { transform: scale(.6); background: rgba(192, 57, 43, .7); }
+
+#stats, #gauche { position: relative; }
+/* Projection : chaque cadre peut se détacher en fenêtre flottante, déplaçable et redimensionnable ; son contenu grossit avec elle. */
+.detacher { padding: 0 0.45rem; font-size: 0.9rem; line-height: 1.5; color: var(--encre-douce); flex-shrink: 0; }
+.cadre h3 .detacher { margin-left: auto; }
+.cadre h3 .detacher + .replier { margin-left: 0.3rem; }
+.bascule + .detacher { margin-left: 0.4rem; }
+.zone-commandes, .suivi { position: relative; }
+.detacher.coin { position: absolute; top: 0.25rem; right: 0.35rem; }
+.suivi { padding-right: 2.4rem; }
+.zone-commandes > .zone-titre { display: flex; align-items: center; justify-content: space-between; }
+.zone-titre .detacher { text-transform: none; letter-spacing: 0; font-weight: 400; padding: 0 0.45rem; line-height: 1.3; }
+.cadre.flottant { position: fixed !important; z-index: 900; margin: 0; display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35); border: 2px solid var(--grille-forte); padding-top: 0; }
+.cadre.replie.flottant > .barre-flottante { display: flex !important; }
+.cadre.replie.flottant > .poignee { display: block !important; }
+.cadre.flottant > .barre-flottante { zoom: 1 !important; display: flex; align-items: center; gap: 0.5rem; margin: 0 -0.9rem 0.4rem; padding: 0.2rem 0.5rem 0.2rem 0.8rem;
+    background: var(--grille-forte); color: #fff; cursor: move; user-select: none; touch-action: none; font-size: 0.9rem; flex: none; }
+.barre-flottante span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barre-flottante button { padding: 0.05rem 0.6rem; font-size: 0.85rem; }
+.cadre.flottant .detacher { display: none; }
+.cadre.flottant > .poignee { zoom: 1 !important; position: absolute; right: 0; bottom: 0; width: 1.6rem; height: 1.6rem; cursor: nwse-resize; touch-action: none;
+    background: linear-gradient(135deg, transparent 50%, var(--grille-forte) 50%); }
+.place-flottant { border: 2px dashed #b9c9be; border-radius: var(--rayon); display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    color: var(--encre-douce); font-size: 0.95rem; background: #f6f9f7; flex: none !important; text-align: center; padding: 0.5rem; }
+
+.overlay-gauche { position: absolute; inset: 0; z-index: 50; display: flex; }
+#overlayEvenements .carte-enonce { overflow: hidden; padding: 0.8rem 1.2rem; }
+#overlayEvenements .consigne { margin: 0 0 0.5rem; color: var(--encre-douce); text-align: center; }
+#overlayEvenements h2 { text-align: center; margin-bottom: 0.2rem; }
+#grandsEvenements { flex: 1; display: grid; grid-auto-rows: minmax(0, 1fr); gap: 0.45rem; max-height: 30rem; min-height: 0; }
+#grandsEvenements div { display: flex; align-items: center; gap: 0.9rem; padding: 0 1.1rem; border: 3px solid var(--c); border-left-width: 10px; border-radius: var(--rayon-petit); background: #fff; font-size: 1.45rem; line-height: 1.15; min-height: 0; overflow: hidden; }
+#grandsEvenements b { color: var(--c); font-size: 1.8rem; min-width: 1.6rem; text-align: center; }
+#overlayEnonce, .overlay-droite { position: absolute; inset: 0; z-index: 50; display: flex; }
+/* Statistiques cachées : on garde la place (rien ne bouge), mais on ne montre rien. */
+#voileStats { z-index: 40; }
+body:not(.stats-cachees) #voileStats { display: none; }
+body.stats-cachees #stats > .cadre, body.stats-cachees #bilanPari { visibility: hidden; }
+body:not(.voir-freq) #evenements .freq { visibility: hidden; }
+.carte-voile { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+    border: 2px dashed #b9c9be; border-radius: var(--rayon); background: repeating-linear-gradient(45deg, #f4f8f5, #f4f8f5 12px, #eef3ef 12px, #eef3ef 24px); }
+.carte-voile p { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--encre-douce); }
+#btnVoirStats { font-size: 1.15rem; padding: 0.5rem 1.4rem; }
+#btnStats.actif { background: var(--grille-forte); color: #fff; border-color: var(--grille-forte); }
+.carte-enonce.carte-cours { font-size: 1.3rem; line-height: 1.4; }
+.carte-cours .consigne { margin: 0 0 0.6rem; color: var(--encre-douce); }
+#numQuestion { float: right; font-size: 1rem; }
+.qc { padding: 0.3rem 0; }
+.qc .qc-texte { display: block; font-size: 1.45rem; margin-bottom: 0.7rem; }
+.qc-ligne { display: flex; align-items: center; gap: 0.6rem; }
+.qc-lettres { display: flex; gap: 0.3rem; }
+.qc-lettres { gap: 0.45rem; }
+.qc-lettres button { width: 3rem; padding: 0.3rem 0; font-size: 1.3rem; font-weight: 700; border: 2px solid var(--c); color: var(--c); background: #fff; }
+.qc-lettres button.choisi { background: var(--c); color: #fff; }
+.qc-verifier { padding: 0.2rem 0.7rem; }
+.qc-retour { margin-top: 0.9rem; font-size: 1.15rem; line-height: 1.4; }
+.qc-retour.oui { color: var(--succes); }
+.carte-cours .rappel { margin: 0 0 0.4rem; padding: 0.4rem 0.8rem; background: var(--bleu-fond); border-left: 5px solid var(--bleu); border-radius: var(--rayon-petit); }
+#listeBase { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; }
+#listeBase button { font-size: 1.2rem; padding: 0.25rem 0.2rem; line-height: 1.25; border: 2px solid var(--grille); text-align: center; white-space: nowrap; }
+#listeBase button::before { content: '☐ '; color: var(--encre-douce); }
+#listeBase button.choisi { background: #fff; color: var(--grille-forte); border-color: var(--grille-forte); }
+#listeBase button.choisi::before { content: '☑ '; color: var(--grille-forte); }
+#listeBase button.ok { border-color: var(--succes); background: #eef8f0; }
+#listeBase button.faux { border-color: var(--rouge); background: var(--rouge-fond); }
+#listeBase small { display: block; font-size: 0.72rem; line-height: 1.15; color: var(--bleu); }
+#grilleProba { display: grid; grid-template-columns: auto repeat(var(--nb), minmax(0, 1fr)) auto; border: 1px solid #c9dccf; border-radius: var(--rayon-petit); overflow: hidden; font-size: 1.05rem; }
+#grilleProba > * { padding: 0.3rem 0.25rem; text-align: center; border-left: 1px solid #c9dccf; border-top: 1px solid #c9dccf; min-width: 0; }
+#grilleProba .tete { background: #f1f8f3; font-weight: 700; color: var(--grille-forte); }
+#grilleProba .titre-l { text-align: right; font-weight: 700; color: var(--grille-forte); border-left: none; white-space: nowrap; padding-right: 0.5rem; }
+#grilleProba input { width: 100%; font: inherit; text-align: center; padding: 0.2rem 0; border: 2px solid var(--grille); border-radius: 4px; }
+#grilleProba input:focus { outline: none; border-color: var(--bleu); }
+#grilleProba input.ok { border-color: var(--succes); background: #eef8f0; }
+#grilleProba input.faux { border-color: var(--rouge); background: var(--rouge-fond); }
+#grilleProba .corr-p { font-size: 0.82rem; color: var(--bleu); line-height: 1.2; }
+#grilleProba .lu { font-size: 0.85rem; color: var(--encre-douce); padding-top: 0.1rem; padding-bottom: 0.1rem; }
+#grilleProba .total { background: #f6f7fb; font-weight: 700; padding-left: 0.6rem; padding-right: 0.6rem; white-space: nowrap; }
+#grilleProba .total b.ok { color: var(--succes); }
+#grilleProba .total b.faux { color: var(--rouge); }
+#grilleProba.serree { font-size: 0.88rem; }
+#grilleProba.serree .lu, #grilleProba.serree .corr-p { font-size: 0.72rem; }
+#totalProba { margin: 0.5rem 0 0; font-size: 1rem; color: var(--rouge); min-height: 1.3em; }
+#totalProba b.ok { color: var(--succes); }
+#totalProba b.faux { color: var(--rouge); }
+.qc-retour.non { color: var(--rouge); }
+.carte-enonce { background: #fff; border-radius: var(--rayon); border: 2px solid var(--accent); border-top-width: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.18); display: flex; flex-direction: column;
+    width: 100%; height: 100%; overflow-y: auto; padding: 1rem 1.6rem 1.1rem; font-size: 1.3rem; line-height: 1.42; }
+.carte-enonce h2 { margin: 0 0 0.6rem; color: var(--grille-forte); font-size: 1.7rem; }
+.carte-enonce p { margin: 0.4rem 0; }
+.carte-enonce h3 { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; color: var(--grille-forte); }
+.carte-enonce ul { margin: 0.2rem 0 0; padding-left: 1.6rem; }
+.carte-enonce li { margin: 0.2rem 0; }
+.carte-enonce .issue { background: var(--accent-clair); border-radius: var(--rayon-petit); padding: 0.5rem 0.8rem; font-size: 1.35rem; }
+.carte-enonce .pari { margin-top: 0.7rem; border-left: 5px solid var(--c); padding-left: 0.7rem; }
+.carte-enonce .pari b { color: var(--c); }
+
+@media (max-width: 700px) {
+    html { font-size: 15px; }
+    #activite { grid-template-columns: 1fr; padding: 0.8rem 16px; }
+    #reglages { margin: 0.8rem 16px; padding: 0.8rem; }
+    .reglage h2 { width: 100%; }
+    #editeur { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+    <div id="titre">Expériences aléatoires</div>
+    <button type="button" id="btnExp" class="cache" title="Changer d'expérience, ou régler celle-ci">Expérience ▾</button>
+    <div id="resume" class="cache"></div>
+    <div class="actions"><button type="button" id="btnEnonce" class="cache principal">Énoncé</button><span id="groupeCours" class="cache"><span class="lab-cours">Cours :</span><button type="button" id="btnCoursBase">base</button><button type="button" id="btnCours">événements</button><button type="button" id="btnCoursProba">probabilités</button></span><button type="button" id="btnStats" class="cache">Statistiques</button><button type="button" id="btnReglages" class="cache" title="Tous les réglages : l'expérience et le déroulement">⚙ Réglages</button></div>
+</header>
+<div id="menuExp" class="cache">
+    <h2>Choisir l'expérience</h2>
+    <div class="cartes" id="cartesMenuExp"></div>
+    <div class="bas"><button type="button" id="btnPropres">⚙ Régler cette expérience</button><button type="button" id="btnFermerMenuExp">Fermer</button></div>
+</div>
+
+<!-- ================= RÉGLAGES ================= -->
+<section id="reglages">
+    <p class="explication" id="explicationReglages"></p>
+
+    <div class="bloc-reglages" id="blocExp">
+        <h2 class="titre-bloc">L'expérience</h2>
+    <div class="reglage cartes-exp">
+        <div class="choix-ligne" id="choixExperience">
+            <button type="button" class="carte-choix" data-exp="qcm"><b>Un QCM rempli au hasard</b><small>Vrai/faux ou 3 ou 4 réponses ; on note le nombre de bonnes réponses.</small></button>
+            <button type="button" class="carte-choix" data-exp="pieces"><b>Le lancer de deux pièces</b><small>Deux pièces équilibrées ; on note le résultat, par exemple PF.</small></button>
+            <button type="button" class="carte-choix" data-exp="des"><b>Le lancer de deux dés</b><small>Un dé rouge, un dé vert ; on note la somme, par exemple 3 + 5 = 8.</small></button>
+            <button type="button" class="carte-choix" data-exp="urne"><b>Deux tirages dans une urne</b><small>Avec remise ; on note les couleurs, par exemple RB.</small></button>
+        </div>
+    </div>
+
+        <div class="propres">
+            <h3 id="titrePropres">Ses réglages</h3>
+    <div class="reglage urne-seul">
+        <h2 data-t="L'urne"></h2>
+        <div class="compo-urne">
+            <div class="choix-ligne puces-n"><span class="lab-urne">Boules rouges</span><span id="choixRouges" class="choix-ligne"></span></div>
+            <div class="choix-ligne puces-n"><span class="lab-urne">Boules bleues</span><span id="choixBleues" class="choix-ligne"></span></div>
+        </div>
+    </div>
+
+    <div class="reglage qcm-seul">
+        <h2 data-t="Réponses proposées"></h2>
+        <div class="choix-ligne" id="choixK">
+            <button type="button" data-k="2">2 : Vrai ou Faux</button>
+            <button type="button" data-k="3">3 réponses</button>
+            <button type="button" data-k="4">4 réponses</button>
+            <span style="color:var(--encre-douce)">une seule réponse est bonne</span>
+        </div>
+    </div>
+
+    <div class="reglage qcm-seul">
+        <h2 data-t="Les questions"></h2>
+        <div class="choix-ligne" id="choixSource">
+            <button type="button" class="carte-choix" data-source="calculs"><b>Calculs tirés au hasard</b><small id="detailCalculs"></small></button>
+            <button type="button" class="carte-choix" data-source="perso"><b>Mes questions</b><small id="detailPerso"></small></button>
+        </div>
+    </div>
+    <div id="editeur" class="cache">
+        <div id="enteteQCM"></div>
+        <div id="lignes"></div>
+        <div class="choix-ligne" id="outilsEditeur">
+            <button type="button" id="btnAjouter">+ Ajouter une question</button>
+            <button type="button" id="btnRemplir">Remplir avec 10 calculs au hasard</button>
+            <button type="button" id="btnExemples">Remettre les exemples</button>
+            <button type="button" id="btnVider">Tout effacer</button>
+        </div>
+    </div>
+
+    <div class="reglage qcm-seul">
+        <h2 data-t="Questions par QCM"></h2>
+        <div class="choix-ligne puces-n" id="choixN"></div>
+    </div>
+
+            <p class="aucun-reglage" id="aucunReglage"></p>
+        </div>
+    </div>
+
+    <div class="bloc-reglages" id="blocDeroule">
+        <h2 class="titre-bloc">Le déroulement</h2>
+    <div class="reglage">
+        <h2 data-t="Point de vue"></h2>
+        <div class="choix-ligne" id="choixMode">
+            <button type="button" class="carte-choix" data-mode="eleve"><b id="tModeEleve"></b><small id="dModeEleve"></small></button>
+            <button type="button" class="carte-choix" data-mode="foule"><b id="tModeFoule"></b><small id="dModeFoule"></small></button>
+        </div>
+    </div>
+
+    <div class="reglage" id="reglageFoule">
+        <h2 data-t="Nombre d'élèves" id="titreFoule"></h2>
+        <div class="choix-ligne" id="choixFoule">
+            <button type="button" data-foule="30">30 (une classe)</button>
+            <button type="button" data-foule="100">100</button>
+            <button type="button" data-foule="1000">1 000</button>
+            <button type="button" data-foule="10000">10 000</button>
+            <button type="button" data-foule="100000">100 000</button>
+        </div>
+    </div>
+
+    <div class="reglage">
+        <h2 data-t="Vitesse au départ"></h2>
+        <div class="choix-ligne" id="choixVitesse">
+            <button type="button" data-v="lent">Lent : on voit cliquer</button>
+            <button type="button" data-v="rapide">Rapide : des centaines par seconde</button>
+        </div>
+    </div>
+
+    <div class="reglage" style="border-top:1px dashed var(--grille);padding-top:0.6rem">
+        <h2>En option : jeu de gain</h2>
+        <div class="choix-ligne" id="choixAvecGain">
+            <button type="button" data-avec="non">Sans gain</button>
+            <button type="button" data-avec="oui">Avec un gain pour chaque issue</button>
+        </div>
+    </div>
+    <div id="blocGain">
+        <div class="ligne-gagnant"><span>Événement gagnant :</span><span id="choixGagnant"></span></div>
+        <div class="ligne-gagnant"><span>Si l'événement est réalisé : +</span><input type="number" id="gainG" min="0" step="1"><span>jetons ; sinon : −</span><input type="number" id="gainP" min="0" step="1"><span>jeton(s).</span></div>
+        <div class="ligne-gagnant"><span>Barème (modifiable issue par issue) :</span></div>
+        <div id="tableGains"></div>
+        <p id="conseilGain"></p>
+    </div>
+
+    </div>
+
+    <p id="messageReglages"></p>
+    <div class="choix-ligne"><button type="button" id="btnLancer" class="principal">Commencer</button>
+        <button type="button" id="btnRaz" style="margin-left:auto" title="Efface les réglages et les questions enregistrés dans ce navigateur">Tout remettre à zéro</button></div>
+</section>
+
+<!-- ================= ACTIVITÉ ================= -->
+<section id="activite" class="cache">
+    <div id="gauche">
+        <div class="cadre zone-exp">
+            <h3 id="titreCopie">L'expérience : la copie de l'élève <span id="numPartie"></span></h3>
+            <div id="feuille"></div>
+            <div id="note"></div>
+            <div id="bilanPari"></div>
+        </div>
+        <div class="cadre zone-commandes">
+            <span class="zone-titre">Commandes</span>
+            <div id="boutons">
+                <button type="button" data-b="une" id="btnUne">Une partie</button>
+                <button type="button" data-b="jouer" title="Jouer sans s'arrêter, à la vitesse choisie dessous">▶ Jouer</button>
+                <button type="button" data-b="pause">Pause</button>
+                <button type="button" data-b="stop" title="Arrêter, puis « Rejouer » recommence à zéro (même QCM pour une foule)">Arrêter</button>
+                <button type="button" data-b="raz" title="Tout recommencer à zéro : compteurs, fréquences, courbe (les réglages ne changent pas)">↺ À zéro</button>
+            </div>
+            <div id="vitesse"><span>Vitesse</span><div class="seg"><button type="button" data-v="lent">Lent</button><button type="button" data-v="rapide">Rapide</button></div></div>
+        </div>
+        <div class="cadre suivi"><div id="evenements"></div></div>
+        <!-- Pendant les questions de cours sur les événements : la liste des événements, en grand. -->
+        <div id="overlayEvenements" class="cache overlay-gauche">
+            <div class="carte-enonce">
+                <h2>Les événements</h2>
+                <p class="consigne" id="rappelExp"></p>
+                <div id="grandsEvenements"></div>
+            </div>
+        </div>
+    </div>
+    <div id="stats">
+        <div id="voileStats" class="overlay-droite">
+            <div class="carte-voile">
+                <p>Statistiques cachées</p>
+                <button type="button" id="btnVoirStats" class="principal">Afficher les statistiques</button>
+            </div>
+        </div>
+        <div id="overlayBase" class="cache overlay-droite">
+            <div class="carte-enonce carte-cours">
+                <h2>Questions de cours : la base</h2>
+                <p class="rappel">La probabilité d'un événement est un nombre compris entre <b>0</b> et <b>1</b>.</p>
+                <p class="consigne">Dans la liste, coche les nombres qui <b>peuvent être une probabilité</b>.</p>
+                <div id="listeBase"></div>
+                <p id="retourBase" class="qc-retour"></p>
+                <div class="choix-ligne" style="justify-content:flex-end;margin-top:auto;padding-top:0.6rem">
+                    <button type="button" id="btnFermerBase">Sortir</button>
+                    <button type="button" id="btnAutreBase">Autre liste</button>
+                    <button type="button" id="btnCorrigeBase">Correction</button>
+                    <button type="button" id="btnVerifBase" class="principal">Vérifier</button>
+                </div>
+            </div>
+        </div>
+        <div id="overlayCours" class="cache overlay-droite">
+            <div class="carte-enonce carte-cours">
+                <h2>Questions de cours : événements</h2>
+                <p class="consigne">Parmi les événements A à F (à gauche), donner : <span id="numQuestion"></span></p>
+                <div id="questionsCours"></div>
+                <div class="choix-ligne" style="justify-content:flex-end;margin-top:auto;padding-top:0.6rem">
+                    <button type="button" id="btnFermerCours">Sortir</button>
+                    <button type="button" id="btnSuiteCours" class="principal">Continuer</button>
+                </div>
+            </div>
+        </div>
+        <div id="overlayProba" class="cache overlay-droite">
+            <div class="carte-enonce carte-cours">
+                <h2>Questions de cours : probabilités</h2>
+                <p class="consigne">Répartir les <b>100 %</b> entre les issues : quelle est la probabilité de chaque issue ? On peut écrire 0,25 ou 1/4 ou 25 %.</p>
+                <div id="grilleProba"></div>
+                <p id="totalProba"></p>
+                <p id="retourProba" class="qc-retour"></p>
+                <div class="choix-ligne" style="justify-content:flex-end;margin-top:auto;padding-top:0.6rem">
+                    <button type="button" id="btnFermerProba">Sortir</button>
+                    <button type="button" id="btnCorrigeProba">Correction</button>
+                    <button type="button" id="btnVerifProba" class="principal">Vérifier</button>
+                </div>
+            </div>
+        </div>
+        <div id="overlayEnonce" class="cache">
+            <div class="carte-enonce">
+                <h2>Énoncé</h2>
+                <div id="texteEnonce"></div>
+                <div class="choix-ligne" style="justify-content:flex-end;margin-top:auto;padding-top:1rem">
+                    <button type="button" id="btnFermerEnonce" class="principal">Commencer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cadre repliable" data-cle="chiffres">
+            <h3>En chiffres</h3>
+            <div class="compteurs">
+                <span><span id="motParties">Parties</span> : <b id="sParties">0</b><span id="sSur"></span></span>
+                <span id="blocMoyenne">Moyenne : <b id="sMoy">–</b> <span id="sMoyAtt"></span></span>
+            </div>
+        </div>
+        <div class="cadre repliable" data-cle="notes">
+            <h3 style="white-space:nowrap"><em id="titreIssues">Issues : nombre de bonnes réponses</em> <button type="button" id="btnProba" class="bascule">☐ Probabilités</button></h3>
+            <svg id="diagramme" viewBox="0 0 780 196"></svg>
+            <div class="legende">
+                <span><i class="l-obs"></i>barre rouge : ce qui est arrivé</span>
+                <span id="legendeProba"><i class="l-pro"></i>trait bleu : ce que prévoit le calcul</span>
+            </div>
+        </div>
+        <div class="cadre repliable" data-cle="courbe">
+            <h3><em id="titreCourbe">Fréquence des événements quand le nombre de parties grandit</em></h3>
+            <svg id="courbe" viewBox="0 0 780 150"></svg>
+            <div id="explication"></div>
+        </div>
+        <div class="cadre repliable" id="cadreFoule" data-cle="foule">
+            <h3>La foule <span id="infoFoule"></span></h3>
+            <div id="mur"></div>
+        </div>
+    </div>
+</section>
+
+<div id="doigt" class="cache"></div>
+
+
+<script>
+(function () {
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const attendre = ms => new Promise(r => setTimeout(r, ms));
+    const entre = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+    const auHasard = t => t[Math.floor(Math.random() * t.length)];
+    const melanger = t => { for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; } return t; };
+    const pgcd = (a, b) => (b ? pgcd(b, a % b) : a);
+    const entier = x => x.toLocaleString('fr-FR');
+    const nombre = x => Number(x.toFixed(6)).toLocaleString('fr-FR', { maximumFractionDigits: 4 });
+    const pourcent = x => x > 0 && x < 0.0001 ? 'moins de 0,01 %'
+        : (100 * x).toLocaleString('fr-FR', { maximumFractionDigits: x < 0.01 && x > 0 ? 2 : 1 }) + ' %';
+    const echapper = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const MOINS = '−', ESP = ' ';
+    // Espaces insécables autour des signes, pour ne jamais couper « 7 × 8 ».
+    const espaces = t => t.replace(/ ([=<>×÷+−])( |$)/g, (m, s, fin) => ESP + s + (fin ? ESP : ''));
+
+    /* ============ Les questions : { texte, choix: [..], bonne: indice de la bonne réponse } ============ */
+    const vf = (texte, vrai) => ({ texte, choix: ['Vrai', 'Faux'], bonne: vrai ? 0 : 1 });
+
+    // Une question de calcul : vrai/faux (k = 2) ou k réponses dont une seule est bonne.
+    function questionCalcul(k, enonce, r, candidats, lien = ' = ', fmt = nombre) {
+        const faux = melanger([...new Set(candidats.map(x => +x.toFixed(6)))].filter(x => x >= 0 && Math.abs(x - r) > 1e-9));
+        if (k === 2) {
+            const vrai = Math.random() < 0.5;
+            return vf(espaces(`${enonce}${lien}${fmt(vrai ? r : faux[0])}${lien === ' est ' ? '.' : ''}`), vrai);
+        }
+        const valeurs = melanger([r, ...faux.slice(0, k - 1)]);
+        return { texte: espaces(`${enonce}${lien.trimEnd()}`), choix: valeurs.map(fmt), bonne: valeurs.indexOf(r) };
+    }
+
+    const GENERATEURS = [
+        k => { const a = entre(2, 9), b = entre(3, 10), r = a * b;
+            return questionCalcul(k, `${a} × ${b}`, r, [r - 2, r - 1, r + 1, r + 2, r - a, r + a, r - b, r + b]); },
+        k => { const a = entre(15, 89), b = entre(12, 69), r = a + b;
+            return questionCalcul(k, `${a} + ${b}`, r, [r - 10, r - 2, r - 1, r + 1, r + 2, r + 10]); },
+        k => { const a = entre(40, 99), b = entre(11, a - 12), r = a - b;
+            return questionCalcul(k, `${a} ${MOINS} ${b}`, r, [r - 10, r - 2, r - 1, r + 1, r + 2, r + 10]); },
+        k => { const x = entre(11, 999) / auHasard([10, 100]), m = auHasard([10, 100, 1000]), r = x * m;
+            return questionCalcul(k, `${nombre(x)} × ${nombre(m)}`, r, [r * 10, r / 10, r * 100, r / 100]); },
+        k => { const b = entre(2, 9), q = entre(3, 12);
+            return questionCalcul(k, `${b * q} ÷ ${b}`, q, [q - 2, q - 1, q + 1, q + 2]); },
+        k => { const N = 2 * entre(6, 49), r = N / 2;
+            return questionCalcul(k, `La moitié de ${N}`, r, [r - 1, r + 1, r + 5, r - 5, N, N + 2], ' est '); },
+        k => { // comparer des décimaux (piège classique : 3,5 et 3,45)
+            const e = entre(1, 9), formes = () => e + auHasard([entre(1, 9) / 10, entre(11, 99) / 100, entre(101, 999) / 1000]);
+            const vals = new Set();
+            while (vals.size < Math.max(k, 2)) vals.add(+formes().toFixed(3));
+            const t = [...vals];
+            if (k === 2) { const vrai = Math.random() < 0.5, grand = t[0] > t[1];
+                return vf(espaces(`${nombre(t[0])} ${vrai === grand ? '>' : '<'} ${nombre(t[1])}`), vrai); }
+            return { texte: 'Le plus grand :', choix: t.map(nombre), bonne: t.indexOf(Math.max(...t)) };
+        }
+    ];
+    const calculAuHasard = k => auHasard(GENERATEURS)(k);
+
+    /* ============ Réglages ============ */
+    const EXEMPLES_VF = [
+        ['Un carré est un rectangle.', true], ['0,5 est plus grand que 0,25.', true], ['Un triangle peut avoir deux angles droits.', false],
+        ['1 h = 100 min', false], ['Le périmètre d\'un carré de côté 3 cm est 9 cm.', false], ['3 × 0,1 = 0,3', true]
+    ].map(([texte, vrai]) => ({ texte, vrai }));
+    const EXEMPLES_QCM = [
+        ['7 × 8 =', '56', ['54', '48', '63']], ['Nombre d\'axes de symétrie d\'un carré :', '4', ['2', '1', '8']],
+        ['0,5 + 0,25 =', '0,75', ['0,30', '0,525', '0,7']], ['1 h =', '60 min', ['100 min', '30 min', '120 min']],
+        ['Périmètre d\'un carré de côté 3 cm :', '12 cm', ['9 cm', '6 cm', '3 cm']], ['La moitié de 3 est', '1,5', ['1', '3,5', '2']]
+    ].map(([texte, bonne, mauvaises]) => ({ texte, bonne, mauvaises }));
+    const CLE = 'quizHasard.reglages2';
+    const reglages = { experience: 'qcm', mode: 'eleve', avecGain: false, gainsPieces: [3, -1, -1, 0], gainsUrne: [-1, 2, 2, -1], gainsDes: [-1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1], rouges: 3, bleues: 2, gainsQCM: null, gagnant: null, gainG: 3, gainP: 1, k: 2, source: 'calculs', n: 5, foule: 100, vitesse: 'lent',
+        affirmations: EXEMPLES_VF.map(a => ({ ...a })), qcm: EXEMPLES_QCM.map(q => ({ ...q, mauvaises: [...q.mauvaises] })) };
+    try {
+        const lu = JSON.parse(localStorage.getItem(CLE)) || {};
+        const dans = (v, liste) => liste.includes(v);
+        const nombres = t => Array.isArray(t) && t.every(Number.isFinite);
+        if (dans(lu.mode, ['eleve', 'foule'])) reglages.mode = lu.mode;
+        if (dans(lu.experience, ['qcm', 'pieces', 'urne', 'des'])) reglages.experience = lu.experience;
+        if (nombres(lu.gainsUrne) && lu.gainsUrne.length === 4) reglages.gainsUrne = lu.gainsUrne;
+        if (nombres(lu.gainsDes) && lu.gainsDes.length === 11) reglages.gainsDes = lu.gainsDes;
+        ['rouges', 'bleues'].forEach(c => { if (Number.isInteger(lu[c]) && lu[c] >= 1 && lu[c] <= 9) reglages[c] = lu[c]; });
+        if (typeof lu.avecGain === 'boolean') reglages.avecGain = lu.avecGain;
+        if (nombres(lu.gainsPieces) && lu.gainsPieces.length === 4) reglages.gainsPieces = lu.gainsPieces;
+        if (nombres(lu.gainsQCM)) reglages.gainsQCM = lu.gainsQCM;
+        if (dans(lu.gagnant, ['A', 'B', 'C', 'D', 'E', 'F'])) reglages.gagnant = lu.gagnant;
+        ['gainG', 'gainP'].forEach(c => { if (Number.isFinite(lu[c]) && lu[c] >= 0) reglages[c] = lu[c]; });
+        if (dans(lu.k, [2, 3, 4])) reglages.k = lu.k;
+        if (dans(lu.source, ['calculs', 'perso'])) reglages.source = lu.source;
+        if (Number.isInteger(lu.n) && lu.n >= 1 && lu.n <= 10) reglages.n = lu.n;
+        if (dans(lu.foule, [30, 100, 1000, 10000, 100000])) reglages.foule = lu.foule;
+        if (dans(lu.vitesse, ['lent', 'rapide'])) reglages.vitesse = lu.vitesse;
+        if (Array.isArray(lu.affirmations)) reglages.affirmations = lu.affirmations
+            .filter(a => a && typeof a.texte === 'string').map(a => ({ texte: a.texte, vrai: !!a.vrai }));
+        if (Array.isArray(lu.qcm)) reglages.qcm = lu.qcm.filter(q => q && typeof q.texte === 'string')
+            .map(q => ({ texte: q.texte, bonne: String(q.bonne ?? ''), mauvaises: [0, 1, 2].map(i => String((q.mauvaises || [])[i] ?? '')) }));
+    } catch (e) {}
+    const enregistrer = () => { try { localStorage.setItem(CLE, JSON.stringify(reglages)); } catch (e) {} };
+
+    const choisirDans = (conteneur, attribut, valeur) =>
+        conteneur.querySelectorAll('button').forEach(b => b.classList.toggle('choisi', b.dataset[attribut] === String(valeur)));
+
+    // Les questions écrites par le professeur, complètes pour le nombre de réponses choisi.
+    function questionsPerso() {
+        const k = reglages.k;
+        if (k === 2) return reglages.affirmations.filter(a => a.texte.trim()).map(a => vf(a.texte.trim(), a.vrai));
+        return reglages.qcm.filter(q => q.texte.trim() && q.bonne.trim() && q.mauvaises.slice(0, k - 1).every(m => m && m.trim()))
+            .map(q => {
+                const valeurs = melanger([q.bonne.trim(), ...q.mauvaises.slice(0, k - 1).map(m => m.trim())]);
+                return { texte: q.texte.trim(), choix: valeurs, bonne: valeurs.indexOf(q.bonne.trim()) };
+            });
+    }
+
+    function dessinerLignes() {
+        const zone = $('lignes'), k = reglages.k;
+        zone.innerHTML = '';
+        $('enteteQCM').innerHTML = k === 2 ? '' : `<span style="flex:3">Question</span><span style="flex:1;color:var(--succes)">Bonne réponse</span><span style="flex:${k - 1};color:var(--rouge)">Mauvaises réponses</span><span style="width:2.2rem"></span>`;
+        if (k === 2) {
+            reglages.affirmations.forEach((a, i) => {
+                const l = document.createElement('div');
+                l.className = 'ligne';
+                l.innerHTML = `<span class="num">${i + 1}</span><input class="q" type="text" value="${echapper(a.texte)}" placeholder="Écris une affirmation…">
+                    <button type="button" class="vf-reg vrai ${a.vrai ? 'choisi' : ''}">Vrai</button><button type="button" class="vf-reg faux ${a.vrai ? '' : 'choisi'}">Faux</button>
+                    <button type="button" class="suppr" title="Supprimer">✕</button>`;
+                l.querySelector('input').oninput = e => { a.texte = e.target.value; enregistrer(); };
+                l.querySelector('.vrai').onclick = () => { a.vrai = true; dessinerLignes(); enregistrer(); };
+                l.querySelector('.faux').onclick = () => { a.vrai = false; dessinerLignes(); enregistrer(); };
+                l.querySelector('.suppr').onclick = () => { reglages.affirmations.splice(i, 1); dessinerLignes(); enregistrer(); };
+                zone.append(l);
+            });
+        } else {
+            reglages.qcm.forEach((q, i) => {
+                const l = document.createElement('div');
+                l.className = 'ligne';
+                l.innerHTML = `<span class="num">${i + 1}</span><input class="q" type="text" value="${echapper(q.texte)}" placeholder="Question…">
+                    <input class="bonne" type="text" value="${echapper(q.bonne)}">
+                    ${Array.from({ length: k - 1 }, (_, j) => `<input class="mauvaise" data-j="${j}" type="text" value="${echapper(q.mauvaises[j] || '')}">`).join('')}
+                    <button type="button" class="suppr" title="Supprimer">✕</button>`;
+                l.querySelector('.q').oninput = e => { q.texte = e.target.value; enregistrer(); };
+                l.querySelector('.bonne').oninput = e => { q.bonne = e.target.value; enregistrer(); };
+                l.querySelectorAll('.mauvaise').forEach(inp => inp.oninput = e => { q.mauvaises[+inp.dataset.j] = e.target.value; enregistrer(); });
+                l.querySelector('.suppr').onclick = () => { reglages.qcm.splice(i, 1); dessinerLignes(); enregistrer(); };
+                zone.append(l);
+            });
+        }
+    }
+
+    function dessinerReglages() {
+        const foule = reglages.mode === 'foule', exp = reglages.experience, pieces = exp === 'pieces', urne = exp === 'urne', des = exp === 'des';
+        EVENEMENTS = evenementsPour(reglages.experience);
+        choisirDans($('choixExperience'), 'exp', reglages.experience);
+        // Textes qui dépendent de l'expérience choisie.
+        $('explicationReglages').innerHTML = des
+            ? 'On lance <b>deux dés équilibrés</b> à six faces, <b>un rouge et un vert</b>, et on note la <b>somme</b>. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.'
+            : urne
+            ? 'Une urne contient des boules rouges et des boules bleues. On tire une boule au hasard, on note sa couleur, on la <b>remet dans l\'urne</b>, puis on en tire une deuxième. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.'
+            : pieces
+            ? 'On lance <b>deux pièces de monnaie équilibrées</b> et on note le résultat. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.'
+            : 'Des élèves fictifs répondent à un QCM <b>sans lire les questions</b> : pour chacune, ils cliquent sur une des réponses au hasard. On regarde les notes obtenues, et la fréquence de chaque événement quand on recommence beaucoup de fois.';
+        $('tModeEleve').textContent = des ? 'Un joueur qui relance' : urne ? 'Un joueur qui recommence' : pieces ? 'Un joueur qui relance' : 'Un élève qui rejoue';
+        $('dModeEleve').textContent = des ? 'Le même joueur lance les deux dés des centaines de fois.' : urne ? 'Le même joueur fait les deux tirages des centaines de fois.' : pieces ? 'Le même joueur lance les deux pièces des centaines de fois.' : 'Le même élève fait des centaines de parties, avec de nouvelles questions à chaque fois.';
+        $('tModeFoule').textContent = urne || pieces || des ? 'Une foule' : 'Une foule d\'élèves';
+        $('dModeFoule').textContent = des ? 'Chaque personne lance les deux dés une seule fois.' : urne ? 'Chaque personne fait les deux tirages une seule fois.' : pieces ? 'Chaque personne lance les deux pièces une seule fois.' : 'Chaque élève répond une seule fois, et tous ont le même QCM.';
+        $('titreFoule').dataset.t = urne || pieces || des ? 'Nombre de personnes' : 'Nombre d\'élèves';
+        document.querySelectorAll('#reglages .qcm-seul').forEach(el => el.classList.toggle('cache-exp', exp !== 'qcm'));
+        document.querySelectorAll('#reglages .urne-seul').forEach(el => el.classList.toggle('cache-exp', !urne));
+        $('editeur').classList.toggle('cache-exp', exp !== 'qcm');
+        choisirDans($('choixRouges'), 'r', reglages.rouges);
+        choisirDans($('choixBleues'), 'b', reglages.bleues);
+        choisirDans($('choixMode'), 'mode', reglages.mode);
+        choisirDans($('choixK'), 'k', reglages.k);
+        choisirDans($('choixSource'), 'source', reglages.source);
+        choisirDans($('choixN'), 'n', reglages.n);
+        choisirDans($('choixFoule'), 'foule', reglages.foule);
+        choisirDans($('choixVitesse'), 'v', reglages.vitesse);
+        $('reglageFoule').classList.toggle('cache', !foule);
+        // Numérotation des réglages visibles.
+        document.querySelectorAll('#reglages .bloc-reglages').forEach(bloc => {
+            let num = 0;
+            bloc.querySelectorAll('.reglage h2[data-t]').forEach(h => {
+                const r = h.closest('.reglage');
+                if (r.classList.contains('cache') || r.classList.contains('cache-exp')) return;
+                h.textContent = `${++num}. ${h.dataset.t}`;
+            });
+        });
+        $('aucunReglage').classList.toggle('cache-exp', !(pieces || des));
+        $('aucunReglage').textContent = des ? 'Pas de réglage : les deux dés sont équilibrés, à six faces.' : 'Pas de réglage : les deux pièces sont équilibrées.';
+        $('titrePropres').textContent = 'Ses réglages : ' + (urne ? 'l\'urne' : pieces ? 'les deux pièces' : des ? 'les deux dés' : 'le QCM');
+        choisirDans($('choixAvecGain'), 'avec', reglages.avecGain ? 'oui' : 'non');
+        $('blocGain').classList.toggle('cache', !reglages.avecGain);
+        if (reglages.avecGain) dessinerBareme();
+        $('detailCalculs').textContent = (reglages.k === 2 ? 'Niveau 6e, par exemple « 7 × 8 = 54 » vrai ou faux ; ' : 'Niveau 6e, par exemple « 7 × 8 = ? » ; ')
+            + (foule ? 'tirés une fois, le même QCM pour tous.' : 'nouveaux calculs à chaque partie.');
+        $('detailPerso').textContent = reglages.k === 2 ? 'J\'écris des affirmations et je dis si elles sont vraies ou fausses.'
+            : `J'écris chaque question avec sa bonne réponse et ${reglages.k - 1} mauvaises.`;
+        $('editeur').classList.toggle('cache', reglages.source !== 'perso');
+        $('btnLancer').textContent = 'Commencer';
+        dessinerLignes();
+        $('messageReglages').textContent = '';
+    }
+
+    for (let k = 1; k <= 10; k++) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.dataset.n = k; b.textContent = k;
+        $('choixN').append(b);
+    }
+    for (let k = 1; k <= 9; k++) {
+        $('choixRouges').insertAdjacentHTML('beforeend', `<button type="button" data-r="${k}">${k}</button>`);
+        $('choixBleues').insertAdjacentHTML('beforeend', `<button type="button" data-b="${k}">${k}</button>`);
+    }
+    const lier = (id, attribut, cle, conv = x => x) => $(id).querySelectorAll('button').forEach(b =>
+        b.onclick = () => { reglages[cle] = conv(b.dataset[attribut]); enregistrer(); dessinerReglages(); });
+    lier('choixMode', 'mode', 'mode');
+    lier('choixExperience', 'exp', 'experience');
+    // Changer d'expérience ou de nombre de questions : le barème suit l'événement gagnant.
+    const avecGagnant = (id, attribut, cle, conv = x => x) => $(id).querySelectorAll('button').forEach(b =>
+        b.onclick = () => { reglages[cle] = conv(b.dataset[attribut]); if (reglages.gagnant) appliquerGagnant(); enregistrer(); dessinerReglages(); });
+    setTimeout(() => { avecGagnant('choixExperience', 'exp', 'experience'); avecGagnant('choixN', 'n', 'n', Number); });
+    lier('choixK', 'k', 'k', Number);
+    lier('choixSource', 'source', 'source');
+    lier('choixN', 'n', 'n', Number);
+    lier('choixFoule', 'foule', 'foule', Number);
+    lier('choixRouges', 'r', 'rouges', Number);
+    lier('choixBleues', 'b', 'bleues', Number);
+    lier('choixVitesse', 'v', 'vitesse');
+    lier('choixAvecGain', 'avec', 'avecGain', v => v === 'oui');
+
+    /* ---------- Le barème du jeu de gain ---------- */
+    // Les gains de chaque issue, pour l'expérience choisie (par défaut : PP +3, PF −1, FP −1, FF 0 ; QCM : tout bon +20, sinon −1).
+    function gainsCourants(r = reglages) {
+        if (r.experience === 'pieces') return r.gainsPieces;
+        if (r.experience === 'urne') return r.gainsUrne;
+        if (r.experience === 'des') return r.gainsDes;
+        if (!Array.isArray(r.gainsQCM) || r.gainsQCM.length !== r.n + 1) r.gainsQCM = Array.from({ length: r.n + 1 }, (_, j) => j === r.n ? 20 : -1);
+        return r.gainsQCM;
+    }
+    // Gain moyen prévu : somme des « probabilité × gain ».
+    function gainPrevu(r = reglages) {
+        const m = modele(r), g = gainsCourants(r);
+        return m.favorables.reduce((s, f, j) => s + f / m.total * g[j], 0);
+    }
+    const sorteDeJeu = x => Math.abs(x) < 1e-9 ? 'jeu équitable' : x > 0 ? 'jeu favorable' : 'jeu défavorable';
+    function majConseilGain() {
+        const x = gainPrevu(), unite = reglages.experience === 'pieces' || reglages.experience === 'des' ? 'lancer' : reglages.experience === 'urne' ? 'expérience' : 'partie';
+        $('conseilGain').innerHTML = `Gain moyen prévu : <b>${jetons(Math.round(x * 100) / 100)}</b> par ${unite} (${sorteDeJeu(x)}).`
+            + (reglages.gagnant && !baremeDuGagnant() ? ' Le barème a été retouché : il ne suit plus exactement l\'événement gagnant.' : '');
+    }
+    // L'événement gagnant remplit le barème : +G pour ses issues, −P pour les autres.
+    function appliquerGagnant() {
+        const e = evenementsPour(reglages.experience).find(x => x.id === reglages.gagnant);
+        if (!e) return;
+        const m = modele(reglages), g = gainsCourants();
+        m.issues.forEach((_, j) => { g[j] = e.testAvec(j, reglages.n) ? reglages.gainG : -reglages.gainP; });
+    }
+    // Le barème correspond-il encore exactement à l'événement gagnant ?
+    function baremeDuGagnant(r = reglages, g = gainsCourants(r)) {
+        const e = evenementsPour(r.experience).find(x => x.id === r.gagnant);
+        if (!e) return null;
+        const ok = g.every((v, j) => v === (e.testAvec(j, r.n) ? r.gainG : -r.gainP));
+        return ok ? e : null;
+    }
+    function dessinerBareme() {
+        const zone = $('choixGagnant');
+        zone.innerHTML = EVENEMENTS.map(e => `<button type="button" data-g="${e.id}" style="--c:${e.couleur}" title="${e.court}" class="${reglages.gagnant === e.id ? 'choisi' : ''}">${e.id}</button>`).join('')
+            + `<span style="color:var(--encre-douce)">${reglages.gagnant ? '« ' + EVENEMENTS.find(e => e.id === reglages.gagnant).court + ' »' : ''}</span>`;
+        zone.querySelectorAll('button').forEach(b => b.onclick = () => { reglages.gagnant = b.dataset.g; appliquerGagnant(); enregistrer(); dessinerReglages(); });
+        if (document.activeElement !== $('gainG')) $('gainG').value = reglages.gainG;
+        if (document.activeElement !== $('gainP')) $('gainP').value = reglages.gainP;
+        const m = modele(reglages), g = gainsCourants(), t = $('tableGains');
+        t.style.setProperty('--nb', m.issues.length);
+        t.innerHTML = '<span class="tete titre-l">Issue</span>' + m.issues.map(x => `<span class="tete">${x}</span>`).join('')
+            + '<span class="titre-l">Gain</span>' + m.issues.map((x, j) => `<span><input type="number" step="1" data-j="${j}" value="${g[j]}" aria-label="gain de l'issue ${x}"></span>`).join('');
+        t.querySelectorAll('input').forEach(inp => inp.oninput = () => {
+            const v = Number(inp.value);
+            if (inp.value === '' || !Number.isFinite(v)) return;
+            gainsCourants()[+inp.dataset.j] = v; enregistrer(); majConseilGain();
+        });
+        majConseilGain();
+    }
+    ['gainG', 'gainP'].forEach(id => $(id).oninput = () => {
+        const v = Number($(id).value);
+        if ($(id).value === '' || !Number.isFinite(v) || v < 0) return;
+        reglages[id] = v; appliquerGagnant(); enregistrer(); dessinerBareme();
+    });
+    setTimeout(dessinerReglages);
+    $('btnRaz').onclick = () => {
+        if (!confirm('Remettre tous les réglages comme au départ ? Vos questions écrites seront effacées.')) return;
+        try { localStorage.removeItem(CLE); localStorage.removeItem('quizHasard.replis'); localStorage.removeItem('quizHasard.reglages'); } catch (e) {}
+        location.reload();
+    };
+    $('btnAjouter').onclick = () => {
+        if (reglages.k === 2) reglages.affirmations.push({ texte: '', vrai: true });
+        else reglages.qcm.push({ texte: '', bonne: '', mauvaises: ['', '', ''] });
+        dessinerLignes(); enregistrer();
+        const inputs = $('lignes').querySelectorAll('input.q'); inputs[inputs.length - 1].focus();
+    };
+    $('btnRemplir').onclick = () => {
+        if (reglages.k === 2) reglages.affirmations = Array.from({ length: 10 }, () => { const q = calculAuHasard(2); return { texte: q.texte, vrai: q.bonne === 0 }; });
+        else reglages.qcm = Array.from({ length: 10 }, () => {
+            const q = calculAuHasard(4);
+            return { texte: q.texte, bonne: q.choix[q.bonne], mauvaises: q.choix.filter((_, i) => i !== q.bonne) };
+        });
+        dessinerLignes(); enregistrer();
+    };
+    $('btnExemples').onclick = () => {
+        if (reglages.k === 2) reglages.affirmations = EXEMPLES_VF.map(a => ({ ...a }));
+        else reglages.qcm = EXEMPLES_QCM.map(q => ({ ...q, mauvaises: [...q.mauvaises] }));
+        dessinerLignes(); enregistrer();
+    };
+    $('btnVider').onclick = () => { if (reglages.k === 2) reglages.affirmations = []; else reglages.qcm = []; dessinerLignes(); enregistrer(); };
+
+    /* ============ Probabilités : loi binomiale de paramètres n et 1/k ============ */
+    function combinaisons(n, j) { let c = 1; for (let i = 1; i <= j; i++) c = c * (n - j + i) / i; return Math.round(c); }
+
+    // Le modèle de l'expérience : les issues, et pour chacune le nombre de façons de l'obtenir
+    // parmi « total » façons toutes aussi probables.
+    function modele(r) {
+        if (r.experience === 'pieces') return { issues: ['PP', 'PF', 'FP', 'FF'], favorables: [1, 1, 1, 1], total: 4 };
+        // Urne avec remise : chaque boule compte, (rouges + bleues)² façons toutes aussi probables.
+        // Deux dés (un rouge, un vert) : 36 couples tous aussi probables ; la somme s fait min(s − 1, 13 − s) couples.
+        if (r.experience === 'des') return { issues: Array.from({ length: 11 }, (_, j) => String(j + 2)),
+            favorables: Array.from({ length: 11 }, (_, j) => Math.min(j + 1, 11 - j)), total: 36 };
+        if (r.experience === 'urne') { const a = r.rouges, b = r.bleues;
+            return { issues: ['RR', 'RB', 'BR', 'BB'], favorables: [a * a, a * b, b * a, b * b], total: (a + b) ** 2 }; }
+        const nn = r.n, kk = r.k;
+        return { issues: Array.from({ length: nn + 1 }, (_, j) => String(j)),
+            favorables: Array.from({ length: nn + 1 }, (_, j) => combinaisons(nn, j) * (kk - 1) ** (nn - j)), total: kk ** nn };
+    }
+
+    // Les événements que l'on peut suivre sur la courbe, chacun avec sa couleur.
+    // Deux pièces : issues PP (0), PF (1), FP (2), FF (3).
+    const EV_PIECES = [
+        { id: 'A', court: 'obtenir deux fois Pile', couleur: '#e67e22', testAvec: i => i === 0 },
+        { id: 'B', court: 'obtenir au moins une fois Pile', couleur: '#8e44ad', testAvec: i => i !== 3 },
+        { id: 'C', court: 'obtenir deux faces différentes', couleur: '#c2185b', testAvec: i => i === 1 || i === 2 },
+        { id: 'D', court: 'obtenir deux fois Face', couleur: '#138d75', testAvec: i => i === 3 },
+        { id: 'E', court: 'obtenir trois fois Pile', couleur: '#7f8c8d', testAvec: () => false },
+        { id: 'F', court: 'obtenir Pile ou Face avec la première pièce', couleur: '#2e86c1', testAvec: () => true }
+    ];
+    // Urne : issues RR (0), RB (1), BR (2), BB (3).
+    const EV_URNE = [
+        { id: 'A', court: 'tirer deux boules rouges', couleur: '#e67e22', testAvec: i => i === 0 },
+        { id: 'B', court: 'tirer au moins une boule rouge', couleur: '#8e44ad', testAvec: i => i !== 3 },
+        { id: 'C', court: 'tirer deux boules de couleurs différentes', couleur: '#c2185b', testAvec: i => i === 1 || i === 2 },
+        { id: 'D', court: 'tirer deux boules bleues', couleur: '#138d75', testAvec: i => i === 3 },
+        { id: 'E', court: 'tirer une boule verte', couleur: '#7f8c8d', testAvec: () => false },
+        { id: 'F', court: 'tirer une boule rouge ou bleue au premier tirage', couleur: '#2e86c1', testAvec: () => true }
+    ];
+    // Deux dés : l'issue j correspond à la somme j + 2.
+    const EV_DES = [
+        { id: 'A', court: 'obtenir une somme égale à 7', couleur: '#e67e22', testAvec: j => j + 2 === 7 },
+        { id: 'B', court: 'obtenir une somme paire', couleur: '#8e44ad', testAvec: j => (j + 2) % 2 === 0 },
+        { id: 'C', court: 'obtenir une somme supérieure ou égale à 10', couleur: '#c2185b', testAvec: j => j + 2 >= 10 },
+        { id: 'D', court: 'obtenir une somme impaire', couleur: '#138d75', testAvec: j => (j + 2) % 2 === 1 },
+        { id: 'E', court: 'obtenir une somme égale à 13', couleur: '#7f8c8d', testAvec: () => false },
+        { id: 'F', court: 'obtenir une somme comprise entre 2 et 12', couleur: '#2e86c1', testAvec: () => true }
+    ];
+    const EV_QCM = [
+        { id: 'A', court: 'avoir tout bon', couleur: '#e67e22', testAvec: (note, nn) => note === nn },
+        { id: 'B', court: 'avoir une seule erreur', couleur: '#8e44ad', testAvec: (note, nn) => note === nn - 1 },
+        { id: 'C', court: 'avoir au moins une erreur', couleur: '#c2185b', testAvec: (note, nn) => note < nn },
+        { id: 'D', court: 'avoir tout faux', couleur: '#138d75', testAvec: note => note === 0 },
+        // E est impossible et F est certain ; leur texte suit le nombre de questions.
+        { id: 'E', get court() { return `avoir ${reglages.n + 1} bonnes réponses`; }, couleur: '#7f8c8d', testAvec: (note, nn) => note === nn + 1 },
+        { id: 'F', get court() { return `avoir au plus ${reglages.n} bonnes réponses`; }, couleur: '#2e86c1', testAvec: (note, nn) => note <= nn }
+    ];
+    [...EV_QCM, ...EV_PIECES, ...EV_URNE, ...EV_DES].forEach(e => { e.test = issue => e.testAvec(issue, n); });
+    const evenementsPour = exp => exp === 'pieces' ? EV_PIECES : exp === 'urne' ? EV_URNE : exp === 'des' ? EV_DES : EV_QCM;
+    let EVENEMENTS = EV_QCM;
+    let actifs = ['A'], focus = 'A';
+    // Les probabilités calculées ne s'affichent que sur demande (bouton « Afficher les probabilités »).
+    let voirProba = false;
+    // Étiquette d'un événement : « A : "avoir tout bon" ».
+    const etiq = e => `${e.id} : « ${e.court} »`;
+    const phrase = e => `${e.id} « ${e.court} »`;   // dans une phrase, sans deux-points
+
+    /* ============ Déroulement ============ */
+    let course = 0;
+    let vitesse = 'lent', pause = false, arrete = false, unePartie = false;
+    let n, k, total, favorables, P, stats, qcmFixe, mode, limite, MOTS;
+    let EXP = 'qcm', NI = 0, LIB = [], GAINS = [], GAGNANT = null;   // GAGNANT : l'événement gagnant du jeu, s'il y en a un   // l'expérience, le nombre d'issues, leurs noms
+    const textePause = () => { $('boutons').querySelector('[data-b=pause]').textContent = pause ? 'Reprendre' : 'Pause'; };
+    const texteStop = t => { $('boutons').querySelector('[data-b=stop]').textContent = t; };
+
+    function nouvellesStats() {
+        stats = { parties: 0, somme: 0, cagnotte: 0, compte: new Array(NI).fill(0), derniere: null, mur: [],
+            reussites: Object.fromEntries(EVENEMENTS.map(e => [e.id, 0])), courbes: Object.fromEntries(EVENEMENTS.map(e => [e.id, []])) };
+    }
+
+    function construireQCM() {
+        if (reglages.source === 'calculs') return Array.from({ length: n }, () => calculAuHasard(k));
+        const liste = questionsPerso();
+        if (liste.length === n) return liste;
+        return Array.from({ length: n }, () => liste.splice(Math.floor(Math.random() * liste.length), 1)[0]);
+    }
+    const questionsDeLaPartie = () => mode === 'foule' ? qcmFixe : construireQCM();
+
+    const NOM_FACE = { P: 'Pile', F: 'Face' };
+    function dessinerScene() {
+        $('feuille').className = 'scene';
+        $('feuille').innerHTML = `<div class="scene-pieces">
+            <div class="pieces">
+                <div class="piece-bloc"><div class="piece" id="piece1">?</div><span>1<sup>re</sup> pièce</span></div>
+                <div class="piece-bloc"><div class="piece" id="piece2">?</div><span>2<sup>e</sup> pièce</span></div>
+            </div></div>`;
+        $('note').innerHTML = '<span class="lab">Issue :</span><span class="attente">les pièces ne sont pas encore lancées</span>';
+    }
+    const tirerPieces = () => (Math.random() < 0.5 ? 'P' : 'F') + (Math.random() < 0.5 ? 'P' : 'F');
+    function poserPieces(r) { $('piece1').textContent = r[0]; $('piece2').textContent = r[1]; }
+
+    // L'urne : ses boules (rouges d'abord), et les deux places des boules tirées.
+    function dessinerUrne() {
+        $('feuille').className = 'scene';
+        const a = reglages.rouges, b = reglages.bleues;
+        $('feuille').innerHTML = `<div class="scene-urne">
+            <div class="urne" id="urne">${Array.from({ length: a + b }, (_, i) => `<div class="boule ${i < a ? 'R' : 'B'}" data-i="${i}"></div>`).join('')}</div>
+            <div><div class="tirages">
+                <div class="tirage"><div class="place" id="place1">?</div><span>1<sup>er</sup> tirage</span></div>
+                <div class="tirage"><div class="place" id="place2">?</div><span>2<sup>e</sup> tirage</span></div>
+            </div></div></div>`;
+        $('note').innerHTML = '<span class="lab">Issue :</span><span class="attente">les boules ne sont pas encore tirées</span>';
+    }
+    // Un tirage : le numéro de la boule (toutes aussi probables) ; les rouges sont les premières.
+    const tirerBoule = () => Math.floor(Math.random() * (reglages.rouges + reglages.bleues));
+    const couleurBoule = i => i < reglages.rouges ? 'R' : 'B';
+    const tirerUrne = () => couleurBoule(tirerBoule()) + couleurBoule(tirerBoule());
+    function poserBoule(place, c) { $(place).innerHTML = `<div class="boule ${c}">${c}</div>`; }
+    function poserUrne(r) { poserBoule('place1', r[0]); poserBoule('place2', r[1]); }
+    async function tirageLent(c) {
+        dessinerUrne();
+        if (!await attente(500, c)) return false;
+        $('doigt').classList.add('cache');
+        let r = '';
+        for (const place of ['place1', 'place2']) {
+            if (!await attente(500, c)) return false;
+            const i = tirerBoule(), boule = $('urne').querySelector(`[data-i="${i}"]`);
+            boule.classList.add('prise');
+            if (!await attente(600, c)) return false;
+            poserBoule(place, couleurBoule(i));
+            r += couleurBoule(i);
+            if (!await attente(700, c)) return false;
+            boule.classList.remove('prise');
+        }
+        const issue = LIB.indexOf(r);
+        afficherNote(issue);
+        compter(issue);
+        afficherStats();
+        return attente(1400, c);
+    }
+
+    // Deux dés : un rouge, un vert ; les points sont dessinés sur une grille 3 × 3.
+    const POINTS = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
+    const faceDe = v => Array.from({ length: 9 }, (_, i) => `<i class="${POINTS[v].includes(i + 1) ? 'pt' : ''}"></i>`).join('');
+    function dessinerDes() {
+        $('feuille').className = 'scene';
+        $('feuille').innerHTML = `<div class="scene-pieces">
+            <div class="pieces">
+                <div class="piece-bloc"><div class="de rouge" id="de1"></div><span>dé rouge</span></div>
+                <div class="plus-des">+</div>
+                <div class="piece-bloc"><div class="de vert" id="de2"></div><span>dé vert</span></div>
+            </div></div>`;
+        $('note').innerHTML = '<span class="lab">Issue :</span><span class="attente">les dés ne sont pas encore lancés</span>';
+    }
+    const lancerDe = () => 1 + Math.floor(Math.random() * 6);
+    function poserDes(a, b) { $('de1').innerHTML = faceDe(a); $('de2').innerHTML = faceDe(b); $('de1').dataset.v = a; $('de2').dataset.v = b; }
+    async function lancerDesLent(c) {
+        dessinerDes();
+        if (!await attente(500, c)) return false;
+        $('doigt').classList.add('cache');
+        // Les dés roulent : leurs faces changent vite, puis s'arrêtent.
+        $('de1').classList.add('roule'); $('de2').classList.add('roule');
+        const arret = () => { $('de1')?.classList.remove('roule'); $('de2')?.classList.remove('roule'); };
+        for (let t = 0; t < 9; t++) { poserDes(lancerDe(), lancerDe()); if (!await attente(90, c)) { arret(); return false; } }
+        arret();
+        const a = lancerDe(), b = lancerDe();
+        poserDes(a, b);
+        afficherNote(a + b - 2);
+        compter(a + b - 2);
+        afficherStats();
+        return attente(1400, c);
+    }
+
+    function dessinerFeuille(questions) {
+        if (EXP === 'pieces') return dessinerScene();
+        if (EXP === 'des') return dessinerDes();
+        if (EXP === 'urne') return dessinerUrne();
+        $('feuille').className = n >= 8 ? 'serre' : '';
+        $('feuille').style.setProperty('--k', k);
+        $('feuille').innerHTML = questions.map((q, i) => `
+            <div class="q"><span class="num">${i + 1}.</span><span class="txt" title="${echapper(q.texte)}">${echapper(q.texte)}</span>
+            ${q.choix.map((c, j) => `<button type="button" tabindex="-1" class="${j === q.bonne ? 'bonne-rep' : ''}">${echapper(c)}</button>`).join('')}
+            <span class="corr"></span></div>`).join('');
+        $('note').innerHTML = '<span class="lab">Issue :</span><span class="attente">la copie n\'est pas encore corrigée</span>';
+    }
+    function cocher(reponses) {
+        $('feuille').querySelectorAll('.q').forEach((el, i) => el.querySelectorAll('button')[reponses[i]].classList.add('choisi'));
+    }
+    function corriger(questions, reponses) {
+        let note = 0;
+        $('feuille').querySelectorAll('.q').forEach((el, i) => {
+            const juste = reponses[i] === questions[i].bonne;
+            if (juste) note++;
+            el.classList.add(juste ? 'juste' : 'faux');
+            el.querySelector('.corr').textContent = juste ? '✓' : '✗';
+        });
+        return note;
+    }
+    function afficherNote(note) {
+        const NOM_BOULE = { R: 'rouge', B: 'bleue' };
+        const issue = EXP === 'des'
+            ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b>`
+            : EXP === 'urne'
+            ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b><span>${NOM_BOULE[LIB[note][0]]} puis ${NOM_BOULE[LIB[note][1]]}</span>`
+            : EXP === 'pieces'
+            ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b><span>${NOM_FACE[LIB[note][0]]} puis ${NOM_FACE[LIB[note][1]]}</span>`
+            : `<span class="lab">Issue :</span><b class="val">${note}</b><span>bonne${note > 1 ? 's' : ''} réponse${note > 1 ? 's' : ''} sur ${n}</span>`;
+        if (!reglages.avecGain) { $('note').innerHTML = issue; return; }
+        const g = GAINS[note];
+        const mot = GAGNANT ? (GAGNANT.test(note) ? 'Gagné' : 'Perdu') : 'Gain';
+        $('note').innerHTML = issue + `<span class="badge ${g > 0 ? 'gagne' : g < 0 ? 'perdu' : 'nul'}">${mot} : ${jetons(g)}</span>`;
+    }
+    const signe = x => (x > 0 ? '+' : x < 0 ? MOINS : '') + Math.abs(x).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    const jetons = x => `${signe(x)} jeton${Math.abs(x) >= 2 ? 's' : ''}`;
+    // Le bilan du jeu de gain : la cagnotte et le gain moyen (le gain prévu n'apparaît qu'avec les probabilités).
+    function afficherBilanGain() {
+        const N = stats.parties, c = stats.cagnotte, prevu = P.reduce((t, p, j) => t + p * GAINS[j], 0);
+        const b = $('bilanPari');
+        b.style.setProperty('--c', '#b7791f');
+        b.innerHTML = `<span class="cagnotte">Cagnotte : <b style="color:${c > 0 ? 'var(--succes)' : c < 0 ? 'var(--rouge)' : 'inherit'}">${jetons(c)}</b></span><br>`
+            + (N ? `Gain moyen : <b>${signe(Math.round(c / N * 100) / 100)}</b> par ${MOTS.unite}${voirProba ? ` ; prévu : <b>${signe(Math.round(prevu * 100) / 100)}</b> (${sorteDeJeu(prevu)})` : ''}`
+                 : 'Gain moyen : –');
+    }
+    function compter(note) {
+        const s = stats;
+        s.parties++;
+        s.somme += note;
+        s.compte[note]++;
+        s.derniere = note;
+        if (reglages.avecGain) s.cagnotte += GAINS[note];
+        EVENEMENTS.forEach(e => { if (e.test(note)) s.reussites[e.id]++; s.courbes[e.id].push(s.reussites[e.id] / s.parties); });
+        if (mode === 'foule') { s.mur.push(note); if (s.mur.length > 60) s.mur.shift(); }
+    }
+
+    function couleurNote(note) {
+        if (EXP === 'des') return `background:hsl(${30 + note * 20}, 60%, 85%);color:#23302a`;
+        if (EXP !== 'qcm') return 'background:' + ['#fde2b8', '#d9e8fb', '#e5dcf5', '#cfe9d5'][note] + ';color:#23302a';
+        const t = note / n;
+        return `background:hsl(${8 + 122 * t}, 55%, ${90 - 38 * t}%);color:${t > 0.65 ? '#fff' : '#23302a'}`;
+    }
+
+    function afficherStats() {
+        const s = stats;
+        $('sParties').textContent = entier(s.parties);
+        $('sSur').textContent = mode === 'foule' ? ` sur ${entier(limite)}` : '';
+        $('blocMoyenne').classList.toggle('cache', EXP !== 'qcm');
+        $('sMoy').textContent = s.parties ? (s.somme / s.parties).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' sur ' + n : '–';
+        $('numPartie').textContent = !s.parties ? '' : mode === 'foule' && s.parties >= limite && arrete ? MOTS.fin : `${MOTS.unite} n° ${entier(s.parties)}`;
+        if (mode === 'foule') {
+            const nb = EXP === 'qcm' && n >= 8 ? 20 : 60, derniers = s.mur.slice(-nb);
+            $('infoFoule').textContent = s.parties > nb ? `${MOTS.derniers.replace('NB', nb)} et leur ${MOTS.resultat}` : `chaque case est ${MOTS.unUn}, avec ${MOTS.resultat === 'note' ? 'sa note' : 'son issue'}`;
+            $('mur').innerHTML = Array.from({ length: nb }, (_, i) => i < derniers.length
+                ? `<div style="${couleurNote(derniers[i])}" class="${EXP === 'qcm' && derniers[i] === n ? 'tj' : ''}">${LIB[derniers[i]]}</div>` : '<div class="vide"></div>').join('');
+        }
+        $('bilanPari').classList.toggle('cache', !reglages.avecGain);
+        if (reglages.avecGain) afficherBilanGain();
+        dessinerDiagramme();
+        dessinerEvenements();
+        dessinerCourbe();
+    }
+
+    // Diagramme des issues (nombre de bonnes réponses), avec en dessous le tableau
+    // Issue / Effectif / Fréquence / Probabilité, aligné sur les barres.
+    function dessinerDiagramme() {
+        const s = stats, svg = $('diagramme');
+        const obs = s.compte.map(c => s.parties ? c / s.parties : 0);
+        const haut = Math.max(...(voirProba ? P : [0.2]), ...obs) * 1.12;
+        const pas = [0.05, 0.1, 0.2, 0.25, 0.5].find(p => haut / p <= 4) || 0.5;
+        const ymax = Math.min(1.05, Math.ceil(haut / pas) * pas);
+        const G = 104, D = 776, Hb = 100, Hh = 8;
+        const Y = v => Hb - (Hb - Hh) * v / ymax;
+        const largeur = (D - G) / NI, barre = largeur * 0.62;
+        const taille = NI > 8 ? 13 : 16;
+        const court = t => t.replace('moins de ', '< ');
+        let h = '';
+        for (let v = 0; v <= ymax + 1e-9; v += pas)
+            h += `<line x1="${G}" x2="${D}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d3ead9"/>
+                  <text x="${G - 5}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#5f7a68">${pourcent(v)}</text>`;
+        for (let j = 0; j < NI; j++) {
+            const x = G + largeur * j + (largeur - barre) / 2;
+            if (s.derniere === j && vitesse === 'lent') h += `<rect x="${G + largeur * j + 1}" y="${Hh - 4}" width="${largeur - 2}" height="${Hb - Hh + 4 + (reglages.avecGain ? 5 : 4) * 23}" fill="#ffd166" opacity=".35" rx="4"/>`;
+            h += `<rect x="${x}" y="${Y(obs[j])}" width="${barre}" height="${Hb - Y(obs[j])}" fill="rgba(192,57,43,.75)"/>`;
+            if (voirProba) h += `<line x1="${x - 7}" x2="${x + barre + 7}" y1="${Y(P[j])}" y2="${Y(P[j])}" stroke="#1d3b8f" stroke-width="4" stroke-linecap="round"/>`;
+        }
+        // Le tableau : 4 lignes de 19 px sous l'axe.
+        const L = 23, T = Hb + 2;
+        const lignes = [
+            { titre: 'Issue', couleur: '#23302a', gras: true, val: j => LIB[j] },
+            { titre: 'Effectif', couleur: '#23302a', val: j => s.parties ? entier(s.compte[j]) : '–' },
+            { titre: 'Fréquence', couleur: '#c0392b', gras: true, val: j => s.parties ? court(pourcent(obs[j])) : '–' },
+            { titre: 'Probabilité', couleur: '#1d3b8f', gras: true, val: j => voirProba ? court(pourcent(P[j])) : '?' }
+        ];
+        if (reglages.avecGain) lignes.push({ titre: 'Gain', couleur: '#b7791f', gras: true, val: j => signe(GAINS[j]) });
+        const NL = lignes.length;
+        svg.setAttribute('viewBox', `0 0 780 ${T + NL * L + 2}`);
+        h += `<rect x="${G - 100}" y="${T}" width="${D - G + 100}" height="${NL * L}" fill="#fff" stroke="#c9dccf"/>`;
+        h += `<rect x="${G - 100}" y="${T}" width="${D - G + 100}" height="${L}" fill="#f1f8f3"/>`;
+        lignes.forEach((l, r) => {
+            const y = T + L * r + L / 2 + 4.5;
+            if (r) h += `<line x1="${G - 100}" x2="${D}" y1="${T + L * r}" y2="${T + L * r}" stroke="#c9dccf"/>`;
+            h += `<text x="${G - 6}" y="${y}" text-anchor="end" font-size="14.5" font-weight="700" fill="${l.couleur}">${l.titre}</text>`;
+            for (let j = 0; j < NI; j++)
+                h += `<text x="${G + largeur * (j + 0.5)}" y="${y}" text-anchor="middle" font-size="${taille}" ${l.gras ? 'font-weight="700"' : ''} fill="${l.couleur}">${l.val(j)}</text>`;
+        });
+        for (let j = 0; j <= NI; j++) h += `<line x1="${G + largeur * j}" x2="${G + largeur * j}" y1="${T}" y2="${T + NL * L}" stroke="#c9dccf"/>`;
+        h += `<line x1="${G}" x2="${D}" y1="${Hb}" y2="${Hb}" stroke="#9aa"/>`;
+        svg.innerHTML = h;
+    }
+
+    // Probabilité d'un événement : nombre de façons favorables sur k^n façons de répondre.
+    function probaEvenement(e) {
+        let fav = 0;
+        for (let j = 0; j < NI; j++) if (e.test(j)) fav += favorables[j];
+        return { fav, p: fav / total };
+    }
+
+    // Les boutons d'événements : on en allume un ou plusieurs ; chacun a sa couleur sur la courbe.
+    function dessinerEvenements() {
+        const zone = $('evenements');
+        if (zone.querySelectorAll('[data-ev]').length !== EVENEMENTS.length) {
+            // Une ligne par événement : le bouton, puis sa fréquence observée.
+            zone.innerHTML = '<span class="entete">Événement à suivre</span><button type="button" class="bascule-freq" id="btnFreq"></button>' + EVENEMENTS.map(e => `<button type="button" data-ev="${e.id}" style="--c:${e.couleur}"><i></i>${etiq(e)}${GAGNANT === e ? ' ★' : ''}</button>`
+                + `<span class="freq" data-freq="${e.id}" style="color:${e.couleur}"></span>`).join('');
+            $('btnFreq').onclick = () => montrerFreq(!document.body.classList.contains('voir-freq'));
+            marquerFreq();
+            zone.querySelectorAll('[data-ev]').forEach(b => b.onclick = () => {
+                const id = b.dataset.ev;
+                if (actifs.includes(id) && focus === id) { actifs = actifs.filter(x => x !== id); focus = actifs[actifs.length - 1] || null; }
+                else { if (!actifs.includes(id)) actifs.push(id); focus = id; }
+                dessinerEvenements(); dessinerCourbe();
+            });
+        }
+        zone.querySelectorAll('[data-ev]').forEach(b => {
+            const id = b.dataset.ev, on = actifs.includes(id);
+            b.classList.toggle('actif', on);
+            b.style.boxShadow = focus === id ? '0 0 0 3px #ffd166' : '';
+        });
+        zone.querySelectorAll('.freq').forEach(f => {
+            f.textContent = stats.parties ? pourcent(stats.reussites[f.dataset.freq] / stats.parties) : '–';
+        });
+        const e = EVENEMENTS.find(x => x.id === focus), ex = $('explication');
+        ex.classList.toggle('cache', !e);
+        if (!e) return;
+        const { fav, p } = probaEvenement(e), g = pgcd(fav, total);
+        const simple = g > 1 && fav > 0 && fav !== total ? ` = <b>${entier(fav / g)} sur ${entier(total / g)}</b>` : '';
+        const fois = stats.parties ? ` — observé : ${entier(stats.reussites[e.id])} sur ${entier(stats.parties)} ≈ <b>${pourcent(stats.reussites[e.id] / stats.parties)}</b>` : '';
+        // « Au moins une juste » : toutes les façons de répondre, sauf les (k − 1)^n où tout est faux.
+        // B : l'erreur peut être sur n'importe laquelle des n questions, avec k − 1 mauvaises réponses possibles.
+        // C : c'est le contraire de A, toutes les façons sauf une.
+        // D : k − 1 mauvaises réponses possibles à chacune des n questions.
+        const qcm = EXP === 'qcm';
+        const calcul = qcm && e.id === 'B' && k > 2 ? `${n} × ${k - 1} = ${entier(fav)} chances`
+            : qcm && e.id === 'C' ? `${entier(total)} ${MOINS} 1 = ${entier(fav)} chances`
+            : qcm && e.id === 'D' && k > 2 ? `${k - 1}<sup>${n}</sup> = ${entier(fav)} chances`
+            : `${entier(fav)} chance${fav > 1 ? 's' : ''}`;
+        const sur = qcm ? `${k}<sup>${n}</sup> = ${entier(total)}` : entier(total);
+        // L'événement contraire, s'il est dans la liste.
+        const x = issuesDe(e), oppose = EVENEMENTS.find(o => o !== e && issuesDe(o).length === NI - x.length && issuesDe(o).every(j => !x.includes(j)));
+        ex.style.setProperty('--c', e.couleur);
+        if (!voirProba) {
+            ex.innerHTML = stats.parties ? `Fréquence de ${phrase(e)} : ${entier(stats.reussites[e.id])} sur ${entier(stats.parties)} ≈ <b>${pourcent(stats.reussites[e.id] / stats.parties)}</b>.`
+                : `Fréquence de ${phrase(e)} : pas encore de ${MOTS.unite}.`;
+            return;
+        }
+        ex.innerHTML = `Probabilité de ${phrase(e)} : ${calcul} sur ${sur}${simple} ≈ <b>${pourcent(p)}</b>${oppose ? ` (contraire de ${oppose.id})` : ''}${fois}`;
+    }
+
+    // La loi des grands nombres : fréquence de chaque événement allumé, et la droite de sa probabilité.
+    // L'axe horizontal s'étire (20, 50, 100, 200, 500, 1 000…) à mesure que le nombre grandit.
+    function dessinerCourbe() {
+        const svg = $('courbe'), m = stats.parties;
+        const G = 50, D = 772, B = 118, H = 8;
+        let xmax = 20;
+        for (let i = 0; xmax < m; i++) xmax = [50, 100, 200][i % 3] * 10 ** Math.floor(i / 3);
+        if (mode === 'foule') xmax = Math.min(xmax, Math.max(20, limite));
+        const evs = EVENEMENTS.filter(e => actifs.includes(e.id)).map(e => ({ ...e, p: probaEvenement(e).p }));
+        let ymax = 1;
+        if (evs.length && evs.every(e => e.p < 0.2)) {
+            let hautObs = 0;
+            evs.forEach(e => { const f = stats.courbes[e.id]; for (let t = Math.min(f.length, 10); t < f.length; t++) if (f[t] > hautObs) hautObs = f[t]; });
+            // Probabilités cachées : l'échelle ne dépend que des fréquences observées (au moins 5 %).
+            const reference = voirProba ? Math.max(...evs.map(e => 3 * e.p)) : 0.05;
+            ymax = Math.min(1, Math.max(reference, hautObs) * 1.1) || 1;
+        }
+        const X = t => G + (D - G) * t / xmax, Y = v => B - (B - H) * Math.min(v, ymax) / ymax;
+        let h = '';
+        for (let i = 0; i <= 4; i++) {
+            const v = ymax * i / 4;
+            h += `<line x1="${G}" x2="${D}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e3f0e6"/>
+                  <text x="${G - 5}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#5f7a68">${pourcent(v)}</text>`;
+        }
+        for (let i = 0; i <= 5; i++) {
+            const t = xmax * i / 5;
+            h += `<line x1="${X(t)}" x2="${X(t)}" y1="${B}" y2="${B + 4}" stroke="#9aa"/>
+                  <text x="${X(t)}" y="${B + 16}" text-anchor="${i === 5 ? 'end' : 'middle'}" font-size="12" fill="#5f7a68">${entier(t)}</text>`;
+        }
+        h += `<line x1="${G}" y1="${B}" x2="${D}" y2="${B}" stroke="#9aa"/><line x1="${G}" y1="${H}" x2="${G}" y2="${B}" stroke="#9aa"/>
+              <text x="${(G + D) / 2}" y="${B + 30}" text-anchor="middle" font-size="12" fill="#5f7a68">nombre ${MOTS.de} (${entier(m)} pour l'instant)</text>`;
+        const etape = Math.max(1, Math.floor(m / 700));
+        evs.forEach(e => {
+            const f = stats.courbes[e.id];
+            if (voirProba) h += `<line x1="${G}" y1="${Y(e.p)}" x2="${D}" y2="${Y(e.p)}" stroke="${e.couleur}" stroke-width="2" stroke-dasharray="7 5" opacity=".9"/>`;
+            let pts = '';
+            for (let t = 0; t < m; t += etape) pts += `${X(t + 1).toFixed(1)},${Y(f[t]).toFixed(1)} `;
+            if (m) pts += `${X(m).toFixed(1)},${Y(f[m - 1]).toFixed(1)}`;
+            h += `<polyline points="${pts}" fill="none" stroke="${e.couleur}" stroke-width="${e.id === focus ? 3 : 2}" stroke-linejoin="round"/>`;
+            if (m) h += `<circle cx="${X(m)}" cy="${Y(f[m - 1])}" r="4.5" fill="${e.couleur}"/>`;
+        });
+        // Étiquettes des probabilités, écartées les unes des autres pour rester lisibles.
+        let dernierY = Infinity;
+        if (voirProba) evs.slice().sort((a, b) => a.p - b.p).forEach(e => {
+            let y = Math.min(Y(e.p) - 5, dernierY - 13);
+            if (y < 11) y = Y(e.p) + 14;   // trop haut : l'étiquette passe sous la droite
+            dernierY = y;
+            h += `<text x="${D - 2}" y="${y}" text-anchor="end" font-size="12" font-weight="600" fill="${e.couleur}" stroke="#fff" stroke-width="3" paint-order="stroke">probabilité ≈ ${pourcent(e.p)}</text>`;
+        });
+        svg.innerHTML = h;
+    }
+
+    function afficherResume() {
+        if (EXP === 'des') {
+            $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> personnes</span>` : '<span class="puce"><b>Un joueur</b> qui relance</span>')
+                + '<span class="puce"><b>Deux dés</b> : <b style="color:var(--rouge)">rouge</b> et <b style="color:var(--succes)">vert</b></span>'
+                + (reglages.avecGain ? `<span class="puce"><b>Jeu de gain</b>${GAGNANT ? ' : ' + GAGNANT.id + ' gagne' : ''}</span>` : '');
+        }
+        if (EXP === 'urne') {
+            $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> personnes</span>` : '<span class="puce"><b>Un joueur</b> qui recommence</span>')
+                + `<span class="puce">Urne : <b style="color:var(--rouge)">${reglages.rouges} R</b> + <b class="bleu">${reglages.bleues} B</b></span>`
+                + (reglages.avecGain ? `<span class="puce"><b>Jeu de gain</b>${GAGNANT ? ' : ' + GAGNANT.id + ' gagne' : ''}</span>` : '');
+        }
+        if (EXP === 'pieces') {
+            $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> personnes</span>` : '<span class="puce"><b>Un joueur</b> qui relance</span>')
+                + '<span class="puce"><b>Deux pièces</b> équilibrées</span>'
+                + (reglages.avecGain ? `<span class="puce"><b>Jeu de gain</b>${GAGNANT ? ' : ' + GAGNANT.id + ' gagne' : ''}</span>` : '');
+        }
+        const src = reglages.source === 'calculs' ? (mode === 'foule' ? 'calculs tirés au hasard' : 'nouveaux calculs à chaque partie')
+            : (() => { const m = questionsPerso().length; return m === n ? `mes ${m} questions` : `${n} questions tirées parmi mes ${m}`; })();
+        if (EXP === 'qcm') $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> élèves</span>` : '<span class="puce"><b>Un élève</b> qui rejoue</span>')
+            + `<span class="puce" title="${src}"><b>${n}</b> question${n > 1 ? 's' : ''} à <b>${k}</b> réponses</span>
+            ${reglages.avecGain ? `<span class="puce"><b>Jeu de gain</b>${GAGNANT ? ' : ' + GAGNANT.id + ' gagne' : ''}</span>` : ''}`;
+        const att = n / k;
+        $('sMoyAtt').innerHTML = `<span class="bleu attendu">(on attend ${Number.isInteger(att * 100) ? '' : 'environ '}<b>${att.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</b>)</span>`;
+        $('motParties').textContent = 'Nombre total ' + MOTS.de;
+
+        $('titreIssues').textContent = EXP === 'des' ? 'Issues : somme des deux dés' : EXP === 'urne' ? 'Issues : couleurs des deux boules' : EXP === 'pieces' ? 'Issues : résultat des deux pièces' : 'Issues : nombre de bonnes réponses';
+        $('titreCourbe').textContent = `Fréquence de chaque événement, ${MOTS.unite} après ${MOTS.unite}`;
+        $('btnUne').textContent = MOTS.une;
+        $('btnUne').title = `${MOTS.une} seulement, lentement, puis on s'arrête sur le résultat`;
+        $('titreCopie').firstChild.textContent = EXP === 'des' ? 'L\'expérience : le lancer de deux dés ' : EXP === 'urne' ? 'L\'expérience : deux tirages avec remise ' : EXP === 'pieces' ? 'L\'expérience : le lancer de deux pièces ' : 'L\'expérience : la copie de l\'élève ';
+        $('cadreFoule').classList.toggle('cache', mode !== 'foule');
+        $('activite').classList.toggle('large', EXP === 'qcm' && k >= 3);
+    }
+
+    function marquerVitesse() {
+        $('vitesse').querySelectorAll('[data-v]').forEach(b => b.classList.toggle('choisi', b.dataset.v === vitesse));
+    }
+
+    // Attente qui tient compte de la pause et de l'arrêt.
+    async function attente(ms, c) {
+        if (vitesse === 'lent') await attendre(ms);
+        while (pause && !arrete && c === course) await attendre(100);
+        return !arrete && c === course;
+    }
+
+    async function appuyer(bouton, c) {
+        const doigt = $('doigt'), r = bouton.getBoundingClientRect();
+        doigt.classList.remove('cache');
+        doigt.style.left = (r.left + r.width / 2) + 'px';
+        doigt.style.top = (r.top + r.height / 2) + 'px';
+        if (!await attente(480, c)) return false;
+        doigt.classList.add('appui'); bouton.classList.add('bot-clic', 'choisi');
+        if (!await attente(220, c)) return false;
+        doigt.classList.remove('appui'); bouton.classList.remove('bot-clic');
+        return attente(260, c);
+    }
+
+    // Un lancer lent : les pièces tournent, puis retombent.
+    async function lancerLent(c) {
+        dessinerScene();
+        if (!await attente(600, c)) return false;
+        $('doigt').classList.add('cache');
+        const r = tirerPieces();
+        document.querySelectorAll('.piece').forEach(el => { el.textContent = ''; el.classList.add('tourne'); });
+        const ok = await attente(900, c);
+        document.querySelectorAll('.piece').forEach(el => el.classList.remove('tourne'));   // à l'arrêt, les pièces ne tournent plus
+        if (!ok) return false;
+        poserPieces(r);
+        const issue = LIB.indexOf(r);
+        afficherNote(issue);
+        compter(issue);
+        afficherStats();
+        return attente(1400, c);
+    }
+
+    // Une partie lente : on voit chaque clic.
+    async function partieLente(c) {
+        if (EXP === 'pieces') return lancerLent(c);
+        if (EXP === 'urne') return tirageLent(c);
+        if (EXP === 'des') return lancerDesLent(c);
+        const questions = questionsDeLaPartie();
+        dessinerFeuille(questions);
+        const lignes = $('feuille').querySelectorAll('.q');
+        const reponses = [];
+        if (!await attente(500, c)) return false;
+        for (let i = 0; i < n; i++) {
+            if (vitesse !== 'lent') { // passage en rapide au milieu : on finit la copie d'un coup
+                for (let j = i; j < n; j++) { reponses[j] = Math.floor(Math.random() * k); lignes[j].querySelectorAll('button')[reponses[j]].classList.add('choisi'); }
+                break;
+            }
+            reponses[i] = Math.floor(Math.random() * k);
+            if (!await appuyer(lignes[i].querySelectorAll('button')[reponses[i]], c)) return false;
+        }
+        $('doigt').classList.add('cache');
+        const note = corriger(questions, reponses);
+        afficherNote(note);
+        compter(note);
+        afficherStats();
+        return attente(1600, c);
+    }
+
+    // Beaucoup de parties d'un coup, sans animation ; on ne montre que la dernière copie.
+    function partiesRapides(combien) {
+        if (EXP === 'des') {
+            let a, b;
+            for (let p = 0; p < combien; p++) { a = lancerDe(); b = lancerDe(); compter(a + b - 2); }
+            if (!$('de1')) dessinerDes();
+            poserDes(a, b);
+            afficherNote(a + b - 2);
+            afficherStats();
+            return;
+        }
+        if (EXP === 'urne') {
+            let r;
+            for (let p = 0; p < combien; p++) { r = tirerUrne(); compter(LIB.indexOf(r)); }
+            if (!$('place1')) dessinerUrne();
+            poserUrne(r);
+            afficherNote(LIB.indexOf(r));
+            afficherStats();
+            return;
+        }
+        if (EXP === 'pieces') {
+            let r;
+            for (let p = 0; p < combien; p++) { r = tirerPieces(); compter(LIB.indexOf(r)); }
+            if (!$('piece1')) dessinerScene();
+            poserPieces(r);
+            afficherNote(LIB.indexOf(r));
+            afficherStats();
+            return;
+        }
+        let questions, reponses;
+        for (let p = 0; p < combien; p++) {
+            questions = questionsDeLaPartie();
+            reponses = questions.map(() => Math.floor(Math.random() * k));
+            compter(reponses.reduce((s, r, i) => s + (r === questions[i].bonne ? 1 : 0), 0));
+        }
+        dessinerFeuille(questions);
+        cocher(reponses);
+        afficherNote(corriger(questions, reponses));
+        afficherStats();
+    }
+
+    function finDeFoule() {
+        arrete = true; course++;
+        pause = false; textePause();
+        texteStop('Rejouer');
+        $('doigt').classList.add('cache');
+        afficherStats();
+    }
+
+    async function boucle(c) {
+        while (!arrete && c === course && stats.parties < limite) {
+            while (pause && !arrete && c === course) await attendre(100); // la copie corrigée reste affichée pendant la pause
+            if (arrete || c !== course) break;
+            if (vitesse === 'lent') {
+                const enCours = unePartie;
+                if (!await partieLente(c)) break;
+                if (enCours) { unePartie = false; pause = true; textePause(); } // « Une partie » : on s'arrête après celle-ci
+            } else {
+                $('doigt').classList.add('cache');
+                // Un élève qui rejoue : environ 400 parties par seconde. Une foule : elle se remplit en 7 secondes environ.
+                const lot = mode === 'foule' ? Math.ceil(limite / 400) : 8;
+                partiesRapides(Math.min(lot, limite - stats.parties));
+                await attendre(16);
+                if (!await attente(0, c)) break;
+            }
+        }
+        $('doigt').classList.add('cache');
+        if (c === course && !arrete && stats.parties >= limite) finDeFoule();
+    }
+
+    function demarrer(nouveauQCM, enPause, uneSeule) {
+        course++;
+        arrete = false; pause = !!enPause; unePartie = !!uneSeule;
+        textePause(); texteStop('Arrêter');
+        if (EXP === 'qcm' && mode === 'foule' && (nouveauQCM || !qcmFixe)) qcmFixe = construireQCM();
+        nouvellesStats();
+        afficherStats();
+        dessinerFeuille(EXP === 'qcm' ? questionsDeLaPartie() : null);
+        marquerVitesse();
+        ajusterTaille();
+        boucle(course);
+    }
+
+    // Si la page ne tient pas dans la fenêtre (beaucoup de questions, 4 réponses, une foule…),
+    // on réduit la taille de base juste assez : tout est en rem, tout suit.
+    function ajusterTaille() {
+        const html = document.documentElement;
+        html.style.fontSize = '';
+        if ($('activite').classList.contains('cache')) return;
+        for (let i = 0; i < 4 && html.scrollHeight > innerHeight + 1; i++) {
+            const fs = parseFloat(getComputedStyle(html).fontSize);
+            html.style.fontSize = (fs * (innerHeight - 6) / html.scrollHeight) + 'px';
+        }
+    }
+    let attenteTaille;
+    addEventListener('resize', () => { clearTimeout(attenteTaille); attenteTaille = setTimeout(ajusterTaille, 150); });
+
+    function relancer() { arrete = false; texteStop('Arrêter'); boucle(++course); }
+
+    $('boutons').querySelectorAll('button').forEach(b => b.onclick = () => {
+        const v = b.dataset.b;
+        const fini = mode === 'foule' && stats.parties >= limite;
+        if (v === 'raz') { $('doigt').classList.add('cache'); demarrer(false, true); return; }   // à zéro, en pause
+        if (v === 'pause') { if (arrete) return; pause = !pause; unePartie = false; textePause(); return; }
+        if (v === 'stop') {
+            if (!arrete) { arrete = true; course++; pause = false; textePause(); texteStop('Rejouer'); $('doigt').classList.add('cache'); }
+            else demarrer(false);
+            return;
+        }
+        // Jouer, Une partie : on repart toujours, même après l'arrêt ou à la fin de la foule.
+        unePartie = v === 'une';
+        if (unePartie) { vitesse = 'lent'; marquerVitesse(); }   // une seule partie : toujours lentement
+        if (fini) { demarrer(false, false, unePartie); return; }   // la foule était finie : nouvelle foule, même QCM
+        if (pause) { pause = false; textePause(); }
+        if (arrete) relancer();
+    });
+
+    // La vitesse se choisit sans lancer ni arrêter quoi que ce soit.
+    $('vitesse').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { vitesse = b.dataset.v; marquerVitesse(); });
+
+    $('btnLancer').onclick = () => {
+        if (reglages.experience === 'qcm' && reglages.source === 'perso') {
+            const m = questionsPerso().length, nn = reglages.n;
+            if (m < nn) {
+                $('messageReglages').textContent = `Il faut au moins ${nn} question${nn > 1 ? 's' : ''} complète${nn > 1 ? 's' : ''} (il y en a ${m}), ou bien moins de questions par QCM.`;
+                return;
+            }
+        }
+        mode = reglages.mode; n = reglages.n; k = reglages.k; EXP = reglages.experience;
+        EVENEMENTS = evenementsPour(EXP);
+        const m = modele(reglages);
+        LIB = m.issues; NI = LIB.length; favorables = m.favorables; total = m.total;
+        limite = mode === 'foule' ? reglages.foule : 500000;
+        const foule = mode === 'foule';
+        MOTS = EXP === 'urne'
+            ? (foule ? { Parties: 'Personnes', de: 'de personnes', une: 'Une personne', unite: 'personne', pluriel: 'personnes', derniers: 'les NB dernières personnes', unUn: 'une personne', resultat: 'issue', fin: 'toute la foule a tiré' }
+                     : { Parties: 'Expériences', de: 'd\'expériences', une: 'Une expérience', unite: 'expérience', pluriel: 'expériences', derniers: 'les NB dernières expériences', unUn: 'une expérience', resultat: 'issue', fin: '' })
+            : EXP === 'pieces' || EXP === 'des'
+            ? (foule ? { Parties: 'Personnes', de: 'de personnes', une: 'Une personne', unite: 'personne', pluriel: 'personnes', derniers: 'les NB dernières personnes', unUn: 'une personne', resultat: 'issue', fin: 'toute la foule a lancé' }
+                     : { Parties: 'Lancers', de: 'de lancers', une: 'Un lancer', unite: 'lancer', pluriel: 'lancers', derniers: 'les NB derniers lancers', unUn: 'un lancer', resultat: 'issue', fin: '' })
+            : (foule ? { Parties: 'Élèves', de: 'd\'élèves', une: 'Un élève', unite: 'élève', pluriel: 'élèves', derniers: 'les NB derniers élèves', unUn: 'un élève', resultat: 'note', fin: 'toute la foule a répondu' }
+                     : { Parties: 'Parties', de: 'de parties jouées', une: 'Une partie', unite: 'partie', pluriel: 'parties', derniers: 'les NB dernières parties', unUn: 'une partie', resultat: 'note', fin: '' });
+        P = favorables.map(f => f / total);
+        vitesse = reglages.vitesse;
+        qcmFixe = null;
+        GAINS = gainsCourants().slice();
+        GAGNANT = reglages.avecGain ? baremeDuGagnant() : null;
+        actifs = [GAGNANT ? GAGNANT.id : 'A']; focus = actifs[0];
+        $('diagramme').style.height = reglages.avecGain ? '10.4rem' : '';
+        $('evenements').innerHTML = '';
+        afficherResume();
+        $('reglages').classList.add('cache');
+        $('activite').classList.remove('cache');
+        $('resume').classList.remove('cache');
+        $('btnReglages').classList.remove('cache'); $('btnExp').classList.remove('cache'); marquerBtnExp();
+        $('btnEnonce').classList.remove('cache');
+        $('groupeCours').classList.remove('cache'); $('btnStats').classList.remove('cache');
+        document.body.classList.add('en-activite');
+        montrerStats(false);
+        $('overlayCours').classList.add('cache'); $('overlayProba').classList.add('cache'); $('overlayBase').classList.add('cache');
+        demarrer(true, true);   // en pause : on lit d'abord l'énoncé
+        ouvrirEnonce(true);
+    };
+
+    /* ============ L'énoncé, en grand par-dessus la page ============ */
+    let pauseAvant = false;
+    // Énoncé court : l'expérience, puis ce qu'on observe.
+    // Énoncé : l'expérience et ce qu'on note, qui définit l'issue.
+    function texteEnonce() {
+        const foule = mode === 'foule';
+        if (EXP === 'des') {
+            let h = foule
+                ? `<p><b>${entier(limite)} personnes</b> lancent chacune <b>deux dés équilibrés à six faces</b> : un <b style="color:var(--rouge)">rouge</b> et un <b style="color:var(--succes)">vert</b>.</p>`
+                : '<p>On lance <b>deux dés équilibrés à six faces</b> : un <b style="color:var(--rouge)">rouge</b> et un <b style="color:var(--succes)">vert</b>. On recommence des centaines de fois.</p>';
+            h += '<p class="issue">On note la <b>somme</b> des deux dés, par exemple 3 + 5 = <b>8</b> : c\'est l\'<b>issue</b> de l\'expérience aléatoire.</p>';
+            if (reglages.avecGain) h += texteJeu();
+            return h;
+        }
+        if (EXP === 'urne') {
+            const a = reglages.rouges, b = reglages.bleues, pl = x => x > 1 ? 's' : '';
+            let h = `<p>Une urne contient <b>${a} boule${pl(a)} rouge${pl(a)}</b> et <b>${b} boule${pl(b)} bleue${pl(b)}</b>, indiscernables au toucher. `
+                + (foule ? `<b>${entier(limite)} personnes</b> font chacune l'expérience : ` : '')
+                + `On tire une boule au hasard, on la <b>remet dans l'urne</b>, puis on tire une deuxième boule.${foule ? '' : ' On recommence des centaines de fois.'}</p>`;
+            h += '<p class="issue">On note les couleurs des deux boules, par exemple <b>RB</b> (rouge au premier tirage, bleue au deuxième) : c\'est l\'<b>issue</b> de l\'expérience aléatoire.</p>';
+            if (reglages.avecGain) h += texteJeu();
+            return h;
+        }
+        if (EXP === 'pieces') {
+            let h = foule
+                ? `<p><b>${entier(limite)} personnes</b> lancent chacune <b>deux pièces de monnaie équilibrées</b> : une première, puis une deuxième.</p>`
+                : '<p>On lance <b>deux pièces de monnaie équilibrées</b> : une première, puis une deuxième. On recommence des centaines de fois.</p>';
+            h += '<p class="issue">On note le résultat des deux pièces, par exemple <b>PF</b> (Pile pour la première, Face pour la deuxième) : c\'est l\'<b>issue</b> de l\'expérience aléatoire.</p>';
+            if (reglages.avecGain) h += texteJeu();
+            return h;
+        }
+        const choix = k === 2 ? 'vrai ou faux' : `${k} réponses proposées, une seule bonne`;
+        const qcm = `un QCM de <b>${n} question${n > 1 ? 's' : ''}</b> (${choix})`;
+        let h = foule
+            ? `<p>${entier(limite)} élèves répondent <b>au hasard</b> au même ${qcm}.</p>`
+            : `<p>Un élève répond <b>au hasard</b> à ${qcm}, et recommence des centaines de fois.</p>`;
+        h += `<p class="issue">On note le <b>nombre de bonnes réponses</b> : c'est l'<b>issue</b> de l'expérience aléatoire.</p>`;
+        if (reglages.avecGain) h += texteJeu();
+        return h;
+    }
+    function texteJeu() {
+        if (GAGNANT) return `<p class="pari" style="--c:${GAGNANT.couleur}">Le jeu : on gagne si l'événement <b>${phrase(GAGNANT)}</b> est réalisé : <b>${jetons(reglages.gainG)}</b> ; sinon on perd <b>${jetons(reglages.gainP).replace('+', '')}</b>.</p>`;
+        return `<p class="pari" style="--c:#b7791f">Le jeu : selon l'issue, on gagne ou on perd des jetons. ${LIB.map((x, j) => `${x} : <b>${signe(GAINS[j])}</b>`).join(' ; ')}.</p>`;
+    }
+    function ouvrirEnonce(auLancement) {
+        $('overlayCours').classList.add('cache'); $('overlayProba').classList.add('cache'); $('overlayBase').classList.add('cache');
+        pauseAvant = auLancement ? false : pause;
+        if (!arrete) { pause = true; textePause(); }
+        $('texteEnonce').innerHTML = texteEnonce();
+        $('btnFermerEnonce').textContent = auLancement ? 'Commencer' : 'Fermer';
+        $('overlayEnonce').classList.remove('cache');
+    }
+    function fermerEnonce() {
+        $('overlayEnonce').classList.add('cache');
+        if (!arrete) { pause = pauseAvant; textePause(); }
+    }
+    $('btnEnonce').onclick = () => ouvrirEnonce(false);
+    // Bouton « Statistiques » : elles restent cachées tant qu'on ne les révèle pas.
+    // Les fréquences à côté des événements : un choix à part (elles suivent aussi le bouton Statistiques).
+    function marquerFreq() {
+        const b = $('btnFreq'); if (!b) return;
+        const oui = document.body.classList.contains('voir-freq');
+        b.textContent = (oui ? '☑' : '☐') + ' fréquence';
+        b.classList.toggle('actif', oui);
+        b.title = oui ? 'Cacher les fréquences des événements' : 'Afficher les fréquences des événements';
+    }
+    function montrerFreq(oui) { document.body.classList.toggle('voir-freq', oui); marquerFreq(); }
+    function montrerStats(oui) {
+        montrerFreq(oui);
+        document.body.classList.toggle('stats-cachees', !oui);
+        $('btnStats').classList.toggle('actif', oui);
+        $('btnStats').title = oui ? 'Cacher les statistiques' : 'Afficher les statistiques';
+    }
+    $('btnStats').onclick = () => montrerStats(document.body.classList.contains('stats-cachees'));
+    $('btnVoirStats').onclick = () => montrerStats(true);
+
+    /* ============ Questions de cours sur les événements ============ */
+    const toutesIssues = () => Array.from({ length: NI }, (_, j) => j);
+    const issuesDe = e => toutesIssues().filter(j => e.test(j));
+    const ensemble = t => t.length ? `{ ${t.map(j => LIB[j]).join(' ; ')} }` : 'aucune issue';
+    const commun = (x, y) => x.filter(j => y.includes(j));
+    const ou = t => t.length < 2 ? LIB[t[0]] : t.slice(0, -1).map(j => LIB[j]).join(', ') + ' ou ' + LIB[t[t.length - 1]];   // « 0, 1, 2 ou 3 »
+    const manque = (x, y) => toutesIssues().filter(j => !x.includes(j) && !y.includes(j));
+    const QUESTIONS_COURS = [
+        { texte: 'Deux événements <b>contraires</b>', nb: 2, juger([a, b]) {
+            const x = issuesDe(a), y = issuesDe(b), c = commun(x, y), m = manque(x, y);
+            if (c.length) return [false, `Non : ${a.id} et ${b.id} peuvent arriver en même temps (issues communes : ${ensemble(c)}).`];
+            if (m.length) return [false, `Non : ${a.id} et ${b.id} sont incompatibles, mais si l'issue est ${ou(m)}, aucun des deux n'est réalisé.`];
+            return [true, `Oui : ${a.id} = ${ensemble(x)} et ${b.id} = ${ensemble(y)}. Ils n'ont aucune issue commune, et à eux deux ils contiennent toutes les issues.`];
+        } },
+        { texte: 'Deux événements <b>incompatibles</b> mais <b>pas contraires</b>', nb: 2, juger([a, b]) {
+            const x = issuesDe(a), y = issuesDe(b), c = commun(x, y), m = manque(x, y);
+            if (c.length) return [false, `Non : ${a.id} et ${b.id} ne sont pas incompatibles (issues communes : ${ensemble(c)}).`];
+            if (!m.length) return [false, `Non : ${a.id} et ${b.id} sont incompatibles, mais ils sont contraires (ils contiennent toutes les issues).`];
+            return [true, `Oui : ${a.id} = ${ensemble(x)} et ${b.id} = ${ensemble(y)} n'ont aucune issue commune, et si l'issue est ${ou(m)}, aucun des deux n'est réalisé.`];
+        } },
+        { texte: 'Un événement <b>impossible</b>', nb: 1, juger([a]) {
+            const x = issuesDe(a);
+            return x.length ? [false, `Non : ${a.id} est réalisé par ${ensemble(x)}.`]
+                : [true, `Oui : aucune issue ne réalise ${a.id} (${EXP === 'des' ? 'la somme vaut au plus 6 + 6 = 12' : EXP === 'urne' ? 'il n\'y a pas de boule verte dans l\'urne' : EXP === 'pieces' ? 'on ne peut pas obtenir trois fois Pile avec deux pièces' : `on ne peut pas avoir ${n + 1} bonnes réponses sur ${n}`}). Sa probabilité est 0.`];
+        } },
+        { texte: 'Un événement <b>certain</b>', nb: 1, juger([a]) {
+            const x = issuesDe(a), m = toutesIssues().filter(j => !x.includes(j));
+            return m.length ? [false, `Non : si l'issue est ${ou(m)}, ${a.id} n'est pas réalisé.`]
+                : [true, `Oui : toutes les issues ${ensemble(x)} réalisent ${a.id}. Sa probabilité est 1.`];
+        } }
+    ];
+    function dessinerCours() {
+        $('questionsCours').innerHTML = QUESTIONS_COURS.map((q, i) => `<div class="qc${i ? ' cache' : ''}" data-i="${i}">
+            <span class="qc-texte">${i + 1}. ${q.texte}</span>
+            <div class="qc-ligne"><span class="qc-lettres">${EVENEMENTS.map(e => `<button type="button" data-l="${e.id}" style="--c:${e.couleur}" title="${e.court}">${e.id}</button>`).join('')}</span>
+                <button type="button" class="qc-verifier">Vérifier</button></div>
+            <div class="qc-retour"></div></div>`).join('');
+        $('questionsCours').querySelectorAll('.qc').forEach(bloc => {
+            const q = QUESTIONS_COURS[+bloc.dataset.i], choix = [], retour = bloc.querySelector('.qc-retour');
+            bloc.querySelectorAll('[data-l]').forEach(b => b.onclick = () => {
+                const l = b.dataset.l, i = choix.indexOf(l);
+                if (i >= 0) choix.splice(i, 1); else { choix.push(l); if (choix.length > q.nb) choix.shift(); }
+                bloc.querySelectorAll('[data-l]').forEach(x => x.classList.toggle('choisi', choix.includes(x.dataset.l)));
+                retour.textContent = ''; retour.className = 'qc-retour';
+            });
+            bloc.querySelector('.qc-verifier').onclick = () => {
+                if (choix.length !== q.nb) { retour.className = 'qc-retour non'; retour.textContent = q.nb === 2 ? 'Choisis deux lettres.' : 'Choisis une lettre.'; return; }
+                const [ok, texte] = q.juger(choix.map(l => EVENEMENTS.find(e => e.id === l)));
+                retour.className = 'qc-retour ' + (ok ? 'oui' : 'non');
+                retour.textContent = (ok ? '✓ ' : '✗ ') + texte;
+            };
+        });
+    }
+    /* ============ Questions de cours : la base (0 ≤ p ≤ 1) ============ */
+    // Douze nombres : 2 décimaux, 2 fractions et 2 pourcentages qui conviennent, autant qui ne conviennent pas.
+    const BASE = {
+        dec: { oui: ['0', '1', '0,5', '0,25', '0,8', '0,05', '0,999'], non: ['1,2', '−0,3', '2', '1,01', '−1', '10'] },
+        frac: { oui: ['1/2', '3/4', '2/3', '7/7', '0/5', '1/32'], non: ['5/4', '3/2', '−1/2', '9/8', '32/1'] },
+        pct: { oui: ['0 %', '50 %', '100 %', '3,1 %', '75 %'], non: ['120 %', '−10 %', '150 %', '101 %'] }
+    };
+    let listeBase = [], pauseAvantBase = false;
+    function valeurExacte(t) {
+        const x = t.replace('−', '-').replace(/\s/g, '').replace(',', '.');
+        if (x.endsWith('%')) return parseFloat(x) / 100;
+        if (x.includes('/')) { const [a, b] = x.split('/').map(Number); return a / b; }
+        return Number(x);
+    }
+    function nouvelleListeBase() {
+        const tirer = (t, m) => melanger(t.slice()).slice(0, m);
+        listeBase = melanger([...tirer(BASE.dec.oui, 2), ...tirer(BASE.frac.oui, 2), ...tirer(BASE.pct.oui, 2),
+            ...tirer(BASE.dec.non, 2), ...tirer(BASE.frac.non, 2), ...tirer(BASE.pct.non, 2)])
+            .map(t => { const v = valeurExacte(t); return { t, v, ok: v >= 0 && v <= 1 }; });
+        $('listeBase').innerHTML = listeBase.map((x, i) => `<button type="button" data-i="${i}">${x.t}</button>`).join('');
+        $('listeBase').querySelectorAll('button').forEach(b => b.onclick = () => {
+            b.classList.toggle('choisi'); b.classList.remove('ok', 'faux');
+            const sm = b.querySelector('small'); if (sm) sm.remove();
+            $('retourBase').textContent = '';
+        });
+        $('retourBase').className = 'qc-retour'; $('retourBase').textContent = '';
+    }
+    const raison = x => x.v < 0 ? 'négatif' : x.v > 1 ? 'plus grand que 1' : 'entre 0 et 1';
+    const egal = x => {
+        if (!x.t.includes('/') && !x.t.includes('%')) return '';
+        const exact = Math.abs(x.v * 10000 - Math.round(x.v * 10000)) < 1e-9;
+        const ecrit = (exact ? nombre(x.v) : x.v.toLocaleString('fr-FR', { maximumFractionDigits: 2 })).replace('-', MOINS);
+        return ` ${exact ? '=' : '≈'} ${ecrit}`;
+    };
+    $('btnVerifBase').onclick = () => {
+        let bons = 0;
+        $('listeBase').querySelectorAll('button').forEach(b => {
+            const x = listeBase[+b.dataset.i], coche = b.classList.contains('choisi'), juste = coche === x.ok;
+            b.classList.toggle('ok', juste); b.classList.toggle('faux', !juste);
+            if (juste) bons++;
+        });
+        const r = $('retourBase');
+        r.className = 'qc-retour ' + (bons === listeBase.length ? 'oui' : 'non');
+        r.textContent = bons === listeBase.length ? '✓ Bravo : tout est juste.' : `${bons} sur ${listeBase.length} justes. Les cases rouges sont mal classées : regarde si le nombre est entre 0 et 1.`;
+    };
+    $('btnCorrigeBase').onclick = () => {
+        $('listeBase').querySelectorAll('button').forEach(b => {
+            const x = listeBase[+b.dataset.i];
+            b.classList.toggle('choisi', x.ok); b.classList.remove('faux'); b.classList.add('ok');
+            if (!b.querySelector('small')) b.insertAdjacentHTML('beforeend', `<small>${egal(x)} : ${raison(x)}</small>`);
+        });
+        $('retourBase').className = 'qc-retour'; $('retourBase').textContent = 'Correction : sont cochés les nombres compris entre 0 et 1.';
+    };
+    $('btnAutreBase').onclick = nouvelleListeBase;
+    $('btnCoursBase').onclick = () => {
+        ['overlayEnonce', 'overlayCours', 'overlayProba'].forEach(id => $(id).classList.add('cache'));
+        pauseAvantBase = pause;
+        if (!arrete) { pause = true; textePause(); }
+        nouvelleListeBase();
+        $('overlayBase').classList.remove('cache');
+    };
+    $('btnFermerBase').onclick = () => {
+        $('overlayBase').classList.add('cache');
+        if (!arrete) { pause = pauseAvantBase; textePause(); }
+    };
+
+    /* ============ Questions de cours : probabilités (répartir les 100 %) ============ */
+    let pauseAvantProba = false;
+    // Une probabilité peut s'écrire 0,25 ; 1/32 ; 3,1 %. Un nombre sans % plus grand que 1 est lu comme un pourcentage.
+    function lireProba(t) {
+        const x = String(t).replace(/\s/g, '').replace(/,/g, '.');
+        if (!x) return null;
+        let v;
+        if (x.endsWith('%')) v = parseFloat(x.slice(0, -1)) / 100;
+        else if (x.includes('/')) { const [a, b] = x.split('/').map(Number); v = b ? a / b : NaN; }
+        else { v = Number(x); if (v > 1) v /= 100; }
+        return Number.isFinite(v) && v >= 0 ? v : NaN;
+    }
+    const exposant = m => [...String(m)].map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+    function dessinerProba() {
+        const g = $('grilleProba');
+        g.style.setProperty('--nb', NI);
+        g.classList.toggle('serree', NI > 8);
+        const issues = toutesIssues();
+        g.innerHTML = '<span class="tete titre-l">Issue</span>' + issues.map(j => `<span class="tete">${LIB[j]}</span>`).join('') + '<span class="tete total">Total</span>'
+            + '<span class="titre-l">Probabilité</span>' + issues.map(j => `<span><input type="text" inputmode="decimal" data-j="${j}" aria-label="probabilité de l'issue ${LIB[j]}"></span>`).join('') + '<span class="total" id="caseTotal"></span>'
+            + '<span class="titre-l lu">soit</span>' + issues.map(j => `<span class="lu" data-lu="${j}"></span>`).join('') + '<span class="lu total" id="caseTotalLu"></span>'
+            + '<span class="titre-l cache" id="titreCorr">Correction</span>' + issues.map(j => `<span class="corr-p cache" data-c="${j}"></span>`).join('') + '<span class="corr-p cache total" id="corrTotal">100 %</span>';
+        g.querySelectorAll('input').forEach(inp => inp.oninput = () => { inp.classList.remove('ok', 'faux'); majTotal(); $('retourProba').textContent = ''; });
+        $('retourProba').className = 'qc-retour'; $('retourProba').textContent = '';
+        majTotal();
+    }
+    // Le total, en direct, dans la dernière colonne du tableau.
+    function majTotal() {
+        let tot = 0, illisible = false;
+        $('grilleProba').querySelectorAll('input').forEach(inp => {
+            const v = lireProba(inp.value), lu = $('grilleProba').querySelector(`[data-lu="${inp.dataset.j}"]`);
+            if (v === null) { lu.textContent = ''; return; }
+            if (Number.isNaN(v)) { lu.textContent = '?'; illisible = true; return; }
+            lu.textContent = '≈ ' + pourcent(v).replace('moins de ', '< ');
+            tot += v;
+        });
+        const juste = Math.abs(tot - 1) <= 0.0005 * NI + 1e-9;
+        $('caseTotal').innerHTML = `<b class="${juste ? 'ok' : 'faux'}">${pourcent(tot)}</b>`;
+        $('caseTotalLu').textContent = juste ? '= 1 ✓' : 'il faut 100 %';
+        $('totalProba').innerHTML = illisible ? 'Une case n\'est pas lisible : écris par exemple 0,25 ou 1/4 ou 25 %.' : '';
+        return tot;
+    }
+    $('btnVerifProba').onclick = () => {
+        let bons = 0, vides = 0;
+        $('grilleProba').querySelectorAll('input').forEach(inp => {
+            const v = lireProba(inp.value), attendu = P[+inp.dataset.j];
+            if (v === null || Number.isNaN(v)) { vides++; inp.classList.remove('ok', 'faux'); return; }
+            const ok = Math.abs(v - attendu) <= 0.0055;   // on accepte l'arrondi au pourcent près
+            inp.classList.toggle('ok', ok); inp.classList.toggle('faux', !ok);
+            if (ok) bons++;
+        });
+        const tot = majTotal(), r = $('retourProba');
+        if (bons === NI) { r.className = 'qc-retour oui'; r.textContent = '✓ Bravo : toutes les probabilités sont justes, et leur somme fait 100 %.'; return; }
+        r.className = 'qc-retour non';
+        r.textContent = vides ? `Il reste ${vides} case${vides > 1 ? 's' : ''} vide${vides > 1 ? 's' : ''} ou illisible${vides > 1 ? 's' : ''}. ` : '';
+        r.textContent += `${bons} sur ${NI} juste${bons > 1 ? 's' : ''}.` + (Math.abs(tot - 1) > 0.0005 * NI ? ' Attention : la somme des probabilités doit faire 100 %.'
+            : EXP === 'des' ? ' Indice : avec un dé rouge et un dé vert, il y a 6 × 6 = 36 résultats (rouge ; vert), tous aussi probables. Par exemple, la somme 3 s\'obtient avec (1 ; 2) et (2 ; 1).'
+            : EXP === 'urne' ? ` Indice : il y a ${reglages.rouges + reglages.bleues} boules dans l'urne, donc ${reglages.rouges + reglages.bleues} × ${reglages.rouges + reglages.bleues} = ${entier(total)} façons de tirer deux boules, toutes aussi probables.`
+            : EXP === 'pieces' ? ' Indice : les deux pièces sont équilibrées, et chaque issue est aussi probable que les autres.'
+            : ` Indice : il y a ${k}${exposant(n)} = ${entier(total)} façons de remplir la copie, toutes aussi probables.`);
+    };
+    $('btnCorrigeProba').onclick = () => {
+        $('titreCorr').classList.remove('cache');
+        $('grilleProba').querySelectorAll('[data-c]').forEach(el => {
+            const j = +el.dataset.c;
+            el.classList.remove('cache');
+            el.innerHTML = `${entier(favorables[j])}/${entier(total)}<br><b>${pourcent(P[j]).replace('moins de ', '< ')}</b>`;
+        });
+        $('corrTotal').classList.remove('cache');
+    };
+    $('btnCoursProba').onclick = () => {
+        $('overlayEnonce').classList.add('cache'); $('overlayCours').classList.add('cache'); $('overlayBase').classList.add('cache');
+        pauseAvantProba = pause;
+        if (!arrete) { pause = true; textePause(); }
+        dessinerProba();
+        $('overlayProba').classList.remove('cache');
+        const premier = $('grilleProba').querySelector('input'); if (premier) premier.focus();
+    };
+    $('btnFermerProba').onclick = () => {
+        $('overlayProba').classList.add('cache');
+        if (!arrete) { pause = pauseAvantProba; textePause(); }
+    };
+
+    let pauseAvantCours = false, questionCours = 0;
+    function montrerQuestion(i) {
+        questionCours = i;
+        $('questionsCours').querySelectorAll('.qc').forEach(b => b.classList.toggle('cache', +b.dataset.i !== i));
+        $('numQuestion').textContent = `question ${i + 1} sur ${QUESTIONS_COURS.length}`;
+        $('btnSuiteCours').textContent = i < QUESTIONS_COURS.length - 1 ? 'Continuer' : 'Terminer';
+    }
+    $('btnSuiteCours').onclick = () => {
+        if (questionCours < QUESTIONS_COURS.length - 1) montrerQuestion(questionCours + 1);
+        else $('btnFermerCours').click();
+    };
+    // La liste des événements, en grand à gauche, tant que les questions sur les événements sont ouvertes.
+    function syncEvenementsGauche() {
+        const ouvert = !$('overlayCours').classList.contains('cache') && !$('activite').classList.contains('cache');
+        if (ouvert) {
+            $('rappelExp').textContent = EXP === 'des' ? 'On lance un dé rouge et un dé vert ; on note la somme.' : EXP === 'urne' ? `Urne : ${reglages.rouges} rouge${reglages.rouges > 1 ? 's' : ''} et ${reglages.bleues} bleue${reglages.bleues > 1 ? 's' : ''} ; deux tirages avec remise.` : EXP === 'pieces' ? 'On lance deux pièces équilibrées, l\'une après l\'autre.' : `Un élève répond au hasard à un QCM de ${n} question${n > 1 ? 's' : ''}.`;
+            $('grandsEvenements').innerHTML = EVENEMENTS.map(e => `<div style="--c:${e.couleur}"><b>${e.id}</b><span>« ${e.court} »</span></div>`).join('');
+        }
+        $('overlayEvenements').classList.toggle('cache', !ouvert);
+    }
+    new MutationObserver(syncEvenementsGauche).observe($('overlayCours'), { attributes: true, attributeFilter: ['class'] });
+    $('btnCours').onclick = () => {
+        $('overlayEnonce').classList.add('cache'); $('overlayProba').classList.add('cache'); $('overlayBase').classList.add('cache');
+        pauseAvantCours = pause;
+        if (!arrete) { pause = true; textePause(); }
+        dessinerCours();
+        montrerQuestion(0);
+        $('overlayCours').classList.remove('cache');
+    };
+    $('btnFermerCours').onclick = () => {
+        $('overlayCours').classList.add('cache');
+        if (!arrete) { pause = pauseAvantCours; textePause(); }
+    };
+    function marquerProba() {
+        $('btnProba').classList.toggle('actif', voirProba);
+        $('btnProba').textContent = (voirProba ? '☑' : '☐') + ' Probabilités';
+        $('btnProba').title = voirProba ? 'Cacher les probabilités calculées' : 'Afficher les probabilités calculées';
+        document.body.classList.toggle('proba', voirProba);
+    }
+    $('btnProba').onclick = () => { voirProba = !voirProba; marquerProba(); if (stats) afficherStats(); };
+    marquerProba();
+    $('btnFermerEnonce').onclick = fermerEnonce;
+    $('overlayEnonce').onclick = ev => { if (ev.target === $('overlayEnonce')) fermerEnonce(); };
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('overlayEnonce').classList.contains('cache')) fermerEnonce(); });
+
+    $('btnReglages').onclick = () => {
+        document.documentElement.style.fontSize = '';
+        $('overlayEnonce').classList.add('cache');
+        arrete = true; course++;
+        $('doigt').classList.add('cache');
+        $('activite').classList.add('cache');
+        $('resume').classList.add('cache');
+        $('btnReglages').classList.add('cache'); $('btnExp').classList.add('cache'); $('menuExp').classList.add('cache');
+        $('reglages').classList.remove('vers-exp', 'vers-deroule');
+        $('btnEnonce').classList.add('cache');
+        $('groupeCours').classList.add('cache'); $('btnStats').classList.add('cache');
+        document.body.classList.remove('en-activite');
+        $('overlayCours').classList.add('cache'); $('overlayProba').classList.add('cache'); $('overlayBase').classList.add('cache');
+        $('reglages').classList.remove('cache');
+        dessinerReglages();
+    };
+
+    // Chaque cadre de statistiques peut se replier (bouton ▾ / ▸) ; le choix est retenu par le navigateur.
+    let replis = {};
+    try { replis = JSON.parse(localStorage.getItem('quizHasard.replis')) || {}; } catch (e) {}
+    document.querySelectorAll('.cadre.repliable').forEach(cadre => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'replier';
+        const appliquer = () => {
+            const r = !!replis[cadre.dataset.cle];
+            cadre.classList.toggle('replie', r);
+            b.textContent = r ? '▸' : '▾';
+            b.title = r ? 'Déplier ce cadre' : 'Replier ce cadre';
+        };
+        b.onclick = () => {
+            replis[cadre.dataset.cle] = !replis[cadre.dataset.cle];
+            setTimeout(ajusterTaille);
+            try { localStorage.setItem('quizHasard.replis', JSON.stringify(replis)); } catch (e) {}
+            appliquer();
+        };
+        cadre.querySelector('h3').append(b);
+        appliquer();
+    });
+
+    /* ============ Le menu des expériences (entête) ============ */
+    const NOMS_EXP = { qcm: 'QCM au hasard', pieces: 'Deux pièces', des: 'Deux dés', urne: 'Urne avec remise' };
+    function detailExp(e) {
+        if (e === 'urne') return `${reglages.rouges} rouge${reglages.rouges > 1 ? 's' : ''} et ${reglages.bleues} bleue${reglages.bleues > 1 ? 's' : ''} ; deux tirages ; on note par exemple RB.`;
+        if (e === 'pieces') return 'Deux pièces équilibrées ; on note par exemple PF.';
+        if (e === 'des') return 'Un dé rouge, un dé vert ; on note la somme.';
+        return `${reglages.n} question${reglages.n > 1 ? 's' : ''} à ${reglages.k} réponses ; on note le nombre de bonnes réponses.`;
+    }
+    function marquerBtnExp() { $('btnExp').textContent = 'Expériences ▾'; }
+    function ouvrirMenuExp() {
+        $('cartesMenuExp').innerHTML = ['qcm', 'pieces', 'des', 'urne'].map(e =>
+            `<button type="button" data-e="${e}" class="${e === reglages.experience ? 'choisi' : ''}"><b>${NOMS_EXP[e]}</b><small>${detailExp(e)}</small></button>`).join('');
+        $('cartesMenuExp').querySelectorAll('button').forEach(b => b.onclick = () => {
+            $('menuExp').classList.add('cache');
+            if (b.dataset.e === reglages.experience) return;
+            reglages.experience = b.dataset.e;
+            if (reglages.gagnant) appliquerGagnant();
+            enregistrer();
+            dessinerReglages();
+            $('btnLancer').click();   // on repart sur la nouvelle expérience, avec son énoncé
+            if ($('activite').classList.contains('cache')) ouvrirReglages('vers-exp');   // QCM perso incomplet : on reste aux réglages
+        });
+        $('btnPropres').textContent = `⚙ Régler : ${NOMS_EXP[reglages.experience]}`;
+        $('menuExp').classList.remove('cache');
+    }
+    $('btnExp').onclick = () => $('menuExp').classList.contains('cache') ? ouvrirMenuExp() : $('menuExp').classList.add('cache');
+    $('btnFermerMenuExp').onclick = () => $('menuExp').classList.add('cache');
+    document.addEventListener('pointerdown', ev => {
+        if (!$('menuExp').classList.contains('cache') && !ev.target.closest('#menuExp, #btnExp')) $('menuExp').classList.add('cache');
+    });
+    // Ouvrir les réglages en mettant en avant un bloc.
+    function ouvrirReglages(bloc) {
+        if (!$('activite').classList.contains('cache')) $('btnReglages').click();
+        $('reglages').classList.remove('vers-exp', 'vers-deroule');
+        if (bloc) { $('reglages').classList.add(bloc); (bloc === 'vers-exp' ? $('blocExp') : $('blocDeroule')).scrollIntoView({ block: 'start' }); }
+    }
+    $('btnPropres').onclick = () => { $('menuExp').classList.add('cache'); ouvrirReglages('vers-exp'); };
+
+    /* ============ Projection : cadres flottants ============ */
+    // Le bouton ⧉ détache un cadre : il flotte au-dessus de la page, on le déplace par sa barre et on l'agrandit
+    // par le coin ; tout son contenu grossit avec lui. Sa place reste marquée dans la page (rien ne bouge), et ⤓ l'y remet.
+    function nomDuCadre(cadre) {
+        const t = cadre.querySelector('h3 em') || cadre.querySelector('h3, .zone-titre');
+        return t ? (t.firstChild && t.firstChild.nodeType === 3 && t.firstChild.textContent.trim() || t.textContent).trim() : 'Les événements';
+    }
+    function zoomFlottant(cadre) {
+        const f = cadre._flottant, barre = cadre.querySelector(':scope > .barre-flottante');
+        const echelle = Math.max(0.5, Math.min((cadre.clientWidth - f.marge) / f.w0, (cadre.clientHeight - barre.offsetHeight - f.margeH) / f.h0));
+        [...cadre.children].forEach(el => { if (!el.matches('.barre-flottante, .poignee')) el.style.zoom = echelle; });
+    }
+    function detacher(cadre) {
+        if (cadre._flottant) return;
+        const r = cadre.getBoundingClientRect(), cs = getComputedStyle(cadre);
+        const marge = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 4;
+        const place = document.createElement('div');
+        place.className = 'place-flottant';
+        place.style.height = r.height + 'px';
+        place.innerHTML = `<span>« ${nomDuCadre(cadre)} » est en fenêtre flottante</span><button type="button">⤓ Remettre ici</button>`;
+        place.querySelector('button').onclick = () => rattacher(cadre);
+        cadre.before(place);
+        cadre._flottant = { place, w0: r.width - marge, h0: r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom), marge, margeH: parseFloat(cs.paddingBottom) + 4 };
+        const barre = document.createElement('div');
+        barre.className = 'barre-flottante';
+        barre.innerHTML = `<span>⠿ ${nomDuCadre(cadre)}</span><button type="button" title="Remettre ce cadre à sa place dans la page">⤓ Remettre</button>`;
+        barre.querySelector('button').onclick = () => rattacher(cadre);
+        barre.style.margin = `0 -${cs.paddingRight} 0.4rem -${cs.paddingLeft}`;
+        const poignee = document.createElement('div');
+        poignee.className = 'poignee'; poignee.title = 'Agrandir ou réduire';
+        cadre.prepend(barre); cadre.append(poignee);
+        cadre.classList.add('flottant');
+        // Au départ : 1,6 fois plus grand, au milieu de l'écran (sans dépasser).
+        const W = Math.min(innerWidth - 20, r.width * 1.6), H = Math.min(innerHeight - 20, (r.height + 30) * 1.6);
+        Object.assign(cadre.style, { width: W + 'px', height: H + 'px', left: (innerWidth - W) / 2 + 'px', top: (innerHeight - H) / 2 + 'px' });
+        zoomFlottant(cadre);
+        glisser(barre, (dx, dy, d) => { cadre.style.left = Math.min(innerWidth - 60, Math.max(-W + 60, d.x + dx)) + 'px'; cadre.style.top = Math.min(innerHeight - 30, Math.max(0, d.y + dy)) + 'px'; },
+            () => ({ x: cadre.offsetLeft, y: cadre.offsetTop }));
+        glisser(poignee, (dx, dy, d) => { cadre.style.width = Math.max(220, d.w + dx) + 'px'; cadre.style.height = Math.max(120, d.h + dy) + 'px'; zoomFlottant(cadre); },
+            () => ({ w: cadre.offsetWidth, h: cadre.offsetHeight }));
+        // Un clic sur une fenêtre la passe devant les autres.
+        cadre._devant = () => { cadre.style.zIndex = ++plusHaut; };
+        cadre.addEventListener('pointerdown', cadre._devant);
+        cadre._devant();
+    }
+    let plusHaut = 900;
+    function glisser(el, bouger, depart) {
+        el.addEventListener('pointerdown', ev => {
+            if (ev.target.closest('button')) return;
+            ev.preventDefault();
+            const x0 = ev.clientX, y0 = ev.clientY, d = depart();
+            el.setPointerCapture(ev.pointerId);
+            const mv = e => bouger(e.clientX - x0, e.clientY - y0, d);
+            const fin = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', fin); el.removeEventListener('pointercancel', fin); };
+            el.addEventListener('pointermove', mv); el.addEventListener('pointerup', fin); el.addEventListener('pointercancel', fin);
+        });
+    }
+    function rattacher(cadre) {
+        const f = cadre._flottant;
+        if (!f) return;
+        cadre.querySelectorAll(':scope > .barre-flottante, :scope > .poignee').forEach(el => el.remove());
+        [...cadre.children].forEach(el => { el.style.zoom = ''; });
+        cadre.classList.remove('flottant');
+        ['width', 'height', 'left', 'top', 'zIndex'].forEach(p => cadre.style[p] = '');
+        cadre.removeEventListener('pointerdown', cadre._devant);
+        f.place.remove();
+        cadre._flottant = null;
+    }
+    document.querySelectorAll('#activite .cadre').forEach(cadre => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'detacher'; b.textContent = '⧉';
+        b.title = 'Détacher en fenêtre flottante (pour la projection) : on la déplace par sa barre, on l\'agrandit par le coin';
+        b.onclick = () => detacher(cadre);
+        const h3 = cadre.querySelector(':scope > h3');
+        const titreZone = cadre.querySelector(':scope > .zone-titre');
+        if (h3) { const rep = h3.querySelector('.replier'); rep ? rep.before(b) : h3.append(b); }
+        else if (titreZone) titreZone.append(b);   // Commandes : sur la ligne du titre
+        else { b.classList.add('coin'); cadre.append(b); }   // Événements : dans la marge de droite, hors du tableau
+    });
+    // En quittant l'activité (réglages), toutes les fenêtres reviennent à leur place.
+    $('btnReglages').addEventListener('click', () => document.querySelectorAll('.cadre.flottant').forEach(rattacher));
+
+    dessinerReglages();
+    // On démarre directement sur l'expérience, en pause, avec l'énoncé (les réglages restent à un clic).
+    $('btnLancer').click();
+})();
+</script>
+</body>
+</html>
