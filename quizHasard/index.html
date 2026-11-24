@@ -160,11 +160,12 @@ body.en-activite #titre { display: none; }
 #menuExp { position: fixed; z-index: 1100; top: 3.4rem; left: 50%; transform: translateX(-50%); width: min(56rem, 96vw); background: #fff; border: 2px solid var(--accent);
     border-radius: var(--rayon); box-shadow: 0 10px 40px rgba(0,0,0,.3); padding: 0.8rem 1rem 1rem; }
 #menuExp h2 { margin: 0 0 0.6rem; text-align: center; font-size: 1.2rem; color: var(--grille-forte); }
-#menuExp .cartes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+#menuExp .cartes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
 #menuExp .cartes button { text-align: left; padding: 0.6rem 0.8rem; font-size: 1rem; }
 #menuExp .cartes button small { display: block; opacity: 0.85; margin-top: 0.2rem; }
 #menuExp .bas { display: flex; justify-content: center; gap: 0.6rem; margin-top: 0.8rem; }
-#choixExperience .carte-choix { flex: 1 1 0; }
+#choixExperience { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+#choixExperience .carte-choix { flex: none; }
 .compo-urne { display: flex; flex-direction: column; gap: 0.35rem; }
 .compo-urne .choix-ligne { flex-wrap: nowrap; }
 .lab-urne { display: inline-block; width: 8rem; color: var(--encre-douce); }
@@ -211,7 +212,7 @@ body.en-activite #titre { display: none; }
 #bilanPari .cagnotte { font-size: 1.02rem; }
 @media (max-width: 700px) { #blocGain { margin-left: 0; } }
 #boutons { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-#boutons { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+#boutons { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* La vitesse : un réglage, pas une action ; petit sélecteur centré sous les boutons. */
 #vitesse { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; margin-top: 0.3rem; font-size: 0.8rem; color: var(--encre-douce); }
 #vitesse > span { text-align: right; }
@@ -234,6 +235,12 @@ body:not(.proba) .attendu, body:not(.proba) #legendeProba { visibility: hidden; 
 .legende .l-obs { background: rgba(192, 57, 43, .75); }
 .bascule { margin-left: auto; padding: 0.05rem 0.6rem; white-space: nowrap; flex-shrink: 0; font-size: 0.85rem; border: 2px solid var(--bleu); color: var(--bleu); background: #fff; font-weight: 600; }
 .bascule.actif { background: var(--bleu); color: #fff; }
+/* Bascule d'écriture % / décimal, en petit sélecteur à deux cases. */
+#segEcriture { display: inline-flex; flex-shrink: 0; margin-left: 0.4rem; border: 2px solid var(--grille-forte); border-radius: 1rem; overflow: hidden; }
+#segEcriture button { border: none; border-radius: 0; padding: 0 0.5rem; font-size: 0.85rem; font-weight: 700; background: #fff; color: var(--grille-forte); line-height: 1.5; }
+#segEcriture button + button { border-left: 2px solid var(--grille-forte); }
+#segEcriture button.choisi { background: var(--grille-forte); color: #fff; }
+[data-cle=notes] h3 em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .bascule + .replier { margin-left: 0.4rem; }
 .legende .l-pro { height: 4px; border-radius: 2px; background: var(--bleu); }
 .suivi { padding-top: 0.45rem; padding-bottom: 0.5rem; flex: 1; display: flex; flex-direction: column; justify-content: center; }
@@ -313,6 +320,15 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 .qc-lettres button { width: 3rem; padding: 0.3rem 0; font-size: 1.3rem; font-weight: 700; border: 2px solid var(--c); color: var(--c); background: #fff; }
 .qc-lettres button.choisi { background: var(--c); color: #fff; }
 .qc-verifier { padding: 0.2rem 0.7rem; }
+/* Partie 1 du cours : décrire chaque événement par l'ensemble de ses issues. */
+.ens-ligne { display: flex; align-items: center; gap: 0.35rem; margin: 0.25rem 0; font-size: 1.1rem; }
+.ens-ligne > b { min-width: 2.6rem; color: var(--c); font-size: 1.25rem; }
+.ens-ligne .acc { font-size: 1.5rem; color: var(--encre-douce); }
+.ens-issues { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.ens-issues button { padding: 0.1rem 0.45rem; font-size: 1rem; min-width: 2.4rem; border: 1px solid #c9d3cc; background: #fff; color: #9aa7a0; }
+.ens-issues button.choisi { background: var(--c); border-color: var(--c); color: #fff; font-weight: 700; }
+.ens-marque { min-width: 1.4rem; font-weight: 700; font-size: 1.25rem; }
+.ens-marque.oui { color: var(--succes); } .ens-marque.non { color: var(--rouge); }
 .qc-retour { margin-top: 0.9rem; font-size: 1.15rem; line-height: 1.4; }
 .qc-retour.oui { color: var(--succes); }
 .carte-cours .rappel { margin: 0 0 0.4rem; padding: 0.4rem 0.8rem; background: var(--bleu-fond); border-left: 5px solid var(--bleu); border-radius: var(--rayon-petit); }
@@ -343,6 +359,23 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 #totalProba b.ok { color: var(--succes); }
 #totalProba b.faux { color: var(--rouge); }
 .qc-retour.non { color: var(--rouge); }
+/* Bulle « A = { … } » au survol d'un événement, une fois les ensembles écrits dans le cours. */
+#bulleEns { position: fixed; z-index: 1200; pointer-events: none; background: #fff; border: 3px solid var(--c); border-radius: var(--rayon-petit);
+    padding: 0.3rem 0.8rem; font-size: 1.35rem; font-weight: 700; color: var(--c); box-shadow: 0 6px 18px rgba(0,0,0,.25); white-space: nowrap; }
+/* Une carte (énoncé, cours) trop pleine se resserre au lieu d'afficher un ascenseur. */
+.carte-enonce.serre { padding: 0.6rem 1.2rem 0.7rem; line-height: 1.3; }
+.carte-enonce.serre h2 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+.carte-enonce.serre .consigne { margin-bottom: 0.3rem; font-size: 1.1rem; }
+.carte-enonce.serre .qc { padding: 0; }
+.carte-enonce.serre .qc .qc-texte { font-size: 1.2rem; margin-bottom: 0.35rem; }
+.carte-enonce.serre .ens-ligne { margin: 0.1rem 0; }
+.carte-enonce.serre .qc-retour { margin-top: 0.4rem; font-size: 1rem; line-height: 1.3; }
+.carte-enonce.tres-serre { font-size: 1.1rem; }
+.carte-enonce.tres-serre h2 { font-size: 1.25rem; }
+.carte-enonce.tres-serre .ens-ligne { font-size: 1rem; }
+.carte-enonce.tres-serre .ens-ligne > b { font-size: 1.1rem; }
+.carte-enonce.tres-serre .ens-issues button { padding: 0 0.35rem; font-size: 0.9rem; min-width: 2rem; }
+.carte-enonce.tres-serre .qc-lettres button { width: 2.6rem; font-size: 1.15rem; padding: 0.15rem 0; }
 .carte-enonce { background: #fff; border-radius: var(--rayon); border: 2px solid var(--accent); border-top-width: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.18); display: flex; flex-direction: column;
     width: 100%; height: 100%; overflow-y: auto; padding: 1rem 1.6rem 1.1rem; font-size: 1.3rem; line-height: 1.42; }
 .carte-enonce h2 { margin: 0 0 0.6rem; color: var(--grille-forte); font-size: 1.7rem; }
@@ -385,6 +418,8 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         <h2 class="titre-bloc">L'expérience</h2>
     <div class="reglage cartes-exp">
         <div class="choix-ligne" id="choixExperience">
+            <button type="button" class="carte-choix" data-exp="piece"><b>Le lancer d'une pièce</b><small>Équilibrée ou truquée ; on note Pile (P) ou Face (F).</small></button>
+            <button type="button" class="carte-choix" data-exp="de"><b>Le lancer d'un dé</b><small>Équilibré ou truqué ; on note le numéro obtenu.</small></button>
             <button type="button" class="carte-choix" data-exp="qcm"><b>Un QCM rempli au hasard</b><small>Vrai/faux ou 3 ou 4 réponses ; on note le nombre de bonnes réponses.</small></button>
             <button type="button" class="carte-choix" data-exp="pieces"><b>Le lancer de deux pièces</b><small>Deux pièces équilibrées ; on note le résultat, par exemple PF.</small></button>
             <button type="button" class="carte-choix" data-exp="des"><b>Le lancer de deux dés</b><small>Un dé rouge, un dé vert ; on note la somme, par exemple 3 + 5 = 8.</small></button>
@@ -394,6 +429,30 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 
         <div class="propres">
             <h3 id="titrePropres">Ses réglages</h3>
+    <div class="reglage piece-seul">
+        <h2 data-t="La pièce"></h2>
+        <div class="compo-urne">
+            <div class="choix-ligne" id="choixTruquee">
+                <button type="button" data-tr="non">Équilibrée</button>
+                <button type="button" data-tr="oui">Truquée</button>
+            </div>
+            <div class="choix-ligne puces-n" id="ligneProbaPile"><span class="lab-urne" style="width:auto;white-space:nowrap">Probabilité de Pile :</span><span id="choixPile" class="choix-ligne"></span></div>
+        </div>
+    </div>
+
+    <div class="reglage de-seul">
+        <h2 data-t="Le dé"></h2>
+        <div class="compo-urne">
+            <div class="choix-ligne" id="choixDeTruque">
+                <button type="button" data-dt="non">Équilibré</button>
+                <button type="button" data-dt="oui">Truqué</button>
+            </div>
+            <div class="choix-ligne puces-n ligne-de-truque"><span class="lab-urne" style="width:auto;white-space:nowrap">Face favorisée :</span><span id="choixFace" class="choix-ligne"></span></div>
+            <div class="choix-ligne puces-n ligne-de-truque"><span class="lab-urne" style="width:auto;white-space:nowrap">Probabilité de cette face :</span><span id="choixProbaFace" class="choix-ligne"></span>
+                <span id="infoDeTruque" style="color:var(--encre-douce)"></span></div>
+        </div>
+    </div>
+
     <div class="reglage urne-seul">
         <h2 data-t="L'urne"></h2>
         <div class="compo-urne">
@@ -464,7 +523,9 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         <h2 data-t="Vitesse au départ"></h2>
         <div class="choix-ligne" id="choixVitesse">
             <button type="button" data-v="lent">Lent : on voit cliquer</button>
+            <button type="button" data-v="moyen">Moyen : on voit chaque résultat</button>
             <button type="button" data-v="rapide">Rapide : des centaines par seconde</button>
+            <button type="button" data-v="ultra">Ultra : par paquets de 1 000</button>
         </div>
     </div>
 
@@ -505,10 +566,9 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
                 <button type="button" data-b="une" id="btnUne">Une partie</button>
                 <button type="button" data-b="jouer" title="Jouer sans s'arrêter, à la vitesse choisie dessous">▶ Jouer</button>
                 <button type="button" data-b="pause">Pause</button>
-                <button type="button" data-b="stop" title="Arrêter, puis « Rejouer » recommence à zéro (même QCM pour une foule)">Arrêter</button>
                 <button type="button" data-b="raz" title="Tout recommencer à zéro : compteurs, fréquences, courbe (les réglages ne changent pas)">↺ À zéro</button>
             </div>
-            <div id="vitesse"><span>Vitesse</span><div class="seg"><button type="button" data-v="lent">Lent</button><button type="button" data-v="rapide">Rapide</button></div></div>
+            <div id="vitesse"><span>Vitesse</span><div class="seg"><button type="button" data-v="lent">Lent</button><button type="button" data-v="moyen" title="Quelques lancers par seconde : on voit chaque résultat">Moyen</button><button type="button" data-v="rapide">Rapide</button><button type="button" data-v="ultra" title="Jusqu'au millier rond, puis par paquets de 1 000">Ultra</button></div></div>
         </div>
         <div class="cadre suivi"><div id="evenements"></div></div>
         <!-- Pendant les questions de cours sur les événements : la liste des événements, en grand. -->
@@ -545,7 +605,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         <div id="overlayCours" class="cache overlay-droite">
             <div class="carte-enonce carte-cours">
                 <h2>Questions de cours : événements</h2>
-                <p class="consigne">Parmi les événements A à F (à gauche), donner : <span id="numQuestion"></span></p>
+                <p class="consigne"><span id="consigneCours">Parmi les événements (à gauche), donner :</span> <span id="numQuestion"></span></p>
                 <div id="questionsCours"></div>
                 <div class="choix-ligne" style="justify-content:flex-end;margin-top:auto;padding-top:0.6rem">
                     <button type="button" id="btnFermerCours">Sortir</button>
@@ -585,7 +645,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
             </div>
         </div>
         <div class="cadre repliable" data-cle="notes">
-            <h3 style="white-space:nowrap"><em id="titreIssues">Issues : nombre de bonnes réponses</em> <button type="button" id="btnProba" class="bascule">☐ Probabilités</button></h3>
+            <h3 style="white-space:nowrap"><em id="titreIssues">Issues : nombre de bonnes réponses</em> <button type="button" id="btnProba" class="bascule">☐ Probabilités</button> <span id="segEcriture" title="Écrire les fréquences et les probabilités en pourcentage ou en décimal"><button type="button" data-ecr="pct">%</button><button type="button" data-ecr="dec">0,25</button></span></h3>
             <svg id="diagramme" viewBox="0 0 780 196"></svg>
             <div class="legende">
                 <span><i class="l-obs"></i>barre rouge : ce qui est arrivé</span>
@@ -605,6 +665,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 </section>
 
 <div id="doigt" class="cache"></div>
+<div id="bulleEns" class="cache"></div>
 
 
 <script>
@@ -618,7 +679,12 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     const pgcd = (a, b) => (b ? pgcd(b, a % b) : a);
     const entier = x => x.toLocaleString('fr-FR');
     const nombre = x => Number(x.toFixed(6)).toLocaleString('fr-FR', { maximumFractionDigits: 4 });
-    const pourcent = x => x > 0 && x < 0.0001 ? 'moins de 0,01 %'
+    // Écriture des fréquences et probabilités : en pourcentage (25 %) ou en décimal (0,25), au choix (bouton dans le cadre des issues).
+    let ecriture = 'pct';
+    try { if (localStorage.getItem('quizHasard.ecriture') === 'dec') ecriture = 'dec'; } catch (e) {}
+    const pourcent = x => ecriture === 'dec'
+        ? (x > 0 && x < 0.0001 ? 'moins de 0,0001' : x.toLocaleString('fr-FR', { maximumFractionDigits: x < 0.01 && x > 0 ? 4 : 3 }))
+        : x > 0 && x < 0.0001 ? 'moins de 0,01 %'
         : (100 * x).toLocaleString('fr-FR', { maximumFractionDigits: x < 0.01 && x > 0 ? 2 : 1 }) + ' %';
     const echapper = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const MOINS = '−', ESP = ' ';
@@ -675,16 +741,23 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         ['Périmètre d\'un carré de côté 3 cm :', '12 cm', ['9 cm', '6 cm', '3 cm']], ['La moitié de 3 est', '1,5', ['1', '3,5', '2']]
     ].map(([texte, bonne, mauvaises]) => ({ texte, bonne, mauvaises }));
     const CLE = 'quizHasard.reglages2';
-    const reglages = { experience: 'qcm', mode: 'eleve', avecGain: false, gainsPieces: [3, -1, -1, 0], gainsUrne: [-1, 2, 2, -1], gainsDes: [-1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1], rouges: 3, bleues: 2, gainsQCM: null, gagnant: null, gainG: 3, gainP: 1, k: 2, source: 'calculs', n: 5, foule: 100, vitesse: 'lent',
+    const reglages = { experience: 'qcm', mode: 'eleve', avecGain: false, gainsPieces: [3, -1, -1, 0], gainsUrne: [-1, 2, 2, -1], gainsDes: [-1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1], gainsPiece: [1, -1], gainsDe: [-1, -1, -1, -1, -1, 5], rouges: 3, bleues: 2, truquee: false, pile: 7, deTruque: false, face: 6, probaFace: 30, gainsQCM: null, gagnant: null, gainG: 3, gainP: 1, k: 2, source: 'calculs', n: 5, foule: 100, vitesse: 'lent',
         affirmations: EXEMPLES_VF.map(a => ({ ...a })), qcm: EXEMPLES_QCM.map(q => ({ ...q, mauvaises: [...q.mauvaises] })) };
     try {
         const lu = JSON.parse(localStorage.getItem(CLE)) || {};
         const dans = (v, liste) => liste.includes(v);
         const nombres = t => Array.isArray(t) && t.every(Number.isFinite);
         if (dans(lu.mode, ['eleve', 'foule'])) reglages.mode = lu.mode;
-        if (dans(lu.experience, ['qcm', 'pieces', 'urne', 'des'])) reglages.experience = lu.experience;
+        if (dans(lu.experience, ['qcm', 'pieces', 'urne', 'des', 'piece', 'de'])) reglages.experience = lu.experience;
         if (nombres(lu.gainsUrne) && lu.gainsUrne.length === 4) reglages.gainsUrne = lu.gainsUrne;
         if (nombres(lu.gainsDes) && lu.gainsDes.length === 11) reglages.gainsDes = lu.gainsDes;
+        if (nombres(lu.gainsPiece) && lu.gainsPiece.length === 2) reglages.gainsPiece = lu.gainsPiece;
+        if (nombres(lu.gainsDe) && lu.gainsDe.length === 6) reglages.gainsDe = lu.gainsDe;
+        if (typeof lu.truquee === 'boolean') reglages.truquee = lu.truquee;
+        if (typeof lu.deTruque === 'boolean') reglages.deTruque = lu.deTruque;
+        if (dans(lu.face, [1, 2, 3, 4, 5, 6])) reglages.face = lu.face;
+        if (dans(lu.probaFace, [20, 25, 30, 40, 50])) reglages.probaFace = lu.probaFace;
+        if (Number.isInteger(lu.pile) && lu.pile >= 1 && lu.pile <= 9 && lu.pile !== 5) reglages.pile = lu.pile;
         ['rouges', 'bleues'].forEach(c => { if (Number.isInteger(lu[c]) && lu[c] >= 1 && lu[c] <= 9) reglages[c] = lu[c]; });
         if (typeof lu.avecGain === 'boolean') reglages.avecGain = lu.avecGain;
         if (nombres(lu.gainsPieces) && lu.gainsPieces.length === 4) reglages.gainsPieces = lu.gainsPieces;
@@ -695,7 +768,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         if (dans(lu.source, ['calculs', 'perso'])) reglages.source = lu.source;
         if (Number.isInteger(lu.n) && lu.n >= 1 && lu.n <= 10) reglages.n = lu.n;
         if (dans(lu.foule, [30, 100, 1000, 10000, 100000])) reglages.foule = lu.foule;
-        if (dans(lu.vitesse, ['lent', 'rapide'])) reglages.vitesse = lu.vitesse;
+        if (dans(lu.vitesse, ['lent', 'moyen', 'rapide', 'ultra'])) reglages.vitesse = lu.vitesse;
         if (Array.isArray(lu.affirmations)) reglages.affirmations = lu.affirmations
             .filter(a => a && typeof a.texte === 'string').map(a => ({ texte: a.texte, vrai: !!a.vrai }));
         if (Array.isArray(lu.qcm)) reglages.qcm = lu.qcm.filter(q => q && typeof q.texte === 'string')
@@ -752,24 +825,38 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     }
 
     function dessinerReglages() {
-        const foule = reglages.mode === 'foule', exp = reglages.experience, pieces = exp === 'pieces', urne = exp === 'urne', des = exp === 'des';
+        const foule = reglages.mode === 'foule', exp = reglages.experience, pieces = exp === 'pieces', urne = exp === 'urne', des = exp === 'des', piece = exp === 'piece', de = exp === 'de', simple = piece || de;
         EVENEMENTS = evenementsPour(reglages.experience);
         choisirDans($('choixExperience'), 'exp', reglages.experience);
         // Textes qui dépendent de l'expérience choisie.
-        $('explicationReglages').innerHTML = des
+        $('explicationReglages').innerHTML = piece
+            ? `On lance <b>une pièce de monnaie ${reglages.truquee ? 'truquée' : 'équilibrée'}</b> et on note le côté visible : Pile ou Face. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.`
+            : de
+            ? `On lance <b>un dé ${reglages.deTruque ? 'truqué' : 'équilibré'}</b> à six faces et on note le numéro obtenu. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.`
+            : des
             ? 'On lance <b>deux dés équilibrés</b> à six faces, <b>un rouge et un vert</b>, et on note la <b>somme</b>. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.'
             : urne
             ? 'Une urne contient des boules rouges et des boules bleues. On tire une boule au hasard, on note sa couleur, on la <b>remet dans l\'urne</b>, puis on en tire une deuxième. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.'
             : pieces
             ? 'On lance <b>deux pièces de monnaie équilibrées</b> et on note le résultat. On regarde la fréquence de chaque issue et de chaque événement quand on recommence beaucoup de fois.'
             : 'Des élèves fictifs répondent à un QCM <b>sans lire les questions</b> : pour chacune, ils cliquent sur une des réponses au hasard. On regarde les notes obtenues, et la fréquence de chaque événement quand on recommence beaucoup de fois.';
-        $('tModeEleve').textContent = des ? 'Un joueur qui relance' : urne ? 'Un joueur qui recommence' : pieces ? 'Un joueur qui relance' : 'Un élève qui rejoue';
-        $('dModeEleve').textContent = des ? 'Le même joueur lance les deux dés des centaines de fois.' : urne ? 'Le même joueur fait les deux tirages des centaines de fois.' : pieces ? 'Le même joueur lance les deux pièces des centaines de fois.' : 'Le même élève fait des centaines de parties, avec de nouvelles questions à chaque fois.';
-        $('tModeFoule').textContent = urne || pieces || des ? 'Une foule' : 'Une foule d\'élèves';
-        $('dModeFoule').textContent = des ? 'Chaque personne lance les deux dés une seule fois.' : urne ? 'Chaque personne fait les deux tirages une seule fois.' : pieces ? 'Chaque personne lance les deux pièces une seule fois.' : 'Chaque élève répond une seule fois, et tous ont le même QCM.';
-        $('titreFoule').dataset.t = urne || pieces || des ? 'Nombre de personnes' : 'Nombre d\'élèves';
+        $('tModeEleve').textContent = simple || des ? 'Un joueur qui relance' : urne ? 'Un joueur qui recommence' : pieces ? 'Un joueur qui relance' : 'Un élève qui rejoue';
+        $('dModeEleve').textContent = piece ? 'Le même joueur lance la pièce des centaines de fois.' : de ? 'Le même joueur lance le dé des centaines de fois.' : des ? 'Le même joueur lance les deux dés des centaines de fois.' : urne ? 'Le même joueur fait les deux tirages des centaines de fois.' : pieces ? 'Le même joueur lance les deux pièces des centaines de fois.' : 'Le même élève fait des centaines de parties, avec de nouvelles questions à chaque fois.';
+        $('tModeFoule').textContent = urne || pieces || des || simple ? 'Une foule' : 'Une foule d\'élèves';
+        $('dModeFoule').textContent = piece ? 'Chaque personne lance la pièce une seule fois.' : de ? 'Chaque personne lance le dé une seule fois.' : des ? 'Chaque personne lance les deux dés une seule fois.' : urne ? 'Chaque personne fait les deux tirages une seule fois.' : pieces ? 'Chaque personne lance les deux pièces une seule fois.' : 'Chaque élève répond une seule fois, et tous ont le même QCM.';
+        $('titreFoule').dataset.t = urne || pieces || des || simple ? 'Nombre de personnes' : 'Nombre d\'élèves';
         document.querySelectorAll('#reglages .qcm-seul').forEach(el => el.classList.toggle('cache-exp', exp !== 'qcm'));
         document.querySelectorAll('#reglages .urne-seul').forEach(el => el.classList.toggle('cache-exp', !urne));
+        document.querySelectorAll('#reglages .piece-seul').forEach(el => el.classList.toggle('cache-exp', !piece));
+        document.querySelectorAll('#reglages .de-seul').forEach(el => el.classList.toggle('cache-exp', !de));
+        choisirDans($('choixDeTruque'), 'dt', reglages.deTruque ? 'oui' : 'non');
+        choisirDans($('choixFace'), 'f', reglages.face);
+        choisirDans($('choixProbaFace'), 'pf', reglages.probaFace);
+        document.querySelectorAll('#reglages .ligne-de-truque').forEach(el => el.classList.toggle('cache', !reglages.deTruque));
+        $('infoDeTruque').textContent = `(les cinq autres faces : ${((100 - reglages.probaFace) / 500).toLocaleString('fr-FR')} chacune)`;
+        choisirDans($('choixTruquee'), 'tr', reglages.truquee ? 'oui' : 'non');
+        choisirDans($('choixPile'), 'p', reglages.pile);
+        $('ligneProbaPile').classList.toggle('cache', !reglages.truquee);
         $('editeur').classList.toggle('cache-exp', exp !== 'qcm');
         choisirDans($('choixRouges'), 'r', reglages.rouges);
         choisirDans($('choixBleues'), 'b', reglages.bleues);
@@ -791,7 +878,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         });
         $('aucunReglage').classList.toggle('cache-exp', !(pieces || des));
         $('aucunReglage').textContent = des ? 'Pas de réglage : les deux dés sont équilibrés, à six faces.' : 'Pas de réglage : les deux pièces sont équilibrées.';
-        $('titrePropres').textContent = 'Ses réglages : ' + (urne ? 'l\'urne' : pieces ? 'les deux pièces' : des ? 'les deux dés' : 'le QCM');
+        $('titrePropres').textContent = 'Ses réglages : ' + (urne ? 'l\'urne' : pieces ? 'les deux pièces' : des ? 'les deux dés' : piece ? 'la pièce' : de ? 'le dé' : 'le QCM');
         choisirDans($('choixAvecGain'), 'avec', reglages.avecGain ? 'oui' : 'non');
         $('blocGain').classList.toggle('cache', !reglages.avecGain);
         if (reglages.avecGain) dessinerBareme();
@@ -810,6 +897,8 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         b.type = 'button'; b.dataset.n = k; b.textContent = k;
         $('choixN').append(b);
     }
+    // Pièce truquée : probabilité de Pile de 0,1 à 0,9 (sauf 0,5, qui serait une pièce équilibrée).
+    [1, 2, 3, 4, 6, 7, 8, 9].forEach(t => $('choixPile').insertAdjacentHTML('beforeend', `<button type="button" data-p="${t}">0,${t}</button>`));
     for (let k = 1; k <= 9; k++) {
         $('choixRouges').insertAdjacentHTML('beforeend', `<button type="button" data-r="${k}">${k}</button>`);
         $('choixBleues').insertAdjacentHTML('beforeend', `<button type="button" data-b="${k}">${k}</button>`);
@@ -827,6 +916,13 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     lier('choixN', 'n', 'n', Number);
     lier('choixFoule', 'foule', 'foule', Number);
     lier('choixRouges', 'r', 'rouges', Number);
+    lier('choixTruquee', 'tr', 'truquee', v => v === 'oui');
+    [1, 2, 3, 4, 5, 6].forEach(f => $('choixFace').insertAdjacentHTML('beforeend', `<button type="button" data-f="${f}">${f}</button>`));
+    [20, 25, 30, 40, 50].forEach(v => $('choixProbaFace').insertAdjacentHTML('beforeend', `<button type="button" data-pf="${v}">${(v / 100).toLocaleString('fr-FR')}</button>`));
+    lier('choixDeTruque', 'dt', 'deTruque', v => v === 'oui');
+    lier('choixFace', 'f', 'face', Number);
+    lier('choixProbaFace', 'pf', 'probaFace', Number);
+    lier('choixPile', 'p', 'pile', Number);
     lier('choixBleues', 'b', 'bleues', Number);
     lier('choixVitesse', 'v', 'vitesse');
     lier('choixAvecGain', 'avec', 'avecGain', v => v === 'oui');
@@ -837,6 +933,8 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         if (r.experience === 'pieces') return r.gainsPieces;
         if (r.experience === 'urne') return r.gainsUrne;
         if (r.experience === 'des') return r.gainsDes;
+        if (r.experience === 'piece') return r.gainsPiece;
+        if (r.experience === 'de') return r.gainsDe;
         if (!Array.isArray(r.gainsQCM) || r.gainsQCM.length !== r.n + 1) r.gainsQCM = Array.from({ length: r.n + 1 }, (_, j) => j === r.n ? 20 : -1);
         return r.gainsQCM;
     }
@@ -847,7 +945,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     }
     const sorteDeJeu = x => Math.abs(x) < 1e-9 ? 'jeu équitable' : x > 0 ? 'jeu favorable' : 'jeu défavorable';
     function majConseilGain() {
-        const x = gainPrevu(), unite = reglages.experience === 'pieces' || reglages.experience === 'des' ? 'lancer' : reglages.experience === 'urne' ? 'expérience' : 'partie';
+        const x = gainPrevu(), unite = ['pieces', 'des', 'piece', 'de'].includes(reglages.experience) ? 'lancer' : reglages.experience === 'urne' ? 'expérience' : 'partie';
         $('conseilGain').innerHTML = `Gain moyen prévu : <b>${jetons(Math.round(x * 100) / 100)}</b> par ${unite} (${sorteDeJeu(x)}).`
             + (reglages.gagnant && !baremeDuGagnant() ? ' Le barème a été retouché : il ne suit plus exactement l\'événement gagnant.' : '');
     }
@@ -867,6 +965,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     }
     function dessinerBareme() {
         const zone = $('choixGagnant');
+        if (reglages.gagnant && !EVENEMENTS.some(e => e.id === reglages.gagnant)) reglages.gagnant = null;   // cet événement n'existe pas pour cette expérience
         zone.innerHTML = EVENEMENTS.map(e => `<button type="button" data-g="${e.id}" style="--c:${e.couleur}" title="${e.court}" class="${reglages.gagnant === e.id ? 'choisi' : ''}">${e.id}</button>`).join('')
             + `<span style="color:var(--encre-douce)">${reglages.gagnant ? '« ' + EVENEMENTS.find(e => e.id === reglages.gagnant).court + ' »' : ''}</span>`;
         zone.querySelectorAll('button').forEach(b => b.onclick = () => { reglages.gagnant = b.dataset.g; appliquerGagnant(); enregistrer(); dessinerReglages(); });
@@ -924,6 +1023,12 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         if (r.experience === 'pieces') return { issues: ['PP', 'PF', 'FP', 'FF'], favorables: [1, 1, 1, 1], total: 4 };
         // Urne avec remise : chaque boule compte, (rouges + bleues)² façons toutes aussi probables.
         // Deux dés (un rouge, un vert) : 36 couples tous aussi probables ; la somme s fait min(s − 1, 13 − s) couples.
+        if (r.experience === 'piece') return r.truquee ? { issues: ['P', 'F'], favorables: [r.pile, 10 - r.pile], total: 10 }
+                                                       : { issues: ['P', 'F'], favorables: [1, 1], total: 2 };
+        // Dé truqué : la face favorisée a probaFace chances sur 100, les cinq autres se partagent le reste.
+        if (r.experience === 'de') return r.deTruque
+            ? { issues: ['1', '2', '3', '4', '5', '6'], favorables: [1, 2, 3, 4, 5, 6].map(f => f === r.face ? r.probaFace : (100 - r.probaFace) / 5), total: 100 }
+            : { issues: ['1', '2', '3', '4', '5', '6'], favorables: [1, 1, 1, 1, 1, 1], total: 6 };
         if (r.experience === 'des') return { issues: Array.from({ length: 11 }, (_, j) => String(j + 2)),
             favorables: Array.from({ length: 11 }, (_, j) => Math.min(j + 1, 11 - j)), total: 36 };
         if (r.experience === 'urne') { const a = r.rouges, b = r.bleues;
@@ -935,13 +1040,13 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 
     // Les événements que l'on peut suivre sur la courbe, chacun avec sa couleur.
     // Deux pièces : issues PP (0), PF (1), FP (2), FF (3).
+    // Mêmes événements que dans le cours (coursproba2) : A et B contraires, A et C incompatibles, D impossible, E certain.
     const EV_PIECES = [
         { id: 'A', court: 'obtenir deux fois Pile', couleur: '#e67e22', testAvec: i => i === 0 },
-        { id: 'B', court: 'obtenir au moins une fois Pile', couleur: '#8e44ad', testAvec: i => i !== 3 },
-        { id: 'C', court: 'obtenir deux faces différentes', couleur: '#c2185b', testAvec: i => i === 1 || i === 2 },
-        { id: 'D', court: 'obtenir deux fois Face', couleur: '#138d75', testAvec: i => i === 3 },
-        { id: 'E', court: 'obtenir trois fois Pile', couleur: '#7f8c8d', testAvec: () => false },
-        { id: 'F', court: 'obtenir Pile ou Face avec la première pièce', couleur: '#2e86c1', testAvec: () => true }
+        { id: 'B', court: 'obtenir au moins une fois Face', couleur: '#8e44ad', testAvec: i => i !== 0 },
+        { id: 'C', court: 'obtenir deux fois Face', couleur: '#138d75', testAvec: i => i === 3 },
+        { id: 'D', court: 'obtenir trois fois Pile', couleur: '#7f8c8d', testAvec: () => false },
+        { id: 'E', court: 'obtenir Pile ou Face au premier lancer', couleur: '#2e86c1', testAvec: () => true }
     ];
     // Urne : issues RR (0), RB (1), BR (2), BB (3).
     const EV_URNE = [
@@ -961,6 +1066,22 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         { id: 'E', court: 'obtenir une somme égale à 13', couleur: '#7f8c8d', testAvec: () => false },
         { id: 'F', court: 'obtenir une somme comprise entre 2 et 12', couleur: '#2e86c1', testAvec: () => true }
     ];
+    // Une pièce : issues P (0) et F (1). A et B contraires ; A et D incompatibles sans être contraires ; C certain ; D impossible.
+    const EV_PIECE = [
+        { id: 'A', court: 'obtenir Pile', couleur: '#e67e22', testAvec: i => i === 0 },
+        { id: 'B', court: 'obtenir Face', couleur: '#8e44ad', testAvec: i => i === 1 },
+        { id: 'C', court: 'obtenir Pile ou Face', couleur: '#2e86c1', testAvec: () => true },
+        { id: 'D', court: 'obtenir Pile et Face en même temps', couleur: '#7f8c8d', testAvec: () => false }
+    ];
+    // Un dé : l'issue j correspond au numéro j + 1. A et D contraires, B et C contraires ; A et C incompatibles sans être contraires.
+    const EV_DE = [
+        { id: 'A', court: 'obtenir 6', couleur: '#e67e22', testAvec: j => j + 1 === 6 },
+        { id: 'B', court: 'obtenir un nombre pair', couleur: '#8e44ad', testAvec: j => (j + 1) % 2 === 0 },
+        { id: 'C', court: 'obtenir un nombre impair', couleur: '#c2185b', testAvec: j => (j + 1) % 2 === 1 },
+        { id: 'D', court: 'obtenir un nombre différent de 6', couleur: '#138d75', testAvec: j => j + 1 !== 6 },
+        { id: 'E', court: 'obtenir 7', couleur: '#7f8c8d', testAvec: () => false },
+        { id: 'F', court: 'obtenir un nombre inférieur à 7', couleur: '#2e86c1', testAvec: () => true }
+    ];
     const EV_QCM = [
         { id: 'A', court: 'avoir tout bon', couleur: '#e67e22', testAvec: (note, nn) => note === nn },
         { id: 'B', court: 'avoir une seule erreur', couleur: '#8e44ad', testAvec: (note, nn) => note === nn - 1 },
@@ -970,8 +1091,8 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         { id: 'E', get court() { return `avoir ${reglages.n + 1} bonnes réponses`; }, couleur: '#7f8c8d', testAvec: (note, nn) => note === nn + 1 },
         { id: 'F', get court() { return `avoir au plus ${reglages.n} bonnes réponses`; }, couleur: '#2e86c1', testAvec: (note, nn) => note <= nn }
     ];
-    [...EV_QCM, ...EV_PIECES, ...EV_URNE, ...EV_DES].forEach(e => { e.test = issue => e.testAvec(issue, n); });
-    const evenementsPour = exp => exp === 'pieces' ? EV_PIECES : exp === 'urne' ? EV_URNE : exp === 'des' ? EV_DES : EV_QCM;
+    [...EV_QCM, ...EV_PIECES, ...EV_URNE, ...EV_DES, ...EV_PIECE, ...EV_DE].forEach(e => { e.test = issue => e.testAvec(issue, n); });
+    const evenementsPour = exp => exp === 'piece' ? EV_PIECE : exp === 'de' ? EV_DE : exp === 'pieces' ? EV_PIECES : exp === 'urne' ? EV_URNE : exp === 'des' ? EV_DES : EV_QCM;
     let EVENEMENTS = EV_QCM;
     let actifs = ['A'], focus = 'A';
     // Les probabilités calculées ne s'affichent que sur demande (bouton « Afficher les probabilités »).
@@ -985,8 +1106,9 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     let vitesse = 'lent', pause = false, arrete = false, unePartie = false;
     let n, k, total, favorables, P, stats, qcmFixe, mode, limite, MOTS;
     let EXP = 'qcm', NI = 0, LIB = [], GAINS = [], GAGNANT = null;   // GAGNANT : l'événement gagnant du jeu, s'il y en a un   // l'expérience, le nombre d'issues, leurs noms
-    const textePause = () => { $('boutons').querySelector('[data-b=pause]').textContent = pause ? 'Reprendre' : 'Pause'; };
-    const texteStop = t => { $('boutons').querySelector('[data-b=stop]').textContent = t; };
+    // « Reprendre » seulement si une partie a déjà eu lieu ; au départ (rien de joué), le bouton reste « Pause ».
+    const textePause = () => { $('boutons').querySelector('[data-b=pause]').textContent = pause && stats && stats.parties ? 'Reprendre' : 'Pause'; };
+    const texteStop = () => {};   // il n'y a plus de bouton Arrêter : « À zéro » le remplace
 
     function nouvellesStats() {
         stats = { parties: 0, somme: 0, cagnotte: 0, compte: new Array(NI).fill(0), derniere: null, mur: [],
@@ -1086,7 +1208,48 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         return attente(1400, c);
     }
 
+    // Les expériences à une seule épreuve : une pièce, un dé.
+    function dessinerSimple() {
+        $('feuille').className = 'scene';
+        $('feuille').innerHTML = EXP === 'piece'
+            ? '<div class="scene-pieces"><div class="pieces"><div class="piece-bloc"><div class="piece" id="piece1">?</div><span>la pièce</span></div></div></div>'
+            : '<div class="scene-pieces"><div class="pieces"><div class="piece-bloc"><div class="de rouge" id="de1"></div><span>le dé</span></div></div></div>';
+        $('note').innerHTML = `<span class="lab">Issue :</span><span class="attente">${EXP === 'piece' ? 'la pièce n\'est pas encore lancée' : 'le dé n\'est pas encore lancé'}</span>`;
+    }
+    // L'indice de l'issue (P/F, ou numéro − 1), tiré selon les probabilités P (une pièce truquée n'est pas équiprobable).
+    function tirerSimple() {
+        let u = Math.random(), j = 0;
+        while (j < NI - 1 && u >= P[j]) { u -= P[j]; j++; }
+        return j;
+    }
+    function poserSimple(j) {
+        if (EXP === 'piece') $('piece1').textContent = LIB[j];
+        else { $('de1').innerHTML = faceDe(j + 1); }
+    }
+    async function lancerSimpleLent(c) {
+        dessinerSimple();
+        if (!await attente(500, c)) return false;
+        $('doigt').classList.add('cache');
+        if (EXP === 'piece') {
+            $('piece1').textContent = ''; $('piece1').classList.add('tourne');
+            const ok = await attente(900, c);
+            $('piece1').classList.remove('tourne');
+            if (!ok) return false;
+        } else {
+            $('de1').classList.add('roule');
+            for (let t = 0; t < 9; t++) { $('de1').innerHTML = faceDe(lancerDe()); if (!await attente(90, c)) { $('de1').classList.remove('roule'); return false; } }
+            $('de1').classList.remove('roule');
+        }
+        const j = tirerSimple();
+        poserSimple(j);
+        afficherNote(j);
+        compter(j);
+        afficherStats();
+        return attente(1400, c);
+    }
+
     function dessinerFeuille(questions) {
+        if (EXP === 'piece' || EXP === 'de') return dessinerSimple();
         if (EXP === 'pieces') return dessinerScene();
         if (EXP === 'des') return dessinerDes();
         if (EXP === 'urne') return dessinerUrne();
@@ -1112,11 +1275,10 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         return note;
     }
     function afficherNote(note) {
-        const NOM_BOULE = { R: 'rouge', B: 'bleue' };
-        const issue = EXP === 'des'
+        const issue = EXP === 'des' || EXP === 'piece' || EXP === 'de'
             ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b>`
             : EXP === 'urne'
-            ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b><span>${NOM_BOULE[LIB[note][0]]} puis ${NOM_BOULE[LIB[note][1]]}</span>`
+            ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b>`
             : EXP === 'pieces'
             ? `<span class="lab">Issue :</span><b class="val">${LIB[note]}</b><span>${NOM_FACE[LIB[note][0]]} puis ${NOM_FACE[LIB[note][1]]}</span>`
             : `<span class="lab">Issue :</span><b class="val">${note}</b><span>bonne${note > 1 ? 's' : ''} réponse${note > 1 ? 's' : ''} sur ${n}</span>`;
@@ -1143,12 +1305,15 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         s.compte[note]++;
         s.derniere = note;
         if (reglages.avecGain) s.cagnotte += GAINS[note];
-        EVENEMENTS.forEach(e => { if (e.test(note)) s.reussites[e.id]++; s.courbes[e.id].push(s.reussites[e.id] / s.parties); });
+        // La courbe garde chaque point jusqu'à 2 000 parties, puis un point de temps en temps (sinon, en ultra rapide, la mémoire déborderait).
+        const garder = s.parties <= 2000 || s.parties % Math.ceil(s.parties / 2000) === 0;
+        EVENEMENTS.forEach(e => { if (e.test(note)) s.reussites[e.id]++; if (garder) s.courbes[e.id].push([s.parties, s.reussites[e.id] / s.parties]); });
         if (mode === 'foule') { s.mur.push(note); if (s.mur.length > 60) s.mur.shift(); }
     }
 
     function couleurNote(note) {
         if (EXP === 'des') return `background:hsl(${30 + note * 20}, 60%, 85%);color:#23302a`;
+        if (EXP === 'de') return `background:hsl(${30 + note * 50}, 60%, 85%);color:#23302a`;
         if (EXP !== 'qcm') return 'background:' + ['#fde2b8', '#d9e8fb', '#e5dcf5', '#cfe9d5'][note] + ';color:#23302a';
         const t = note / n;
         return `background:hsl(${8 + 122 * t}, 55%, ${90 - 38 * t}%);color:${t > 0.65 ? '#fff' : '#23302a'}`;
@@ -1182,7 +1347,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         const haut = Math.max(...(voirProba ? P : [0.2]), ...obs) * 1.12;
         const pas = [0.05, 0.1, 0.2, 0.25, 0.5].find(p => haut / p <= 4) || 0.5;
         const ymax = Math.min(1.05, Math.ceil(haut / pas) * pas);
-        const G = 104, D = 776, Hb = 100, Hh = 8;
+        const G = 104, DT = 776, WT = 74, D = DT - WT, Hb = 100, Hh = 8;   // la dernière colonne (de D à DT) est le total
         const Y = v => Hb - (Hb - Hh) * v / ymax;
         const largeur = (D - G) / NI, barre = largeur * 0.62;
         const taille = NI > 8 ? 13 : 16;
@@ -1193,30 +1358,33 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
                   <text x="${G - 5}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#5f7a68">${pourcent(v)}</text>`;
         for (let j = 0; j < NI; j++) {
             const x = G + largeur * j + (largeur - barre) / 2;
-            if (s.derniere === j && vitesse === 'lent') h += `<rect x="${G + largeur * j + 1}" y="${Hh - 4}" width="${largeur - 2}" height="${Hb - Hh + 4 + (reglages.avecGain ? 5 : 4) * 23}" fill="#ffd166" opacity=".35" rx="4"/>`;
+            if (s.derniere === j && (vitesse === 'lent' || vitesse === 'moyen')) h += `<rect x="${G + largeur * j + 1}" y="${Hh - 4}" width="${largeur - 2}" height="${Hb - Hh + 4 + (reglages.avecGain ? 5 : 4) * 23}" fill="#ffd166" opacity=".35" rx="4"/>`;
             h += `<rect x="${x}" y="${Y(obs[j])}" width="${barre}" height="${Hb - Y(obs[j])}" fill="rgba(192,57,43,.75)"/>`;
             if (voirProba) h += `<line x1="${x - 7}" x2="${x + barre + 7}" y1="${Y(P[j])}" y2="${Y(P[j])}" stroke="#1d3b8f" stroke-width="4" stroke-linecap="round"/>`;
         }
         // Le tableau : 4 lignes de 19 px sous l'axe.
         const L = 23, T = Hb + 2;
         const lignes = [
-            { titre: 'Issue', couleur: '#23302a', gras: true, val: j => LIB[j] },
-            { titre: 'Effectif', couleur: '#23302a', val: j => s.parties ? entier(s.compte[j]) : '–' },
-            { titre: 'Fréquence', couleur: '#c0392b', gras: true, val: j => s.parties ? court(pourcent(obs[j])) : '–' },
-            { titre: 'Probabilité', couleur: '#1d3b8f', gras: true, val: j => voirProba ? court(pourcent(P[j])) : '?' }
+            { titre: 'Issue', couleur: '#23302a', gras: true, val: j => LIB[j], total: 'Total' },
+            { titre: 'Effectif', couleur: '#23302a', val: j => s.parties ? entier(s.compte[j]) : '–', total: s.parties ? entier(s.parties) : '–' },
+            { titre: 'Fréquence', couleur: '#c0392b', gras: true, val: j => s.parties ? court(pourcent(obs[j])) : '–', total: s.parties ? pourcent(1) : '–' },
+            { titre: 'Probabilité', couleur: '#1d3b8f', gras: true, val: j => voirProba ? court(pourcent(P[j])) : '?', total: voirProba ? pourcent(1) : '?' }
         ];
-        if (reglages.avecGain) lignes.push({ titre: 'Gain', couleur: '#b7791f', gras: true, val: j => signe(GAINS[j]) });
+        if (reglages.avecGain) lignes.push({ titre: 'Gain', couleur: '#b7791f', gras: true, val: j => signe(GAINS[j]), total: '' });
         const NL = lignes.length;
         svg.setAttribute('viewBox', `0 0 780 ${T + NL * L + 2}`);
-        h += `<rect x="${G - 100}" y="${T}" width="${D - G + 100}" height="${NL * L}" fill="#fff" stroke="#c9dccf"/>`;
-        h += `<rect x="${G - 100}" y="${T}" width="${D - G + 100}" height="${L}" fill="#f1f8f3"/>`;
+        h += `<rect x="${G - 100}" y="${T}" width="${DT - G + 100}" height="${NL * L}" fill="#fff" stroke="#c9dccf"/>`;
+        h += `<rect x="${D}" y="${T}" width="${WT}" height="${NL * L}" fill="#f6f7fb"/>`;
+        h += `<rect x="${G - 100}" y="${T}" width="${DT - G + 100}" height="${L}" fill="#f1f8f3"/>`;
         lignes.forEach((l, r) => {
             const y = T + L * r + L / 2 + 4.5;
-            if (r) h += `<line x1="${G - 100}" x2="${D}" y1="${T + L * r}" y2="${T + L * r}" stroke="#c9dccf"/>`;
+            if (r) h += `<line x1="${G - 100}" x2="${DT}" y1="${T + L * r}" y2="${T + L * r}" stroke="#c9dccf"/>`;
             h += `<text x="${G - 6}" y="${y}" text-anchor="end" font-size="14.5" font-weight="700" fill="${l.couleur}">${l.titre}</text>`;
             for (let j = 0; j < NI; j++)
                 h += `<text x="${G + largeur * (j + 0.5)}" y="${y}" text-anchor="middle" font-size="${taille}" ${l.gras ? 'font-weight="700"' : ''} fill="${l.couleur}">${l.val(j)}</text>`;
+            h += `<text x="${D + WT / 2}" y="${y}" text-anchor="middle" font-size="${Math.min(taille, 14.5)}" font-weight="700" fill="${l.couleur}">${l.total}</text>`;
         });
+        h += `<line x1="${D}" x2="${D}" y1="${T}" y2="${T + NL * L}" stroke="#9fb8a8" stroke-width="2"/>`;
         for (let j = 0; j <= NI; j++) h += `<line x1="${G + largeur * j}" x2="${G + largeur * j}" y1="${T}" y2="${T + NL * L}" stroke="#c9dccf"/>`;
         h += `<line x1="${G}" x2="${D}" y1="${Hb}" y2="${Hb}" stroke="#9aa"/>`;
         svg.innerHTML = h;
@@ -1292,7 +1460,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         let ymax = 1;
         if (evs.length && evs.every(e => e.p < 0.2)) {
             let hautObs = 0;
-            evs.forEach(e => { const f = stats.courbes[e.id]; for (let t = Math.min(f.length, 10); t < f.length; t++) if (f[t] > hautObs) hautObs = f[t]; });
+            evs.forEach(e => { for (const [t, v] of stats.courbes[e.id]) if (t > 10 && v > hautObs) hautObs = v; });
             // Probabilités cachées : l'échelle ne dépend que des fréquences observées (au moins 5 %).
             const reference = voirProba ? Math.max(...evs.map(e => 3 * e.p)) : 0.05;
             ymax = Math.min(1, Math.max(reference, hautObs) * 1.1) || 1;
@@ -1311,15 +1479,15 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         }
         h += `<line x1="${G}" y1="${B}" x2="${D}" y2="${B}" stroke="#9aa"/><line x1="${G}" y1="${H}" x2="${G}" y2="${B}" stroke="#9aa"/>
               <text x="${(G + D) / 2}" y="${B + 30}" text-anchor="middle" font-size="12" fill="#5f7a68">nombre ${MOTS.de} (${entier(m)} pour l'instant)</text>`;
-        const etape = Math.max(1, Math.floor(m / 700));
         evs.forEach(e => {
-            const f = stats.courbes[e.id];
+            const f = stats.courbes[e.id], etape = Math.max(1, Math.ceil(f.length / 700));
+            const maintenant = m ? stats.reussites[e.id] / m : 0;
             if (voirProba) h += `<line x1="${G}" y1="${Y(e.p)}" x2="${D}" y2="${Y(e.p)}" stroke="${e.couleur}" stroke-width="2" stroke-dasharray="7 5" opacity=".9"/>`;
             let pts = '';
-            for (let t = 0; t < m; t += etape) pts += `${X(t + 1).toFixed(1)},${Y(f[t]).toFixed(1)} `;
-            if (m) pts += `${X(m).toFixed(1)},${Y(f[m - 1]).toFixed(1)}`;
+            for (let i = 0; i < f.length; i += etape) pts += `${X(f[i][0]).toFixed(1)},${Y(f[i][1]).toFixed(1)} `;
+            if (m) pts += `${X(m).toFixed(1)},${Y(maintenant).toFixed(1)}`;
             h += `<polyline points="${pts}" fill="none" stroke="${e.couleur}" stroke-width="${e.id === focus ? 3 : 2}" stroke-linejoin="round"/>`;
-            if (m) h += `<circle cx="${X(m)}" cy="${Y(f[m - 1])}" r="4.5" fill="${e.couleur}"/>`;
+            if (m) h += `<circle cx="${X(m)}" cy="${Y(maintenant)}" r="4.5" fill="${e.couleur}"/>`;
         });
         // Étiquettes des probabilités, écartées les unes des autres pour rester lisibles.
         let dernierY = Infinity;
@@ -1333,6 +1501,11 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     }
 
     function afficherResume() {
+        if (EXP === 'piece' || EXP === 'de') {
+            $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> personnes</span>` : '<span class="puce"><b>Un joueur</b> qui relance</span>')
+                + (EXP === 'piece' ? `<span class="puce"><b>Une pièce</b> ${reglages.truquee ? 'truquée' : 'équilibrée'}</span>` : `<span class="puce"><b>Un dé</b> ${reglages.deTruque ? 'truqué' : 'équilibré'}</span>`)
+                + (reglages.avecGain ? `<span class="puce"><b>Jeu de gain</b>${GAGNANT ? ' : ' + GAGNANT.id + ' gagne' : ''}</span>` : '');
+        }
         if (EXP === 'des') {
             $('resume').innerHTML = (mode === 'foule' ? `<span class="puce"><b>${entier(limite)}</b> personnes</span>` : '<span class="puce"><b>Un joueur</b> qui relance</span>')
                 + '<span class="puce"><b>Dés</b> <b style="color:var(--rouge)">rouge</b> + <b style="color:var(--succes)">vert</b></span>'
@@ -1357,11 +1530,11 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         $('sMoyAtt').innerHTML = `<span class="bleu attendu">(on attend ${Number.isInteger(att * 100) ? '' : 'environ '}<b>${att.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</b>)</span>`;
         $('motParties').textContent = 'Nombre total ' + MOTS.de;
 
-        $('titreIssues').textContent = EXP === 'des' ? 'Issues : somme des deux dés' : EXP === 'urne' ? 'Issues : couleurs des deux boules' : EXP === 'pieces' ? 'Issues : résultat des deux pièces' : 'Issues : nombre de bonnes réponses';
+        $('titreIssues').textContent = EXP === 'piece' ? 'Issues : côté de la pièce' : EXP === 'de' ? 'Issues : numéro du dé' : EXP === 'des' ? 'Issues : somme des deux dés' : EXP === 'urne' ? 'Issues : couleurs des deux boules' : EXP === 'pieces' ? 'Issues : résultat des deux pièces' : 'Issues : nombre de bonnes réponses';
         $('titreCourbe').textContent = `Fréquence de chaque événement, ${MOTS.unite} après ${MOTS.unite}`;
         $('btnUne').textContent = MOTS.une;
         $('btnUne').title = `${MOTS.une} seulement, lentement, puis on s'arrête sur le résultat`;
-        $('titreCopie').firstChild.textContent = EXP === 'des' ? 'L\'expérience : le lancer de deux dés ' : EXP === 'urne' ? 'L\'expérience : deux tirages avec remise ' : EXP === 'pieces' ? 'L\'expérience : le lancer de deux pièces ' : 'L\'expérience : la copie de l\'élève ';
+        $('titreCopie').firstChild.textContent = EXP === 'piece' ? 'L\'expérience : le lancer d\'une pièce ' : EXP === 'de' ? 'L\'expérience : le lancer d\'un dé ' : EXP === 'des' ? 'L\'expérience : le lancer de deux dés ' : EXP === 'urne' ? 'L\'expérience : deux tirages avec remise ' : EXP === 'pieces' ? 'L\'expérience : le lancer de deux pièces ' : 'L\'expérience : la copie de l\'élève ';
         $('cadreFoule').classList.toggle('cache', mode !== 'foule');
         $('activite').classList.toggle('large', EXP === 'qcm' && k >= 3);
     }
@@ -1409,6 +1582,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 
     // Une partie lente : on voit chaque clic.
     async function partieLente(c) {
+        if (EXP === 'piece' || EXP === 'de') return lancerSimpleLent(c);
         if (EXP === 'pieces') return lancerLent(c);
         if (EXP === 'urne') return tirageLent(c);
         if (EXP === 'des') return lancerDesLent(c);
@@ -1435,6 +1609,15 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
 
     // Beaucoup de parties d'un coup, sans animation ; on ne montre que la dernière copie.
     function partiesRapides(combien) {
+        if (EXP === 'piece' || EXP === 'de') {
+            let j;
+            for (let p = 0; p < combien; p++) { j = tirerSimple(); compter(j); }
+            if (!$(EXP === 'piece' ? 'piece1' : 'de1')) dessinerSimple();
+            poserSimple(j);
+            afficherNote(j);
+            afficherStats();
+            return;
+        }
         if (EXP === 'des') {
             let a, b;
             for (let p = 0; p < combien; p++) { a = lancerDe(); b = lancerDe(); compter(a + b - 2); }
@@ -1463,11 +1646,16 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
             return;
         }
         let questions, reponses;
-        for (let p = 0; p < combien; p++) {
-            questions = questionsDeLaPartie();
-            reponses = questions.map(() => Math.floor(Math.random() * k));
-            compter(reponses.reduce((s, r, i) => s + (r === questions[i].bonne ? 1 : 0), 0));
+        // Toutes les copies sauf la dernière : on tire seulement les réponses (chaque réponse est juste avec une chance sur k).
+        for (let p = 0; p < combien - 1; p++) {
+            let note = 0;
+            for (let i = 0; i < n; i++) if (Math.floor(Math.random() * k) === 0) note++;
+            compter(note);
         }
+        // La dernière copie est construite en entier, pour être affichée.
+        questions = questionsDeLaPartie();
+        reponses = questions.map(() => Math.floor(Math.random() * k));
+        compter(reponses.reduce((s, r, i) => s + (r === questions[i].bonne ? 1 : 0), 0));
         dessinerFeuille(questions);
         cocher(reponses);
         afficherNote(corriger(questions, reponses));
@@ -1490,10 +1678,18 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
                 const enCours = unePartie;
                 if (!await partieLente(c)) break;
                 if (enCours) { unePartie = false; pause = true; textePause(); } // « Une partie » : on s'arrête après celle-ci
+            } else if (vitesse === 'moyen') {
+                // Moyen : une expérience à la fois, sans animation, environ 7 par seconde ; on voit chaque résultat.
+                $('doigt').classList.add('cache');
+                partiesRapides(1);
+                await attendre(150);
+                if (!await attente(0, c)) break;
             } else {
                 $('doigt').classList.add('cache');
-                // Un élève qui rejoue : environ 400 parties par seconde. Une foule : elle se remplit en 7 secondes environ.
-                const lot = mode === 'foule' ? Math.ceil(limite / 400) : 8;
+                // Rapide : environ 400 parties par seconde (une foule se remplit en 7 s environ).
+                // Ultra : on complète d'abord jusqu'au millier rond, puis des paquets de 1 000 à chaque image (le compteur reste rond).
+                const lot = vitesse === 'ultra' ? 1000 - stats.parties % 1000
+                    : mode === 'foule' ? Math.ceil(limite / 400) : 8;
                 partiesRapides(Math.min(lot, limite - stats.parties));
                 await attendre(16);
                 if (!await attente(0, c)) break;
@@ -1510,6 +1706,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         if (EXP === 'qcm' && mode === 'foule' && (nouveauQCM || !qcmFixe)) qcmFixe = construireQCM();
         nouvellesStats();
         afficherStats();
+        textePause();
         dessinerFeuille(EXP === 'qcm' ? questionsDeLaPartie() : null);
         marquerVitesse();
         ajusterTaille();
@@ -1536,12 +1733,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         const v = b.dataset.b;
         const fini = mode === 'foule' && stats.parties >= limite;
         if (v === 'raz') { $('doigt').classList.add('cache'); demarrer(false, true); return; }   // à zéro, en pause
-        if (v === 'pause') { if (arrete) return; pause = !pause; unePartie = false; textePause(); return; }
-        if (v === 'stop') {
-            if (!arrete) { arrete = true; course++; pause = false; textePause(); texteStop('Rejouer'); $('doigt').classList.add('cache'); }
-            else demarrer(false);
-            return;
-        }
+        if (v === 'pause') { if (arrete || (pause && !stats.parties)) return; pause = !pause; unePartie = false; textePause(); return; }
         // Jouer, Une partie : on repart toujours, même après l'arrêt ou à la fin de la foule.
         unePartie = v === 'une';
         if (unePartie) { vitesse = 'lent'; marquerVitesse(); }   // une seule partie : toujours lentement
@@ -1563,14 +1755,15 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         }
         mode = reglages.mode; n = reglages.n; k = reglages.k; EXP = reglages.experience;
         EVENEMENTS = evenementsPour(EXP);
+        ensemblesVus = false;   // nouvelle expérience : les ensembles sont à réécrire
         const m = modele(reglages);
         LIB = m.issues; NI = LIB.length; favorables = m.favorables; total = m.total;
-        limite = mode === 'foule' ? reglages.foule : 500000;
+        limite = mode === 'foule' ? reglages.foule : 10000000;
         const foule = mode === 'foule';
         MOTS = EXP === 'urne'
             ? (foule ? { Parties: 'Personnes', de: 'de personnes', une: 'Une personne', unite: 'personne', pluriel: 'personnes', derniers: 'les NB dernières personnes', unUn: 'une personne', resultat: 'issue', fin: 'toute la foule a tiré' }
                      : { Parties: 'Expériences', de: 'd\'expériences', une: 'Une expérience', unite: 'expérience', pluriel: 'expériences', derniers: 'les NB dernières expériences', unUn: 'une expérience', resultat: 'issue', fin: '' })
-            : EXP === 'pieces' || EXP === 'des'
+            : ['pieces', 'des', 'piece', 'de'].includes(EXP)
             ? (foule ? { Parties: 'Personnes', de: 'de personnes', une: 'Une personne', unite: 'personne', pluriel: 'personnes', derniers: 'les NB dernières personnes', unUn: 'une personne', resultat: 'issue', fin: 'toute la foule a lancé' }
                      : { Parties: 'Lancers', de: 'de lancers', une: 'Un lancer', unite: 'lancer', pluriel: 'lancers', derniers: 'les NB derniers lancers', unUn: 'un lancer', resultat: 'issue', fin: '' })
             : (foule ? { Parties: 'Élèves', de: 'd\'élèves', une: 'Un élève', unite: 'élève', pluriel: 'élèves', derniers: 'les NB derniers élèves', unUn: 'un élève', resultat: 'note', fin: 'toute la foule a répondu' }
@@ -1603,6 +1796,15 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     // Énoncé : l'expérience et ce qu'on note, qui définit l'issue.
     function texteEnonce() {
         const foule = mode === 'foule';
+        if (EXP === 'piece' || EXP === 'de') {
+            const objet = EXP === 'piece' ? (reglages.truquee ? '<b>une pièce de monnaie truquée</b> : elle ne tombe pas aussi souvent sur Pile que sur Face' : '<b>une pièce de monnaie équilibrée</b>') : (reglages.deTruque ? '<b>un dé truqué à six faces</b> : une de ses faces sort plus souvent que les autres' : '<b>un dé équilibré à six faces</b>');
+            let h = foule ? `<p><b>${entier(limite)} personnes</b> lancent chacune ${objet}.</p>` : `<p>On lance ${objet}. On recommence des centaines de fois.</p>`;
+            h += EXP === 'piece'
+                ? '<p class="issue">On note le côté visible, <b>P</b> pour Pile ou <b>F</b> pour Face : c\'est l\'<b>issue</b> de l\'expérience aléatoire.</p>'
+                : '<p class="issue">On note le <b>numéro</b> obtenu : c\'est l\'<b>issue</b> de l\'expérience aléatoire.</p>';
+            if (reglages.avecGain) h += texteJeu();
+            return h;
+        }
         if (EXP === 'des') {
             let h = foule
                 ? `<p><b>${entier(limite)} personnes</b> lancent chacune <b>deux dés équilibrés à six faces</b> : un <b style="color:var(--rouge)">rouge</b> et un <b style="color:var(--succes)">vert</b>.</p>`
@@ -1643,7 +1845,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     }
     function ouvrirEnonce(auLancement) {
         $('overlayCours').classList.add('cache'); $('overlayProba').classList.add('cache'); $('overlayBase').classList.add('cache');
-        pauseAvant = auLancement ? false : pause;
+        pauseAvant = auLancement ? true : pause;   // « Commencer » ne lance rien : on démarre avec Jouer ou Une partie
         if (!arrete) { pause = true; textePause(); }
         $('texteEnonce').innerHTML = texteEnonce();
         $('btnFermerEnonce').textContent = auLancement ? 'Commencer' : 'Fermer';
@@ -1681,6 +1883,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     const ou = t => t.length < 2 ? LIB[t[0]] : t.slice(0, -1).map(j => LIB[j]).join(', ') + ' ou ' + LIB[t[t.length - 1]];   // « 0, 1, 2 ou 3 »
     const manque = (x, y) => toutesIssues().filter(j => !x.includes(j) && !y.includes(j));
     const QUESTIONS_COURS = [
+        { ensembles: true, texte: 'Décrire chaque événement par l\'<b>ensemble des issues</b> qui le réalisent' },
         { texte: 'Deux événements <b>contraires</b>', nb: 2, juger([a, b]) {
             const x = issuesDe(a), y = issuesDe(b), c = commun(x, y), m = manque(x, y);
             if (c.length) return [false, `Non : ${a.id} et ${b.id} peuvent arriver en même temps (issues communes : ${ensemble(c)}).`];
@@ -1696,7 +1899,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         { texte: 'Un événement <b>impossible</b>', nb: 1, juger([a]) {
             const x = issuesDe(a);
             return x.length ? [false, `Non : ${a.id} est réalisé par ${ensemble(x)}.`]
-                : [true, `Oui : aucune issue ne réalise ${a.id} (${EXP === 'des' ? 'la somme vaut au plus 6 + 6 = 12' : EXP === 'urne' ? 'il n\'y a pas de boule verte dans l\'urne' : EXP === 'pieces' ? 'on ne peut pas obtenir trois fois Pile avec deux pièces' : `on ne peut pas avoir ${n + 1} bonnes réponses sur ${n}`}). Sa probabilité est 0.`];
+                : [true, `Oui : aucune issue ne réalise ${a.id} (${EXP === 'piece' ? 'la pièce montre un seul côté à la fois' : EXP === 'de' ? 'le dé n\'a pas de face 7' : EXP === 'des' ? 'la somme vaut au plus 6 + 6 = 12' : EXP === 'urne' ? 'il n\'y a pas de boule verte dans l\'urne' : EXP === 'pieces' ? 'on ne peut pas obtenir trois fois Pile avec deux pièces' : `on ne peut pas avoir ${n + 1} bonnes réponses sur ${n}`}). Sa probabilité est 0.`];
         } },
         { texte: 'Un événement <b>certain</b>', nb: 1, juger([a]) {
             const x = issuesDe(a), m = toutesIssues().filter(j => !x.includes(j));
@@ -1704,14 +1907,70 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
                 : [true, `Oui : toutes les issues ${ensemble(x)} réalisent ${a.id}. Sa probabilité est 1.`];
         } }
     ];
+    // Une fois les ensembles écrits (ou corrigés), survoler un événement affiche son ensemble d'issues.
+    let ensemblesVus = false;
+    const ecritEnsemble = e => { const t = issuesDe(e); return `${e.id} = { ${t.map(j => LIB[j]).join(' ; ')}${t.length ? ' ' : ''}}`; };
+    document.addEventListener('mouseover', ev => {
+        const cible = ensemblesVus && ev.target.closest('#grandsEvenements [data-ev], .qc-lettres [data-l], #evenements [data-ev]');
+        const bulle = $('bulleEns');
+        if (!cible) { bulle.classList.add('cache'); return; }
+        const e = EVENEMENTS.find(x => x.id === (cible.dataset.ev || cible.dataset.l));
+        if (!e) return;
+        bulle.textContent = ecritEnsemble(e);
+        bulle.style.setProperty('--c', e.couleur);
+        bulle.classList.remove('cache');
+        const r = cible.getBoundingClientRect(), b = bulle.getBoundingClientRect();
+        bulle.style.left = Math.max(8, Math.min(innerWidth - b.width - 8, r.left + r.width / 2 - b.width / 2)) + 'px';
+        bulle.style.top = (r.top - b.height - 8 > 4 ? r.top - b.height - 8 : r.bottom + 8) + 'px';
+    });
+    // Partie 1 : pour chaque événement, on clique les issues qui le réalisent ; l'ensemble se lit entre les accolades.
+    function blocEnsembles(q, i) {
+        return `<div class="qc cache" data-i="${i}">
+            <span class="qc-texte">${i + 1}. ${q.texte}</span>
+            ${EVENEMENTS.map(e => `<div class="ens-ligne" data-e="${e.id}" style="--c:${e.couleur}"><b>${e.id} =</b><span class="acc">{</span>
+                <span class="ens-issues">${LIB.map((x, j) => `<button type="button" data-j="${j}" title="${e.court}">${x}</button>`).join('')}</span>
+                <span class="acc">}</span><span class="ens-marque"></span></div>`).join('')}
+            <div class="qc-ligne" style="margin-top:0.5rem"><button type="button" class="qc-verifier">Vérifier</button><button type="button" class="qc-corrige">Correction</button></div>
+            <div class="qc-retour"></div></div>`;
+    }
+    function brancherEnsembles(bloc) {
+        const retour = bloc.querySelector('.qc-retour');
+        bloc.querySelectorAll('.ens-issues button').forEach(b => b.onclick = () => {
+            b.classList.toggle('choisi');
+            b.closest('.ens-ligne').querySelector('.ens-marque').textContent = '';
+            retour.textContent = ''; retour.className = 'qc-retour';
+        });
+        const lignes = () => [...bloc.querySelectorAll('.ens-ligne')].map(l => {
+            const e = EVENEMENTS.find(x => x.id === l.dataset.e), bon = issuesDe(e);
+            const choisi = [...l.querySelectorAll('button.choisi')].map(b => +b.dataset.j);
+            return { l, e, bon, ok: choisi.length === bon.length && bon.every(j => choisi.includes(j)) };
+        });
+        bloc.querySelector('.qc-verifier').onclick = () => {
+            const t = lignes(); let justes = 0;
+            t.forEach(({ l, ok }) => { const m = l.querySelector('.ens-marque'); m.textContent = ok ? '✓' : '✗'; m.className = 'ens-marque ' + (ok ? 'oui' : 'non'); if (ok) justes++; });
+            retour.className = 'qc-retour ' + (justes === t.length ? 'oui' : 'non');
+            if (justes === t.length) ensemblesVus = true;
+            retour.textContent = justes === t.length ? `✓ Bravo : les ${t.length} ensembles sont justes. Un événement impossible ne contient aucune issue : c'est l'ensemble vide { }.`
+                : `${justes} sur ${t.length} juste${justes > 1 ? 's' : ''}. Pour chaque ligne fausse, se demander : avec cette issue, l'événement est-il réalisé ?`;
+        };
+        bloc.querySelector('.qc-corrige').onclick = () => {
+            lignes().forEach(({ l, bon }) => {
+                l.querySelectorAll('button').forEach(b => b.classList.toggle('choisi', bon.includes(+b.dataset.j)));
+                const m = l.querySelector('.ens-marque'); m.textContent = ''; m.className = 'ens-marque';
+            });
+            retour.className = 'qc-retour'; retour.textContent = 'Correction affichée : les issues en couleur réalisent l\'événement.';
+            ensemblesVus = true;
+        };
+    }
     function dessinerCours() {
-        $('questionsCours').innerHTML = QUESTIONS_COURS.map((q, i) => `<div class="qc${i ? ' cache' : ''}" data-i="${i}">
+        $('questionsCours').innerHTML = QUESTIONS_COURS.map((q, i) => q.ensembles ? blocEnsembles(q, i) : `<div class="qc${i ? ' cache' : ''}" data-i="${i}">
             <span class="qc-texte">${i + 1}. ${q.texte}</span>
             <div class="qc-ligne"><span class="qc-lettres">${EVENEMENTS.map(e => `<button type="button" data-l="${e.id}" style="--c:${e.couleur}" title="${e.court}">${e.id}</button>`).join('')}</span>
                 <button type="button" class="qc-verifier">Vérifier</button></div>
             <div class="qc-retour"></div></div>`).join('');
         $('questionsCours').querySelectorAll('.qc').forEach(bloc => {
             const q = QUESTIONS_COURS[+bloc.dataset.i], choix = [], retour = bloc.querySelector('.qc-retour');
+            if (q.ensembles) return brancherEnsembles(bloc);
             bloc.querySelectorAll('[data-l]').forEach(b => b.onclick = () => {
                 const l = b.dataset.l, i = choix.indexOf(l);
                 if (i >= 0) choix.splice(i, 1); else { choix.push(l); if (choix.length > q.nb) choix.shift(); }
@@ -1848,6 +2107,8 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         r.className = 'qc-retour non';
         r.textContent = vides ? `Il reste ${vides} case${vides > 1 ? 's' : ''} vide${vides > 1 ? 's' : ''} ou illisible${vides > 1 ? 's' : ''}. ` : '';
         r.textContent += `${bons} sur ${NI} juste${bons > 1 ? 's' : ''}.` + (Math.abs(tot - 1) > 0.0005 * NI ? ' Attention : la somme des probabilités doit faire 100 %.'
+            : EXP === 'piece' ? (reglages.truquee ? ' Indice : la pièce est truquée, Pile et Face n\'ont pas la même probabilité. Les fréquences sur un grand nombre de lancers en donnent une bonne estimation.' : ' Indice : la pièce est équilibrée, Pile et Face ont la même probabilité.')
+            : EXP === 'de' ? (reglages.deTruque ? ' Indice : le dé est truqué, les six numéros n\'ont pas la même probabilité. Les fréquences sur un grand nombre de lancers en donnent une bonne estimation.' : ' Indice : le dé est équilibré, les six numéros ont la même probabilité.')
             : EXP === 'des' ? ' Indice : avec un dé rouge et un dé vert, il y a 6 × 6 = 36 résultats (rouge ; vert), tous aussi probables. Par exemple, la somme 3 s\'obtient avec (1 ; 2) et (2 ; 1).'
             : EXP === 'urne' ? ` Indice : il y a ${reglages.rouges + reglages.bleues} boules dans l'urne, donc ${reglages.rouges + reglages.bleues} × ${reglages.rouges + reglages.bleues} = ${entier(total)} façons de tirer deux boules, toutes aussi probables.`
             : EXP === 'pieces' ? ' Indice : les deux pièces sont équilibrées, et chaque issue est aussi probable que les autres.'
@@ -1880,6 +2141,7 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         questionCours = i;
         $('questionsCours').querySelectorAll('.qc').forEach(b => b.classList.toggle('cache', +b.dataset.i !== i));
         $('numQuestion').textContent = `question ${i + 1} sur ${QUESTIONS_COURS.length}`;
+        $('consigneCours').textContent = QUESTIONS_COURS[i].ensembles ? 'Pour chaque événement (à gauche), cliquer sur les issues qui le réalisent.' : `Parmi les événements A à ${EVENEMENTS[EVENEMENTS.length - 1].id} (à gauche), donner :`;
         $('btnSuiteCours').textContent = i < QUESTIONS_COURS.length - 1 ? 'Continuer' : 'Terminer';
     }
     $('btnSuiteCours').onclick = () => {
@@ -1890,8 +2152,8 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     function syncEvenementsGauche() {
         const ouvert = !$('overlayCours').classList.contains('cache') && !$('activite').classList.contains('cache');
         if (ouvert) {
-            $('rappelExp').textContent = EXP === 'des' ? 'On lance un dé rouge et un dé vert ; on note la somme.' : EXP === 'urne' ? `Urne : ${reglages.rouges} rouge${reglages.rouges > 1 ? 's' : ''} et ${reglages.bleues} bleue${reglages.bleues > 1 ? 's' : ''} ; deux tirages avec remise.` : EXP === 'pieces' ? 'On lance deux pièces équilibrées, l\'une après l\'autre.' : `Un élève répond au hasard à un QCM de ${n} question${n > 1 ? 's' : ''}.`;
-            $('grandsEvenements').innerHTML = EVENEMENTS.map(e => `<div style="--c:${e.couleur}"><b>${e.id}</b><span>« ${e.court} »</span></div>`).join('');
+            $('rappelExp').textContent = EXP === 'piece' ? `On lance une pièce ${reglages.truquee ? 'truquée' : 'équilibrée'} ; on note Pile ou Face.` : EXP === 'de' ? `On lance un dé ${reglages.deTruque ? 'truqué' : 'équilibré'} ; on note le numéro.` : EXP === 'des' ? 'On lance un dé rouge et un dé vert ; on note la somme.' : EXP === 'urne' ? `Urne : ${reglages.rouges} rouge${reglages.rouges > 1 ? 's' : ''} et ${reglages.bleues} bleue${reglages.bleues > 1 ? 's' : ''} ; deux tirages avec remise.` : EXP === 'pieces' ? 'On lance deux pièces équilibrées, l\'une après l\'autre.' : `Un élève répond au hasard à un QCM de ${n} question${n > 1 ? 's' : ''}.`;
+            $('grandsEvenements').innerHTML = EVENEMENTS.map(e => `<div data-ev="${e.id}" style="--c:${e.couleur}"><b>${e.id}</b><span>« ${e.court} »</span></div>`).join('');
         }
         $('overlayEvenements').classList.toggle('cache', !ouvert);
     }
@@ -1915,6 +2177,14 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         document.body.classList.toggle('proba', voirProba);
     }
     $('btnProba').onclick = () => { voirProba = !voirProba; marquerProba(); if (stats) afficherStats(); };
+    function marquerEcriture() { $('segEcriture').querySelectorAll('button').forEach(b => b.classList.toggle('choisi', b.dataset.ecr === ecriture)); }
+    $('segEcriture').querySelectorAll('button').forEach(b => b.onclick = () => {
+        ecriture = b.dataset.ecr;
+        try { localStorage.setItem('quizHasard.ecriture', ecriture); } catch (e) {}
+        marquerEcriture();
+        if (stats) afficherStats();
+    });
+    marquerEcriture();
     marquerProba();
     $('btnFermerEnonce').onclick = fermerEnonce;
     $('overlayEnonce').onclick = ev => { if (ev.target === $('overlayEnonce')) fermerEnonce(); };
@@ -1963,16 +2233,18 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
     $('btnOnglet').onclick = () => window.open(location.href.split('#')[0], '_blank');
 
     /* ============ Le menu des expériences (entête) ============ */
-    const NOMS_EXP = { qcm: 'QCM au hasard', pieces: 'Deux pièces', des: 'Deux dés', urne: 'Urne avec remise' };
+    const NOMS_EXP = { piece: 'Une pièce', de: 'Un dé', qcm: 'QCM au hasard', pieces: 'Deux pièces', des: 'Deux dés', urne: 'Urne avec remise' };
     function detailExp(e) {
         if (e === 'urne') return `${reglages.rouges} rouge${reglages.rouges > 1 ? 's' : ''} et ${reglages.bleues} bleue${reglages.bleues > 1 ? 's' : ''} ; deux tirages ; on note par exemple RB.`;
         if (e === 'pieces') return 'Deux pièces équilibrées ; on note par exemple PF.';
         if (e === 'des') return 'Un dé rouge, un dé vert ; on note la somme.';
+        if (e === 'piece') return `Une pièce ${reglages.truquee ? 'truquée' : 'équilibrée'} ; on note P ou F.`;
+        if (e === 'de') return `Un dé ${reglages.deTruque ? 'truqué' : 'équilibré'} ; on note le numéro.`;
         return `${reglages.n} question${reglages.n > 1 ? 's' : ''} à ${reglages.k} réponses ; on note le nombre de bonnes réponses.`;
     }
     function marquerBtnExp() { $('btnExp').textContent = 'Expériences ▾'; }
     function ouvrirMenuExp() {
-        $('cartesMenuExp').innerHTML = ['qcm', 'pieces', 'des', 'urne'].map(e =>
+        $('cartesMenuExp').innerHTML = ['piece', 'de', 'qcm', 'pieces', 'des', 'urne'].map(e =>
             `<button type="button" data-e="${e}" class="${e === reglages.experience ? 'choisi' : ''}"><b>${NOMS_EXP[e]}</b><small>${detailExp(e)}</small></button>`).join('');
         $('cartesMenuExp').querySelectorAll('button').forEach(b => b.onclick = () => {
             $('menuExp').classList.add('cache');
@@ -1999,6 +2271,24 @@ body:not(.voir-freq) #evenements .freq { visibility: hidden; }
         if (bloc) { $('reglages').classList.add(bloc); (bloc === 'vers-exp' ? $('blocExp') : $('blocDeroule')).scrollIntoView({ block: 'start' }); }
     }
     $('btnPropres').onclick = () => { $('menuExp').classList.add('cache'); ouvrirReglages('vers-exp'); };
+
+    /* ============ Les cartes ne défilent pas : elles se resserrent ============ */
+    function tenirCarte(c) {
+        if (c.offsetParent === null) return;
+        const deborde = () => c.scrollHeight > c.clientHeight + 1;
+        c.classList.remove('serre', 'tres-serre');
+        if (deborde()) c.classList.add('serre');
+        if (deborde()) c.classList.add('tres-serre');
+    }
+    document.querySelectorAll('.carte-enonce').forEach(c => {
+        let prevu = false;
+        const plus_tard = () => { if (prevu) return; prevu = true; requestAnimationFrame(() => { prevu = false; tenirCarte(c); }); };
+        new MutationObserver(ms => { if (ms.some(m => m.target !== c)) plus_tard(); })
+            .observe(c, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+        // La carte devient visible quand son voile s'ouvre.
+        new MutationObserver(plus_tard).observe(c.parentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+    addEventListener('resize', () => setTimeout(() => document.querySelectorAll('.carte-enonce').forEach(tenirCarte), 200));
 
     /* ============ Projection : cadres flottants ============ */
     // Le bouton ⧉ détache un cadre : il flotte au-dessus de la page, on le déplace par sa barre et on l'agrandit
