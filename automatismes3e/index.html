@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automatismes 3e</title>
+<style>
+/* ==========================================================================
+   AUTOMATISMES 3e — structure et thème repris de l'appli "evaluation"
+   (header + panneau latéral, accent unique orange, voir evaluation/PATTERNS.md)
+   ========================================================================== */
+:root {
+  --papier:        #ffffff;
+  --papier-panel:  #fdf3e9;
+  --papier-encart: #ffffff;
+  --grille:        #f5dcc0;
+  --grille-forte:  #7a4a15;
+  --encre:         #4a2d0d;
+  --encre-douce:   #8a6a4a;
+  --accent:        #E67E22;
+  --accent-hover:  #C8690F;
+  --accent-clair:  #fcead9;
+  --header-fond:        #fdf0e2;
+  --header-bordure:     #f0c99a;
+  --header-texte:       #7a4a15;
+  --header-texte-hover: #4a2d0d;
+  --erreur:        #e74c3c;
+  --erreur-fond:   #fdecea;
+  --succes:        #28a745;
+  --succes-fond:   #e6f6ea;
+  --rayon:         12px;
+  --rayon-petit:   8px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; min-height: 100vh; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------- Header ---------- */
+header {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  width: 100%; padding: 0 20px; min-height: 54px;
+  background: var(--header-fond); border-bottom: 1px solid var(--header-bordure);
+}
+header #titre_appli { font-size: 1.2rem; letter-spacing: .2px; padding: 10px 0; }
+header #titre_appli b { font-weight: 700; color: var(--accent); }
+.header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.filet-header { width: 1px; height: 22px; background-color: var(--header-bordure); flex-shrink: 0; }
+.btn-header {
+  background: transparent; border: 0.5px solid var(--header-bordure);
+  height: 34px; padding: 0 14px; font-family: inherit; font-size: 0.82rem; font-weight: 500;
+  border-radius: var(--rayon-petit); cursor: pointer; color: var(--header-texte);
+  display: inline-flex; align-items: center; white-space: nowrap;
+  transition: border-color .12s, color .12s;
+}
+.btn-header:hover { border-color: var(--header-texte); color: var(--header-texte-hover); }
+.btn-header.active { border-color: var(--accent); color: var(--accent); }
+.btn-header.active:hover { border-color: var(--accent-hover); color: var(--accent-hover); }
+
+/* ---------- Structure : panneau latéral + contenu ---------- */
+#appBody { width: 100%; display: flex; align-items: flex-start; }
+#panneauLateral {
+  flex: 0 0 320px; width: 320px; min-height: calc(100vh - 54px);
+  background: var(--papier-encart); border-right: 1px solid var(--grille);
+  padding: 20px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+main {
+  flex: 1 1 auto; min-width: 0; min-height: calc(100vh - 54px);
+  display: flex; flex-direction: column; align-items: center; padding: 30px 20px 60px;
+}
+#container { width: 100%; max-width: 800px; margin-top: 10px; display: flex; flex-direction: column; align-items: center; }
+
+/* ---------- Panneau latéral ---------- */
+.panel-groupe { display: flex; flex-direction: column; gap: 8px; }
+.panel-groupe-label { font-size: 11.5px; font-weight: 700; color: var(--encre-douce); text-transform: uppercase; letter-spacing: 0.04em; }
+.panel-filet { height: 1px; background: var(--grille); margin: 4px 0; }
+.panel-groupe-paire { display: flex; gap: 6px; }
+.panel-type-list { display: flex; flex-direction: column; gap: 6px; }
+.panel-btn {
+  width: 100%; background-color: var(--papier-panel); border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit); padding: 8px 14px; font-family: inherit; font-size: 13.5px; font-weight: 700;
+  color: var(--encre); cursor: pointer; text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.panel-btn-sous { margin-left: 18px; width: calc(100% - 18px); padding-top: 6px; padding-bottom: 6px; font-size: 12.5px; }
+.panel-btn-half { flex: 1 1 0; width: auto; text-align: center; padding: 8px 6px; font-size: 12.5px; }
+.panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+.panel-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--papier); }
+.panel-btn.active:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); color: var(--papier); }
+.panel-btn:disabled { cursor: default; background-color: var(--papier-panel); border-color: var(--grille); color: #9a9a9a; }
+.panel-btn.active:disabled { opacity: 0.55; background-color: var(--accent); border-color: var(--accent); color: #9a9a9a; }
+#score-container { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+#question-progress, #score, #skipButton {
+  width: 100%; background-color: var(--papier-panel); padding: 10px 14px; border-radius: var(--rayon-petit);
+  font-family: inherit; font-weight: 700; font-size: 13.5px; border: 2px solid var(--grille); text-align: left;
+}
+#question-progress { color: var(--encre-douce); }
+#score { color: var(--succes); border-color: var(--succes); }
+#skipButton { border-color: var(--accent); color: var(--accent); cursor: pointer; transition: background-color 0.15s, color 0.15s; }
+#skipButton:hover { background-color: var(--accent); color: var(--papier); }
+
+/* ---------- Question ---------- */
+.theme-label { width: 100%; font-size: 13px; font-weight: 700; color: var(--accent-hover); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.carte {
+  width: 100%; background: var(--papier-encart); border: 2px solid var(--grille-forte); border-radius: var(--rayon);
+  padding: 22px 26px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); font-size: 20px; line-height: 1.7;
+  animation: slideUp 0.5s ease-out;
+}
+.carte p { margin: 0 0 10px; }
+.carte p:last-child { margin-bottom: 0; }
+.carte i, .correction i { font-family: Georgia, 'Times New Roman', serif; }
+.carte sup, .correction sup { font-size: .65em; line-height: 0; }
+.expr { font-size: 1.15em; font-weight: 600; white-space: nowrap; }
+input.rep.pi, .sym-pi { font-family: Georgia, 'Times New Roman', serif; font-style: normal; }
+.aide { font-size: 14px; color: var(--encre-douce); font-style: italic; }
+.ligne-rep { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.ligne-rep > span { white-space: nowrap; }
+input.rep {
+  font: inherit; font-weight: 600; text-align: center; padding: .15em .3em; color: var(--encre); margin: 0 2px;
+  border: 2px solid var(--grille); border-radius: var(--rayon-petit); background: #fdfdfd; transition: border-color .2s;
+}
+input.rep:focus { border-color: var(--accent); background: white; outline: none; }
+input.rep.ok { border-color: var(--succes); background: var(--succes-fond); color: var(--succes); opacity: 1; }
+input.rep.ko { border-color: var(--erreur); background: var(--erreur-fond); color: var(--erreur); opacity: 1; }
+input.rep.expo { font-size: .7em; vertical-align: .7em; }
+
+/* QCM */
+.choix-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.choix-liste.col1 { grid-template-columns: 1fr; }
+.choix {
+  font: inherit; font-size: 18px; font-weight: 600; text-align: center; padding: 12px 14px; cursor: pointer; color: var(--encre);
+  background: var(--papier-panel); border: 2px solid var(--grille); border-radius: var(--rayon-petit);
+  transition: border-color .15s, background-color .15s;
+}
+.choix-liste.col1 .choix { text-align: left; }
+.choix:hover:not(:disabled) { border-color: var(--accent); }
+.choix.sel { border-color: var(--accent); background: var(--accent-clair); }
+.choix:disabled { cursor: default; }
+.choix.ok { border-color: var(--succes); background: var(--succes-fond); color: var(--succes); }
+.choix.ko { border-color: var(--erreur); background: var(--erreur-fond); color: var(--erreur); }
+
+/* Blocs façon Scratch */
+.avec-figure { display: flex; flex-wrap: wrap; gap: 20px 30px; align-items: flex-start; }
+.avec-figure > div:first-child { flex: 1 1 260px; }
+.scr { display: inline-flex; flex-direction: column; align-items: flex-start; font: 600 14px/1.2 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #fff; }
+.scr-b { display: flex; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; }
+.scr-hat { background: #FFBF00; border-radius: 18px 18px 5px 5px; padding-top: 14px; }
+.scr-sens { background: #5CB1D6; }
+.scr-var { background: #FF8C1A; }
+.scr-look { background: #9966FF; }
+.scr-o { display: inline-flex; align-items: center; gap: 6px; border-radius: 14px; padding: 3px 9px; }
+.scr-o.op { background: #59C059; padding: 3px 5px; }
+.scr-o.va { background: #DB6E00; }
+.scr-o.se { background: #2E8EB8; }
+.scr-o.nb { background: #fff; color: #444; }
+.scr-menu { background: #DB6E00; border-radius: 4px; padding: 3px 8px; }
+.scr-menu::after { content: ' ▾'; font-size: .8em; }
+
+/* Bloc Scratch « polygone » */
+.scr-def { background: #FF6680; border-radius: 18px 18px 5px 5px; padding-top: 14px; }
+.scr-def span { background: #FF4D6A; border-radius: 4px; padding: 3px 8px; }
+.scr-pen { background: #0FBD8C; }
+.scr-c { background: #FFAB19; border-radius: 5px; padding: 0 0 14px 14px; }
+.scr-c > .scr-b:first-child { padding-left: 0; margin-bottom: 0; }
+.scr-c .scr-in { background: #4C97FF; }
+.scr input.rep { width: 58px; font-size: 14px; border-radius: 12px; padding: 2px 4px; }
+
+/* Fractions, angles, tableaux, figures */
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.25; margin: 0 3px; }
+.fr > span:first-child { border-bottom: 2px solid currentColor; padding: 0 5px 1px; }
+.fr > span:last-child { padding: 1px 5px 0; }
+.ang { display: inline-block; font-family: Georgia, 'Times New Roman', serif; font-style: italic; line-height: 1.1; padding-top: 2px;
+  border-top: 2px solid currentColor; border-radius: 50% 50% 0 0 / 7px 7px 0 0; }
+.tabv { border-collapse: collapse; margin: 10px 0; font-weight: 600; }
+.tabv th, .tabv td { border: 2px solid var(--grille-forte); padding: 6px 18px; text-align: center; }
+.tabv th { background: var(--accent-clair); color: var(--accent-hover); text-align: left; font-size: .85em; }
+.figure { width: 230px; max-width: 100%; height: auto; display: block; }
+.graphe { width: 100%; height: auto; display: block; }
+.avec-figure > div:has(> .graphe) { flex: 1 1 380px; }
+.axe { width: 100%; max-width: 460px; height: auto; display: block; margin: 4px 0 8px; }
+.panel-nb { float: right; font-weight: 500; opacity: .7; }
+
+/* Repère */
+.repere { width: 100%; max-width: 340px; height: auto; display: block; }
+
+/* Retour, correction, boutons */
+.feedback-zone { min-height: 1.6em; margin-top: 14px; font-size: 18px; font-style: italic; text-align: center; }
+.feedback-zone.state-success { color: var(--succes); font-style: normal; font-weight: 700; }
+.feedback-zone.state-error { color: var(--erreur); font-style: normal; font-weight: 700; }
+.feedback-zone.state-neutral { color: var(--accent); }
+.correction {
+  width: 100%; margin-top: 10px; padding: 12px 18px; font-size: 17px; line-height: 1.6;
+  background: var(--accent-clair); border-left: 4px solid var(--accent); border-radius: var(--rayon-petit);
+}
+.correction b.titre { color: var(--accent-hover); }
+.center-button { width: 100%; display: flex; justify-content: center; margin-top: 14px; }
+.center-button button {
+  padding: 12px 40px; font-family: inherit; font-size: 18px; border-radius: 50px; border: none; color: white; cursor: pointer;
+  background-color: var(--succes); box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s ease;
+}
+.center-button button:hover { transform: scale(1.05); background-color: #218838; }
+.center-button button.valider { background-color: var(--accent); box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3); }
+.center-button button.valider:hover { background-color: var(--accent-hover); }
+.restart-btn {
+  margin-top: 25px; padding: 12px 30px; background: var(--accent); color: white; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 1.1rem; font-weight: 600; cursor: pointer;
+}
+.restart-btn:hover { background: var(--accent-hover); }
+.bilan { list-style: none; padding: 0; margin: 18px auto 0; max-width: 420px; text-align: left; font-size: 16px; }
+.bilan li { padding: 6px 12px; border-bottom: 1px solid var(--grille); display: flex; gap: 10px; }
+.bilan li span:first-child { width: 1.4em; font-weight: 700; }
+.bilan li.ok span:first-child { color: var(--succes); }
+.bilan li.ko span:first-child { color: var(--erreur); }
+@keyframes slideUp { 0% { transform: translateY(30px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+/* ---------- Guide ---------- */
+#overlayGuide { position: fixed; inset: 0; background: rgba(74, 45, 13, .45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+#overlayGuide.ouvert { display: flex; }
+#guideCarte { position: relative; background: var(--papier); border-radius: var(--rayon); width: min(640px, 100%); max-height: 100%; overflow: auto; padding: 22px 26px; }
+#guideCarte h2 { margin: 0 0 6px; }
+#guideCarte h3 { margin: 16px 0 4px; font-size: 1rem; color: var(--accent-hover); }
+#guideCarte p { margin: 0; line-height: 1.5; }
+#btnFermerGuide { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 28px; line-height: 1; cursor: pointer; color: var(--encre-douce); }
+
+/* ---------- Petit écran : le panneau passe au-dessus ---------- */
+@media (max-width: 760px) {
+  #appBody { flex-direction: column; }
+  #panneauLateral { flex: none; width: 100%; min-height: 0; border-right: none; border-bottom: 1px solid var(--grille); padding: 12px 16px; }
+  .panel-type-list { display: grid; grid-template-columns: 1fr 1fr; }
+  main { width: 100%; min-height: 0; padding: 16px 16px 40px; }
+  .carte { padding: 16px; font-size: 18px; }
+  .choix-liste { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">Automatismes <b>3<sup>e</sup></b></span>
+    <div class="header-actions" id="topButtonsBar"></div>
+  </header>
+
+  <div id="appBody">
+    <aside id="panneauLateral"></aside>
+    <main>
+      <div id="container"></div>
+    </main>
+  </div>
+
+  <div id="overlayGuide">
+    <div id="guideCarte">
+      <button id="btnFermerGuide" type="button" aria-label="Fermer">×</button>
+      <h2>Mode d'emploi</h2>
+      <h3>Objectif</h3>
+      <p>Répondre vite et bien aux automatismes de 3<sup>e</sup> : environ 86 types de questions, répartis en huit catégories : les sept de la sélection d'automatismes de MathALÉA, plus les conversions (avec une sous-classe « Durées »), présentes dans chaque quiz.</p>
+      <h3>Catégories</h3>
+      <p>Choisis dans le panneau de gauche les catégories à travailler ; le nombre indique combien d'automatismes différents chacune contient. Avec les sept cochées, un quiz pose 2 questions de géométrie, 1 d'algorithmique, 2 de mesures, 2 de nombres, 1 de calcul littéral, 1 de proportionnalité et 1 de statistiques ou probabilités.</p>
+      <h3>Atelier / Quiz</h3>
+      <p><b>Atelier</b> : entraînement libre, questions illimitées, sans score.<br>
+      <b>Quiz</b> : clique sur « Commencer le Quiz » pour une évaluation de 10 questions ; le score et le bilan s'affichent à la fin.</p>
+      <h3>Répondre</h3>
+      <p>Une seule tentative par question : écris ta réponse (ou choisis une proposition), puis valide avec la touche Entrée ou le bouton « Valider ». En cas d'erreur, la correction s'affiche. Le bouton « Renoncer » passe à la question suivante sans compter de point.</p>
+      <h3>Écriture des réponses</h3>
+      <p>Les décimaux s'écrivent avec une virgule (le point est accepté). Une fraction s'écrit avec une barre oblique : <b>7/3</b>. Pour les expressions littérales, écris par exemple <b>2x(3 − 7x)</b> ; le carré se tape <b>x^2</b> ou <b>x²</b>.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+<script>
+/* ================= État ================= */
+const NB_QUESTIONS = 10;
+let questionCount = 0;
+let score = 0;
+let piocheEnCours = [];
+let etatJeu = 'atelier';   // 'atelier' | 'quiz' — atelier : rien n'est compté, questions illimitées.
+let quizDemarre = false;   // true une fois qu'on a cliqué "Commencer le Quiz"
+let question = null;       // question en cours
+let repondu = false;       // la question en cours a été validée (une seule tentative)
+let bilan = [];            // quiz : [{ nom, ok }]
+
+/* ================= Outils ================= */
+const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rnd = x => Math.round(x * 1e6) / 1e6;
+const pgcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
+const X = '<i>x</i>';
+
+/** Nombre → écriture française : 1 234,5 */
+function fmt(x) {
+  const r = rnd(x);
+  let [i, d] = Math.abs(r).toString().split('.');
+  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return (r < 0 ? '−' : '') + i + (d ? ',' + d : '');
+}
+/** Saisie élève → nombre (ou null) : virgule ou point, signe − accepté, espaces ignorés. */
+function parseNum(s) {
+  s = String(s).replace(/[\s  ]/g, '').replace(/[−–]/g, '-');
+  if (!/^[-+]?(\d+([.,]\d*)?|[.,]\d+)$/.test(s)) return null;
+  return parseFloat(s.replace(',', '.'));
+}
+/** Vérificateur d'un champ numérique : true / false, ou null si la saisie n'est pas un nombre. */
+const numOk = v => s => { const x = parseNum(s); return x == null ? null : Math.abs(x - v) <= 1e-9 * Math.max(1, Math.abs(v)); };
+/** Saisie → nombre, en acceptant aussi une fraction a/b. */
+function parseVal(s) {
+  const m = /^([^/]+)\/([^/]+)$/.exec(String(s));
+  if (!m) return parseNum(s);
+  const a = parseNum(m[1]), b = parseNum(m[2]);
+  return a == null || b == null || b === 0 ? null : a / b;
+}
+const valOk = v => s => { const x = parseVal(s); return x == null ? null : Math.abs(x - v) <= 1e-9 * Math.max(1, Math.abs(v)); };
+/** Champ de réponse n° i. */
+const champ = (i, largeur = 110, mode = 'decimal', cls = '') =>
+  `<input type="text" class="rep ${cls}" data-i="${i}" style="width:${largeur}px" inputmode="${mode}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Réponse ${i + 1}">`;
+
+/* ================= Polynômes en x (réponses littérales) =================
+   Un polynôme est le tableau de ses coefficients [c0, c1, c2…]. */
+const pAdd = (p, q) => Array.from({ length: Math.max(p.length, q.length) }, (_, i) => (p[i] || 0) + (q[i] || 0));
+const pMul = (p, q) => { const r = Array(p.length + q.length - 1).fill(0); p.forEach((a, i) => q.forEach((b, j) => { r[i + j] += a * b; })); return r; };
+const pEq = (p, q) => pAdd(p, q.map(c => -c)).every(c => Math.abs(c) < 1e-9);
+const pDeTermes = ts => ts.reduce((p, t) => { const m = Array(t.d + 1).fill(0); m[t.d] = t.c; return pAdd(p, m); }, [0]);
+
+/** Termes [{ c, d }] → html, dans l'ordre donné : 6x − 14x² */
+function termesHtml(ts) {
+  return ts.map((t, k) => {
+    const a = Math.abs(t.c);
+    const corps = t.d === 0 ? fmt(a) : (a === 1 ? '' : fmt(a)) + X + (t.d > 1 ? `<sup>${t.d}</sup>` : '');
+    return k === 0 ? (t.c < 0 ? '−' : '') + corps : ` ${t.c < 0 ? '−' : '+'} ${corps}`;
+  }).join('');
+}
+/** Polynôme → html réduit, degrés décroissants. */
+function pHtml(p) {
+  const ts = p.map((c, d) => ({ c: rnd(c), d })).filter(t => t.c !== 0).reverse();
+  return ts.length ? termesHtml(ts) : '0';
+}
+
+/** Saisie élève → { poly, terms: [{ poly, factors: [{ poly, type: 'num'|'var'|'paren', n }] }] } ; lève une exception si illisible. */
+function parsePoly(src) {
+  const s = String(src).toLowerCase().replace(/\s/g, '').replace(/[−–]/g, '-').replace(/[×·]/g, '*')
+    .replace(/,/g, '.').replace(/²/g, '^2').replace(/³/g, '^3');
+  let i = 0;
+  if (!s) throw new Error('vide');
+  const expr = () => {
+    const terms = []; let poly = [0], sg = 1;
+    if (s[i] === '+' || s[i] === '-') { sg = s[i] === '-' ? -1 : 1; i++; }
+    for (;;) {
+      const t = term(); t.poly = t.poly.map(c => c * sg); terms.push(t); poly = pAdd(poly, t.poly);
+      if (s[i] === '+') { sg = 1; i++; } else if (s[i] === '-') { sg = -1; i++; } else break;
+    }
+    return { poly, terms };
+  };
+  const term = () => {
+    const factors = []; let poly = [1];
+    for (;;) {
+      if (s[i] === '*') { if (!factors.length) throw new Error('*'); i++; }
+      else if (factors.length && !(i < s.length && /[0-9.x(]/.test(s[i]))) break;
+      const f = factor(); factors.push(f); poly = pMul(poly, f.poly);
+    }
+    return { poly, factors };
+  };
+  const factor = () => {
+    let f; const c = s[i];
+    if (c === '(') { i++; const e = expr(); if (s[i] !== ')') throw new Error(')'); i++; f = { poly: e.poly, type: 'paren', n: e.terms.length }; }
+    else if (c === 'x') { i++; f = { poly: [0, 1], type: 'var' }; }
+    else { const m = /^\d+(\.\d+)?/.exec(s.slice(i)); if (!m) throw new Error('?'); i += m[0].length; f = { poly: [+m[0]], type: 'num' }; }
+    if (s[i] === '^') {
+      i++; const m = /^\d/.exec(s.slice(i)); if (!m) throw new Error('^'); i++;
+      let p = [1]; for (let k = 0; k < +m[0]; k++) p = pMul(p, f.poly); f.poly = p;
+    }
+    return f;
+  };
+  const e = expr();
+  if (i < s.length) throw new Error('reste');
+  return e;
+}
+
+/** Réponse attendue : un produit égal à cible, dont chaque parenthèse n'a plus de facteur commun. */
+const factoriseOk = cible => s => {
+  let e; try { e = parsePoly(s); } catch (err) { return null; }
+  if (!pEq(e.poly, cible) || e.terms.length !== 1) return false;
+  const par = e.terms[0].factors.filter(f => f.type === 'paren' && f.n > 1);
+  return par.length > 0 && par.every(f => {
+    const cs = f.poly.map(rnd).filter(c => c !== 0);
+    return cs.every(Number.isInteger) && cs.reduce(pgcd, 0) === 1 && Math.abs(f.poly[0]) > 1e-9;
+  });
+};
+/** Réponse attendue : une somme réduite égale à cible (un terme par degré, sans parenthèses). */
+const reduitOk = cible => s => {
+  let e; try { e = parsePoly(s); } catch (err) { return null; }
+  if (!pEq(e.poly, cible)) return false;
+  const nb = Math.max(1, cible.filter(c => Math.abs(c) > 1e-9).length);
+  return e.terms.length === nb && e.terms.every(t =>
+    t.factors.every(f => f.type !== 'paren') && t.factors.filter(f => f.type === 'num').length <= 1 && t.factors.filter(f => f.type === 'var').length <= 1);
+};
+
+/* ================= Automatismes =================
+   Chaque générateur renvoie { html, correction } et
+     - soit champs: [{ ok(saisie) → true | false | null, sol }]  (le html contient les champ(i)) ;
+     - soit qcm: { choix: [html…], bonne, col1 }.
+   Le catalogue (CATEGORIES) est défini après les générateurs. */
+/** 0,000 719 → 7,19 × 10^−4 */
+function genSci() {
+  let m; do { m = R(101, 999); } while (m % 10 === 0);
+  const ch = String(m), n = pick([-5, -4, -3, -2, 3, 4, 5, 6, 7]);
+  const groupe3 = t => t.replace(/(\d{3})(?=\d)/g, '$1 ');
+  let ecrit;
+  if (n < 0) ecrit = '0,' + groupe3('0'.repeat(-n - 1) + ch);
+  else ecrit = (ch.padEnd(n + 1, '0')).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const mant = m / 100;
+  return {
+    html: `<p>Donner la notation scientifique de <span class="expr">${ecrit}</span>.</p>
+      <p class="ligne-rep"><span><span class="expr">${ecrit}</span> = ${champ(0, 100)} × 10${champ(1, 56, 'text', 'expo')}</span></p>`,
+    champs: [N(mant), N(n)],
+    correction: `${ecrit} = ${fmt(mant)} × 10<sup>${fmt(n)}</sup> (un seul chiffre non nul avant la virgule).`,
+  };
+}
+
+/** N et P sont-ils divisibles par 3 (ou 9) ? */
+function genDivisibilite() {
+  const d = pick([3, 9]), cas = R(0, 3);           // 0 : les deux, 1 : aucun, 2 : N seul, 3 : P seul
+  const nombre = divisible => { let x; do { x = R(1001, 9999); } while ((x % d === 0) !== divisible || x % 10 === 0); return x; };
+  const somme = x => String(x).split('').reduce((s, c) => s + +c, 0);
+  let N, P;
+  do { N = nombre(cas === 0 || cas === 2); P = nombre(cas === 0 || cas === 3); } while (N === P);
+  const N_ = '<i>N</i>', P_ = '<i>P</i>';
+  const phrase = (x, l) => `${l} : ${String(x).split('').join(' + ')} = ${somme(x)}, ${somme(x) % d === 0 ? 'qui est' : "qui n'est pas"} dans la table de ${d}`;
+  return {
+    html: `<p>On s'intéresse à la divisibilité par ${d} des nombres <span class="expr">${N_} = ${fmt(N)}</span> et <span class="expr">${P_} = ${fmt(P)}</span>.</p>`,
+    qcm: { col1: true, bonne: cas, choix: [
+      `${N_} et ${P_} sont tous les deux divisibles par ${d}`,
+      `Aucun des deux nombres n'est divisible par ${d}`,
+      `${N_} est divisible par ${d} mais ${P_} ne l'est pas`,
+      `${P_} est divisible par ${d} mais ${N_} ne l'est pas`] },
+    correction: `On additionne les chiffres. ${phrase(N, N_)} ; ${phrase(P, P_)}.`,
+  };
+}
+
+/** 6x − 14x² = 2x(3 − 7x)   ou   12x + 18 = 6(2x + 3) */
+function genFactoriser() {
+  let a, b;
+  do { a = R(1, 9); b = R(2, 9); } while (pgcd(a, b) !== 1);
+  const s = pick([1, -1]), op = s > 0 ? '+' : '−';
+  let termes, sol;
+  if (Math.random() < 0.7) {
+    const k = R(1, 5), kx = (k > 1 ? k : '') + X;
+    if (Math.random() < 0.5) { termes = [{ c: k * a, d: 1 }, { c: s * k * b, d: 2 }]; sol = `${kx}(${a} ${op} ${b}${X})`; }
+    else { termes = [{ c: k * b, d: 2 }, { c: s * k * a, d: 1 }]; sol = `${kx}(${b}${X} ${op} ${a})`; }
+  } else {
+    const k = R(2, 9);
+    termes = [{ c: k * a, d: 1 }, { c: s * k * b, d: 0 }]; sol = `${k}(${a === 1 ? '' : a}${X} ${op} ${b})`;
+  }
+  const A = '<i>A</i>';
+  return {
+    html: `<p>Factoriser au maximum l'expression <span class="expr">${A} = ${termesHtml(termes)}</span>.</p>
+      <p class="ligne-rep"><span><span class="expr">${A} =</span> ${champ(0, 240, 'text')}</span></p>
+      <p class="aide">Pour ${X}<sup>2</sup>, tape x^2 ou x².</p>`,
+    champs: [{ ok: factoriseOk(pDeTermes(termes)), sol: plat(sol) }],
+    correction: `${A} = ${termesHtml(termes)} = <b>${sol}</b>`,
+  };
+}
+
+/** x + 4 − 11x − 4 = −10x */
+function genReduire() {
+  const degres = pick([[1, 0, 1, 0], [1, 0, 1, 0], [2, 1, 2, 1], [2, 1, 0, 2], [2, 1, 0, 1]]);
+  let termes, cible;
+  do {
+    termes = degres.map((d, k) => ({ c: (k === 0 ? 1 : pick([1, -1])) * R(1, 12), d }));
+    cible = pDeTermes(termes);
+  } while (cible.some((c, d) => c === 0 && d > 0) || termes.every(t => t.c > 0));
+  const A = '<i>A</i>';
+  return {
+    html: `<p>Réduire l'expression <span class="expr">${A} = ${termesHtml(termes)}</span>.</p>
+      <p class="ligne-rep"><span><span class="expr">${A} =</span> ${champ(0, 240, 'text')}</span></p>
+      ${degres.includes(2) ? `<p class="aide">Pour ${X}<sup>2</sup>, tape x^2 ou x².</p>` : ''}`,
+    champs: [{ ok: reduitOk(cible), sol: plat(pHtml(cible)) }],
+    correction: `On regroupe les termes de même nature : ${A} = <b>${pHtml(cible)}</b>`,
+  };
+}
+
+/** Deux angles : complémentaires (90°), supplémentaires (180°), ni l'un ni l'autre. */
+function genAngles() {
+  const cas = R(0, 2), total = [90, 180, pick([80, 100, 170, 190])][cas];
+  let a; do { a = R(12, total - 12); } while (a % 10 === 0 || a === total - a);
+  const b = total - a;
+  return {
+    html: `<p>Deux angles mesurent <span class="expr">${a}°</span> et <span class="expr">${b}°</span>.<br>Ces deux angles sont :</p>`,
+    qcm: { col1: true, bonne: cas, choix: ['complémentaires', 'supplémentaires', "ni l'un, ni l'autre"] },
+    correction: `${a}° + ${b}° = ${total}°. Des angles sont complémentaires si la somme de leurs mesures vaut 90°, supplémentaires si elle vaut 180°.`,
+  };
+}
+
+/** Lire les coordonnées de quatre points. */
+function genRepere() {
+  const noms = shuffle('ABCDEFGHKLMNPRSTU'.split('')).slice(0, 4);
+  let pts;
+  do {
+    pts = noms.map(() => ({ x: R(-5, 5), y: R(-5, 5) }));
+    pts[0][pick(['x', 'y'])] = 0;                  // un point sur un axe
+  } while (pts.some((p, i) => (p.x === 0 && p.y === 0) || p.y === 5 ||
+    pts.some((q, j) => j < i && Math.abs(p.x - q.x) < 2 && Math.abs(p.y - q.y) < 2)));
+  shuffle(pts);
+  const u = 28, m = 5.7 * u, L = t => `<i>${t}</i>`;
+  let svg = `<svg class="repere" viewBox="${-m} ${-m} ${2 * m} ${2 * m}" role="img" aria-label="Repère avec ${noms.length} points">`;
+  for (let k = -5; k <= 5; k++) svg += `<path d="M${k * u} ${-m}V${m}M${-m} ${k * u}H${m}" stroke="#d9c7b3" stroke-width="1"/>`;
+  svg += `<path d="M${-m} 0H${m - 2}M0 ${m}V${-m + 2}" stroke="#333" stroke-width="1.6"/>
+    <path d="M${m} 0l-8 -4v8zM0 ${-m}l-4 8h8z" fill="#333"/>`;
+  for (let k = -5; k <= 5; k++) if (k) svg += `<text x="${k * u}" y="13" font-size="10" text-anchor="middle" fill="#333">${k < 0 ? '−' + -k : k}</text>
+    <text x="-6" y="${-k * u + 3.5}" font-size="10" text-anchor="end" fill="#333">${k < 0 ? '−' + -k : k}</text>`;
+  svg += `<text x="-6" y="13" font-size="10" text-anchor="end" fill="#333">0</text>`;
+  pts.forEach((p, i) => {
+    const cx = p.x * u, cy = -p.y * u;
+    svg += `<path d="M${cx - 4} ${cy - 4}l8 8m0 -8l-8 8" stroke="#e74c3c" stroke-width="2.2" stroke-linecap="round"/>
+      <text x="${cx + 7}" y="${cy - 8}" font-size="15" font-style="italic" font-weight="700" font-family="Georgia, serif" fill="#4a2d0d" stroke="#fff" stroke-width="3" paint-order="stroke">${noms[i]}</text>`;
+  });
+  svg += '</svg>';
+  return {
+    html: `<div class="avec-figure"><div>
+        <p>Donner les coordonnées des points ${noms.slice(0, -1).map(L).join(', ')} et ${L(noms[noms.length - 1])}.</p>
+        ${pts.map((p, i) => `<p class="ligne-rep"><span>${L(noms[i])} ( ${champ(2 * i, 58, 'text')} ; ${champ(2 * i + 1, 58, 'text')} )</span></p>`).join('')}
+      </div><div>${svg}</div></div>`,
+    champs: pts.flatMap(p => [N(p.x), N(p.y)]),
+    correction: `L'abscisse (axe horizontal) d'abord, puis l'ordonnée : ${pts.map((p, i) => `${L(noms[i])}(${fmt(p.x)} ; ${fmt(p.y)})`).join(', ')}.`,
+  };
+}
+
+/** Volume d'un pavé droit, QCM. */
+function genVolume() {
+  const l1 = pick([1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 3, 4, 6, 7, 9]), l2 = pick([2, 4, 6, 8]), h = pick([5, 10, 20]);
+  const u = pick(['cm', 'dm', 'm']), V = l1 * l2 * h;
+  const leurres = [l1 + l2 + h, Number.isInteger(l1) ? (l1 + 1) * l2 * h : Math.floor(l1) * l2 * h, 2 * (l1 * l2 + l1 * h + l2 * h),
+    V - 2 * h, V + l2, V + 10].filter((x, i, t) => x !== V && x > 0 && t.indexOf(x) === i).slice(0, 3);
+  const vals = shuffle([V, ...leurres]);
+  return {
+    html: `<p>Un pavé droit a pour dimensions : ${fmt(l1)} ${u} de long, ${fmt(l2)} ${u} de large et ${fmt(h)} ${u} de haut.<br>Le volume de ce pavé est de :</p>`,
+    qcm: { bonne: vals.indexOf(V), choix: vals.map(v => `${fmt(v)} ${u}<sup>3</sup>`) },
+    correction: `Volume = longueur × largeur × hauteur = ${fmt(l1)} × ${fmt(l2)} × ${fmt(h)} = ${fmt(V)} ${u}<sup>3</sup>.`,
+  };
+}
+
+/** 2,83 L = … mm³ */
+/** Correction d'une conversion par une chaîne d'égalités : 4 km³ = 4 000 hm³ = 4 000 000 dam³.
+ *  etapes : liste de [valeur, unité] ; la dernière est mise en gras. */
+const chaineConversion = etapes => etapes.map(([x, u], t) => t === etapes.length - 1 ? `<b>${fmt(x)} ${u}</b>` : `${fmt(x)} ${u}`).join(' = ') + '.';
+function genConversion() {
+  const c3 = t => `${t}<sup>3</sup>`;
+  // Valeur de chaque unité en litres, et chemins de conversion (unités intermédiaires comprises).
+  const enL = { L: 1, dL: 0.1, cL: 0.01, mL: 0.001, m: 1000, dm: 1, cm: 0.001, mm: 1e-6 };
+  const nom = u => u in { m: 1, dm: 1, cm: 1, mm: 1 } ? c3(u) : u;
+  const chemin = pick([['L', 'dm'], ['L', 'dm', 'cm'], ['L', 'dm', 'cm', 'mm'], ['mL', 'cm'], ['cL', 'mL', 'cm'], ['dL', 'cL', 'mL', 'cm'],
+    ['dm', 'L'], ['cm', 'mL'], ['cm', 'dm', 'L'], ['m', 'dm', 'L'], ['L', 'dm', 'm']]);
+  const de = chemin[0], vers = chemin[chemin.length - 1], k = enL[de] / enL[vers];
+  const v = k < 1 ? R(11, 9999) / pick([1, 10]) : R(11, 999) / pick([1, 10, 100]), r = rnd(v * k);
+  return {
+    html: `<p>Compléter l'égalité :</p>
+      <p class="ligne-rep"><span><span class="expr">${fmt(v)} ${nom(de)}</span> = ${champ(0, 190)} <span class="expr">${nom(vers)}</span></span></p>`,
+    champs: [N(r)],
+    correction: chaineConversion(chemin.map(u => [rnd(v * enL[de] / enL[u]), nom(u)]))
+      + (chemin.filter(u => nom(u) !== u).length > 1 ? ` <i>(3 rangs par changement d'unité de volume)</i>` : '')
+      + (chemin.filter(u => nom(u) === u).length > 1 ? ` <i>(1 rang par changement d'unité de capacité)</i>` : ''),
+  };
+}
+
+/** Médiane d'une série de 5, 6 ou 7 notes. */
+function genMediane() {
+  const n = pick([5, 6, 7, 7]), s = new Set();
+  while (s.size < n) s.add(R(4, 38) / 2);
+  const notes = [...s], tri = notes.slice().sort((a, b) => a - b);
+  const med = n % 2 ? tri[(n - 1) / 2] : (tri[n / 2 - 1] + tri[n / 2]) / 2;
+  const expl = n % 2 ? `la médiane est la ${(n + 1) / 2}<sup>e</sup> valeur`
+    : `la médiane est la moyenne des ${n / 2}<sup>e</sup> et ${n / 2 + 1}<sup>e</sup> valeurs : (${fmt(tri[n / 2 - 1])} + ${fmt(tri[n / 2])}) : 2`;
+  return {
+    html: `<p>Les notes obtenues par un élève sont : <span class="expr" style="white-space:normal">${notes.map(fmt).join(' ; ')}</span>.</p>
+      <p class="ligne-rep"><span>Que vaut la médiane de cette série de notes ? ${champ(0, 110)}</span></p>`,
+    champs: [N(med)],
+    correction: `Série rangée : ${tri.map(fmt).join(' ; ')}. Il y a ${n} valeurs, ${expl}, soit <b>${fmt(med)}</b>.`,
+  };
+}
+
+/** Programme de calcul en blocs (d'après MathALÉA 3AutoI01-2) : (a × x + b) : c */
+function genScratch() {
+  const x = R(1, 7), a = pick([2, 4, 6, 10]), b = pick([6, 8, 12, 14, 16, 18, 20]);
+  const c = (x * a + b) % 4 === 0 ? pick([2, 4]) : 2, res = (x * a + b) / c;
+  const o = (cls, t) => `<span class="scr-o ${cls}">${t}</span>`;
+  const V = o('va', 'variable'), Rs = o('va', 'resultat');
+  const mettre = (nom, val) => `<div class="scr-b scr-var">mettre <span class="scr-menu">${nom}</span> à ${val}</div>`;
+  return {
+    html: `<div class="avec-figure"><div>
+        <p>On considère l'algorithme ci-contre.</p>
+        <p>Qu'obtient-on si on choisit <span class="expr">${x}</span> comme nombre de départ ?</p>
+        <p class="ligne-rep"><span>${champ(0, 110)}</span></p>
+      </div><div class="scr">
+        <div class="scr-b scr-hat">quand 🏳 est cliqué</div>
+        <div class="scr-b scr-sens">demander ${o('nb', 'Choisir un nombre')} et attendre</div>
+        ${mettre('variable', o('se', 'réponse'))}
+        ${mettre('resultat', o('op', `${o('nb', a)} * ${V}`))}
+        ${mettre('resultat', o('op', `${Rs} + ${o('nb', b)}`))}
+        ${mettre('resultat', o('op', `${Rs} / ${o('nb', c)}`))}
+        <div class="scr-b scr-look">dire ${o('op', `regrouper ${o('nb', "J'obtiens comme résultat : ")} et ${Rs}`)}</div>
+      </div></div>`,
+    champs: [N(res)],
+    correction: `Avec ${x} au départ : ${a} × ${x} = ${a * x}, puis ${a * x} + ${b} = ${a * x + b}, enfin ${a * x + b} : ${c} = <b>${res}</b>.`,
+  };
+}
+
+/* ================= Outils des générateurs ================= */
+/** Réponse exacte de la forme kπ : « 12π », « 12 × π », « π × 12 » ; « pi » est accepté à la place de π.
+ *  Un nombre sans π est faux (valeur approchée) ; toute autre saisie est illisible (null). */
+function piOk(k) {
+  return s => {
+    const t = String(s).replace(/[\s  ]/g, '').replace(/pi/gi, 'π').replace(/[×*·.x]?π[×*·x]?/, 'π');
+    if (!t.includes('π')) return parseNum(t) == null ? null : false;
+    const m = /^([^π]*)π([^π]*)$/.exec(t);
+    if (!m || (m[1] && m[2])) return null;
+    const c = m[1] || m[2], x = c === '' ? 1 : c === '-' || c === '−' ? -1 : parseNum(c);
+    return x == null ? null : Math.abs(x - k) <= 1e-9 * Math.max(1, Math.abs(k));
+  };
+}
+const PI = k => ({ ok: piOk(k), sol: `${fmt(k)}π` });                  // réponse exacte kπ
+const N = v => ({ ok: numOk(v), sol: fmt(v) });                       // réponse décimale
+const V = (v, sol) => ({ ok: valOk(v), sol: sol || fmt(v) });         // décimal ou fraction a/b
+const F = (n, d) => { const g = pgcd(n, d) || 1, s = d < 0 ? -1 : 1; n = s * n / g; d = s * d / g; return V(n / d, d === 1 ? fmt(n) : `${n}/${d}`); };
+const ex = t => `<span class="expr">${t}</span>`;
+const rep = t => `<p class="ligne-rep"><span>${t}</span></p>`;
+const fr = (a, b) => `<span class="fr"><span>${a}</span><span>${b}</span></span>`;
+const ang = t => `<span class="ang">${t}</span>`;
+const it = t => `<i>${t}</i>`;
+const rel = x => x < 0 ? `(${fmt(x)})` : fmt(x);
+const lettres = n => shuffle('ABCDEFGHKLMNPRSTUV'.split('')).slice(0, n);
+const plat = h => String(h).replace(/<sup>(\d+)<\/sup>/g, '^$1').replace(/<[^>]+>/g, '');
+const AIDE_PI = '<p class="aide">Tape <b>pi</b> : il se transforme en <span class="sym-pi">π</span>. Exemple : 12pi donne <span class="sym-pi">12π</span>.</p>';
+const AIDE_FRAC = '<p class="aide">Écris une fraction avec une barre oblique : 7/3.</p>';
+const AIDE_X2 = `<p class="aide">Pour ${X}<sup>2</sup>, tape x^2 ou x².</p>`;
+/** QCM : la bonne réponse et des leurres, mélangés. */
+function qcmDe(bon, leurres, col1) {
+  const choix = shuffle([bon, ...leurres.filter((l, i, t) => l !== bon && t.indexOf(l) === i)]);
+  return { choix, bonne: choix.indexOf(bon), col1 };
+}
+const ouiNon = oui => ({ choix: ['Oui', 'Non'], bonne: oui ? 0 : 1 });
+/** Durée en minutes → « 2 h 30 min » */
+const hm = m => [Math.floor(m / 60) ? `${Math.floor(m / 60)} h` : '', m % 60 ? `${m % 60} min` : ''].filter(Boolean).join(' ');
+/** Fraction irréductible attendue, saisie a/b. */
+const fracOk = (n, d, irred) => s => {
+  const m = /^(-?\d+)\/(\d+)$/.exec(String(s).replace(/\s/g, '').replace(/[−–]/g, '-'));
+  if (!m || +m[2] === 0) return null;
+  return +m[1] * d === +m[2] * n && (!irred || pgcd(+m[1], +m[2]) === 1);
+};
+
+/* ================= Espace et géométrie ================= */
+function gParallelo() {
+  const [prop, nat] = pick([['dont les diagonales ont la même longueur', 'rectangle'], ['dont les diagonales sont perpendiculaires', 'losange'],
+    ['qui a un angle droit', 'rectangle'], ['qui a deux côtés consécutifs de même longueur', 'losange'],
+    ['dont les diagonales sont perpendiculaires et de même longueur', 'carré'], ['qui a un angle droit et deux côtés consécutifs de même longueur', 'carré']]);
+  const nom = it(lettres(4).join(''));
+  return {
+    html: `<p>${nom} est un parallélogramme ${prop}.<br>Quelle est sa nature (la plus précise) ?</p>`,
+    qcm: { col1: true, choix: ['un rectangle', 'un losange', 'un carré'], bonne: ['rectangle', 'losange', 'carré'].indexOf(nat) },
+    correction: `Un parallélogramme ${prop} est un <b>${nat}</b>.`,
+  };
+}
+function gAngleTriRect() {
+  const [A, B, C] = lettres(3), a = R(15, 75);
+  return {
+    html: `<p>Le triangle ${it(A + B + C)} est rectangle en ${it(A)} et l'angle ${ang(A + B + C)} mesure ${a}°.</p>${rep(`${ang(A + C + B)} = ${champ(0, 90)} °`)}`,
+    champs: [N(90 - a)],
+    correction: `Dans un triangle rectangle, les deux angles aigus sont complémentaires : 90° − ${a}° = <b>${90 - a}°</b>.`,
+  };
+}
+function gAngleAutre() {
+  const comp = Math.random() < 0.5, total = comp ? 90 : 180, a = R(12, total - 12);
+  return {
+    html: `<p>Deux angles sont <b>${comp ? 'complémentaires' : 'supplémentaires'}</b>. L'un mesure ${a}°.</p>${rep(`L'autre mesure ${champ(0, 90)} °`)}`,
+    champs: [N(total - a)],
+    correction: `La somme des mesures de deux angles ${comp ? 'complémentaires' : 'supplémentaires'} vaut ${total}° : ${total}° − ${a}° = <b>${total - a}°</b>.`,
+  };
+}
+function gAngleType() {
+  const cas = R(0, 3), m = [R(10, 85), 90, R(95, 175), 180][cas];
+  return {
+    html: `<p>Un angle mesure ${ex(m + '°')}. Cet angle est :</p>`,
+    qcm: { choix: ['aigu', 'droit', 'obtus', 'plat'], bonne: cas },
+    correction: 'Aigu : entre 0° et 90° ; droit : 90° ; obtus : entre 90° et 180° ; plat : 180°.',
+  };
+}
+function gSommeTriangle() {
+  const [A, B, C] = lettres(3), t = R(0, 2), T = it(A + B + C);
+  if (t === 0) {
+    const a = R(25, 80), b = R(25, 140 - a);
+    return {
+      html: `<p>Dans le triangle ${T}, ${ang(A + B + C)} = ${a}° et ${ang(A + C + B)} = ${b}°.</p>${rep(`${ang(B + A + C)} = ${champ(0, 90)} °`)}`,
+      champs: [N(180 - a - b)],
+      correction: `La somme des angles d'un triangle vaut 180° : 180° − ${a}° − ${b}° = <b>${180 - a - b}°</b>.`,
+    };
+  }
+  if (t === 1) {
+    const s = 2 * R(10, 80);
+    return {
+      html: `<p>Le triangle ${T} est isocèle en ${it(A)} et ${ang(B + A + C)} = ${s}°.</p>${rep(`${ang(A + B + C)} = ${champ(0, 90)} °`)}`,
+      champs: [N((180 - s) / 2)],
+      correction: `Les deux angles à la base sont égaux : (180° − ${s}°) : 2 = ${180 - s}° : 2 = <b>${(180 - s) / 2}°</b>.`,
+    };
+  }
+  const b = R(20, 80);
+  return {
+    html: `<p>Le triangle ${T} est isocèle en ${it(A)} et ${ang(A + B + C)} = ${b}°.</p>${rep(`${ang(B + A + C)} = ${champ(0, 90)} °`)}`,
+    champs: [N(180 - 2 * b)],
+    correction: `Les deux angles à la base mesurent ${b}° : 180° − 2 × ${b}° = <b>${180 - 2 * b}°</b>.`,
+  };
+}
+const TRIPLETS = [[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17], [12, 16, 20], [7, 24, 25], [15, 20, 25]];
+function gPythagoreHyp() {
+  const [A, B, C] = lettres(3), [a, b, c] = pick(TRIPLETS), u = pick(['cm', 'm', 'dm']);
+  return {
+    html: `<p>Le triangle ${it(A + B + C)} est rectangle en ${it(A)}, avec ${it(A + B)} = ${a} ${u} et ${it(A + C)} = ${b} ${u}.</p>${rep(`${it(B + C)} = ${champ(0, 100)} ${u}`)}`,
+    champs: [N(c)],
+    correction: `D'après le théorème de Pythagore, ${it(B + C)}<sup>2</sup> = ${a}<sup>2</sup> + ${b}<sup>2</sup> = ${a * a} + ${b * b} = ${c * c}, donc ${it(B + C)} = <b>${c} ${u}</b>.`,
+  };
+}
+function gPythagoreCote() {
+  const [A, B, C] = lettres(3), [a, b, c] = pick(TRIPLETS), u = pick(['cm', 'm', 'dm']);
+  return {
+    html: `<p>Le triangle ${it(A + B + C)} est rectangle en ${it(A)}, avec ${it(B + C)} = ${c} ${u} et ${it(A + B)} = ${a} ${u}.</p>${rep(`${it(A + C)} = ${champ(0, 100)} ${u}`)}`,
+    champs: [N(b)],
+    correction: `D'après le théorème de Pythagore, ${it(A + C)}<sup>2</sup> = ${c}<sup>2</sup> − ${a}<sup>2</sup> = ${c * c} − ${a * a} = ${b * b}, donc ${it(A + C)} = <b>${b} ${u}</b>.`,
+  };
+}
+function gThales() {
+  const [A, B, C, M, P] = lettres(5), k = pick([2, 3, 4, 1.5, 2.5]), am = pick([2, 4, 6, 8]);
+  let s; do { s = pick([2, 4, 6, 8, 10]); } while (s === am);
+  const [petit, grand] = pick([[A + P, A + C], [M + P, B + C]]), chercheGrand = Math.random() < 0.5;
+  const svg = `<svg class="figure" viewBox="0 0 230 170" role="img" aria-label="Triangle ${A}${B}${C}">
+    <path d="M110 18L20 150H210Z M65 84H160" fill="none" stroke="#4a2d0d" stroke-width="1.8"/>
+    <g font-size="15" font-style="italic" font-family="Georgia, serif" fill="#4a2d0d" text-anchor="middle">
+    <text x="110" y="13">${A}</text><text x="12" y="162">${B}</text><text x="218" y="162">${C}</text><text x="52" y="84">${M}</text><text x="172" y="84">${P}</text></g></svg>`;
+  return {
+    html: `<div class="avec-figure"><div>
+        <p>${it(M)} est sur [${it(A + B)}], ${it(P)} est sur [${it(A + C)}] et (${it(M + P)}) // (${it(B + C)}).</p>
+        <p>${it(A + M)} = ${am} cm, ${it(A + B)} = ${fmt(am * k)} cm et ${it(chercheGrand ? petit : grand)} = ${fmt(chercheGrand ? s : s * k)} cm.</p>
+        ${rep(`${it(chercheGrand ? grand : petit)} = ${champ(0, 100)} cm`)}
+      </div><div>${svg}<p class="aide">La figure n'est pas à l'échelle.</p></div></div>`,
+    champs: [N(chercheGrand ? s * k : s)],
+    correction: `D'après le théorème de Thalès, ${fr(it(A + M), it(A + B))} = ${fr(it(A + P), it(A + C))} = ${fr(it(M + P), it(B + C))}. Comme ${it(A + B)} = ${fmt(k)} × ${it(A + M)}, on a ${chercheGrand
+      ? `${it(grand)} = ${fmt(k)} × ${s} = <b>${fmt(s * k)} cm</b>` : `${it(petit)} = ${fmt(s * k)} : ${fmt(k)} = <b>${s} cm</b>`}.`,
+  };
+}
+function gTrigo() {
+  const [A, B, C] = lettres(3), f = R(0, 2), nom = ['cos', 'sin', 'tan'][f];
+  const AB = it(A + B), AC = it(A + C), BC = it(B + C), bons = [fr(AB, BC), fr(AC, BC), fr(AC, AB)];
+  return {
+    html: `<p>Le triangle ${it(A + B + C)} est rectangle en ${it(A)}.</p><p>${ex(`${nom}(${ang(A + B + C)}) =`)}</p>`,
+    qcm: qcmDe(bons[f], [...bons, fr(AB, AC), fr(BC, AB)].filter(x => x !== bons[f]).slice(0, 3)),
+    correction: `${['cosinus = côté adjacent / hypoténuse', 'sinus = côté opposé / hypoténuse', 'tangente = côté opposé / côté adjacent'][f]}. Ici l'hypoténuse est [${BC}], le côté adjacent à ${ang(A + B + C)} est [${AB}] et le côté opposé est [${AC}].`,
+  };
+}
+
+/* ================= Algorithmique ================= */
+function genPolygone() {
+  const [nom, n] = pick([['triangle équilatéral', 3], ['carré', 4], ['pentagone régulier', 5], ['hexagone régulier', 6], ['octogone régulier', 8], ['décagone régulier', 10]]);
+  return {
+    html: `<div class="avec-figure"><div>
+        <p>Une élève veut dessiner un <b>${nom}</b> avec un logiciel de programmation.</p>
+        <p>Par quelles valeurs doit-elle compléter son bloc ?</p>
+      </div><div class="scr">
+        <div class="scr-b scr-def">définir <span>${nom}</span></div>
+        <div class="scr-b scr-pen">🖊 stylo en position d'écriture</div>
+        <div class="scr-c">
+          <div class="scr-b">répéter ${champ(0, 58, 'numeric')} fois</div>
+          <div class="scr-b scr-in">avancer de <span class="scr-o nb">${pick([40, 50, 60, 80, 100])}</span> pas</div>
+          <div class="scr-b scr-in">tourner ↻ de ${champ(1, 58, 'numeric')} degrés</div>
+        </div>
+      </div></div>`,
+    champs: [N(n), N(360 / n)],
+    correction: `${nom[0].toUpperCase() + nom.slice(1)} : ${n} côtés, donc on répète <b>${n}</b> fois. Au total on tourne de 360°, donc à chaque fois de 360 : ${n} = <b>${360 / n}</b> degrés.`,
+  };
+}
+
+/** Tracé d'un parallélogramme : le lutin tourne de l'angle extérieur à chaque sommet. */
+function genParallelogramme() {
+  const a = pick([40, 50, 60, 70, 110, 120, 130]), L = pick([100, 120, 150, 200]), l = pick([50, 60, 80]);
+  const rad = a * Math.PI / 180, c = Math.cos(rad), si = Math.sin(rad), AB = 140, AD = 82;
+  const ax = 34 + Math.max(0, -AD * c), ay = 128, bx = ax + AB, dx = ax + AD * c, dy = ay - AD * si, cx = dx + AB, f = v => v.toFixed(1);
+  const svg = `<svg viewBox="0 0 ${f(Math.max(bx, cx) + 56)} 150" width="${f(Math.max(bx, cx) + 56)}" height="150" role="img" aria-label="Parallélogramme ABCD">
+    <path d="M${f(ax)} ${ay}H${f(bx)}L${f(cx)} ${f(dy)}H${f(dx)}Z" fill="none" stroke="#4a2d0d" stroke-width="1.8"/>
+    <path d="M${f(ax + 20)} ${ay}A20 20 0 0 0 ${f(ax + 20 * c)} ${f(ay - 20 * si)}" fill="none" stroke="#c96f1e" stroke-width="1.8"/>
+    <path d="M${f(ax + 46)} ${ay - 9}h22m-6 -4l6 4l-6 4" fill="none" stroke="#c96f1e" stroke-width="1.6"/>
+    <g font-size="15" font-style="italic" font-family="Georgia, serif" fill="#4a2d0d" text-anchor="middle">
+      <text x="${f(ax - 10)}" y="${ay + 14}">A</text><text x="${f(bx + 10)}" y="${ay + 14}">B</text><text x="${f(cx + 10)}" y="${f(dy - 4)}">C</text><text x="${f(dx - 10)}" y="${f(dy - 4)}">D</text></g>
+    <g font-size="13" font-family="Nunito, sans-serif" fill="#4a2d0d" text-anchor="middle">
+      <text x="${f(ax + AB / 2)}" y="${ay + 17}">${L} pas</text>
+      <text x="${f((bx + cx) / 2 + 28)}" y="${f((ay + dy) / 2 + 4)}">${l} pas</text>
+      <text x="${f(ax + 37 * Math.cos(rad / 2))}" y="${f(ay - 37 * Math.sin(rad / 2) + 5)}" fill="#c96f1e" font-weight="700">${a}°</text></g></svg>`;
+  return {
+    html: `<div class="avec-figure"><div>
+        <p>Le lutin part de ${it('A')}, tourné vers ${it('B')}, et doit tracer le <b>parallélogramme</b> ${it('ABCD')} en passant par ${it('B')}, ${it('C')} puis ${it('D')}.</p>
+        <p>Compléter le script.</p>
+        ${svg}
+      </div><div class="scr">
+        <div class="scr-b scr-def">définir <span>parallélogramme</span></div>
+        <div class="scr-b scr-pen">🖊 stylo en position d'écriture</div>
+        <div class="scr-c">
+          <div class="scr-b">répéter ${champ(0, 58, 'numeric')} fois</div>
+          <div class="scr-b scr-in">avancer de <span class="scr-o nb">${L}</span> pas</div>
+          <div class="scr-b scr-in">tourner ↺ de ${champ(1, 58, 'numeric')} degrés</div>
+          <div class="scr-b scr-in">avancer de <span class="scr-o nb">${l}</span> pas</div>
+          <div class="scr-b scr-in">tourner ↺ de ${champ(2, 58, 'numeric')} degrés</div>
+        </div>
+      </div></div>`,
+    champs: [N(2), N(a), N(180 - a)],
+    correction: `Les côtés opposés d'un parallélogramme ont la même longueur : on répète <b>2</b> fois « un côté de ${L} pas, un côté de ${l} pas ». À chaque sommet, le lutin tourne de 180° moins l'angle du parallélogramme. En ${it('B')}, l'angle vaut 180° − ${a}° = ${180 - a}°, donc il tourne de 180 − ${180 - a} = <b>${a}</b> degrés ; en ${it('C')}, l'angle vaut ${a}° (angle opposé à ${it('A')}), donc il tourne de 180 − ${a} = <b>${180 - a}</b> degrés.`,
+  };
+}
+
+/* ================= Grandeurs et mesures ================= */
+function mMinutes() {
+  let m; do { m = R(61, 599); } while (m % 60 === 0);
+  const h = Math.floor(m / 60);
+  return {
+    html: `<p>Convertir ${ex(m + ' min')} en heures et minutes.</p>${rep(`${m} min = ${champ(0, 70, 'numeric')} h ${champ(1, 70, 'numeric')} min`)}`,
+    champs: [N(h), N(m % 60)],
+    correction: `${m} = ${h} × 60 + ${m % 60}, donc ${m} min = <b>${hm(m)}</b>.`,
+  };
+}
+function mDuree() {
+  const t = R(0, 4);
+  let q, r, u, expl;
+  if (t === 0) { const h = R(1, 5), mi = pick([5, 10, 15, 20, 25, 35, 40, 45, 50]); q = `${h} h ${mi} min`; r = 60 * h + mi; u = 'min'; expl = `${h} × 60 + ${mi}`; }
+  else if (t === 1) { const h = R(0, 4) + pick([0.25, 0.5, 0.75]); q = `${fmt(h)} h`; r = h * 60; u = 'min'; expl = `${fmt(h)} × 60`; }
+  else if (t === 2) { const mi = R(2, 15); q = `${mi} min`; r = 60 * mi; u = 's'; expl = `${mi} × 60`; }
+  else if (t === 3) { const j = R(2, 7); q = `${j} jours`; r = 24 * j; u = 'h'; expl = `${j} × 24`; }
+  else { const mi = R(2, 12); q = `${60 * mi} s`; r = mi; u = 'min'; expl = `${60 * mi} : 60`; }
+  return {
+    html: `<p>Compléter l'égalité :</p>${rep(`${ex(q)} = ${champ(0, 110)} ${ex(u)}`)}`,
+    champs: [N(r)],
+    correction: `${q} = ${expl} = <b>${fmt(r)} ${u}</b>.`,
+  };
+}
+function mUnitesDuree() {
+  const [q, r, u] = pick([['1 heure', 60, 'minutes'], ['1 minute', 60, 'secondes'], ['1 jour', 24, 'heures'], ['1 heure', 3600, 'secondes'],
+    ['1 semaine', 7, 'jours'], ['1 année non bissextile', 365, 'jours'], ["Un quart d'heure", 15, 'minutes'], ['Une demi-heure', 30, 'minutes'],
+    ["Trois quarts d'heure", 45, 'minutes'], ['1 siècle', 100, 'ans']]);
+  return { html: rep(`${q} = ${champ(0, 110, 'numeric')} ${u}`), champs: [N(r)], correction: `${q} = <b>${fmt(r)} ${u}</b>.` };
+}
+/** Conversion dans une famille d'unités dont deux voisines sont dans le rapport base. */
+function conversion(unites, base, ecartMax) {
+  let i, j; do { i = R(0, unites.length - 1); j = R(0, unites.length - 1); } while (i === j || Math.abs(i - j) > ecartMax);
+  const v = R(11, 999) / pick([1, 10]), k = Math.pow(base, j - i), r = rnd(v * k);
+  return {
+    html: `<p>Compléter l'égalité :</p>${rep(`${ex(`${fmt(v)} ${unites[i]}`)} = ${champ(0, 190)} ${ex(unites[j])}`)}`,
+    champs: [N(r)],
+    correction: (() => {
+      const d = Math.abs(j - i), sens = j > i ? 1 : -1;
+      const pas = Math.round(Math.log10(base));
+      return chaineConversion(Array.from({ length: d + 1 }, (_, t) => [rnd(v * Math.pow(base, sens * t)), unites[i + sens * t]]))
+        + ` <i>(${pas} rang${pas > 1 ? 's' : ''} par changement d'unité${pas === 2 ? " d'aire" : pas === 3 ? ' de volume' : ''})</i>`;
+    })(),
+  };
+}
+const mLongueurs = () => conversion(pick([['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm'], ['kg', 'hg', 'dag', 'g', 'dg', 'cg', 'mg'], ['hL', 'daL', 'L', 'dL', 'cL', 'mL']]), 10, 3);
+const mAires = () => conversion(['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm'].map(u => `${u}<sup>2</sup>`), 100, 2);
+const mVolumesCubes = () => conversion(['m', 'dm', 'cm', 'mm'].map(u => `${u}<sup>3</sup>`), 1000, 1);
+function mPerimetre() {
+  const t = R(0, 3), u = pick(['cm', 'm', 'dm']);
+  if (t === 0) { const c = pick([R(2, 12), R(11, 99) / 10]);
+    return { html: `<p>Calculer le périmètre d'un carré de côté ${fmt(c)} ${u}.</p>${rep(`${champ(0)} ${u}`)}`, champs: [N(4 * c)], correction: `4 × ${fmt(c)} = <b>${fmt(4 * c)} ${u}</b>.` }; }
+  if (t === 1) { const L = R(5, 15), l = R(2, L - 1);
+    return { html: `<p>Calculer le périmètre d'un rectangle de longueur ${L} ${u} et de largeur ${l} ${u}.</p>${rep(`${champ(0)} ${u}`)}`, champs: [N(2 * (L + l))], correction: `2 × (${L} + ${l}) = <b>${2 * (L + l)} ${u}</b>.` }; }
+  const d = t === 2 ? 2 * R(2, 9) : R(2, 15);
+  return {
+    html: `<p>Calculer le périmètre <b>exact</b> d'un cercle de ${t === 2 ? `rayon ${d / 2}` : `diamètre ${d}`} ${u}.</p>${rep(`${champ(0, 130, 'text', 'pi')} ${u}`)}${AIDE_PI}`,
+    champs: [PI(d)],
+    correction: `Périmètre = π × diamètre = ${t === 2 ? `π × 2 × ${d / 2} = ` : ''}<b>${d}π ${u}</b>.`,
+  };
+}
+function mAire() {
+  const t = R(0, 4), u = pick(['cm', 'm', 'dm']), u2 = `${u}<sup>2</sup>`;
+  if (t === 0) { const c = R(2, 12);
+    return { html: `<p>Calculer l'aire d'un carré de côté ${c} ${u}.</p>${rep(`${champ(0)} ${u2}`)}`, champs: [N(c * c)], correction: `${c} × ${c} = <b>${c * c} ${u2}</b>.` }; }
+  if (t === 1) { const L = R(5, 12), l = pick([R(2, 4), R(11, 49) / 10]);
+    return { html: `<p>Calculer l'aire d'un rectangle de longueur ${L} ${u} et de largeur ${fmt(l)} ${u}.</p>${rep(`${champ(0)} ${u2}`)}`, champs: [N(L * l)], correction: `${L} × ${fmt(l)} = <b>${fmt(L * l)} ${u2}</b>.` }; }
+  if (t === 2) { const b = 2 * R(2, 8), h = R(3, 11);
+    return { html: `<p>Calculer l'aire d'un triangle dont un côté mesure ${b} ${u} et la hauteur associée ${h} ${u}.</p>${rep(`${champ(0)} ${u2}`)}`, champs: [N(b * h / 2)], correction: `(${b} × ${h}) : 2 = <b>${b * h / 2} ${u2}</b>.` }; }
+  const r = R(2, 9);
+  return {
+    html: `<p>Calculer l'aire <b>exacte</b> d'un disque de ${t === 3 ? `rayon ${r}` : `diamètre ${2 * r}`} ${u}.</p>${rep(`${champ(0, 130, 'text', 'pi')} ${u2}`)}${AIDE_PI}`,
+    champs: [PI(r * r)],
+    correction: `Aire = π × rayon<sup>2</sup> = π × ${r}<sup>2</sup> = <b>${r * r}π ${u2}</b>.`,
+  };
+}
+function mAireTriRect() {
+  const [A, B, C] = lettres(3), a = 2 * R(2, 7), b = R(3, 11), u = pick(['cm', 'm']);
+  return {
+    html: `<p>Le triangle ${it(A + B + C)} est rectangle en ${it(A)}, avec ${it(A + B)} = ${a} ${u} et ${it(A + C)} = ${b} ${u}.</p>${rep(`Son aire vaut ${champ(0)} ${u}<sup>2</sup>`)}`,
+    champs: [N(a * b / 2)],
+    correction: `Les côtés de l'angle droit servent de base et de hauteur : (${a} × ${b}) : 2 = <b>${a * b / 2} ${u}<sup>2</sup></b>.`,
+  };
+}
+function mVolumes() {
+  const t = R(0, 4), u = pick(['cm', 'm', 'dm']), u3 = `${u}<sup>3</sup>`;
+  if (t === 0) { const a = pick([2, 3, 4, 5, 10]);
+    return { html: `<p>Calculer le volume d'un cube d'arête ${a} ${u}.</p>${rep(`${champ(0)} ${u3}`)}`, champs: [N(a ** 3)], correction: `${a} × ${a} × ${a} = <b>${fmt(a ** 3)} ${u3}</b>.` }; }
+  if (t === 1) { const r = R(2, 5), h = R(2, 10);
+    return { html: `<p>Calculer le volume <b>exact</b> d'un cylindre de rayon ${r} ${u} et de hauteur ${h} ${u}.</p>${rep(`${champ(0, 130, 'text', 'pi')} ${u3}`)}${AIDE_PI}`, champs: [PI(r * r * h)],
+      correction: `Volume = aire de la base × hauteur = π × ${r}<sup>2</sup> × ${h} = <b>${r * r * h}π ${u3}</b>.` }; }
+  if (t === 2) { const c = R(2, 9), h = 3 * R(1, 4);
+    return { html: `<p>Calculer le volume d'une pyramide de hauteur ${h} ${u} dont la base est un carré de côté ${c} ${u}.</p>${rep(`${champ(0)} ${u3}`)}`, champs: [N(c * c * h / 3)],
+      correction: `Volume = (aire de la base × hauteur) : 3 = (${c * c} × ${h}) : 3 = <b>${c * c * h / 3} ${u3}</b>.` }; }
+  if (t === 3) { const r = R(2, 6), h = 3 * R(1, 4);
+    return { html: `<p>Calculer le volume <b>exact</b> d'un cône de rayon ${r} ${u} et de hauteur ${h} ${u}.</p>${rep(`${champ(0, 130, 'text', 'pi')} ${u3}`)}${AIDE_PI}`, champs: [PI(r * r * h / 3)],
+      correction: `Volume = (π × ${r}<sup>2</sup> × ${h}) : 3 = <b>${r * r * h / 3}π ${u3}</b>.` }; }
+  const b = 2 * R(2, 6), hb = R(3, 9), h = 3 * R(1, 4);
+  return {
+    html: `<p>Calculer le volume d'une pyramide de hauteur ${h} ${u} dont la base est un triangle : un côté mesure ${b} ${u} et la hauteur associée ${hb} ${u}.</p>${rep(`${champ(0)} ${u3}`)}`,
+    champs: [N(b * hb / 2 * h / 3)],
+    correction: `Aire de la base : (${b} × ${hb}) : 2 = ${b * hb / 2} ${u}<sup>2</sup>. Volume = (${b * hb / 2} × ${h}) : 3 = <b>${b * hb / 2 * h / 3} ${u3}</b>.`,
+  };
+}
+
+/* ================= Nombres et calculs ================= */
+function nDecFrac() {
+  const [n, d] = pick([[1, 4], [1, 2], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 10], [3, 10], [7, 10], [9, 10], [1, 8]]), e = R(0, 3), v = e + n / d;
+  return {
+    html: `<p>Donner une écriture du nombre ${ex(fmt(v))} sous la forme d'une fraction.</p>${rep(`${ex(fmt(v))} = ${champ(0, 150, 'text')}`)}${AIDE_FRAC}`,
+    champs: [{ ok: fracOk(e * d + n, d), sol: `${e * d + n}/${d}` }],
+    correction: `Par exemple ${fmt(v)} = ${fr(Math.round(v * 1000), '1 000')} = <b>${fr(e * d + n, d)}</b>.`,
+  };
+}
+function nFracDec() {
+  const d = pick([2, 4, 5, 10, 20, 25]); let n; do { n = R(1, 5 * d); } while (n % d === 0);
+  return {
+    html: `<p>Donner la valeur décimale de ${ex(fr(n, d))}.</p>${rep(`${ex(fr(n, d))} = ${champ(0)}`)}`,
+    champs: [N(n / d)],
+    correction: `${fr(n, d)} = ${n} : ${d} = <b>${fmt(n / d)}</b>.`,
+  };
+}
+function nSommeDec() {
+  let a, b; do { a = R(11, 99) / 10; b = -R(11, 99) / 10; } while (a === -b);
+  const [p, q] = shuffle([a, b]);
+  return {
+    html: `<p>Calculer :</p>${rep(`${ex(`${fmt(p)} + ${rel(q)}`)} = ${champ(0)}`)}`,
+    champs: [N(a + b)],
+    correction: `Les nombres sont de signes contraires : on soustrait les distances à zéro et on garde le signe du plus éloigné de zéro. ${fmt(p)} + ${rel(q)} = <b>${fmt(a + b)}</b>.`,
+  };
+}
+function nComparer() {
+  let a, b; const t = R(0, 2);
+  do {
+    if (t === 0) { a = -R(11, 99) / 10; b = rnd(a + pick([-0.05, 0.05, 0.1, -0.1, 0.01])); }
+    else if (t === 1) { a = -R(1, 15); b = pick([-R(1, 15), R(0, 5)]); }
+    else { a = rnd(-R(1, 9) - R(1, 9) / 10); b = rnd(-Math.floor(-a) - R(1, 99) / 100); }
+  } while (a === b);
+  if (Math.random() < 0.5) [a, b] = [b, a];
+  return {
+    html: `<p>Comparer ${ex(fmt(a))} et ${ex(fmt(b))}.</p>`,
+    qcm: { choix: [`${fmt(a)} &lt; ${fmt(b)}`, `${fmt(a)} &gt; ${fmt(b)}`], bonne: a < b ? 0 : 1 },
+    correction: `Sur une droite graduée, le plus petit des deux nombres est le plus à gauche : <b>${fmt(Math.min(a, b))} &lt; ${fmt(Math.max(a, b))}</b>.`,
+  };
+}
+function nOpRelatifs() {
+  const s = () => pick([1, -1]), op = pick(['+', '−', '×', ':']);
+  let a = s() * R(2, 12), b = s() * R(2, 12);
+  if (a > 0 && b > 0) b = -b;
+  if (op === ':') a = b * s() * R(2, 9);
+  const r = op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : a / b;
+  return {
+    html: `<p>Calculer :</p>${rep(`${ex(`${fmt(a)} ${op} ${rel(b)}`)} = ${champ(0)}`)}`,
+    champs: [N(r)],
+    correction: `${op === '−' ? `Soustraire un nombre, c'est ajouter son opposé : ${fmt(a)} + ${rel(-b)} = ` : op === '+' ? '' : `Règle des signes : `}${fmt(a)} ${op} ${rel(b)} = <b>${fmt(r)}</b>.`,
+  };
+}
+function nOpFractions() {
+  const t = R(0, 2);
+  let q, n, d;
+  if (t === 0) { const b = pick([5, 7, 9, 11, 13]), a = R(1, 4), c = R(1, 4), plus = Math.random() < 0.6 || a === c;
+    q = `${fr(a, b)} ${plus ? '+' : '−'} ${fr(c, b)}`; n = plus ? a + c : a - c; d = b; }
+  else if (t === 1) { const b = pick([2, 3, 4, 5]), k = pick([2, 3]), a = pick([1, b - 1, b + 1]), c = pick([1, 5, 7, k * b - 1]);
+    q = `${fr(a, b)} + ${fr(c, k * b)}`; n = a * k + c; d = k * b; }
+  else { let a, b, c, e; do { a = R(1, 7); b = R(2, 9); c = R(1, 7); e = R(2, 9); } while (a % b === 0 || c % e === 0); q = `${fr(a, b)} × ${fr(c, e)}`; n = a * c; d = b * e; }
+  return {
+    html: `<p>Calculer et donner le résultat sous forme de fraction (ou d'entier) :</p>${rep(`${ex(q)} = ${champ(0, 150, 'text')}`)}${AIDE_FRAC}`,
+    champs: [F(n, d)],
+    correction: `${q} = <b>${fr(fmt(n), d)}</b>${pgcd(n, d) > 1 ? ` = ${F(n, d).sol.includes('/') ? fr(fmt(n / pgcd(n, d)), d / pgcd(n, d)) : n / d}` : ''}.`,
+  };
+}
+function nSimplifier() {
+  let a, b; do { a = R(1, 12); b = R(2, 12); } while (a === b || pgcd(a, b) !== 1);
+  const k = pick([2, 3, 4, 5, 6, 7, 10, 25]);
+  return {
+    html: `<p>Simplifier le plus possible la fraction ${ex(fr(a * k, b * k))}.</p>${rep(`${ex(fr(a * k, b * k))} = ${champ(0, 150, 'text')}`)}${AIDE_FRAC}`,
+    champs: [{ ok: fracOk(a, b, true), sol: `${a}/${b}` }],
+    correction: `${fr(a * k, b * k)} = ${fr(`${a} × ${k}`, `${b} × ${k}`)} = <b>${fr(a, b)}</b>.`,
+  };
+}
+function nTiers() {
+  const [nom, d] = pick([['le tiers', 3], ['le quart', 4], ['le cinquième', 5], ['la moitié', 2], ['le dixième', 10]]), q = pick([R(2, 12), 10 * R(2, 9), R(2, 12)]);
+  return {
+    html: rep(`Calculer ${nom} de ${ex(fmt(q * d))} : ${champ(0)}`),
+    champs: [N(q)],
+    correction: `Prendre ${nom} d'un nombre, c'est le diviser par ${d} : ${fmt(q * d)} : ${d} = <b>${fmt(q)}</b>.`,
+  };
+}
+function nFracQuantite() {
+  let a, b; do { b = pick([3, 4, 5, 10]); a = R(2, b - 1); } while (pgcd(a, b) !== 1);
+  const q = pick([R(2, 12), 10 * R(2, 9)]), u = pick(['L', '€', 'kg', 'm', 'élèves']);
+  return {
+    html: rep(`Calculer ${ex(fr(a, b))} de ${ex(`${fmt(q * b)} ${u}`)} : ${champ(0)} ${u}`),
+    champs: [N(a * q)],
+    correction: `${fmt(q * b)} : ${b} = ${fmt(q)}, puis ${fmt(q)} × ${a} = <b>${fmt(a * q)} ${u}</b>.`,
+  };
+}
+function nPourcent() {
+  const [p, astuce] = pick([[50, 'la moitié'], [25, 'le quart'], [10, 'le dixième'], [1, 'le centième'], [100, 'la totalité'], [20, 'le cinquième'], [75, 'les trois quarts'], [5, 'la moitié de 10 %']]);
+  const c = 4 * pick([R(5, 30), 10 * R(2, 20)]);
+  return {
+    html: rep(`Calculer ${ex(`${p} %`)} de ${ex(fmt(c))} : ${champ(0)}`),
+    champs: [N(p * c / 100)],
+    correction: `Prendre ${p} % d'un nombre, c'est en prendre ${astuce} : <b>${fmt(p * c / 100)}</b>.`,
+  };
+}
+function nDecomposer() {
+  const d = pick([2, 3, 4, 5, 7, 10]), e = R(1, 9), r = R(1, d - 1), n = e * d + r;
+  return {
+    html: `<p>Décomposer la fraction en un entier plus une fraction inférieure à 1.</p>${rep(`${ex(fr(n, d))} = ${champ(0, 70, 'numeric')} + ${fr(champ(1, 70, 'numeric'), d)}`)}`,
+    champs: [N(e), N(r)],
+    correction: `${n} = ${e} × ${d} + ${r}, donc ${fr(n, d)} = <b>${e} + ${fr(r, d)}</b>.`,
+  };
+}
+function nDecPourcent() {
+  const t = R(0, 2);
+  if (t === 0) { const p = pick([R(1, 9), R(11, 99), 100 + 5 * R(1, 19)]);
+    return { html: rep(`${ex(fmt(p / 100))} = ${champ(0)} %`), champs: [N(p)], correction: `${fmt(p / 100)} = ${fr(p, 100)} = <b>${p} %</b>.` }; }
+  if (t === 1) { const p = pick([R(1, 9), R(11, 99), R(11, 99) / 10]);
+    return { html: `<p>Donner l'écriture décimale :</p>${rep(`${ex(`${fmt(p)} %`)} = ${champ(0)}`)}`, champs: [N(p / 100)], correction: `${fmt(p)} % = ${fr(fmt(p), 100)} = <b>${fmt(p / 100)}</b>.` }; }
+  const [n, d] = pick([[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 10], [3, 10], [7, 10], [1, 20], [3, 20], [1, 25]]);
+  return { html: rep(`${ex(fr(n, d))} = ${champ(0)} %`), champs: [N(100 * n / d)], correction: `${fr(n, d)} = ${fr(n * 100 / d, 100)} = <b>${100 * n / d} %</b>.` };
+}
+function nSciInverse() {
+  let m; do { m = R(11, 999); } while (m % 10 === 0);
+  const mant = m >= 100 ? m / 100 : m / 10, n = pick([-3, -2, -1, 2, 3, 4, 5, 6]), v = rnd(mant * Math.pow(10, n));
+  return {
+    html: `<p>Donner l'écriture décimale de ${ex(`${fmt(mant)} × 10<sup>${fmt(n)}</sup>`)}.</p>${rep(`${champ(0, 220)}`)}`,
+    champs: [N(v)],
+    correction: `Multiplier par 10<sup>${fmt(n)}</sup>, c'est ${n > 0 ? 'multiplier' : 'diviser'} par ${fmt(Math.pow(10, Math.abs(n)))} : <b>${fmt(v)}</b>.`,
+  };
+}
+function nCarre() {
+  const t = R(0, 3);
+  if (t === 0) { const n = pick([R(2, 15), 10 * R(2, 9)]); return { html: rep(`${ex(`${n}<sup>2</sup>`)} = ${champ(0)}`), champs: [N(n * n)], correction: `${n} × ${n} = <b>${fmt(n * n)}</b>.` }; }
+  if (t === 1) { const n = R(2, 12); return { html: rep(`${ex(`(−${n})<sup>2</sup>`)} = ${champ(0)}`), champs: [N(n * n)], correction: `(−${n}) × (−${n}) = <b>${n * n}</b> : un carré est toujours positif.` }; }
+  if (t === 2) { const n = R(1, 12) / 10; return { html: rep(`${ex(`${fmt(n)}<sup>2</sup>`)} = ${champ(0)}`), champs: [N(n * n)], correction: `${fmt(n)} × ${fmt(n)} = <b>${fmt(n * n)}</b>.` }; }
+  const n = R(2, 15);
+  return { html: rep(`Quel nombre positif a pour carré ${ex(n * n)} ? ${champ(0)}`), champs: [N(n)], correction: `${n} × ${n} = ${n * n}, donc le nombre cherché est <b>${n}</b>.` };
+}
+function nCritere() {
+  const d = pick([2, 3, 5, 9, 10]), oui = Math.random() < 0.5;
+  let x; do { x = R(1001, 9999); } while ((x % d === 0) !== oui);
+  const somme = String(x).split('').reduce((s, c) => s + +c, 0);
+  return {
+    html: `<p>Le nombre ${ex(fmt(x))} est-il divisible par ${ex(d)} ?</p>`,
+    qcm: ouiNon(oui),
+    correction: d === 3 || d === 9 ? `La somme des chiffres vaut ${somme}, ${somme % d === 0 ? 'qui est' : "qui n'est pas"} dans la table de ${d} : <b>${oui ? 'oui' : 'non'}</b>.`
+      : `Le chiffre des unités est ${x % 10} : <b>${oui ? 'oui' : 'non'}</b>. ${d === 2 ? 'Un nombre divisible par 2 se termine par 0, 2, 4, 6 ou 8.' : d === 5 ? 'Un nombre divisible par 5 se termine par 0 ou 5.' : 'Un nombre divisible par 10 se termine par 0.'}`,
+  };
+}
+function nExprLitt() {
+  const k = R(4, 9);
+  const pool = shuffle([[`la somme de ${X} et de ${k}`, `${X} + ${k}`], [`le produit de ${X} par ${k}`, `${k}${X}`], [`le double de ${X} augmenté de ${k}`, `2${X} + ${k}`],
+    [`le double de la somme de ${X} et de ${k}`, `2(${X} + ${k})`], [`le carré de ${X} diminué de ${k}`, `${X}<sup>2</sup> − ${k}`],
+    [`le carré de la différence entre ${X} et ${k}`, `(${X} − ${k})<sup>2</sup>`], [`le triple de ${X} diminué de ${k}`, `3${X} − ${k}`], [`le quotient de ${X} par ${k}`, fr(X, k)]]);
+  return {
+    html: `<p>Quelle expression traduit la phrase : « ${pool[0][0]} » ?</p>`,
+    qcm: qcmDe(pool[0][1], pool.slice(1, 4).map(p => p[1])),
+    correction: `« ${pool[0][0][0].toUpperCase() + pool[0][0].slice(1)} » s'écrit <b>${pool[0][1]}</b>.`,
+  };
+}
+function nEquation() {
+  const a = pick([1, -1]) * R(2, 9), x = pick([1, -1]) * R(1, 9), b = pick([1, -1]) * R(1, 12), c = a * x + b;
+  const eq = `${termesHtml([{ c: a, d: 1 }, { c: b, d: 0 }])} = ${fmt(c)}`;
+  return {
+    html: `<p>Résoudre l'équation ${ex(eq)}.</p>${rep(`${X} = ${champ(0)}`)}`,
+    champs: [N(x)],
+    correction: `${eq} donne ${termesHtml([{ c: a, d: 1 }])} = ${fmt(c)} ${b > 0 ? '−' : '+'} ${Math.abs(b)} = ${fmt(c - b)}, donc ${X} = ${fmt(c - b)} : ${rel(a)} = <b>${fmt(x)}</b>.`,
+  };
+}
+function nAxe() {
+  const s = pick([2, 3, 4, 5, 10]), nom = pick('ABCDEFGHKLMNPRST'.split(''));
+  let p; do { p = R(1, 2 * s); } while (p % s === 0);
+  const pas = 360 / (2 * s), x = i => 30 + i * pas;
+  let svg = `<svg class="axe" viewBox="0 0 430 80" role="img" aria-label="Axe gradué"><path d="M10 45H415" stroke="#333" stroke-width="1.6"/><path d="M422 45l-9 -4v8z" fill="#333"/>`;
+  for (let i = 0; i <= 2 * s; i++) svg += `<path d="M${x(i)} ${i % s ? 39 : 35}V${i % s ? 51 : 55}" stroke="#333" stroke-width="${i % s ? 1.2 : 2}"/>`;
+  svg += `<text x="${x(0)}" y="72" font-size="15" text-anchor="middle" fill="#333">0</text><text x="${x(s)}" y="72" font-size="15" text-anchor="middle" fill="#333">1</text>
+    <circle cx="${x(p)}" cy="45" r="4.5" fill="#e74c3c"/><text x="${x(p)}" y="24" font-size="16" font-style="italic" font-weight="700" font-family="Georgia, serif" text-anchor="middle" fill="#4a2d0d">${nom}</text></svg>`;
+  const sol = F(p, s);
+  return {
+    html: `<p>Quelle est l'abscisse du point ${it(nom)} ?</p>${svg}${rep(`${champ(0, 150, 'text')}`)}<p class="aide">Nombre décimal ou fraction (7/3).</p>`,
+    champs: [sol],
+    correction: `L'unité est partagée en ${s} parts égales et ${it(nom)} est à la ${p}<sup>e</sup> graduation : son abscisse est <b>${fr(p, s)}</b>${Number.isInteger(rnd(p / s * 1000)) ? ` = ${fmt(p / s)}` : ''}.`,
+  };
+}
+
+/* ================= Calcul littéral ================= */
+function lValeur() {
+  const a = pick([1, -1, 2, 3, -2]), b = pick([1, -1]) * R(1, 9), c = pick([1, -1]) * R(1, 9), v = pick([-5, -4, -3, -2, -1, 2, 3, 4, 5]);
+  const termes = pick([[{ c: a, d: 2 }, { c: b, d: 1 }, { c, d: 0 }], [{ c: a, d: 2 }, { c, d: 0 }], [{ c: b, d: 1 }, { c, d: 0 }], [{ c: a, d: 2 }, { c: b, d: 1 }]]);
+  const r = termes.reduce((s, t) => s + t.c * Math.pow(v, t.d), 0);
+  const detail = termes.map((t, k) => {
+    const corps = t.d === 0 ? Math.abs(t.c) : `${Math.abs(t.c) === 1 ? '' : Math.abs(t.c) + ' × '}${rel(v)}${t.d === 2 ? '<sup>2</sup>' : ''}`;
+    return k === 0 ? (t.c < 0 ? '−' : '') + corps : ` ${t.c < 0 ? '−' : '+'} ${corps}`;
+  }).join('');
+  return {
+    html: `<p>Calculer ${ex(termesHtml(termes))} pour ${ex(`${X} = ${fmt(v)}`)}.</p>${rep(`${champ(0)}`)}`,
+    champs: [N(r)],
+    correction: `${detail} = <b>${fmt(r)}</b>.`,
+  };
+}
+function lDevelopper() {
+  const t = R(0, 2), a = R(1, 5), b = pick([1, -1]) * R(1, 9), k = (t === 2 ? 1 : pick([1, 1, -1])) * R(2, 9), c = R(1, 12);
+  const par = `(${termesHtml([{ c: a, d: 1 }, { c: b, d: 0 }])})`, K = fmt(k);
+  const [enonce, cible] = t === 0 ? [`${K}${par}`, pMul([k], [b, a])] : t === 1 ? [`${K}${X}${par}`, pMul([0, k], [b, a])] : [`${c} + ${K}${par}`, pAdd([c], pMul([k], [b, a]))];
+  const A = it('A');
+  return {
+    html: `<p>Développer et réduire l'expression ${ex(`${A} = ${enonce}`)}.</p>${rep(`${ex(`${A} =`)} ${champ(0, 240, 'text')}`)}${t === 1 ? AIDE_X2 : ''}`,
+    champs: [{ ok: reduitOk(cible), sol: plat(pHtml(cible)) }],
+    correction: `On distribue le facteur ${t === 1 ? K + X : K} à chaque terme de la parenthèse : ${A} = <b>${pHtml(cible)}</b>.`,
+  };
+}
+function lRemarquable() {
+  const a = pick([1, 1, 2, 3]), b = R(1, 9), t = R(0, 2), ax = `${a === 1 ? '' : a}${X}`;
+  const enonce = [`(${ax} + ${b})<sup>2</sup>`, `(${ax} − ${b})<sup>2</sup>`, `(${ax} + ${b})(${ax} − ${b})`][t];
+  const cible = [pMul([b, a], [b, a]), pMul([-b, a], [-b, a]), pMul([b, a], [-b, a])][t];
+  return {
+    html: `<p>Donner la forme développée et réduite de ${ex(enonce)}.</p>${rep(`${champ(0, 240, 'text')}`)}${AIDE_X2}`,
+    champs: [{ ok: reduitOk(cible), sol: plat(pHtml(cible)) }],
+    correction: `${['(<i>a</i> + <i>b</i>)<sup>2</sup> = <i>a</i><sup>2</sup> + 2<i>ab</i> + <i>b</i><sup>2</sup>', '(<i>a</i> − <i>b</i>)<sup>2</sup> = <i>a</i><sup>2</sup> − 2<i>ab</i> + <i>b</i><sup>2</sup>', '(<i>a</i> + <i>b</i>)(<i>a</i> − <i>b</i>) = <i>a</i><sup>2</sup> − <i>b</i><sup>2</sup>'][t]}, donc ${enonce} = <b>${pHtml(cible)}</b>.`,
+  };
+}
+function lFormeFactorisee() {
+  const a = R(2, 9), b = R(1, 9), k = R(2, 7);
+  const bon = pick([`(${X} + ${a})(${X} − ${b})`, `${k}${X}(${X} + ${a})`, `(${k}${X} − ${b})(${X} + ${a})`]);
+  const leurres = shuffle([`(${X} + ${a})<sup>2</sup> + ${b}`, `${k}${X} + ${a}(${X} − ${b})`, `${X}<sup>2</sup> − ${a}${X} + ${b}`, `(${X} + ${a})(${X} − ${b}) − ${k}`]).slice(0, 3);
+  return {
+    html: '<p>Laquelle de ces expressions est écrite sous forme factorisée ?</p>',
+    qcm: qcmDe(bon, leurres, true),
+    correction: `Une expression factorisée est un <b>produit</b> : la dernière opération à effectuer est une multiplication. C'est le cas de <b>${bon}</b> ; les autres sont des sommes ou des différences.`,
+  };
+}
+function lEstSolution() {
+  const a = R(2, 9), c = R(1, a - 1), v = pick([-3, -2, -1, 1, 2, 3, 4, 5]), b = pick([1, -1]) * R(1, 9), oui = Math.random() < 0.5;
+  const d = (a - c) * v + b + (oui ? 0 : pick([1, -1, 2, -2]));
+  const g = termesHtml([{ c: a, d: 1 }, { c: b, d: 0 }]), dr = d === 0 ? termesHtml([{ c, d: 1 }]) : termesHtml([{ c, d: 1 }, { c: d, d: 0 }]);
+  return {
+    html: `<p>Le nombre ${ex(fmt(v))} est-il solution de l'équation ${ex(`${g} = ${dr}`)} ?</p>`,
+    qcm: ouiNon(oui),
+    correction: `Pour ${X} = ${fmt(v)} : à gauche ${a} × ${rel(v)} ${b < 0 ? '−' : '+'} ${Math.abs(b)} = ${fmt(a * v + b)} ; à droite ${c} × ${rel(v)}${d ? ` ${d < 0 ? '−' : '+'} ${Math.abs(d)}` : ''} = ${fmt(c * v + d)}. ${oui ? "L'égalité est vraie : <b>oui</b>." : "L'égalité est fausse : <b>non</b>."}`,
+  };
+}
+function lEquation() {
+  const a = R(2, 9), c = R(1, a - 1), b = pick([1, -1]) * R(1, 12);
+  let d; do { d = pick([1, -1]) * R(1, 12); } while (d === b);
+  const sol = F(d - b, a - c);
+  return {
+    html: `<p>Résoudre l'équation ${ex(`${termesHtml([{ c: a, d: 1 }, { c: b, d: 0 }])} = ${termesHtml([{ c, d: 1 }, { c: d, d: 0 }])}`)}.</p>${rep(`${X} = ${champ(0, 150, 'text')}`)}<p class="aide">Nombre entier, décimal ou fraction (7/3).</p>`,
+    champs: [sol],
+    correction: `On regroupe les ${X} à gauche : ${termesHtml([{ c: a - c, d: 1 }])} = ${fmt(d)} ${b > 0 ? '−' : '+'} ${Math.abs(b)} = ${fmt(d - b)}, donc ${X} = <b>${sol.sol.includes('/') ? fr(...sol.sol.replace('-', '−').split('/')) : sol.sol}</b>.`,
+  };
+}
+
+/* ================= Proportionnalité et fonctions ================= */
+const tableau = lignes => `<table class="tabv">${lignes.map(l => `<tr>${l.map((c, i) => i ? `<td>${c}</td>` : `<th>${c}</th>`).join('')}</tr>`).join('')}</table>`;
+function pTableau() {
+  const xs = shuffle([2, 3, 4, 5, 6, 8, 10, 12]).slice(0, 3).sort((p, q) => p - q), oui = Math.random() < 0.5, k = pick([2, 3, 4, 5, 1.5, 2.5, 0.5]);
+  let ys = xs.map(x => x * k);
+  if (!oui) { if (Math.random() < 0.5) { const c = R(2, 9); ys = xs.map(x => x + c); } else ys[R(0, 2)] += pick([1, 2]); }
+  const [l1, l2] = pick([['Masse (kg)', 'Prix (€)'], ['Durée (h)', 'Distance (km)'], ['Nombre de tours', 'Longueur (m)']]);
+  return {
+    html: `<p>Ce tableau est-il un tableau de proportionnalité ?</p>${tableau([[l1, ...xs.map(fmt)], [l2, ...ys.map(fmt)]])}`,
+    qcm: ouiNon(oui),
+    correction: `On compare les quotients : ${xs.map((x, i) => `${fmt(ys[i])} : ${x} ${Number.isInteger(rnd(ys[i] / x * 100)) ? '=' : '≈'} ${fmt(Math.round(ys[i] / x * 100) / 100)}`).join(' ; ')}. ${oui ? 'Ils sont égaux : <b>oui</b>.' : 'Ils ne sont pas tous égaux : <b>non</b>.'}`,
+  };
+}
+function pQuatrieme() {
+  const a = R(2, 9), k = pick([2, 3, 4, 5, 1.5, 2.5]); let c; do { c = R(2, 12); } while (c === a);
+  const [l1, l2] = pick([['Masse (kg)', 'Prix (€)'], ['Volume (L)', 'Masse (kg)'], ['Durée (min)', 'Distance (km)']]);
+  return {
+    html: `<p>Compléter ce tableau de proportionnalité :</p>${tableau([[l1, a, c], [l2, fmt(a * k), champ(0, 100)]])}`,
+    champs: [N(c * k)],
+    correction: `Le coefficient de proportionnalité est ${fmt(a * k)} : ${a} = ${fmt(k)}, donc ${c} × ${fmt(k)} = <b>${fmt(c * k)}</b>.`,
+  };
+}
+function pDistance() {
+  const v = pick([30, 40, 60, 80, 90, 120]), m = pick([15, 30, 45, 90, 120, 150, 20, 40].filter(x => v * x % 60 === 0));
+  return {
+    html: `<p>Une voiture roule à la vitesse moyenne de ${v} km/h pendant ${hm(m)}.</p>${rep(`Distance parcourue : ${champ(0)} km`)}`,
+    champs: [N(v * m / 60)],
+    correction: `En 60 min, elle parcourt ${v} km. En ${hm(m)} (${m} min), elle parcourt ${v} × ${m} : 60 = <b>${fmt(v * m / 60)} km</b>.`,
+  };
+}
+function pVitesse() {
+  const v = pick([4, 12, 15, 20, 60, 80, 90, 100]), m = pick([30, 90, 120, 150, 180, 15, 45].filter(x => v * x % 60 === 0));
+  return {
+    html: `<p>On parcourt ${fmt(v * m / 60)} km en ${hm(m)}.</p>${rep(`Vitesse moyenne : ${champ(0)} km/h`)}`,
+    champs: [N(v)],
+    correction: `${hm(m)} = ${fmt(m / 60)} h, et vitesse = distance : durée = ${fmt(v * m / 60)} : ${fmt(m / 60)} = <b>${v} km/h</b>.`,
+  };
+}
+function pTemps() {
+  const v = pick([30, 40, 60, 80, 90, 120]), m = pick([10, 15, 20, 30, 40, 45, 50].filter(x => v * x % 60 === 0));
+  return {
+    html: `<p>Combien de temps faut-il pour parcourir ${fmt(v * m / 60)} km à la vitesse moyenne de ${v} km/h ?</p>${rep(`${champ(0)} min`)}`,
+    champs: [N(m)],
+    correction: `À ${v} km/h, on parcourt ${v} km en 60 min. Durée = ${fmt(v * m / 60)} : ${v} × 60 = <b>${m} min</b>.`,
+  };
+}
+function pPourcentage() {
+  const T = pick([10, 20, 25, 40, 50, 200]), p = pick([10, 20, 30, 40, 50, 60, 70, 80, 25, 75].filter(x => x * T % 100 === 0));
+  const [quoi, qui] = pick([['Dans une classe de', 'élèves', 'sont demi-pensionnaires'], ['Dans un club de', 'membres', 'sont des filles'], ['Sur un parking de', 'véhicules', 'sont électriques']].map(t => [`${t[0]} ${T} ${t[1]}, ${p * T / 100} ${t[2]}`, t[1]]));
+  return {
+    html: `<p>${quoi}.</p>${rep(`Cela représente ${champ(0)} % des ${qui}.`)}`,
+    champs: [N(p)],
+    correction: `${fr(p * T / 100, T)} = ${fr(p, 100)} = <b>${p} %</b>.`,
+  };
+}
+function pEchelle() {
+  const E = pick([1000, 5000, 25000, 50000, 100000, 200000]), d = R(2, 9), enKm = E > 5000, r = d * E / (enKm ? 100000 : 100);
+  return {
+    html: `<p>Sur une carte à l'échelle ${ex(fr(1, fmt(E)))}, deux villages sont distants de ${d} cm.</p>${rep(`Distance réelle : ${champ(0)} ${enKm ? 'km' : 'm'}`)}`,
+    champs: [N(r)],
+    correction: `1 cm sur la carte représente ${fmt(E)} cm dans la réalité. ${d} × ${fmt(E)} = ${fmt(d * E)} cm = <b>${fmt(r)} ${enKm ? 'km' : 'm'}</b>.`,
+  };
+}
+function pNouveauPrix() {
+  const P = pick([20, 40, 60, 80, 120, 200]), t = pick([10, 20, 25, 30, 50, 5]), hausse = Math.random() < 0.4, r = P * (100 + (hausse ? t : -t)) / 100;
+  return {
+    html: `<p>Un article coûte ${P} €. Son prix ${hausse ? 'augmente' : 'baisse'} de ${t} %.</p>${rep(`Nouveau prix : ${champ(0)} €`)}`,
+    champs: [N(r)],
+    correction: `${t} % de ${P} € = ${fmt(P * t / 100)} €, donc le nouveau prix est ${P} ${hausse ? '+' : '−'} ${fmt(P * t / 100)} = <b>${fmt(r)} €</b>.`,
+  };
+}
+function pCalculBaisse() {
+  const P = pick([40, 60, 80, 120, 150]), t = pick([10, 20, 30, 40, 15, 25]), hausse = Math.random() < 0.3;
+  const mult = [`${P} × ${fmt(1 - t / 100)}`, `${P} × ${fmt(1 + t / 100)}`], bon = mult[hausse ? 1 : 0];
+  return {
+    html: `<p>Un article coûte ${P} €. Son prix ${hausse ? 'augmente' : 'baisse'} de ${t} %.<br>Quel calcul donne le nouveau prix ?</p>`,
+    qcm: qcmDe(bon, [mult[hausse ? 0 : 1], `${P} ${hausse ? '+' : '−'} ${t}`, `${P} × ${fmt(t / 100)}`]),
+    correction: `${hausse ? 'Augmenter' : 'Diminuer'} de ${t} %, c'est multiplier par 1 ${hausse ? '+' : '−'} ${fmt(t / 100)} = ${fmt(1 + (hausse ? t : -t) / 100)} : <b>${bon}</b>.`,
+  };
+}
+function pCoefficient() {
+  const t = pick([5, 10, 15, 20, 25, 30, 40, 50, 2, 8]), hausse = Math.random() < 0.5, k = (100 + (hausse ? t : -t)) / 100;
+  return {
+    html: rep(`${hausse ? 'Augmenter' : 'Diminuer'} un nombre de ${ex(`${t} %`)} revient à le multiplier par ${champ(0)}`),
+    champs: [N(k)],
+    correction: `1 ${hausse ? '+' : '−'} ${fr(t, 100)} = 1 ${hausse ? '+' : '−'} ${fmt(t / 100)} = <b>${fmt(k)}</b>.`,
+  };
+}
+function pRestant() {
+  const a = 5 * R(3, 9), b = 5 * R(2, Math.floor((95 - a) / 5));
+  const [debut, n1, n2, n3] = pick([['Dans un collège', 'des élèves sont demi-pensionnaires', 'sont internes', 'sont externes'],
+    ["Lors d'une élection", 'des électeurs ont voté pour A', 'ont voté pour B', 'ont voté pour C'],
+    ['Dans un club de sport', 'des adhérents font du football', 'font du basket', 'font du handball']]);
+  return {
+    html: `<p>${debut}, ${a} % ${n1}, ${b} % ${n2} et tous les autres ${n3}.</p>${rep(`Pourcentage de ceux qui ${n3} : ${champ(0)} %`)}`,
+    champs: [N(100 - a - b)],
+    correction: `Le total fait 100 % : 100 − ${a} − ${b} = <b>${100 - a - b} %</b>.`,
+  };
+}
+
+/* ================= Statistiques et probabilités ================= */
+const AIDE_PROBA = '<p class="aide">Fraction (3/10) ou nombre décimal.</p>';
+function sUrne() {
+  const cs = shuffle(['vertes', 'bleues', 'rouges', 'jaunes', 'noires']), T = pick([10, 20, 25, 50]), trois = Math.random() < 0.4;
+  const n1 = R(2, T / 2), n2 = trois ? R(1, T - n1 - 1) : T - n1, n3 = T - n1 - n2;
+  return {
+    html: `<p>Une urne contient ${n1} boules ${cs[0]}${trois ? `, ${n2} boules ${cs[1]} et ${n3} boules ${cs[2]}` : ` et ${n2} boules ${cs[1]}`}. On tire une boule au hasard.</p>
+      ${rep(`Probabilité de tirer une boule ${cs[0].slice(0, -1)} : ${champ(0, 150, 'text')}`)}${AIDE_PROBA}`,
+    champs: [V(n1 / T, `${n1}/${T}`)],
+    correction: `Il y a ${n1} boules ${cs[0]} sur ${T} boules en tout : la probabilité est <b>${fr(n1, T)}</b> = ${fmt(n1 / T)}.`,
+  };
+}
+function sDe() {
+  const [ev, issues] = pick([['un nombre pair', [2, 4, 6]], ['un multiple de 3', [3, 6]], ['un nombre supérieur ou égal à 5', [5, 6]], ['le nombre 6', [6]],
+    ['un nombre premier', [2, 3, 5]], ['un nombre strictement inférieur à 3', [1, 2]], ['un diviseur de 6', [1, 2, 3, 6]], ['un nombre impair', [1, 3, 5]]]);
+  return {
+    html: `<p>On lance un dé équilibré à six faces numérotées de 1 à 6.</p>${rep(`Probabilité d'obtenir ${ev} : ${champ(0, 150, 'text')}`)}${AIDE_PROBA}`,
+    champs: [V(issues.length / 6, `${issues.length}/6`)],
+    correction: `Issues favorables : ${issues.join(' ; ')}, soit ${issues.length} issue${issues.length > 1 ? 's' : ''} sur 6. La probabilité est <b>${fr(issues.length, 6)}</b>${issues.length > 1 ? ` = ${fr(issues.length / pgcd(issues.length, 6), 6 / pgcd(issues.length, 6))}` : ''}.`,
+  };
+}
+function sContraire() {
+  const p = R(1, 19) * 5, pc = Math.random() < 0.5;
+  return {
+    html: `<p>La probabilité qu'un événement ${it('A')} se réalise est ${ex(pc ? `${p} %` : fmt(p / 100))}.</p>${rep(`Probabilité que ${it('A')} ne se réalise pas : ${champ(0)}${pc ? ' %' : ''}`)}`,
+    champs: [N(pc ? 100 - p : (100 - p) / 100)],
+    correction: `La somme des probabilités d'un événement et de son contraire vaut ${pc ? '100 %' : '1'} : ${pc ? `100 − ${p} = <b>${100 - p} %</b>` : `1 − ${fmt(p / 100)} = <b>${fmt((100 - p) / 100)}</b>`}.`,
+  };
+}
+function sCartes() {
+  const [ev, n, expl] = pick([['un roi', 4, 'Il y a 4 rois'], ['un cœur', 8, 'Il y a 8 cœurs'], ['une figure (valet, dame ou roi)', 12, 'Il y a 3 × 4 = 12 figures'],
+    ['un as rouge', 2, 'Il y a 2 as rouges'], ['une carte rouge', 16, 'Il y a 16 cartes rouges'], ['la dame de pique', 1, 'Il y a une seule dame de pique']]);
+  return {
+    html: `<p>On tire au hasard une carte dans un jeu de 32 cartes.</p>${rep(`Probabilité d'obtenir ${ev} : ${champ(0, 150, 'text')}`)}${AIDE_PROBA}`,
+    champs: [V(n / 32, `${n}/32`)],
+    correction: `${expl} parmi les 32 cartes : la probabilité est <b>${fr(n, 32)}</b>${n > 1 ? ` = ${fr(n / pgcd(n, 32), 32 / pgcd(n, 32))}` : ''}.`,
+  };
+}
+function sMoyenne() {
+  let notes; do { notes = Array.from({ length: 4 }, () => R(4, 19)); } while (notes.reduce((s, x) => s + x, 0) % 2);
+  const somme = notes.reduce((s, x) => s + x, 0);
+  return {
+    html: `<p>Les notes obtenues par un élève sont : ${ex(notes.join(' ; '))}.</p>${rep(`Sa moyenne est ${champ(0)}`)}`,
+    champs: [N(somme / 4)],
+    correction: `(${notes.join(' + ')}) : 4 = ${somme} : 4 = <b>${fmt(somme / 4)}</b>.`,
+  };
+}
+function sFrequence() {
+  const T = pick([20, 25, 40, 50]), n = pick([1, 2, 3, 4, 6, 7, 8, 9].map(k => k * T / 10).filter(Number.isInteger));
+  const quoi = pick(['ont choisi la réponse A', 'viennent au collège à vélo', 'ont obtenu la moyenne']);
+  return {
+    html: `<p>Sur ${T} élèves interrogés, ${n} ${quoi}.</p>${rep(`Fréquence de cette réponse : ${champ(0)} %`)}`,
+    champs: [N(100 * n / T)],
+    correction: `Fréquence = effectif : effectif total = ${fr(n, T)} = ${fmt(n / T)} = <b>${100 * n / T} %</b>.`,
+  };
+}
+
+/* ================= Automatismes à figure ================= */
+const ENCRE = '#4a2d0d', ROUGE = '#e74c3c', BLEU = '#2471a3';
+const txtSvg = (x, y, t, o = '') => `<text x="${x}" y="${y}" font-size="12" fill="#333" text-anchor="middle" ${o}>${t}</text>`;
+const nomSvg = (x, y, t) => `<text x="${x}" y="${y}" font-size="15" font-style="italic" font-weight="700" font-family="Georgia, serif" text-anchor="middle" fill="${ENCRE}" stroke="#fff" stroke-width="3" paint-order="stroke">${t}</text>`;
+
+/** Quadrillage avec axes gradués. Renvoie { debut, X, Y, fin } ; X et Y convertissent des valeurs en pixels.
+    etiquettes : libellés centrés dans les colonnes (diagramme en barres) à la place des graduations en x. */
+function cadre({ nx, ny, w = 40, h = 30, ux = 1, uy = 1, titreX = '', titreY = '', etiquettes = null, chaqueX = 1 }) {
+  const mg = 48, mh = 30, W = mg + nx * w + 26, H = mh + ny * h + 46;
+  const X = x => mg + x / ux * w, Y = y => mh + (ny - y / uy) * h;
+  let s = `<svg class="graphe" viewBox="0 0 ${W} ${H}" style="max-width:${Math.round(W * 1.15)}px" role="img" aria-label="Graphique">`;
+  for (let i = 0; i <= nx; i++) if (!etiquettes || i === 0) s += `<path d="M${mg + i * w} ${mh}V${mh + ny * h}" stroke="#d9c7b3"/>`;
+  for (let j = 0; j <= ny; j++) s += `<path d="M${mg} ${mh + j * h}H${mg + nx * w}" stroke="#d9c7b3"/>`;
+  s += `<path d="M${mg} ${mh + ny * h}H${mg + nx * w + 12}M${mg} ${mh + ny * h}V${mh - 12}" stroke="#333" stroke-width="1.8" fill="none"/>
+    <path d="M${mg + nx * w + 18} ${mh + ny * h}l-8 -4v8zM${mg} ${mh - 18}l-4 8h8z" fill="#333"/>`;
+  for (let j = 0; j <= ny; j++) s += txtSvg(mg - 7, mh + (ny - j) * h + 4, fmt(j * uy), 'text-anchor="end"').replace('text-anchor="middle" ', '');
+  if (etiquettes) etiquettes.forEach((e, i) => { s += txtSvg(mg + (i + 0.5) * w, mh + ny * h + 16, e); });
+  else for (let i = chaqueX; i <= nx; i += chaqueX) s += txtSvg(mg + i * w, mh + ny * h + 16, fmt(i * ux));
+  s += `<text x="${mg + 8}" y="${mh - 14}" font-size="12" font-weight="700" fill="${ENCRE}">${titreY}</text>
+    <text x="${mg + nx * w + 22}" y="${mh + ny * h + 36}" font-size="12" font-weight="700" fill="${ENCRE}" text-anchor="end">${titreX}</text>`;
+  return { debut: s, X, Y, fin: '</svg>' };
+}
+
+/* ---------- Espace et géométrie ---------- */
+function gQuadriCode() {
+  const noms = lettres(4), P = [[45, 35], [205, 50], [215, 150], [55, 135]], O = [130, 92.5];
+  const unit = (p, q) => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); return [(q[0] - p[0]) / d, (q[1] - p[1]) / d]; };
+  const tick = (p, q, n) => { const u = unit(p, q), m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; let d = '';
+    for (let k = 0; k < n; k++) { const o = (k - (n - 1) / 2) * 5, c = [m[0] + o * u[0], m[1] + o * u[1]]; d += `M${c[0] + u[1] * 6} ${c[1] - u[0] * 6}L${c[0] - u[1] * 6} ${c[1] + u[0] * 6}`; }
+    return d; };
+  const droit = (p, q, r) => { const u = unit(p, q), v = unit(p, r), s = 12; return `M${p[0] + u[0] * s} ${p[1] + u[1] * s}L${p[0] + (u[0] + v[0]) * s} ${p[1] + (u[1] + v[1]) * s}L${p[0] + v[0] * s} ${p[1] + v[1] * s}`; };
+  const cotes = n => [0, 1, 2, 3].map(i => tick(P[i], P[(i + 1) % 4], Array.isArray(n) ? n[i] : n)).join('');
+  const diag = (a, b) => `M${P[0]}L${P[2]}M${P[1]}L${P[3]}` + tick(P[0], O, a) + tick(O, P[2], a) + tick(P[1], O, b) + tick(O, P[3], b);
+  const angle = i => droit(P[i], P[(i + 1) % 4], P[(i + 3) % 4]);
+  const [code, nat, expl] = pick([
+    [cotes(1), 2, 'Un quadrilatère qui a quatre côtés de même longueur est un losange.'],
+    [angle(0) + angle(1) + angle(2), 1, 'Un quadrilatère qui a trois angles droits est un rectangle.'],
+    [diag(1, 2), 0, 'Un quadrilatère dont les diagonales se coupent en leur milieu est un parallélogramme.'],
+    [diag(1, 1), 1, 'Les diagonales se coupent en leur milieu et ont la même longueur : c\'est un rectangle.'],
+    [diag(1, 2) + droit(O, P[2], P[1]), 2, 'Les diagonales se coupent en leur milieu et sont perpendiculaires : c\'est un losange.'],
+    [cotes(1) + angle(0), 3, 'Quatre côtés de même longueur (losange) et un angle droit : c\'est un carré.'],
+    [diag(1, 1) + droit(O, P[2], P[1]), 3, 'Les diagonales se coupent en leur milieu, ont la même longueur et sont perpendiculaires : c\'est un carré.'],
+    [cotes([1, 2, 1, 2]), 0, 'Un quadrilatère dont les côtés opposés ont la même longueur est un parallélogramme.']]);
+  const pos = [[32, 30], [218, 44], [228, 164], [42, 150]];
+  const svg = `<svg class="figure" style="width:260px" viewBox="0 0 260 180" role="img" aria-label="Quadrilatère codé">
+    <path d="M${P[0]}L${P[1]}L${P[2]}L${P[3]}Z" fill="none" stroke="${ENCRE}" stroke-width="1.8"/>
+    <path d="${code}" fill="none" stroke="${ROUGE}" stroke-width="1.8"/>${noms.map((n, i) => nomSvg(pos[i][0], pos[i][1], n)).join('')}</svg>`;
+  return {
+    html: `<div class="avec-figure"><div><p>D'après le codage, quelle est la nature (la plus précise) du quadrilatère ${it(noms.join(''))} ?</p>
+      <p class="aide">La figure est tracée à main levée.</p></div><div>${svg}</div></div>`,
+    qcm: { choix: ['un parallélogramme', 'un rectangle', 'un losange', 'un carré'], bonne: nat },
+    correction: expl,
+  };
+}
+function gSolide() {
+  const S = { fill: 'none', stroke: ENCRE, 'stroke-width': 1.8 };
+  const p = (plein, cache) => `<path d="${plein}" fill="none" stroke="${S.stroke}" stroke-width="1.8" stroke-linejoin="round"/><path d="${cache}" fill="none" stroke="${S.stroke}" stroke-width="1.3" stroke-dasharray="5 4"/>`;
+  const solides = [
+    ['un cube', p('M30 50H110V130H30ZM30 50L60 25H140L110 50M140 25V105L110 130', 'M30 130L60 105H140M60 105V25'), 'six faces carrées'],
+    ['un pavé droit', p('M15 75H115V130H15ZM15 75L50 50H150L115 75M150 50V105L115 130', 'M15 130L50 105H150M50 105V50'), 'six faces rectangulaires'],
+    ['un prisme droit', p('M25 132H85L52 72ZM52 72L107 42L140 102L85 132', 'M25 132L80 102H140M80 102L107 42'), 'deux bases triangulaires superposables et parallèles, et des faces latérales rectangulaires'],
+    ['une pyramide', p('M25 115L105 132L140 100M82 18L25 115M82 18L105 132M82 18L140 100', 'M25 115L60 86L140 100M82 18L60 86'), 'une base polygonale et des faces latérales triangulaires qui ont un sommet commun'],
+    ['un cylindre', p('M35 35A45 14 0 1 0 125 35A45 14 0 1 0 35 35M35 35V118M125 35V118M35 118A45 14 0 0 0 125 118', 'M35 118A45 14 0 0 1 125 118'), 'deux disques superposables et parallèles'],
+    ['un cône', p('M80 15L30 120M80 15L130 120M30 120A50 15 0 0 0 130 120', 'M30 120A50 15 0 0 1 130 120'), 'un disque pour base et un sommet'],
+    ['une boule', p('M25 75A55 55 0 1 0 135 75A55 55 0 1 0 25 75M25 75A55 16 0 0 0 135 75', 'M25 75A55 16 0 0 1 135 75'), 'tous les points de sa surface à la même distance du centre'],
+  ];
+  const i = R(0, solides.length - 1), autres = shuffle(solides.filter((_, k) => k !== i)).slice(0, 3).map(s => s[0]);
+  return {
+    html: `<div class="avec-figure"><div><p>Quel est le nom de ce solide ?</p></div><div><svg class="figure" style="width:180px" viewBox="0 0 165 150" role="img" aria-label="Solide en perspective">${solides[i][1]}</svg></div></div>`,
+    qcm: qcmDe(solides[i][0], autres),
+    correction: `C'est <b>${solides[i][0]}</b> : ${solides[i][2]}.`,
+  };
+}
+function svgRepere(pts, noms) {
+  const u = 28, m = 5.7 * u;
+  let svg = `<svg class="repere" viewBox="${-m} ${-m} ${2 * m} ${2 * m}" role="img" aria-label="Repère">`;
+  for (let k = -5; k <= 5; k++) svg += `<path d="M${k * u} ${-m}V${m}M${-m} ${k * u}H${m}" stroke="#d9c7b3" stroke-width="1"/>`;
+  svg += `<path d="M${-m} 0H${m - 2}M0 ${m}V${-m + 2}" stroke="#333" stroke-width="1.6"/><path d="M${m} 0l-8 -4v8zM0 ${-m}l-4 8h8z" fill="#333"/>`;
+  for (let k = -5; k <= 5; k++) if (k) svg += `<text x="${k * u}" y="13" font-size="10" text-anchor="middle" fill="#333">${k < 0 ? '−' + -k : k}</text>
+    <text x="-6" y="${-k * u + 3.5}" font-size="10" text-anchor="end" fill="#333">${k < 0 ? '−' + -k : k}</text>`;
+  pts.forEach((p, i) => { const cx = p.x * u, cy = -p.y * u;
+    svg += `<path d="M${cx - 4} ${cy - 4}l8 8m0 -8l-8 8" stroke="${ROUGE}" stroke-width="2.2" stroke-linecap="round"/>${nomSvg(cx + 11, cy - 8, noms[i])}`; });
+  return svg + '</svg>';
+}
+function gPointCoord() {
+  let x, y; do { x = pick([1, -1]) * R(1, 5); y = pick([1, -1]) * R(1, 4); } while (Math.abs(x) === Math.abs(y) || Math.abs(x) > 4 && Math.abs(y) > 4);
+  const noms = lettres(4), ordre = shuffle([0, 1, 2, 3]);
+  const pts = [{ x, y }, { x: y, y: x }, { x: -x, y }, { x, y: -y }];
+  return {
+    html: `<div class="avec-figure"><div><p>Quel point a pour coordonnées ${ex(`(${fmt(x)} ; ${fmt(y)})`)} ?</p></div><div>${svgRepere(ordre.map(i => pts[i]), noms)}</div></div>`,
+    qcm: { choix: noms.map(it), bonne: ordre.indexOf(0) },
+    correction: `L'abscisse ${fmt(x)} se lit sur l'axe horizontal et l'ordonnée ${fmt(y)} sur l'axe vertical : c'est le point <b>${it(noms[ordre.indexOf(0)])}</b>.`,
+  };
+}
+function gTranslation() {
+  const nc = 6, nl = 4, c = 46;
+  let dx, dy; do { dx = R(-3, 3); dy = R(-2, 2); } while (dx === 0 && dy === 0 || dx === 0 && Math.abs(dy) < 1);
+  let col, lig; do { col = R(0, nc - 1); lig = R(0, nl - 1); } while (col + dx < 0 || col + dx >= nc || lig + dy < 0 || lig + dy >= nl);
+  const num = (cc, ll) => ll * nc + cc + 1;
+  let ax, ay; do { ax = R(0, nc); ay = R(0, nl); } while (ax + dx < 0 || ax + dx > nc || ay + dy < 0 || ay + dy > nl);
+  const [A, B] = lettres(2), X0 = 14, Y0 = 26;
+  let svg = `<svg class="graphe" viewBox="0 0 ${nc * c + 28} ${nl * c + 44}" style="max-width:${nc * c + 60}px" role="img" aria-label="Pavage de motifs numérotés">`;
+  for (let l = 0; l < nl; l++) for (let k = 0; k < nc; k++) { const x = X0 + k * c, y = Y0 + l * c, src = k === col && l === lig;
+    svg += `<rect x="${x}" y="${y}" width="${c}" height="${c}" fill="${src ? '#fcead9' : '#fff'}" stroke="#d9c7b3"/>
+      <path d="M${x + 8} ${y + c - 8}V${y + 10}L${x + c - 10} ${y + c - 8}Z" fill="${src ? '#f5b97f' : '#f3e3d0'}" stroke="${ENCRE}" stroke-width="1"/>
+      <text x="${x + c - 12}" y="${y + 17}" font-size="12" font-weight="700" text-anchor="middle" fill="${ENCRE}">${num(k, l)}</text>`; }
+  const px = v => X0 + v * c, py = v => Y0 + v * c, len = Math.hypot(dx, dy) * c, ux = dx * c / len, uy = dy * c / len;
+  svg += `<path d="M${px(ax)} ${py(ay)}L${px(ax + dx) - ux * 9} ${py(ay + dy) - uy * 9}" stroke="${ROUGE}" stroke-width="2.6"/>
+    <path d="M${px(ax + dx)} ${py(ay + dy)}l${-ux * 12 - uy * 6} ${-uy * 12 + ux * 6}l${uy * 12} ${-ux * 12}z" fill="${ROUGE}"/>
+    <circle cx="${px(ax)}" cy="${py(ay)}" r="3.5" fill="${ROUGE}"/>${nomSvg(px(ax) - ux * 13, py(ay) - uy * 13 + 5, A)}${nomSvg(px(ax + dx) + ux * 13, py(ay + dy) + uy * 13 + 5, B)}</svg>`;
+  const dep = [dx ? `${Math.abs(dx)} carreau${Math.abs(dx) > 1 ? 'x' : ''} vers la ${dx > 0 ? 'droite' : 'gauche'}` : '', dy ? `${Math.abs(dy)} carreau${Math.abs(dy) > 1 ? 'x' : ''} vers le ${dy > 0 ? 'bas' : 'haut'}` : ''].filter(Boolean).join(' et ');
+  return {
+    html: `<p>Quelle est l'image du motif ${ex(num(col, lig))} par la translation qui transforme ${it(A)} en ${it(B)} ?</p>${svg}${rep(`Motif n° ${champ(0, 80, 'numeric')}`)}`,
+    champs: [N(num(col + dx, lig + dy))],
+    correction: `Pour aller de ${it(A)} à ${it(B)}, on se déplace de ${dep}. Le motif ${num(col, lig)} fait le même déplacement : son image est le motif <b>${num(col + dx, lig + dy)}</b>.`,
+  };
+}
+
+/* ---------- Nombres et calculs ---------- */
+function nAxeRelatif() {
+  const pv = pick([1, 1, 0.5, 2, 5, 10]), L = pick([1, 2]), nom = pick('ABCDEFGHKLMNPRST'.split(''));
+  let p; do { p = R(-6, 6); } while (p === 0 || p === L);
+  const x = i => 215 + i * 31;
+  let svg = `<svg class="axe" viewBox="0 0 430 80" role="img" aria-label="Axe gradué"><path d="M8 45H415" stroke="#333" stroke-width="1.6"/><path d="M422 45l-9 -4v8z" fill="#333"/>`;
+  for (let i = -6; i <= 6; i++) svg += `<path d="M${x(i)} 38V52" stroke="#333" stroke-width="1.4"/>`;
+  svg += txtSvg(x(0), 72, '0', 'font-size="15"') + txtSvg(x(L), 72, fmt(L * pv), 'font-size="15"') + `<circle cx="${x(p)}" cy="45" r="4.5" fill="${ROUGE}"/>${nomSvg(x(p), 26, nom)}</svg>`;
+  return {
+    html: `<p>Quelle est l'abscisse du point ${it(nom)} ?</p>${svg}${rep(`${champ(0)}`)}`,
+    champs: [N(p * pv)],
+    correction: `Une graduation représente ${fmt(pv)}. ${it(nom)} est à ${Math.abs(p)} graduation${Math.abs(p) > 1 ? 's' : ''} à ${p > 0 ? 'droite' : 'gauche'} de 0 : son abscisse est <b>${fmt(p * pv)}</b>.`,
+  };
+}
+
+/* ---------- Proportionnalité et fonctions ---------- */
+function pGraphProp() {
+  const t = R(0, 2), g = cadre({ nx: 8, ny: 6, w: 34, h: 28, titreX: 'x', titreY: 'y' });
+  const pente = pick([0.5, 0.75, 1]), b = t === 1 ? pick([1, 2]) : 0;
+  let d = '';
+  if (t < 2) d = `M${g.X(0)} ${g.Y(b)}L${g.X(Math.min(8, (6 - b) / pente))} ${g.Y(Math.min(6, b + 8 * pente))}`;
+  else for (let x = 0; x <= 7.4; x += 0.2) d += `${x ? 'L' : 'M'}${g.X(x)} ${g.Y(x * x / 9)}`;
+  return {
+    html: `<div class="avec-figure"><div><p>Ce graphique représente-t-il une situation de proportionnalité ?</p></div><div>${g.debut}<path d="${d}" fill="none" stroke="${BLEU}" stroke-width="2.4"/>${g.fin}</div></div>`,
+    qcm: ouiNon(t === 0),
+    correction: `Une situation de proportionnalité est représentée par des points alignés avec l'origine du repère. ${['Ici, c\'est une droite qui passe par l\'origine : <b>oui</b>.', 'Ici, la droite ne passe pas par l\'origine : <b>non</b>.', 'Ici, les points ne sont pas alignés : <b>non</b>.'][t]}`,
+  };
+}
+function pLectureTrajet() {
+  const uy = pick([5, 10]), t1 = R(2, 3), t2 = t1 + R(1, 2), t3 = R(t2 + 1, 8), d1 = R(2, 3), d2 = R(d1 + 1, 6);
+  const g = cadre({ nx: 8, ny: 6, w: 38, h: 28, ux: 10, uy, titreX: 'Durée (min)', titreY: 'Distance (km)' });
+  const pts = [[0, 0], [t1, d1], [t2, d1], [t3, d2]].map(([t, d]) => [g.X(t * 10), g.Y(d * uy)]);
+  const svg = `${g.debut}<path d="M${pts.map(p => p.join(' ')).join('L')}" fill="none" stroke="${BLEU}" stroke-width="2.4" stroke-linejoin="round"/>${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${BLEU}"/>`).join('')}${g.fin}`;
+  const q = R(0, 3);
+  const [question, unite, r, expl] = [
+    [`Quelle distance a-t-il parcourue au bout de ${t1 * 10} minutes ?`, 'km', d1 * uy, `Le point d'abscisse ${t1 * 10} a pour ordonnée ${d1 * uy}`],
+    ['Combien de temps dure sa pause ?', 'min', (t2 - t1) * 10, `Le segment horizontal va de ${t1 * 10} min à ${t2 * 10} min`],
+    ['Quelle est la durée totale du trajet, pause comprise ?', 'min', t3 * 10, 'Le dernier point du graphique a pour abscisse ' + t3 * 10],
+    ['Quelle distance a-t-il parcourue en tout ?', 'km', d2 * uy, 'Le dernier point du graphique a pour ordonnée ' + d2 * uy]][q];
+  return {
+    html: `<div class="avec-figure"><div><p>Ce graphique représente la distance parcourue par un cycliste en fonction de la durée.</p><p>${question}</p>${rep(`${champ(0)} ${unite}`)}</div><div>${svg}</div></div>`,
+    champs: [N(r)],
+    correction: `${expl} : <b>${r} ${unite}</b>.`,
+  };
+}
+function pFreinage() {
+  const g = cadre({ nx: 9, ny: 9, w: 34, h: 24, ux: 10, uy: 10, titreX: 'Vitesse (km/h)', titreY: 'Distance de freinage (m)' });
+  let d = ''; for (let v = 0; v <= 90; v += 2) d += `${v ? 'L' : 'M'}${g.X(v)} ${g.Y(v * v / 80)}`;
+  const [v, m] = pick([[40, 20], [80, 80]]), direct = Math.random() < 0.5;
+  return {
+    html: `<div class="avec-figure"><div><p>Ce graphique donne la distance de freinage d'une voiture en fonction de sa vitesse.</p>
+      <p>${direct ? `Quelle est la distance de freinage à ${v} km/h ?` : `À quelle vitesse la distance de freinage est-elle de ${m} m ?`}</p>${rep(`${champ(0)} ${direct ? 'm' : 'km/h'}`)}</div>
+      <div>${g.debut}<path d="${d}" fill="none" stroke="${BLEU}" stroke-width="2.4"/>${g.fin}</div></div>`,
+    champs: [N(direct ? m : v)],
+    correction: direct ? `On part de ${v} sur l'axe horizontal, on monte jusqu'à la courbe, puis on lit sur l'axe vertical : <b>${m} m</b>.`
+      : `On part de ${m} sur l'axe vertical, on va jusqu'à la courbe, puis on lit sur l'axe horizontal : <b>${v} km/h</b>.`,
+  };
+}
+function pLecturePrix() {
+  const uy = pick([2, 5, 10]), pente = pick([1, 0.5]), b = R(0, 2), direct = Math.random() < 0.5;
+  const g = cadre({ nx: 8, ny: 7, w: 36, h: 26, uy, titreX: 'Masse (kg)', titreY: 'Prix (€)' });
+  const xmax = Math.min(8, (7 - b) / pente), x = pente === 1 ? R(1, Math.floor(xmax)) : 2 * R(1, Math.floor(xmax / 2)), y = (b + pente * x) * uy;
+  return {
+    html: `<div class="avec-figure"><div><p>Ce graphique donne le prix d'une livraison en fonction de la masse du colis.</p>
+      <p>${direct ? `Combien coûte la livraison d'un colis de ${x} kg ?` : `Quelle est la masse d'un colis dont la livraison coûte ${y} € ?`}</p>${rep(`${champ(0)} ${direct ? '€' : 'kg'}`)}</div>
+      <div>${g.debut}<path d="M${g.X(0)} ${g.Y(b * uy)}L${g.X(xmax)} ${g.Y((b + pente * xmax) * uy)}" fill="none" stroke="${BLEU}" stroke-width="2.4"/>${g.fin}</div></div>`,
+    champs: [N(direct ? y : x)],
+    correction: direct ? `Le point de la droite d'abscisse ${x} a pour ordonnée <b>${y}</b> : la livraison coûte ${y} €.` : `Le point de la droite d'ordonnée ${y} a pour abscisse <b>${x}</b> : le colis pèse ${x} kg.`,
+  };
+}
+
+/* ---------- Statistiques et probabilités ---------- */
+function barres(g, vals) { return vals.map((v, i) => `<rect x="${g.X(i) + 7}" y="${g.Y(v)}" width="${g.X(1) - g.X(0) - 14}" height="${g.Y(0) - g.Y(v)}" fill="#f5b97f" stroke="${ENCRE}" stroke-width="1.2"/>`).join(''); }
+function sDiagramme() {
+  const [titre, cats] = pick([['Sport préféré des élèves', ['Foot', 'Basket', 'Danse', 'Judo', 'Natation']], ['Moyen de transport des élèves', ['Bus', 'Vélo', 'À pied', 'Voiture']], ['Animal préféré des élèves', ['Chat', 'Chien', 'Lapin', 'Poisson', 'Oiseau']]]);
+  const uy = pick([1, 2, 5]); let vals; do { vals = cats.map(() => R(1, 7)); } while (new Set(vals).size < cats.length - 1);
+  const g = cadre({ nx: cats.length, ny: 7, w: 56, h: 26, uy, etiquettes: cats, titreY: 'Effectif' });
+  const i = R(0, cats.length - 1); let j; do { j = R(0, cats.length - 1); } while (j === i || vals[j] === vals[i]);
+  const grand = vals[i] > vals[j] ? i : j, petit = grand === i ? j : i, total = vals.reduce((s, v) => s + v, 0) * uy;
+  const [question, r, expl] = pick([
+    [`Combien d'élèves ont répondu « ${cats[i]} » ?`, vals[i] * uy, `La barre « ${cats[i]} » monte jusqu'à ${vals[i] * uy}`],
+    ["Combien d'élèves ont été interrogés en tout ?", total, `${vals.map(v => v * uy).join(' + ')} = ${total}`],
+    [`Combien d'élèves de plus ont répondu « ${cats[grand]} » plutôt que « ${cats[petit]} » ?`, (vals[grand] - vals[petit]) * uy, `${vals[grand] * uy} − ${vals[petit] * uy} = ${(vals[grand] - vals[petit]) * uy}`]]);
+  return {
+    html: `<div class="avec-figure"><div><p>${titre} :</p><p>${question}</p>${rep(`${champ(0)}`)}</div><div>${g.debut}${barres(g, vals.map(v => v * uy))}${g.fin}</div></div>`,
+    champs: [N(r)],
+    correction: `${expl} : <b>${r}</b>.`,
+  };
+}
+function sDiagrammeMediane() {
+  const debut = R(6, 12), notes = [0, 1, 2, 3, 4].map(k => debut + k); let eff;
+  do { eff = notes.map(() => R(1, 4)); } while (eff.reduce((s, v) => s + v, 0) % 2 === 0);
+  const total = eff.reduce((s, v) => s + v, 0), rang = (total + 1) / 2;
+  let cumul = 0, med; for (let k = 0; k < 5; k++) { cumul += eff[k]; if (cumul >= rang) { med = notes[k]; break; } }
+  const g = cadre({ nx: 5, ny: 5, w: 50, h: 28, etiquettes: notes, titreX: 'Note', titreY: 'Effectif' });
+  return {
+    html: `<div class="avec-figure"><div><p>Ce diagramme donne la répartition des notes d'un groupe d'élèves.</p>${rep(`Médiane de la série : ${champ(0)}`)}</div><div>${g.debut}${barres(g, eff)}${g.fin}</div></div>`,
+    champs: [N(med)],
+    correction: `Il y a ${eff.join(' + ')} = ${total} notes. La médiane est la ${rang}<sup>e</sup> note de la série rangée : en comptant les effectifs barre après barre, on arrive à <b>${med}</b>.`,
+  };
+}
+function sTableau() {
+  const a = R(5, 15), b = R(5, 15), c = R(5, 15), d = R(5, 15);
+  const v = [[a, b, a + b], [c, d, c + d], [a + c, b + d, a + b + c + d]], li = R(0, 2), co = R(0, 2);
+  const [l1, l2, c1, c2] = pick([['Filles', 'Garçons', 'Demi-pensionnaires', 'Externes'], ['Sixièmes', 'Troisièmes', 'Anglais LV1', 'Allemand LV1'], ['Adultes', 'Enfants', 'Tarif plein', 'Tarif réduit']]);
+  const cell = (i, j) => i === li && j === co ? champ(0, 80, 'numeric') : v[i][j];
+  const expl = li < 2 && co < 2 ? `${v[li][2]} − ${v[li][1 - co]}` : co === 2 && li < 2 ? `${v[li][0]} + ${v[li][1]}` : li === 2 && co < 2 ? `${v[0][co]} + ${v[1][co]}` : `${v[0][2]} + ${v[1][2]}`;
+  return {
+    html: `<p>Compléter la case manquante de ce tableau :</p>${tableau([['', c1, c2, 'Total'], [l1, cell(0, 0), cell(0, 1), cell(0, 2)], [l2, cell(1, 0), cell(1, 1), cell(1, 2)], ['Total', cell(2, 0), cell(2, 1), cell(2, 2)]])}`,
+    champs: [N(v[li][co])],
+    correction: `${expl} = <b>${v[li][co]}</b>.`,
+  };
+}
+function sSemiCirculaire() {
+  const T = pick([12, 24, 36, 60]), cats = pick([['Bus', 'Vélo', 'À pied'], ['Foot', 'Basket', 'Danse'], ['Chat', 'Chien', 'Lapin']]);
+  let a, b; do { a = 15 * R(2, 8); b = 15 * R(2, 8); } while (a + b > 150 || a === b || a === 180 - a - b || b === 180 - a - b);
+  const angles = [a, b, 180 - a - b], cx = 150, cy = 150, r = 120, coul = ['#f5b97f', '#aed6f1', '#abebc6'];
+  const pt = (deg, ray) => [cx - ray * Math.cos(deg * Math.PI / 180), cy - ray * Math.sin(deg * Math.PI / 180)];
+  let svg = `<svg class="figure" style="width:300px" viewBox="0 0 300 175" role="img" aria-label="Diagramme semi-circulaire">`, deb = 0;
+  angles.forEach((an, i) => { const p1 = pt(deb, r), p2 = pt(deb + an, r), m = pt(deb + an / 2, r * 0.62);
+    svg += `<path d="M${cx} ${cy}L${p1}A${r} ${r} 0 0 1 ${p2}Z" fill="${coul[i]}" stroke="${ENCRE}" stroke-width="1.4"/>
+      <text x="${m[0]}" y="${m[1] - 2}" font-size="13" font-weight="700" text-anchor="middle" fill="${ENCRE}">${cats[i]}</text><text x="${m[0]}" y="${m[1] + 13}" font-size="12" text-anchor="middle" fill="${ENCRE}">${an}°</text>`;
+    deb += an; });
+  svg += '</svg>';
+  const i = R(0, 2);
+  return {
+    html: `<div class="avec-figure"><div><p>Ce diagramme semi-circulaire représente les réponses de ${ex(T)} élèves.</p>${rep(`Combien d'élèves ont répondu « ${cats[i]} » ? ${champ(0)}`)}</div><div>${svg}</div></div>`,
+    champs: [N(T * angles[i] / 180)],
+    correction: `Les 180° du demi-disque représentent ${T} élèves, soit ${fmt(180 / T)}° par élève. ${angles[i]} : ${fmt(180 / T)} = <b>${T * angles[i] / 180}</b> élèves.`,
+  };
+}
+function sGraphique() {
+  const uy = pick([2, 5]); let v;
+  do { v = [R(1, 3)]; for (let k = 1; k <= 6; k++) v.push(Math.max(0, Math.min(6, v[k - 1] + pick([-2, -1, 1, 1, 2])))); } while (v.filter(x => x === Math.max(...v)).length > 1);
+  const heures = v.map((_, k) => 8 + 2 * k);
+  const gh = cadre({ nx: 6, ny: 6, w: 46, h: 28, uy, etiquettes: [], titreX: 'Heure', titreY: 'Température (°C)' });
+  let svg = gh.debut; for (let k = 0; k <= 6; k++) svg += `<path d="M${gh.X(k)} ${gh.Y(0)}V${gh.Y(6 * uy)}" stroke="#d9c7b3"/>` + txtSvg(gh.X(k), gh.Y(0) + 16, `${heures[k]} h`);
+  const P = v.map((y, k) => [gh.X(k), gh.Y(y * uy)]);
+  svg += `<path d="M${P.map(p => p.join(' ')).join('L')}" fill="none" stroke="${BLEU}" stroke-width="2.2"/>${P.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="${BLEU}"/>`).join('')}${gh.fin}`;
+  const k = R(0, 6), imax = v.indexOf(Math.max(...v)), quoi = R(0, 1);
+  return {
+    html: `<div class="avec-figure"><div><p>Ce graphique donne la température relevée au cours d'une journée.</p>
+      ${quoi ? rep(`Température à ${heures[k]} h : ${champ(0)} °C`) : rep(`La température est maximale à ${champ(0, 80, 'numeric')} h`)}</div><div>${svg}</div></div>`,
+    champs: [N(quoi ? v[k] * uy : heures[imax])],
+    correction: quoi ? `Le point d'abscisse ${heures[k]} h a pour ordonnée <b>${v[k] * uy}</b> °C.` : `Le point le plus haut du graphique a pour abscisse <b>${heures[imax]} h</b> (${v[imax] * uy} °C).`,
+  };
+}
+
+/* ================= Catalogue =================
+   Les sept catégories de la sélection d'automatismes de MathALÉA, plus « Conversions », sortie de
+   « Grandeurs et mesures » pour qu'un quiz en contienne toujours une ; poids = nombre de questions
+   de la catégorie dans un quiz de 10 quand tout est coché (total : 10).
+   Une catégorie peut être découpée en sous-classes (sous), que l'on coche séparément. */
+const CATEGORIES = [
+  { id: 'G', nom: 'Espace et géométrie', poids: 2, autos: [
+    ['Coordonnées dans un repère', genRepere], ['Nature d\'un parallélogramme', gParallelo], ['Angles aigus d\'un triangle rectangle', gAngleTriRect],
+    ['Angles complémentaires, supplémentaires', genAngles], ['Calculer un angle complémentaire ou supplémentaire', gAngleAutre], ['Angles particuliers', gAngleType],
+    ['Somme des angles d\'un triangle', gSommeTriangle], ['Pythagore : hypoténuse', gPythagoreHyp], ['Pythagore : côté de l\'angle droit', gPythagoreCote],
+    ['Théorème de Thalès', gThales], ['Cosinus, sinus, tangente', gTrigo], ['Quadrilatère codé', gQuadriCode], ['Reconnaître un solide', gSolide],
+    ['Retrouver un point par ses coordonnées', gPointCoord], ['Image par une translation', gTranslation]] },
+  { id: 'I', nom: 'Algorithmique', poids: 1, autos: [['Programme de calcul en blocs', genScratch], ['Programmer un polygone régulier', genPolygone], ['Tracer un parallélogramme', genParallelogramme]] },
+  { id: 'M', nom: 'Grandeurs et mesures', poids: 1, autos: [
+    ['Calculer un périmètre', mPerimetre], ['Calculer une aire', mAire], ['Aire d\'un triangle rectangle', mAireTriRect],
+    ['Volume du pavé droit', genVolume], ['Calculer un volume', mVolumes]] },
+  { id: 'C', nom: 'Conversions', poids: 1, sous: [
+    { id: 'CU', nom: 'Longueurs, aires, volumes', autos: [
+      ['Longueurs, masses, capacités', mLongueurs], ['Convertir des aires', mAires], ['Convertir des volumes', mVolumesCubes], ['Volumes et capacités', genConversion]] },
+    { id: 'CD', nom: 'Durées', autos: [
+      ['Minutes en heures et minutes', mMinutes], ['Convertir des durées', mDuree], ['Unités de durée', mUnitesDuree]] }] },
+  { id: 'N', nom: 'Nombres et calculs', poids: 2, autos: [
+    ['Écriture fractionnaire d\'un décimal', nDecFrac], ['Valeur décimale d\'une fraction', nFracDec], ['Somme de décimaux relatifs', nSommeDec], ['Comparer des relatifs', nComparer],
+    ['Opérations sur les relatifs', nOpRelatifs], ['Opérations sur les fractions', nOpFractions], ['Simplifier une fraction', nSimplifier], ['Tiers, quart, cinquième', nTiers],
+    ['Fraction d\'une quantité', nFracQuantite], ['Pourcentage d\'un nombre', nPourcent], ['Décomposer une fraction', nDecomposer], ['Décimal, fraction, pourcentage', nDecPourcent],
+    ['Notation scientifique', genSci], ['Notation scientifique → décimal', nSciInverse], ['Carrés', nCarre], ['Divisibilité par 3 ou 9', genDivisibilite],
+    ['Critères de divisibilité', nCritere], ['Écrire une expression littérale', nExprLitt], ['Équation du type ax + b = c', nEquation], ['Abscisse sur un axe gradué', nAxe], ['Abscisse relative sur un axe', nAxeRelatif]] },
+  { id: 'L', nom: 'Calcul littéral', poids: 1, autos: [
+    ['Réduire une expression', genReduire], ['Valeur d\'une expression', lValeur], ['Développer', lDevelopper], ['Factoriser', genFactoriser],
+    ['Produit remarquable', lRemarquable], ['Reconnaître une forme factorisée', lFormeFactorisee], ['Tester une solution', lEstSolution], ['Résoudre une équation', lEquation]] },
+  { id: 'P', nom: 'Proportionnalité', poids: 1, autos: [
+    ['Reconnaître la proportionnalité', pTableau], ['Quatrième proportionnelle', pQuatrieme], ['Distance = vitesse × durée', pDistance], ['Vitesse moyenne', pVitesse],
+    ['Temps de trajet', pTemps], ['Calculer un pourcentage', pPourcentage], ['Échelle d\'une carte', pEchelle], ['Nouveau prix', pNouveauPrix],
+    ['Calcul d\'une variation en pourcentage', pCalculBaisse], ['Coefficient multiplicateur', pCoefficient], ['Pourcentage restant', pRestant], ['Proportionnalité sur un graphique', pGraphProp],
+    ['Lire un graphique de trajet', pLectureTrajet], ['Distance de freinage', pFreinage], ['Lire un prix sur un graphique', pLecturePrix]] },
+  { id: 'S', nom: 'Statistiques et probabilités', poids: 1, autos: [
+    ['Probabilité : urne', sUrne], ['Probabilité : dé', sDe], ['Événement contraire', sContraire], ['Probabilité : cartes', sCartes],
+    ['Médiane', genMediane], ['Moyenne', sMoyenne], ['Fréquence', sFrequence], ['Lire un diagramme en barres', sDiagramme],
+    ['Médiane à partir d\'un diagramme', sDiagrammeMediane], ['Tableau à double entrée', sTableau], ['Diagramme semi-circulaire', sSemiCirculaire], ['Lire un graphique', sGraphique]] },
+];
+CATEGORIES.forEach(c => {
+  c.autos = c.sous ? c.sous.flatMap(s => s.autos.map(([nom, gen]) => ({ nom, gen, cat: c, sous: s })))
+                   : c.autos.map(([nom, gen]) => ({ nom, gen, cat: c }));
+});
+const SOUS = CATEGORIES.flatMap(c => c.sous || []);
+
+/* ================= Réglages (panneau latéral) ================= */
+const actifs = new Set(CATEGORIES.map(c => c.id));   // catégories cochées, au moins une
+const sousActifs = new Set(SOUS.map(s => s.id));       // sous-classes cochées, au moins une par catégorie
+const autosActifs = c => c.autos.filter(a => !a.sous || sousActifs.has(a.sous.id));
+let sacs = {};                                        // par catégorie : automatismes pas encore tirés
+
+/* ================= Déroulement ================= */
+const cont = () => document.getElementById('container');
+const inputs = () => [...document.querySelectorAll('#container input.rep')];
+const retourMsg = (cls, txt) => { const r = document.getElementById('retour'); r.className = 'feedback-zone ' + cls; r.textContent = txt; };
+
+/** Tire une catégorie (selon son poids), puis un automatisme pas encore vu de cette catégorie. */
+function genererQuestion() {
+  if (piocheEnCours.length === 0) piocheEnCours = shuffle(CATEGORIES.filter(c => actifs.has(c.id)).flatMap(c => Array(c.poids).fill(c)));
+  const cat = piocheEnCours.shift();
+  if (!sacs[cat.id] || !sacs[cat.id].length) sacs[cat.id] = shuffle(autosActifs(cat));
+  const a = sacs[cat.id].shift();
+  return { nom: a.nom, cat: cat.nom, ...a.gen() };
+}
+
+/**
+ * Point d'aiguillage central (comme dans "evaluation") :
+ *   - quiz pas encore lancé → rien à afficher avant "Commencer le Quiz" ;
+ *   - quiz terminé → écran de fin ;
+ *   - sinon → nouvelle question (atelier : illimité, sans comptage).
+ */
+function demarrerQuestion() {
+  const c = cont();
+  c.innerHTML = '';
+  if (etatJeu === 'quiz' && !quizDemarre) return;
+  if (etatJeu === 'quiz' && questionCount >= NB_QUESTIONS) { showScore(); return; }
+
+  question = genererQuestion();
+  repondu = false;
+  const q = question;
+  const qcm = q.qcm ? `<div class="choix-liste${q.qcm.col1 ? ' col1' : ''}">${q.qcm.choix.map((t, i) => `<button type="button" class="choix" data-i="${i}">${t}</button>`).join('')}</div>` : '';
+  c.innerHTML = `<div class="theme-label">${q.cat} — ${q.nom}</div>
+    <div class="carte">${q.html}${qcm}</div>
+    <div class="feedback-zone" id="retour"></div>
+    <div class="center-button" id="zoneValider"><button type="button" class="valider">Valider</button></div>`;
+  c.querySelector('.valider').onclick = valider;
+  c.querySelectorAll('.choix').forEach(b => { b.onclick = () => { c.querySelectorAll('.choix').forEach(x => x.classList.toggle('sel', x === b)); retourMsg('', ''); }; });
+  if (inputs()[0]) inputs()[0].focus();
+
+  if (etatJeu === 'quiz') { questionCount++; updateScoreDisplay(); }
+  setupSkipButton();
+}
+
+/** Une seule tentative : la réponse est corrigée, puis on passe à la suite. */
+function valider() {
+  if (repondu) return;
+  const q = question;
+  let juste;
+  if (q.qcm) {
+    const boutons = [...document.querySelectorAll('#container .choix')], sel = boutons.find(b => b.classList.contains('sel'));
+    if (!sel) { retourMsg('state-neutral', 'Choisis une réponse'); return; }
+    juste = +sel.dataset.i === q.qcm.bonne;
+    boutons.forEach(b => { b.disabled = true; });
+    sel.classList.remove('sel');
+    sel.classList.add(juste ? 'ok' : 'ko');
+    boutons[q.qcm.bonne].classList.add('ok');
+  } else {
+    const ins = inputs(), vide = ins.find(x => !x.value.trim());
+    if (vide) { retourMsg('state-neutral', ins.length > 1 ? 'Complète toutes les cases' : 'Écris ta réponse'); vide.focus(); return; }
+    const res = ins.map(x => q.champs[+x.dataset.i].ok(x.value));
+    const illisible = res.indexOf(null);
+    if (illisible >= 0) { retourMsg('state-neutral', 'Écriture non reconnue : vérifie ta saisie'); ins[illisible].focus(); ins[illisible].select(); return; }
+    ins.forEach((x, k) => { x.classList.add(res[k] ? 'ok' : 'ko'); x.disabled = true; });
+    juste = res.every(Boolean);
+  }
+  terminer(juste);
+}
+
+function terminer(juste) {
+  repondu = true;
+  if (etatJeu === 'quiz') { if (juste) score++; bilan.push({ nom: question.nom, ok: juste }); updateScoreDisplay(); }
+  retourMsg(juste ? 'state-success' : 'state-error', juste ? '✅ Bravo !' : '❌ Ce n\'est pas ça.');
+  const c = cont();
+  if (!juste) {
+    const d = document.createElement('div');
+    d.className = 'correction';
+    d.innerHTML = `<b class="titre">Correction :</b> ${question.correction}`;
+    c.appendChild(d);
+  }
+  document.getElementById('zoneValider').remove();
+  createNextBtn(c);
+}
+
+// Champs « pi » : les lettres pi tapées deviennent le symbole π
+document.getElementById('container').addEventListener('input', e => {
+  const c = e.target;
+  if (!c.classList || !c.classList.contains('pi') || !/pi/i.test(c.value)) return;
+  const avant = c.value.slice(0, c.selectionStart).replace(/pi/gi, 'π').length;
+  c.value = c.value.replace(/pi/gi, 'π');
+  c.setSelectionRange(avant, avant);
+});
+
+// Entrée dans une case : case vide suivante, ou validation quand tout est rempli
+document.getElementById('container').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+  e.preventDefault();
+  const ins = inputs(), i = ins.indexOf(e.target);
+  const suivante = [...ins.slice(i + 1), ...ins.slice(0, i)].find(x => !x.value.trim());
+  if (suivante && e.target.value.trim()) suivante.focus(); else valider();
+});
+
+function updateScoreDisplay() {
+  const p = document.getElementById('question-progress');
+  if (p) p.textContent = `Question ${questionCount}/${NB_QUESTIONS}`;
+  const s = document.getElementById('score');
+  if (s) s.textContent = `Score : ${score}`;
+}
+
+/** Renoncer : question suivante ; en quiz, la question compte comme ratée. */
+function setupSkipButton() {
+  const skipBtn = document.getElementById('skipButton');
+  if (!skipBtn) return;
+  skipBtn.style.display = 'block';
+  skipBtn.onclick = e => {
+    e.preventDefault();
+    if (etatJeu === 'quiz' && question && !repondu) bilan.push({ nom: question.nom, ok: false });
+    demarrerQuestion();
+  };
+}
+
+function createNextBtn(c) {
+  const div = document.createElement('div');
+  div.className = 'center-button';
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.id = 'btnSuivant';
+  b.textContent = 'Suivant (Entrée)';
+  b.onclick = demarrerQuestion;
+  div.appendChild(b);
+  c.appendChild(div);
+  const skipBtn = document.getElementById('skipButton');
+  if (skipBtn) skipBtn.style.display = 'none';
+}
+
+function showScore() {
+  const skipBtn = document.getElementById('skipButton');
+  if (skipBtn) skipBtn.style.display = 'none';
+  cont().innerHTML = `<div style="text-align:center; margin-top:30px; width:100%;">
+      <h2>🎯 Quiz Terminé !</h2>
+      <p style="font-size:24px;">Ton score final est de : <strong>${score} / ${questionCount}</strong></p>
+      <ul class="bilan">${bilan.map(b => `<li class="${b.ok ? 'ok' : 'ko'}"><span>${b.ok ? '✓' : '✗'}</span><span>${b.nom}</span></li>`).join('')}</ul>
+      <button class="restart-btn" type="button" id="btnRecommencer">Recommencer</button>
+    </div>`;
+  document.getElementById('btnRecommencer').onclick = lancerQuiz;
+  if (score === questionCount && typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+}
+
+function lancerQuiz() {
+  quizDemarre = true; questionCount = 0; score = 0; piocheEnCours = []; sacs = {}; bilan = []; question = null;
+  renderPanneauLateral();
+  demarrerQuestion();
+}
+
+/* ================= Panneau latéral ================= */
+/** Tout changement de réglage régénère immédiatement la question. */
+function reglageChange() { piocheEnCours = []; sacs = {}; demarrerQuestion(); }
+
+function groupe(panneau, titre, contenu) {
+  const g = document.createElement('div');
+  g.className = 'panel-groupe';
+  const l = document.createElement('div');
+  l.className = 'panel-groupe-label';
+  l.textContent = titre;
+  g.append(l, contenu);
+  panneau.appendChild(g);
+  const f = document.createElement('div');
+  f.className = 'panel-filet';
+  panneau.appendChild(f);
+}
+
+/** Catégories : multi-sélection par bascule, au moins une active. */
+function construireSelecteurCategories(disabled) {
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-type-list';
+  CATEGORIES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn' + (actifs.has(c.id) ? ' active' : '');
+    btn.innerHTML = `${c.nom} <span class="panel-nb">${autosActifs(c).length}</span>`;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => {
+      if (actifs.has(c.id)) {
+        if (actifs.size === 1) return;
+        actifs.delete(c.id);
+      } else actifs.add(c.id);
+      if (c.sous) renderPanneauLateral(); else btn.classList.toggle('active', actifs.has(c.id));
+      reglageChange();
+    });
+    wrap.appendChild(btn);
+    // Sous-classes : visibles quand la catégorie est cochée, au moins une active.
+    if (c.sous && actifs.has(c.id)) c.sous.forEach(s => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'panel-btn panel-btn-sous' + (sousActifs.has(s.id) ? ' active' : '');
+      b.innerHTML = `${s.nom} <span class="panel-nb">${s.autos.length}</span>`;
+      b.disabled = disabled;
+      b.addEventListener('click', () => {
+        if (sousActifs.has(s.id)) {
+          if (c.sous.filter(t => sousActifs.has(t.id)).length === 1) return;
+          sousActifs.delete(s.id);
+        } else sousActifs.add(s.id);
+        renderPanneauLateral(); reglageChange();
+      });
+      wrap.appendChild(b);
+    });
+  });
+  return wrap;
+}
+
+/** Tout cocher / Tout décocher (il reste alors la première catégorie). */
+function construireRaccourcis(disabled) {
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-groupe-paire';
+  [['Tout cocher', () => { CATEGORIES.forEach(c => actifs.add(c.id)); SOUS.forEach(s => sousActifs.add(s.id)); }],
+   ['Tout décocher', () => { actifs.clear(); actifs.add(CATEGORIES[0].id); }]].forEach(([lib, action]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-btn panel-btn-half';
+    btn.textContent = lib;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => { action(); renderPanneauLateral(); reglageChange(); });
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
+function renderPanneauLateral() {
+  const panneau = document.getElementById('panneauLateral');
+  panneau.innerHTML = '';
+  const verrouille = etatJeu === 'quiz' && quizDemarre;
+
+  const bloc = document.createElement('div');
+  bloc.className = 'panel-groupe';
+  bloc.append(construireSelecteurCategories(verrouille), construireRaccourcis(verrouille));
+  groupe(panneau, 'Catégories', bloc);
+
+  const label = document.createElement('div');
+  label.className = 'panel-groupe-label';
+  const skipBtn = document.createElement('button');
+  skipBtn.type = 'button';
+  skipBtn.id = 'skipButton';
+  skipBtn.textContent = 'Renoncer';
+
+  if (etatJeu === 'atelier') {
+    label.textContent = 'Question en cours :';
+    const g = document.createElement('div');
+    g.className = 'panel-groupe';
+    g.append(label, skipBtn);
+    panneau.appendChild(g);
+  } else if (!quizDemarre) {
+    label.textContent = 'Quiz';
+    const btnCommencer = document.createElement('button');
+    btnCommencer.type = 'button';
+    btnCommencer.className = 'panel-btn active';
+    btnCommencer.textContent = 'Commencer le Quiz';
+    btnCommencer.onclick = lancerQuiz;
+    panneau.append(label, btnCommencer);
+  } else {
+    label.textContent = 'Quiz';
+    const scoreContainer = document.createElement('div');
+    scoreContainer.id = 'score-container';
+    const progressDiv = document.createElement('div');
+    progressDiv.id = 'question-progress';
+    const scoreDiv = document.createElement('div');
+    scoreDiv.id = 'score';
+    scoreContainer.append(progressDiv, scoreDiv, skipBtn);
+    panneau.append(label, scoreContainer);
+    updateScoreDisplay();
+  }
+  setupSkipButton();
+}
+
+/* ================= Header : Atelier / Quiz, Nouvel onglet, Guide ================= */
+function setupEtatToggle() {
+  const conteneur = document.getElementById('topButtonsBar');
+  const btnAtelier = document.createElement('button');
+  btnAtelier.type = 'button'; btnAtelier.id = 'btnAtelier'; btnAtelier.textContent = 'Atelier';
+  const btnQuiz = document.createElement('button');
+  btnQuiz.type = 'button'; btnQuiz.id = 'btnQuiz'; btnQuiz.textContent = 'Quiz';
+
+  const majClasses = () => {
+    btnAtelier.className = 'btn-header' + (etatJeu === 'atelier' ? ' active' : '');
+    btnQuiz.className = 'btn-header' + (etatJeu === 'quiz' ? ' active' : '');
+  };
+  majClasses();
+  const basculer = nouvelEtat => {
+    if (etatJeu === nouvelEtat) return;
+    etatJeu = nouvelEtat; quizDemarre = false; questionCount = 0; score = 0; piocheEnCours = []; sacs = {}; bilan = []; question = null;
+    majClasses();
+    renderPanneauLateral();
+    demarrerQuestion();
+  };
+  btnAtelier.onclick = () => basculer('atelier');
+  btnQuiz.onclick = () => basculer('quiz');
+
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+  conteneur.append(btnAtelier, btnQuiz, filet);
+}
+
+/** Bouton "Nouvel onglet" ; repli en lien cliquable si window.open() est bloqué (iframe sandbox). */
+function setupBoutonNouvelOnglet() {
+  const conteneur = document.getElementById('topButtonsBar');
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.id = 'btnNouvelOnglet'; btn.className = 'btn-header'; btn.textContent = 'Nouvel onglet';
+  const repli = document.createElement('span');
+  repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
+  repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
+  btn.onclick = () => { if (!window.open(window.location.href, '_blank', 'noopener')) repli.style.display = 'inline'; };
+  conteneur.append(btn, repli);
+}
+
+function setupGuide() {
+  const conteneur = document.getElementById('topButtonsBar'), overlay = document.getElementById('overlayGuide');
+  const filet = document.createElement('div');
+  filet.className = 'filet-header';
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'btn-header'; btn.textContent = 'Guide';
+  btn.onclick = () => overlay.classList.add('ouvert');
+  conteneur.append(filet, btn);
+  document.getElementById('btnFermerGuide').onclick = () => overlay.classList.remove('ouvert');
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('ouvert'); });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('overlayGuide').classList.remove('ouvert');
+  if (e.key === 'Enter' && e.target.tagName !== 'INPUT') {
+    const nextBtn = document.getElementById('btnSuivant');
+    if (nextBtn) { e.preventDefault(); nextBtn.click(); }
+  }
+});
+
+window.onload = () => {
+  setupEtatToggle();
+  renderPanneauLateral();
+  setupBoutonNouvelOnglet();
+  setupGuide();
+  demarrerQuestion();
+};
+</script>
+</body>
+</html>
