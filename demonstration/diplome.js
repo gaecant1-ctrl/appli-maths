@@ -88,25 +88,63 @@ function majEleve() {
 
 /* ---------- Nouvel onglet : l'élève garde son nom ---------- */
 
-// Le nouvel onglet retrouve le nom par un relais court dans localStorage (lu une seule fois).
+// Le nouvel onglet retrouve le nom de deux façons (lues une seule fois) : le nom de la
+// fenêtre ouverte, et un relais court dans localStorage. Le premier marche aussi quand
+// l'appli est intégrée dans une page, où le navigateur ne partage pas localStorage.
 const CLE_REPRISE = 'demonstration.reprise';
+const MARQUE_REPRISE = 'demonstration.reprise:';
+
+// L'adresse de la séance : le chapitre et le réglage y sont écrits, le nouvel onglet
+// s'ouvre donc sur les mêmes, quoi que le navigateur ait gardé.
+function adresseSeance() {
+    const adresse = new URL(window.location.href);
+    adresse.searchParams.set('chapitre', CHAP.nom);
+    adresse.searchParams.set('mode', modePropositions ? 'propositions' : 'construire');
+    return adresse.href;
+}
 
 function ouvrirNouvelOnglet() {
+    const relais = eleve.nom ? JSON.stringify({ nom: eleve.nom, t: Date.now() }) : '';
     try {
-        if (eleve.nom) localStorage.setItem(CLE_REPRISE, JSON.stringify({ nom: eleve.nom, t: Date.now() }));
+        if (relais) localStorage.setItem(CLE_REPRISE, relais);
     } catch (e) {}
-    const w = window.open(window.location.href, '_blank');
-    if (w) w.opener = null;
+    const w = window.open(adresseSeance(), '_blank');
+    if (w) {
+        try { if (relais) w.name = MARQUE_REPRISE + relais; } catch (e) {}
+        w.opener = null;
+    }
     return !!w;
 }
 
 function lireReprise() {
+    const recent = r => r && typeof r.nom === 'string' && Date.now() - r.t < 60000 ? r.nom : null;
+    let nom = null;
+    try {
+        if (window.name.startsWith(MARQUE_REPRISE)) {
+            const texte = window.name.slice(MARQUE_REPRISE.length);
+            window.name = '';
+            nom = recent(JSON.parse(texte));
+        }
+    } catch (e) {}
     try {
         const r = JSON.parse(localStorage.getItem(CLE_REPRISE));
         localStorage.removeItem(CLE_REPRISE);
-        if (r && typeof r.nom === 'string' && Date.now() - r.t < 60000) return r.nom;
+        nom = nom || recent(r);
     } catch (e) {}
-    return null;
+    return nom;
+}
+
+// Nom tapé sur l'accueil, gardé le temps d'un rechargement (changement de chapitre).
+const CLE_NOM_SAISI = 'demonstration.nomSaisi';
+function garderNomSaisi(nom) {
+    try { sessionStorage.setItem(CLE_NOM_SAISI, nom); } catch (e) {}
+}
+function reprendreNomSaisi() {
+    try {
+        const nom = sessionStorage.getItem(CLE_NOM_SAISI);
+        sessionStorage.removeItem(CLE_NOM_SAISI);
+        return nom || '';
+    } catch (e) { return ''; }
 }
 
 function connecter(nom) {
@@ -144,10 +182,6 @@ function demanderNom(ensuite) {
                     <label><input type="radio" name="reglageMode" value="construire"${modePropositions ? '' : ' checked'}> à construire par l'élève</label>
                     <label><input type="radio" name="reglageMode" value="propositions"${modePropositions ? ' checked' : ''}> proposées dans une liste (aide)</label>
                 </div>
-                <div class="reglage-demo">Démonstration « élève qui clique au hasard » (probabilités) : exercice
-                    <select id="demoExercice">${exercicesPourDemo().map(i => `<option value="${i + 1}">${i + 1}</option>`).join('')}</select>
-                    <button type="button" id="btnDemo">▶ Lancer</button>
-                </div>
                 <p class="reglages-note">Fixés pour la séance et affichés en haut de l'écran ; pour les changer, recharger la page.</p>
             </fieldset>
             <div class="nom-actions">
@@ -155,14 +189,13 @@ function demanderNom(ensuite) {
             </div>
         </div>`;
     document.body.appendChild(ov);
-    // Démonstration au hasard : elle prend la place de l'élève (son nom, le mode aidé).
-    ov.querySelector('#btnDemo').onclick = () => lancerDemo(parseInt(ov.querySelector('#demoExercice').value, 10));
     // Réglages : le chapitre recharge la page (l'accueil revient sur l'autre chapitre).
     ov.querySelector('#reglageChapitre').onchange = e => changerChapitre(e.target.value);
     ov.querySelectorAll('input[name="reglageMode"]').forEach(r => {
         r.onchange = () => fixerMode(r.value === 'propositions' && r.checked);
     });
     const champ = ov.querySelector('#champNom');
+    champ.value = reprendreNomSaisi(); // nom déjà tapé avant de changer de chapitre
     const lireNom = () => {
         const nom = champ.value.trim().replace(/\s+/g, ' ');
         if (nom.length >= 2) return nom;
@@ -181,7 +214,7 @@ function demanderNom(ensuite) {
         ov.remove();
         ensuite();
         if (ouvert === true) alerte('Appli ouverte dans un nouvel onglet.', 'info');
-        if (ouvert === false) alerte(`Nouvel onglet bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`, 'info');
+        if (ouvert === false) alerte(`Nouvel onglet bloqué — <a href="${adresseSeance()}" target="_blank" rel="noopener">clique ici</a>`, 'info');
     };
     champ.addEventListener('keydown', e => { if (e.key === 'Enter') commencer(); });
     ov.querySelector('#btnCommencer').onclick = commencer;

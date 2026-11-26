@@ -1,0 +1,9 @@
+% Définition de la médiatrice : codages lus sur la figure
+point A (-2.5,-0.5)
+point B (1.5,1.5)
+segment [AB]
+droite (d) médiatrice de [AB]
+codage (d) ⊥ [AB]
+codage (d) milieu [AB]
+montrer (d) médiatrice [AB]
+cases 2

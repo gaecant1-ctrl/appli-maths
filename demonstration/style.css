@@ -681,6 +681,3 @@ sub {
 /* Pastille sans « Étape n » (exercice en une étape) : juste ✓ et la flèche. */
 .bd-titre span:first-child { margin-left: 0; }
 
-/* Lancement de la démonstration « élève au hasard », dans les réglages de l'accueil. */
-.reglage-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding-top: 0.5rem; border-top: 1px dashed var(--grille); }
-.reglage-demo button { margin: 0; padding: 0.25rem 0.7rem; }

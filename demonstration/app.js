@@ -146,7 +146,12 @@ function rubriquesConnues() {
    changer sans recharger la page (et repasser par l'accueil). */
 
 const CLE_MODE = 'demonstration.mode';
+// Le réglage de l'adresse (?mode=propositions, mis par « Nouvel onglet ») l'emporte.
 try { modePropositions = localStorage.getItem(CLE_MODE) === 'propositions'; } catch (e) {}
+{
+    const demande = new URLSearchParams(window.location.search).get('mode');
+    if (demande) modePropositions = demande === 'propositions';
+}
 
 const etiquetteMode = document.createElement('span');
 etiquetteMode.className = 'reglage-affiche';
@@ -165,16 +170,15 @@ function fixerMode(propositions) {
 }
 
 // Changer de chapitre recharge la page sur l'autre chapitre (ses exercices, ses propriétés, sa note).
+// Le chapitre est écrit dans l'adresse (il est donc retrouvé même quand le navigateur ne garde
+// rien : appli intégrée dans une page, navigation privée) et le nom déjà tapé est gardé.
 function changerChapitre(nom) {
     try { localStorage.setItem(CLE_CHAPITRE, nom); } catch (e) {}
-    // Une adresse avec ?chapitre=… l'emporterait sur le choix : on la met à jour.
+    const champ = document.getElementById('champNom');
+    if (champ) garderNomSaisi(champ.value);
     const adresse = new URL(window.location.href);
-    if (adresse.searchParams.has('chapitre')) {
-        adresse.searchParams.set('chapitre', nom);
-        window.location.href = adresse.href;
-    } else {
-        window.location.reload();
-    }
+    adresse.searchParams.set('chapitre', nom);
+    window.location.href = adresse.href;
 }
 
 function installerReglages(conteneur) {
@@ -345,11 +349,12 @@ function installerBoutonNouvelOnglet() {
 
     const repli = document.createElement('span');
     repli.style.cssText = 'display:none; font-size:0.8em; margin-left:8px;';
-    repli.innerHTML = `Bloqué — <a href="${window.location.href}" target="_blank" rel="noopener">clique ici</a>`;
 
     // L'élève garde son nom dans le nouvel onglet (voir diplome.js).
     btn.onclick = () => {
-        if (!ouvrirNouvelOnglet()) repli.style.display = 'inline';
+        if (ouvrirNouvelOnglet()) return;
+        repli.innerHTML = `Bloqué — <a href="${adresseSeance()}" target="_blank" rel="noopener">clique ici</a>`;
+        repli.style.display = 'inline';
     };
 
     conteneur.append(btn, repli);
@@ -363,7 +368,7 @@ new GuideAppli().installerBouton(document.getElementById('topButtonsBar'));
 /* ---------- Démarrage GeoGebra ---------- */
 
 /* ---------- Démonstration « élève qui clique au hasard » (probabilités) ----------
-   Lancée depuis l'écran d'accueil ou par « &demo » dans l'adresse ; le code est dans
+   Réservée au professeur : lancée seulement par « &demo » dans l'adresse (rien à l'écran) ; le code est dans
    outils/bot-hasard.js, chargé seulement à ce moment-là. */
 
 // Exercices en une seule étape : les seuls qu'un tirage au hasard peut réussir.

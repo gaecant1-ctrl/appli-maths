@@ -1,0 +1,8 @@
+% Définition de la médiatrice, dans l'autre sens
+point A (-1.5,2)
+point B (2.5,-1)
+segment [AB]
+droite (d) médiatrice de [AB]
+notation (d) médiatrice [AB]
+montrer (d) ⊥ [AB]
+cases 1
