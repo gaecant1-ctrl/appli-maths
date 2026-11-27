@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La chèvre et la corde</title>
+<style>
+/* ==========================================================================
+   LA CHÈVRE ET LA CORDE — structure et thème repris de l'appli "evaluation"
+   (header + panneau latéral, accent unique orange, voir evaluation/PATTERNS.md)
+   ========================================================================== */
+:root {
+  --papier:        #ffffff;
+  --papier-panel:  #fdf3e9;
+  --papier-encart: #ffffff;
+  --grille:        #f5dcc0;
+  --grille-forte:  #7a4a15;
+  --encre:         #4a2d0d;
+  --encre-douce:   #8a6a4a;
+  --accent:        #E67E22;
+  --accent-hover:  #C8690F;
+  --accent-clair:  #fcead9;
+  --header-fond:        #fdf0e2;
+  --header-bordure:     #f0c99a;
+  --header-texte:       #7a4a15;
+  --header-texte-hover: #4a2d0d;
+  --succes:        #28a745;
+  --rayon:         12px;
+  --rayon-petit:   8px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; min-height: 100vh; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--papier-panel);
+  color: var(--encre);
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* ---------- Header ---------- */
+header {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  width: 100%; padding: 0 20px; min-height: 54px;
+  background: var(--header-fond); border-bottom: 1px solid var(--header-bordure);
+}
+header #titre_appli { font-size: 1.2rem; letter-spacing: .2px; padding: 10px 0; }
+header #titre_appli b { font-weight: 700; color: var(--accent); }
+.header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.btn-header {
+  background: transparent; border: 0.5px solid var(--header-bordure);
+  height: 34px; padding: 0 14px; font-family: inherit; font-size: 0.82rem; font-weight: 500;
+  border-radius: var(--rayon-petit); cursor: pointer; color: var(--header-texte);
+  display: inline-flex; align-items: center; white-space: nowrap;
+  transition: border-color .12s, color .12s;
+}
+.btn-header:hover { border-color: var(--header-texte); color: var(--header-texte-hover); }
+
+/* ---------- Structure : panneau latéral + contenu ---------- */
+#appBody { width: 100%; display: flex; align-items: stretch; }
+#panneauLateral {
+  flex: 0 0 320px; width: 320px; min-height: calc(100vh - 54px);
+  background: var(--papier-encart); border-right: 1px solid var(--grille);
+  padding: 20px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+main { flex: 1 1 auto; min-width: 0; padding: 16px; display: flex; }
+#container {
+  position: relative; width: 100%; height: calc(100vh - 54px - 32px); min-height: 320px;
+  border: 2px solid var(--grille-forte); border-radius: var(--rayon); overflow: hidden; background: #86c06c;
+}
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
+#astuce {
+  position: absolute; left: 12px; bottom: 10px; padding: 5px 10px; border-radius: var(--rayon-petit);
+  background: rgba(255, 255, 255, .82); font-size: 12.5px; color: var(--encre); pointer-events: none;
+}
+
+/* ---------- Panneau latéral ---------- */
+.panel-groupe { display: flex; flex-direction: column; gap: 8px; }
+.panel-groupe-label { font-size: 11.5px; font-weight: 700; color: var(--encre-douce); text-transform: uppercase; letter-spacing: 0.04em; }
+.panel-filet { height: 1px; background: var(--grille); margin: 4px 0; }
+.panel-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.panel-btn {
+  width: 100%; background-color: var(--papier-panel); border: 2px solid var(--grille);
+  border-radius: var(--rayon-petit); padding: 9px 12px; font-family: inherit; font-size: 13.5px; font-weight: 700;
+  color: var(--encre); cursor: pointer; text-align: left;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+.panel-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--papier); }
+.panel-btn.active:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); color: var(--papier); }
+.panel-btn:disabled { cursor: default; background-color: var(--papier-panel); border-color: var(--grille); color: #9a9a9a; }
+.panel-btn.active:disabled { opacity: 0.55; background-color: var(--accent); border-color: var(--accent); color: #9a9a9a; }
+.reglage.inactif { color: #9a9a9a; }
+.reglage.inactif span b { color: #9a9a9a; }
+.reglage { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; font-weight: 700; }
+.reglage span b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.reglage input[type="range"] { width: 100%; accent-color: var(--accent); margin: 2px 0 0; }
+.lecture {
+  width: 100%; background-color: var(--papier-panel); padding: 9px 12px; border-radius: var(--rayon-petit);
+  font-weight: 700; font-size: 13.5px; border: 2px solid var(--grille); color: var(--encre-douce);
+  font-variant-numeric: tabular-nums;
+}
+.lecture b { color: var(--encre); }
+#lectureAire { color: var(--succes); border-color: var(--succes); display: none; }
+#lectureAire.visible { display: block; }
+
+/* ---------- Guide ---------- */
+#overlayGuide { position: fixed; inset: 0; background: rgba(74, 45, 13, .45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+#overlayGuide.ouvert { display: flex; }
+#guideCarte { position: relative; background: var(--papier); border-radius: var(--rayon); width: min(640px, 100%); max-height: 100%; overflow: auto; padding: 22px 26px; }
+#guideCarte h2 { margin: 0 0 6px; }
+#guideCarte h3 { margin: 16px 0 4px; font-size: 1rem; color: var(--accent-hover); }
+#guideCarte p { margin: 0; line-height: 1.5; }
+#btnFermerGuide { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 28px; line-height: 1; cursor: pointer; color: var(--encre-douce); }
+
+/* ---------- Petit écran : le panneau passe au-dessus ---------- */
+@media (max-width: 760px) {
+  #appBody { flex-direction: column; }
+  #panneauLateral { flex: none; width: 100%; min-height: 0; border-right: none; border-bottom: 1px solid var(--grille); padding: 12px 16px; }
+  main { width: 100%; padding: 12px; }
+  #container { height: 75vh; }
+}
+</style>
+</head>
+<body>
+
+  <header>
+    <span id="titre_appli">La <b>chèvre</b> et la <b>corde</b></span>
+    <div class="header-actions" id="topButtonsBar">
+      <button class="btn-header" id="btnGuide" type="button">Guide</button>
+    </div>
+  </header>
+
+  <div id="appBody">
+    <aside id="panneauLateral">
+      <div class="panel-groupe">
+        <div class="panel-groupe-label">Corde</div>
+        <label class="reglage"><span>Longueur : <b id="valL"></b></span>
+          <input type="range" id="rL" min="1" max="25" step="0.5" value="6"></label>
+        <div class="lecture" id="lectureLibre"></div>
+      </div>
+      <div class="panel-filet"></div>
+      <div class="panel-groupe">
+        <div class="panel-groupe-label">Bâtiment</div>
+        <button class="panel-btn" type="button" id="btnBat">Avec bâtiment</button>
+        <label class="reglage"><span>Longueur : <b id="valBw"></b></span>
+          <input type="range" id="rBw" min="1" max="12" step="1" value="4"></label>
+        <label class="reglage"><span>Largeur : <b id="valBh"></b></span>
+          <input type="range" id="rBh" min="1" max="12" step="1" value="3"></label>
+      </div>
+      <div class="panel-filet"></div>
+      <div class="panel-groupe">
+        <div class="panel-groupe-label">Piquet (déplaçable à la souris)</div>
+        <div class="panel-grille">
+          <button class="panel-btn" type="button" data-piquet="coin">Coin</button>
+          <button class="panel-btn" type="button" data-piquet="mur">Milieu d'un mur</button>
+          <button class="panel-btn" type="button" data-piquet="pre">Dans le pré</button>
+        </div>
+      </div>
+      <div class="panel-filet"></div>
+      <div class="panel-groupe">
+        <div class="panel-groupe-label">Afficher</div>
+        <div class="panel-grille">
+          <button class="panel-btn" type="button" data-voir="trace">Trace</button>
+          <button class="panel-btn" type="button" data-voir="grille">Quadrillage 1 m</button>
+          <button class="panel-btn" type="button" data-voir="mesures">Mesures</button>
+          <button class="panel-btn" type="button" data-voir="cercle">Cercle limite</button>
+          <button class="panel-btn" type="button" data-voir="zone">Zone accessible</button>
+          <button class="panel-btn" type="button" data-voir="aire">Aire</button>
+        </div>
+        <div class="lecture" id="lectureAire"></div>
+      </div>
+      <div class="panel-filet"></div>
+      <div class="panel-groupe">
+        <div class="panel-groupe-label">Actions</div>
+        <button class="panel-btn" type="button" id="btnLibre">Promenade libre</button>
+        <button class="panel-btn" type="button" id="btnTendue">Promenade corde tendue</button>
+        <button class="panel-btn" type="button" id="btnTour">Faire le tour, corde tendue</button>
+        <button class="panel-btn" type="button" id="btnEffacer">Recommencer</button>
+      </div>
+    </aside>
+    <main>
+      <div id="container">
+        <canvas id="scene"></canvas>
+        <div id="astuce">Maintiens le clic dans le pré : la chèvre y va. Les flèches du clavier marchent aussi.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="overlayGuide">
+    <div id="guideCarte">
+      <button id="btnFermerGuide" type="button" aria-label="Fermer">×</button>
+      <h2>Mode d'emploi</h2>
+      <h3>La situation</h3>
+      <p>Une chèvre est attachée par une corde à un piquet, près d'un bâtiment (vu de dessus). Elle ne peut pas entrer dans le bâtiment, et la corde ne peut pas le traverser : elle s'enroule autour des coins. Quelle partie du pré la chèvre peut-elle brouter ?</p>
+      <h3>Déplacer la chèvre</h3>
+      <p>Maintiens le clic (ou le doigt) dans le pré : la chèvre marche vers cet endroit, tant que la corde le permet. Les flèches du clavier fonctionnent aussi. L'herbe broutée change de couleur.</p>
+      <h3>La corde</h3>
+      <p>Quand la corde touche un coin du bâtiment, ce coin devient le nouveau centre : la chèvre tourne autour de lui avec la longueur de corde qui reste (« corde libre »). Le <b>cercle limite</b> en pointillés montre jusqu'où elle peut aller dans cette position.</p>
+      <h3>Réglages</h3>
+      <p>Le bouton « Avec bâtiment » retire ou remet le bâtiment : sans lui, la chèvre est simplement attachée à un piquet dans le pré. Change la longueur de la corde et les dimensions du bâtiment avec les curseurs. Place le piquet avec les boutons, ou fais-le glisser à la souris : il s'accroche au mur quand il en est proche.</p>
+      <h3>Afficher</h3>
+      <p><b>Trace</b> active ou non la trace laissée par la chèvre : désactivée, la trace est masquée et la chèvre n'en laisse plus. <b>Mesures</b> écrit les longueurs le long de la corde. <b>Zone accessible</b> colore toute la partie du pré que la chèvre peut atteindre, et <b>Aire</b> en donne la mesure.</p>
+      <h3>Promenade libre</h3>
+      <p>La chèvre se promène toute seule dans le pré : elle va brouter ici ou là, s'arrête, repart, et la corde la retient quand elle veut aller trop loin. Un clic dans le pré lui rend la main.</p>
+      <h3>Promenade corde tendue</h3>
+      <p>La chèvre tire sur sa corde et se promène le long du bord, tantôt dans un sens, tantôt dans l'autre, en s'arrêtant de temps en temps.</p>
+      <h3>Faire le tour</h3>
+      <p>La chèvre tend sa corde et fait le tour dans un sens puis dans l'autre : sa trace dessine le bord de la zone accessible.</p>
+    </div>
+  </div>
+
+<script>
+/* ==========================================================================
+   Modèle
+   Repère en mètres, bâtiment centré sur l'origine, axe y vers le bas.
+   - La contrainte de la chèvre est exacte : on suit la liste des coins autour
+     desquels la corde est enroulée (pivots). La chèvre reste dans le disque de
+     centre le dernier pivot et de rayon « corde libre ».
+   - Le dessin de la partie libre de la corde est une chaîne de Verlet avec
+     frottement au sol (aspect physique quand la corde est détendue). Elle
+     n'influence jamais la position de la chèvre.
+   ========================================================================== */
+const MARGE = 0.02;              // la chèvre reste à 2 cm des murs
+const S = { L: 6, bw: 4, bh: 3, px: -2, py: 1.5, mode: 'coin', bat: true };   // situation de la fiche « La chèvre » : grange 4 m × 3 m, corde 6 m
+const G = { x: 0, y: 0, cap: 0, capCible: 0, pas: 0 };   // (x, y) : le collier ; cap : direction du regard
+let pivots = [];                 // {x, y, s} : coin et sens d'enroulement
+const voir = { trace: false, grille: false, mesures: false, cercle: false, zone: false, aire: false };   // au départ, rien n'est affiché
+let auto = null;
+let X0, X1, Y0, Y1;              // bâtiment
+let zone = null, zonePerimee = true;
+
+function majRect() { X0 = -S.bw / 2; X1 = S.bw / 2; Y0 = -S.bh / 2; Y1 = S.bh / 2; }
+function coins() { return !S.bat ? [] : [{ x: X0, y: Y0 }, { x: X1, y: Y0 }, { x: X1, y: Y1 }, { x: X0, y: Y1 }]; }
+const cross = (ax, ay, bx, by) => ax * by - ay * bx;
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const fr = (v, n = 1) => v.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: n });
+
+/* Le segment [ab] traverse-t-il l'intérieur du bâtiment ? (longer un mur ne compte pas) */
+function traverse(ax, ay, bx, by) {
+  if (!S.bat) return false;
+  const e = 1e-7, x0 = X0 + e, x1 = X1 - e, y0 = Y0 + e, y1 = Y1 - e;
+  let t0 = 0, t1 = 1;
+  const dx = bx - ax, dy = by - ay;
+  if (dx === 0) { if (ax <= x0 || ax >= x1) return false; }
+  else {
+    let ta = (x0 - ax) / dx, tb = (x1 - ax) / dx;
+    if (ta > tb) { const t = ta; ta = tb; tb = t; }
+    if (ta > t0) t0 = ta; if (tb < t1) t1 = tb;
+    if (t0 >= t1) return false;
+  }
+  if (dy === 0) { if (ay <= y0 || ay >= y1) return false; }
+  else {
+    let ta = (y0 - ay) / dy, tb = (y1 - ay) / dy;
+    if (ta > tb) { const t = ta; ta = tb; tb = t; }
+    if (ta > t0) t0 = ta; if (tb < t1) t1 = tb;
+    if (t0 >= t1) return false;
+  }
+  return t1 - t0 > 1e-9;
+}
+
+function horsBatiment(x, y) {
+  if (!S.bat) return { x, y };
+  const x0 = X0 - MARGE, x1 = X1 + MARGE, y0 = Y0 - MARGE, y1 = Y1 + MARGE;
+  if (x <= x0 || x >= x1 || y <= y0 || y >= y1) return { x, y };
+  const dl = x - x0, dr = x1 - x, dt = y - y0, db = y1 - y, m = Math.min(dl, dr, dt, db);
+  if (m === dl) return { x: x0, y };
+  if (m === dr) return { x: x1, y };
+  if (m === dt) return { x, y: y0 };
+  return { x, y: y1 };
+}
+
+const piquet = () => ({ x: S.px, y: S.py });
+const dernier = () => pivots.length ? pivots[pivots.length - 1] : piquet();
+function enroule() {
+  let s = 0, a = piquet();
+  for (const p of pivots) { s += dist(a, p); a = p; }
+  return s;
+}
+const libre = () => S.L - enroule();
+
+/* ---------- Enroulement / déroulement autour des coins ---------- */
+function majPivots(P0, P1) {
+  P0 = { x: P0.x, y: P0.y };
+  for (let garde = 0; garde < 12; garde++) {
+    // Déroulement : la corde ne s'appuie plus sur le dernier coin
+    if (pivots.length) {
+      const C = pivots[pivots.length - 1];
+      const B = pivots.length > 1 ? pivots[pivots.length - 2] : piquet();
+      if (C.s * cross(C.x - B.x, C.y - B.y, P1.x - C.x, P1.y - C.y) <= 0) {
+        pivots.pop();
+        cordeDeroule(B);
+        P0 = { x: P1.x, y: P1.y };
+        continue;
+      }
+    }
+    // Enroulement : un coin est balayé par le dernier brin de corde
+    const A = dernier();
+    const aire2 = cross(P0.x - A.x, P0.y - A.y, P1.x - A.x, P1.y - A.y);
+    if (Math.abs(aire2) < 1e-14) break;
+    let best = null, bestAng = Infinity;
+    for (const c of coins()) {
+      if (Math.hypot(c.x - A.x, c.y - A.y) < 1e-6) continue;
+      const d1 = cross(P0.x - A.x, P0.y - A.y, c.x - A.x, c.y - A.y);
+      const d2 = cross(P1.x - P0.x, P1.y - P0.y, c.x - P0.x, c.y - P0.y);
+      const d3 = cross(A.x - P1.x, A.y - P1.y, c.x - P1.x, c.y - P1.y);
+      const e = 1e-12;
+      if (!((d1 >= -e && d2 >= -e && d3 >= -e) || (d1 <= e && d2 <= e && d3 <= e))) continue;
+      const s = Math.sign(cross(c.x - A.x, c.y - A.y, P1.x - c.x, P1.y - c.y));
+      if (s === 0) continue;
+      // le bâtiment (centre à l'origine) doit être du côté intérieur du virage
+      if (s * cross(c.x - A.x, c.y - A.y, -A.x, -A.y) <= 0) continue;
+      const ang = Math.abs(Math.atan2(d1, (P0.x - A.x) * (c.x - A.x) + (P0.y - A.y) * (c.y - A.y)));
+      if (ang < bestAng) { bestAng = ang; best = { x: c.x, y: c.y, s }; }
+    }
+    if (!best) break;
+    const f0 = cross(best.x - A.x, best.y - A.y, P0.x - A.x, P0.y - A.y);
+    const f1 = cross(best.x - A.x, best.y - A.y, P1.x - A.x, P1.y - A.y);
+    const t = Math.abs(f0 - f1) < 1e-15 ? 0 : f0 / (f0 - f1);
+    P0 = { x: P0.x + (P1.x - P0.x) * t, y: P0.y + (P1.y - P0.y) * t };
+    pivots.push(best);
+    cordeEnroule(best);
+  }
+}
+
+/* Un petit pas de la chèvre vers (nx, ny). Renvoie la distance parcourue. */
+function pasVers(nx, ny) {
+  const P0 = { x: G.x, y: G.y };
+  const sauvePivots = pivots.map(p => ({ ...p })), sauveCorde = copieCorde();
+  const annuler = () => { pivots = sauvePivots; restaureCorde(sauveCorde); return 0; };
+  let P = horsBatiment(nx, ny);
+  majPivots(P0, P);
+  for (let k = 0; k < 3; k++) {
+    const A = dernier(), rem = libre(), d = dist(A, P);
+    if (d <= rem + 1e-9) break;
+    if (rem <= 1e-6 || k === 2) return annuler();
+    const Q = horsBatiment(A.x + (P.x - A.x) * rem / d, A.y + (P.y - A.y) * rem / d);
+    if (dist(A, Q) > rem + 1e-6) return annuler();
+    majPivots(P, Q);
+    P = Q;
+  }
+  const A = dernier();
+  if (dist(A, P) > libre() + 1e-6 || traverse(A.x, A.y, P.x, P.y)) return annuler();
+  const m = dist(P0, P);
+  if (m > 1e-4) { G.capCible = Math.atan2(P.y - P0.y, P.x - P0.x); G.pas += m; }
+  G.x = P.x; G.y = P.y;
+  return m;
+}
+
+function avancer(tx, ty, maxDist) {
+  let reste = maxDist, total = 0;
+  while (reste > 1e-6) {
+    const dx = tx - G.x, dy = ty - G.y, d = Math.hypot(dx, dy);
+    if (d < 1e-3) break;
+    const pas = Math.min(0.04, reste, d);
+    const m = pasVers(G.x + dx / d * pas, G.y + dy / d * pas);
+    total += m; reste -= pas;
+    if (m < pas * 0.02) break;
+  }
+  return total;
+}
+
+/* ---------- Corde libre : chaîne de Verlet (dessin uniquement) ---------- */
+const NC = 44;
+const cx = new Float64Array(NC + 1), cy = new Float64Array(NC + 1);
+const cpx = new Float64Array(NC + 1), cpy = new Float64Array(NC + 1);
+const copieCorde = () => [cx.slice(), cy.slice(), cpx.slice(), cpy.slice()];
+function restaureCorde(c) { cx.set(c[0]); cy.set(c[1]); cpx.set(c[2]); cpy.set(c[3]); }
+
+function initCorde() {
+  const A = dernier(), rem = Math.max(libre(), 0.01);
+  const dx = G.x - A.x, dy = G.y - A.y, d = Math.hypot(dx, dy) || 1e-6;
+  let nx = -dy / d, ny = dx / d;
+  if (nx * (A.x + G.x) + ny * (A.y + G.y) < 0) { nx = -nx; ny = -ny; }   // boucle côté pré
+  const h = 0.45 * Math.sqrt(Math.max(0, rem * rem - d * d));
+  for (let i = 0; i <= NC; i++) {
+    const u = i / NC, b = h * Math.sin(Math.PI * u);
+    cx[i] = cpx[i] = A.x + dx * u + nx * b;
+    cy[i] = cpy[i] = A.y + dy * u + ny * b;
+  }
+  for (let k = 0; k < 80; k++) contraintes(A, rem);
+  cpx.set(cx); cpy.set(cy);
+}
+
+function contraintes(A, rem) {
+  const rest = rem / NC;
+  for (let i = 0; i < NC; i++) {
+    const dx = cx[i + 1] - cx[i], dy = cy[i + 1] - cy[i], d = Math.hypot(dx, dy) || 1e-9;
+    const f = (d - rest) / d * 0.5;
+    cx[i] += dx * f; cy[i] += dy * f; cx[i + 1] -= dx * f; cy[i + 1] -= dy * f;
+  }
+  if (S.bat) for (let i = 1; i < NC; i++) {
+    const x = cx[i], y = cy[i];
+    if (x > X0 && x < X1 && y > Y0 && y < Y1) {
+      const dl = x - X0, dr = X1 - x, dt = y - Y0, db = Y1 - y, m = Math.min(dl, dr, dt, db);
+      if (m === dl) cx[i] = X0; else if (m === dr) cx[i] = X1; else if (m === dt) cy[i] = Y0; else cy[i] = Y1;
+    }
+  }
+  cx[0] = A.x; cy[0] = A.y; cx[NC] = G.x; cy[NC] = G.y;
+}
+
+function simCorde() {
+  const A = dernier(), rem = Math.max(libre(), 0.001);
+  for (let i = 1; i < NC; i++) {
+    const vx = (cx[i] - cpx[i]) * 0.8, vy = (cy[i] - cpy[i]) * 0.8;   // frottement sur l'herbe
+    cpx[i] = cx[i]; cpy[i] = cy[i]; cx[i] += vx; cy[i] += vy;
+  }
+  for (let k = 0; k < 30; k++) contraintes(A, rem);
+  // corde presque tendue : on la ramène sur la ligne droite
+  const d = Math.hypot(G.x - A.x, G.y - A.y);
+  const t = Math.max(0, Math.min(1, 1 - (rem - d) / (0.02 * rem + 0.02)));
+  if (t > 0) for (let i = 1; i < NC; i++) {
+    const u = i / NC;
+    cx[i] += (A.x + (G.x - A.x) * u - cx[i]) * t * 0.6;
+    cy[i] += (A.y + (G.y - A.y) * u - cy[i]) * t * 0.6;
+  }
+}
+
+function reechantillonner(pts) {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + dist(pts[i - 1], pts[i]));
+  const total = cum[cum.length - 1];
+  let j = 0;
+  for (let i = 0; i <= NC; i++) {
+    const s = total * i / NC;
+    while (j < pts.length - 2 && cum[j + 1] < s) j++;
+    const seg = cum[j + 1] - cum[j], u = seg > 1e-12 ? (s - cum[j]) / seg : 0;
+    cx[i] = cpx[i] = pts[j].x + (pts[j + 1].x - pts[j].x) * u;
+    cy[i] = cpy[i] = pts[j].y + (pts[j + 1].y - pts[j].y) * u;
+  }
+}
+function pointsCorde() { const p = []; for (let i = 0; i <= NC; i++) p.push({ x: cx[i], y: cy[i] }); return p; }
+function cordeEnroule(C) {
+  const pts = pointsCorde();
+  let k = 0, dm = Infinity;
+  for (let i = 0; i <= NC; i++) { const d = dist(pts[i], C); if (d < dm) { dm = d; k = i; } }
+  const suite = pts.slice(k + 1);
+  if (!suite.length) suite.push(pts[NC]);
+  reechantillonner([{ x: C.x, y: C.y }, ...suite]);
+}
+function cordeDeroule(B) { reechantillonner([{ x: B.x, y: B.y }, ...pointsCorde()]); }
+
+/* ---------- Zone accessible (plus court chemin autour du bâtiment) et aire ---------- */
+let distCoin = [0, 0, 0, 0];
+function calculerZone() {
+  const c = coins();
+  distCoin = c.map(k => traverse(S.px, S.py, k.x, k.y) ? Infinity : Math.hypot(k.x - S.px, k.y - S.py));
+  for (let r = 0; r < 4; r++) for (let i = 0; i < c.length; i++) {
+    const j = (i + 1) % 4, e = dist(c[i], c[j]);
+    if (distCoin[i] + e < distCoin[j]) distCoin[j] = distCoin[i] + e;
+    if (distCoin[j] + e < distCoin[i]) distCoin[i] = distCoin[j] + e;
+  }
+  const N = 640, L = S.L, x0 = S.px - L, y0 = S.py - L, pas = 2 * L / N;
+  const cv = zone ? zone.cv : document.createElement('canvas');
+  cv.width = cv.height = N;
+  const zc = cv.getContext('2d'), img = zc.createImageData(N, N), data = img.data;
+  let n = 0;
+  for (let j = 0; j < N; j++) {
+    const y = y0 + (j + 0.5) * pas;
+    for (let i = 0; i < N; i++) {
+      const x = x0 + (i + 0.5) * pas;
+      if (S.bat && x > X0 && x < X1 && y > Y0 && y < Y1) continue;
+      const de = Math.hypot(x - S.px, y - S.py);
+      if (de > L) continue;
+      let ok = !traverse(S.px, S.py, x, y);
+      for (let k = 0; k < c.length && !ok; k++) {
+        if (distCoin[k] + Math.hypot(x - c[k].x, y - c[k].y) <= L && !traverse(c[k].x, c[k].y, x, y)) ok = true;
+      }
+      if (ok) { n++; const o = (j * N + i) * 4; data[o] = 230; data[o + 1] = 126; data[o + 2] = 34; data[o + 3] = 105; }
+    }
+  }
+  zc.putImageData(img, 0, 0);
+  zone = { cv, x0, y0, taille: 2 * L, aire: n * pas * pas };
+  zonePerimee = false;
+  document.getElementById('lectureAire').innerHTML = 'Aire accessible ≈ ' + fr(zone.aire) + ' m²';
+}
+
+/* ---------- Herbe broutée ---------- */
+const ETENDUE = 42, PPM = 24;
+const trace = document.createElement('canvas');
+trace.width = trace.height = 2 * ETENDUE * PPM;
+const tctx = trace.getContext('2d');
+function brouter(x0, y0, x1, y1) {
+  tctx.strokeStyle = '#e3d9a6'; tctx.lineWidth = 0.25 * PPM;   // largeur de la trace : 25 cm tctx.lineCap = 'round';
+  tctx.beginPath();
+  tctx.moveTo((x0 + ETENDUE) * PPM, (y0 + ETENDUE) * PPM);
+  tctx.lineTo((x1 + ETENDUE) * PPM + 0.01, (y1 + ETENDUE) * PPM);
+  tctx.stroke();
+}
+
+/* Un point du pré au hasard, à portée de corde à vol d'oiseau (pas forcément accessible : la corde en décidera) */
+function cibleAuHasard() {
+  for (let k = 0; k < 30; k++) {
+    const a = Math.random() * 2 * Math.PI, r = S.L * Math.sqrt(Math.random());
+    const x = S.px + r * Math.cos(a), y = S.py + r * Math.sin(a);
+    if (!(S.bat && x > X0 - 0.2 && x < X1 + 0.2 && y > Y0 - 0.2 && y < Y1 + 0.2)) return { x, y };
+  }
+  return { x: G.x, y: G.y };
+}
+
+/* ---------- Mise en place ---------- */
+function placerPiquet(mode) {
+  S.mode = mode;
+  if (mode === 'coin') { S.px = X0; S.py = Y1; }   // coin en bas à gauche, comme le point G de la fiche
+  else if (mode === 'mur') { S.px = 0; S.py = Y1; }
+  else if (mode === 'pre') { S.px = 0; S.py = Y1 + 2; }
+}
+/* Piquet libre : il s'accroche au mur (et aux coins) quand il en est proche */
+function accrocherPiquet(x, y) {
+  const lim = 14;
+  x = Math.max(-lim, Math.min(lim, x)); y = Math.max(-lim, Math.min(lim, y));
+  if (!S.bat) { S.px = x; S.py = y; return; }
+  const dedans = x > X0 && x < X1 && y > Y0 && y < Y1;
+  let qx = Math.max(X0, Math.min(X1, x)), qy = Math.max(Y0, Math.min(Y1, y));
+  if (dedans) {
+    const dl = x - X0, dr = X1 - x, dt = y - Y0, db = Y1 - y, m = Math.min(dl, dr, dt, db);
+    if (m === dl) qx = X0; else if (m === dr) qx = X1; else if (m === dt) qy = Y0; else qy = Y1;
+  }
+  if (dedans || Math.hypot(x - qx, y - qy) < 0.4) {
+    for (const c of coins()) if (Math.hypot(qx - c.x, qy - c.y) < 0.4) { qx = c.x; qy = c.y; }
+    x = qx; y = qy;
+  }
+  S.px = x; S.py = y;
+}
+
+function reinitialiser() {
+  pivots = []; auto = null;
+  let ox = S.px, oy = S.py;
+  if (!S.bat || Math.hypot(ox, oy) < 1e-6) { ox = -0.8; oy = 0.6; }   // sans bâtiment : même direction que sur la fiche
+  const n = Math.hypot(ox, oy);
+  const r = S.L * 0.5;   // chèvre à mi-corde, dans le prolongement de la diagonale (comme sur la fiche)
+  const p = horsBatiment(S.px + ox / n * r, S.py + oy / n * r);
+  G.x = p.x; G.y = p.y; G.cap = G.capCible = 0; G.pas = 0;   // tête tournée vers la droite, comme sur la fiche
+  tctx.clearRect(0, 0, trace.width, trace.height);
+  initCorde();
+  zonePerimee = true;
+  majPanneau();
+}
+
+/* ---------- Vue ---------- */
+const canvas = document.getElementById('scene'), ctx = canvas.getContext('2d');
+const vue = { cx: 0, cy: 0, e: 20, pret: false };
+let W = 100, H = 100, dpr = 1;
+function redimensionner() {
+  const r = canvas.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  W = Math.max(50, r.width); H = Math.max(50, r.height);
+  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+}
+function cibleVue() {
+  const m = 1.2;
+  let x0 = S.px - S.L - m, x1 = S.px + S.L + m, y0 = S.py - S.L - m, y1 = S.py + S.L + m;
+  if (S.bat) { x0 = Math.min(x0, X0 - m); x1 = Math.max(x1, X1 + m); y0 = Math.min(y0, Y0 - m); y1 = Math.max(y1, Y1 + m); }
+  return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, e: Math.min(W / (x1 - x0), H / (y1 - y0)) };
+}
+const versEcran = (x, y) => ({ x: W / 2 + (x - vue.cx) * vue.e, y: H / 2 + (y - vue.cy) * vue.e });
+const versMonde = (sx, sy) => ({ x: vue.cx + (sx - W / 2) / vue.e, y: vue.cy + (sy - H / 2) / vue.e });
+
+/* ---------- Boucle ---------- */
+const touches = new Set();
+let pointeur = null, glissePiquet = false;
+let tPrec = 0;
+
+function maj(dt) {
+  const avant = { x: G.x, y: G.y };
+  // corde raccourcie : la chèvre est ramenée
+  if (libre() < 0.05 && pivots.length) reinitialiser();
+  else {
+    const A = dernier(), rem = libre(), d = dist(A, G);
+    if (d > rem + 1e-6) { G.x = A.x + (G.x - A.x) * rem / d; G.y = A.y + (G.y - A.y) * rem / d; }
+  }
+  const v = Math.max(4, Math.min(14, S.L * 0.9));
+  if (auto && auto.type === 'libre') {
+    // Promenade libre : la chèvre va d'un coin d'herbe à un autre, s'arrête pour brouter, repart
+    const vl = Math.max(1.8, Math.min(6, S.L * 0.35));
+    if (auto.pause > 0) auto.pause -= dt;
+    else {
+      if (!auto.cible) { auto.cible = cibleAuHasard(); auto.bloque = 0; }
+      const dx = auto.cible.x - G.x, dy = auto.cible.y - G.y, d = Math.hypot(dx, dy);
+      // le cap tourne peu à peu vers la cible : trajectoire courbe, sans demi-tour brusque
+      let ecart = Math.atan2(dy, dx) - auto.cap;
+      ecart = Math.atan2(Math.sin(ecart), Math.cos(ecart));
+      const tourne = 3.5 * dt;
+      auto.cap += Math.max(-tourne, Math.min(tourne, ecart));
+      const m = avancer(G.x + Math.cos(auto.cap) * 5, G.y + Math.sin(auto.cap) * 5, vl * dt);
+      auto.bloque = m < 0.3 * vl * dt ? auto.bloque + 1 : 0;
+      if (d < 0.25 || auto.bloque > 15) {       // arrivée, ou retenue par la corde ou un mur
+        if (auto.bloque > 15) auto.cap += Math.PI * (0.6 + 0.8 * Math.random());
+        auto.cible = null; auto.pause = 0.3 + Math.random() * 1.2;
+      }
+    }
+  } else if (auto && auto.type === 'tendue') {
+    // Promenade corde tendue : la chèvre tire sur sa corde et longe le bord, dans un sens ou dans l'autre, avec des pauses
+    const vt = Math.max(2.5, Math.min(8, S.L * 0.5));
+    if (auto.pause > 0) auto.pause -= dt;
+    else {
+      const A = dernier();
+      let rx = G.x - A.x, ry = G.y - A.y, d = Math.hypot(rx, ry);
+      if (d < 1e-3) { rx = -0.8; ry = 0.6; d = 1; }
+      rx /= d; ry /= d;
+      const m = avancer(G.x + (-ry * auto.sens + rx * 0.6) * 5, G.y + (rx * auto.sens + ry * 0.6) * 5, vt * dt);
+      auto.bloque = m < 0.15 * vt * dt ? auto.bloque + 1 : 0;
+      auto.duree -= dt;
+      if (auto.bloque > 12) {                    // au bout de la corde contre un mur : demi-tour
+        auto.sens = -auto.sens; auto.bloque = 0; auto.pause = 0.4 + Math.random() * 0.8; auto.duree = 2 + Math.random() * 5;
+      } else if (auto.duree <= 0) {              // elle s'arrête brouter, puis repart dans un sens au hasard
+        if (Math.random() < 0.4) auto.sens = -auto.sens;
+        auto.pause = 0.3 + Math.random() * 1.2; auto.duree = 1.5 + Math.random() * 5;
+      }
+    }
+  } else if (auto) {
+    const A = dernier();
+    let rx = G.x - A.x, ry = G.y - A.y, d = Math.hypot(rx, ry);
+    if (d < 1e-3) { rx = S.px || 1; ry = S.py; d = Math.hypot(rx, ry); }
+    rx /= d; ry /= d;
+    const dx = -ry * auto.sens + rx * 0.6, dy = rx * auto.sens + ry * 0.6;
+    const m = avancer(G.x + dx * 5, G.y + dy * 5, v * dt);
+    auto.parcouru += m;
+    auto.bloque = m < 0.15 * v * dt ? auto.bloque + 1 : 0;
+    if (auto.bloque > 12 || auto.parcouru > 2 * Math.PI * S.L * 1.03 + 2) {
+      if (auto.demi === 0) auto = { sens: -auto.sens, demi: 1, bloque: 0, parcouru: 0 };
+      else auto = null;
+      majPanneau();
+    }
+  } else if (pointeur && !glissePiquet) {
+    avancer(pointeur.x, pointeur.y, v * dt);
+  } else if (touches.size) {
+    let dx = 0, dy = 0;
+    if (touches.has('ArrowLeft')) dx -= 1; if (touches.has('ArrowRight')) dx += 1;
+    if (touches.has('ArrowUp')) dy -= 1; if (touches.has('ArrowDown')) dy += 1;
+    if (dx || dy) { const n = Math.hypot(dx, dy); avancer(G.x + dx / n * 5, G.y + dy / n * 5, v * dt); }
+  }
+  if (voir.trace) brouter(avant.x, avant.y, G.x, G.y);
+  // la chèvre tourne peu à peu vers sa direction de marche
+  const ec = Math.atan2(Math.sin(G.capCible - G.cap), Math.cos(G.capCible - G.cap));
+  G.cap += ec * Math.min(1, dt * 10);
+  simCorde();
+  // vue : zoom adouci
+  const c = cibleVue();
+  if (!vue.pret) { Object.assign(vue, c); vue.pret = true; }
+  else { vue.cx += (c.cx - vue.cx) * 0.18; vue.cy += (c.cy - vue.cy) * 0.18; vue.e += (c.e - vue.e) * 0.18; }
+  if ((voir.zone || voir.aire) && zonePerimee) calculerZone();
+  document.getElementById('lectureLibre').innerHTML =
+    'Corde libre : <b>' + fr(Math.max(0, libre()), 2) + ' m</b>' +
+    (pivots.length ? ' · enroulée : <b>' + fr(enroule(), 2) + ' m</b>' : '');
+}
+
+function etiquette(texte, sx, sy, couleur) {
+  ctx.font = '600 12.5px "Segoe UI", sans-serif';
+  const w = ctx.measureText(texte).width + 10;
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  ctx.beginPath(); ctx.roundRect(sx - w / 2, sy - 10, w, 20, 6); ctx.fill();
+  ctx.fillStyle = couleur || '#4a2d0d'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(texte, sx, sy + 0.5);
+}
+
+/* Chèvre vue de dessus. Repère local : origine au collier (là où la corde est attachée),
+   axe x vers l'avant, unité = 1 m de chèvre (agrandie quand le plan est très dézoomé). */
+function dessinerChevre(e) {
+  const g = versEcran(G.x, G.y), u = Math.max(22, Math.min(46, e));
+  const trait = '#4a3826', robe = '#f6f1e7', tache = '#b98a5e';
+  const ell = (x, y, rx, ry, rot, fill, stroke) => {
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot || 0, 0, 2 * Math.PI);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+  };
+  ctx.save(); ctx.translate(g.x, g.y);
+  // ombre au sol (non tournée)
+  ctx.save(); ctx.rotate(G.cap); ctx.scale(u, u); ell(-0.5, 0, 0.72, 0.42, 0, 'rgba(0,0,0,.16)'); ctx.restore();
+  ctx.rotate(G.cap); ctx.scale(u, u); ctx.lineWidth = 1.4 / u; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // sabots qui dépassent, en alternance pendant la marche
+  const osc = 0.09 * Math.sin(G.pas * 7);
+  for (const [x, y, s] of [[-0.22, 0.27, 1], [-0.22, -0.27, -1], [-0.88, 0.25, -1], [-0.88, -0.25, 1]])
+    ell(x + s * osc, y, 0.1, 0.06, 0, trait);
+  // queue
+  ctx.beginPath(); ctx.moveTo(-1.08, -0.07); ctx.lineTo(-1.27, 0); ctx.lineTo(-1.08, 0.07); ctx.closePath();
+  ctx.fillStyle = robe; ctx.fill(); ctx.strokeStyle = trait; ctx.stroke();
+  // corps et taches
+  ell(-0.56, 0, 0.56, 0.3, 0, robe, trait);
+  ell(-0.72, 0.08, 0.2, 0.13, 0.4, tache); ell(-0.33, -0.13, 0.12, 0.08, -0.3, tache);
+  // cou
+  ctx.beginPath(); ctx.moveTo(-0.12, -0.15); ctx.lineTo(0.16, -0.1); ctx.lineTo(0.16, 0.1); ctx.lineTo(-0.12, 0.15); ctx.closePath();
+  ctx.fillStyle = robe; ctx.fill(); ctx.strokeStyle = trait; ctx.stroke();
+  // collier (la corde y est attachée)
+  ctx.beginPath(); ctx.moveTo(0, -0.14); ctx.lineTo(0, 0.14); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 3.2 / u; ctx.stroke();
+  ctx.lineWidth = 1.4 / u;
+  // oreilles
+  ell(0.2, 0.2, 0.13, 0.055, 0.9, tache, trait); ell(0.2, -0.2, 0.13, 0.055, -0.9, tache, trait);
+  // tête et museau
+  ell(0.34, 0, 0.24, 0.15, 0, robe, trait);
+  ell(0.52, 0, 0.08, 0.09, 0, '#e7c9b4', trait);
+  ctx.fillStyle = trait; ctx.beginPath(); ctx.arc(0.38, 0.09, 0.025, 0, 2 * Math.PI); ctx.arc(0.38, -0.09, 0.025, 0, 2 * Math.PI); ctx.fill();
+  // cornes, recourbées vers l'arrière
+  ctx.strokeStyle = '#6b5a45'; ctx.lineWidth = 2.6 / u;
+  for (const s of [1, -1]) { ctx.beginPath(); ctx.moveTo(0.24, 0.07 * s); ctx.quadraticCurveTo(0.02, 0.1 * s, -0.12, 0.24 * s); ctx.stroke(); }
+  ctx.restore();
+}
+
+function dessiner() {
+  const e = vue.e;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#86c06c'; ctx.fillRect(0, 0, W, H);
+  // repère monde
+  ctx.setTransform(e * dpr, 0, 0, e * dpr, (W / 2 - vue.cx * e) * dpr, (H / 2 - vue.cy * e) * dpr);
+  if (voir.trace) ctx.drawImage(trace, -ETENDUE, -ETENDUE, 2 * ETENDUE, 2 * ETENDUE);
+  if (voir.zone && zone) ctx.drawImage(zone.cv, zone.x0, zone.y0, zone.taille, zone.taille);
+  const a = versMonde(0, 0), b = versMonde(W, H);
+  if (voir.grille) {
+    ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1 / e; ctx.beginPath();
+    for (let x = Math.ceil(a.x - X0) + X0; x <= b.x; x++) { ctx.moveTo(x, a.y); ctx.lineTo(x, b.y); }
+    for (let y = Math.ceil(a.y - Y0) + Y0; y <= b.y; y++) { ctx.moveTo(a.x, y); ctx.lineTo(b.x, y); }
+    ctx.stroke();
+  }
+  const A = dernier(), rem = Math.max(0, libre());
+  if (voir.cercle && rem > 0.01) {
+    ctx.strokeStyle = 'rgba(74,45,13,.75)'; ctx.lineWidth = 1.6 / e; ctx.setLineDash([7 / e, 6 / e]);
+    ctx.beginPath(); ctx.arc(A.x, A.y, rem, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // bâtiment
+  if (S.bat) {
+  ctx.fillStyle = '#b9895f'; ctx.fillRect(X0, Y0, S.bw, S.bh);
+  ctx.strokeStyle = 'rgba(74,45,13,.35)'; ctx.lineWidth = 1.5 / e; ctx.beginPath();
+  const f = Math.min(S.bw, S.bh) / 2;
+  if (S.bw >= S.bh) { ctx.moveTo(X0, Y0); ctx.lineTo(X0 + f, 0); ctx.lineTo(X0, Y1); ctx.moveTo(X1, Y0); ctx.lineTo(X1 - f, 0); ctx.lineTo(X1, Y1); ctx.moveTo(X0 + f, 0); ctx.lineTo(X1 - f, 0); }
+  else { ctx.moveTo(X0, Y0); ctx.lineTo(0, Y0 + f); ctx.lineTo(X1, Y0); ctx.moveTo(X0, Y1); ctx.lineTo(0, Y1 - f); ctx.lineTo(X1, Y1); ctx.moveTo(0, Y0 + f); ctx.lineTo(0, Y1 - f); }
+  ctx.stroke();
+  ctx.strokeStyle = '#4a2d0d'; ctx.lineWidth = 2.5 / e; ctx.strokeRect(X0, Y0, S.bw, S.bh);
+  }
+  // corde
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(S.px, S.py);
+  for (const p of pivots) ctx.lineTo(p.x, p.y);
+  for (let i = 1; i <= NC; i++) ctx.lineTo(cx[i], cy[i]);
+  ctx.strokeStyle = '#3d2508'; ctx.lineWidth = 5 / e; ctx.stroke();        // contour sombre
+  ctx.strokeStyle = '#f6e2a8'; ctx.lineWidth = 2.4 / e; ctx.stroke();      // âme claire, visible le long des murs
+  for (const p of pivots) { ctx.fillStyle = '#E67E22'; ctx.beginPath(); ctx.arc(p.x, p.y, 5 / e, 0, 2 * Math.PI); ctx.fill(); }
+  // piquet
+  ctx.fillStyle = '#c0392b'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / e;
+  ctx.beginPath(); ctx.arc(S.px, S.py, 7 / e, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+
+  // repère écran : chèvre et étiquettes
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  dessinerChevre(e);
+
+  if (voir.mesures) {
+    if (S.bat) {
+      let p = versEcran(0, Y0); etiquette(fr(S.bw) + ' m', p.x, p.y + 13);
+      p = versEcran(X0, 0); etiquette(fr(S.bh) + ' m', p.x + 22, p.y);
+    }
+    let prec = piquet();
+    for (const q of pivots) {
+      const m = versEcran((prec.x + q.x) / 2, (prec.y + q.y) / 2);
+      etiquette(fr(dist(prec, q), 2) + ' m', m.x, m.y, '#C8690F');
+      prec = q;
+    }
+    if (rem > 0.3) {
+      const m = versEcran(cx[NC >> 1], cy[NC >> 1]);
+      etiquette((pivots.length ? 'reste ' : '') + fr(rem, 2) + ' m', m.x, m.y - 16, '#C8690F');
+    }
+  }
+}
+
+function boucle(t) {
+  const dt = Math.min(0.05, Math.max(0, (t - tPrec) / 1000)); tPrec = t;
+  maj(dt); dessiner();
+  requestAnimationFrame(boucle);
+}
+
+/* ---------- Panneau ---------- */
+function majPanneau() {
+  document.getElementById('valL').textContent = fr(S.L) + ' m';
+  document.getElementById('valBw').textContent = fr(S.bw) + ' m';
+  document.getElementById('valBh').textContent = fr(S.bh) + ' m';
+  document.querySelectorAll('[data-piquet]').forEach(b => b.classList.toggle('active', b.dataset.piquet === S.mode));
+  document.querySelectorAll('[data-voir]').forEach(b => b.classList.toggle('active', voir[b.dataset.voir]));
+  document.getElementById('lectureAire').classList.toggle('visible', voir.aire);
+  document.getElementById('btnTour').classList.toggle('active', !!auto && !auto.type);
+  document.getElementById('btnTendue').classList.toggle('active', !!auto && auto.type === 'tendue');
+  document.getElementById('btnLibre').classList.toggle('active', !!auto && auto.type === 'libre');
+  document.getElementById('btnBat').classList.toggle('active', S.bat);
+  // sans bâtiment : ses réglages et les positions du piquet par rapport aux murs n'ont plus de sens
+  for (const id of ['rBw', 'rBh']) { const r = document.getElementById(id); r.disabled = !S.bat; r.parentElement.classList.toggle('inactif', !S.bat); }
+  document.querySelectorAll('[data-piquet]').forEach(b => { b.disabled = !S.bat; });
+}
+
+document.getElementById('rL').addEventListener('input', ev => {
+  S.L = +ev.target.value; zonePerimee = true; majPanneau();
+});
+function changerBatiment() {
+  S.bw = +document.getElementById('rBw').value; S.bh = +document.getElementById('rBh').value;
+  majRect();
+  if (S.mode === 'libre') accrocherPiquet(S.px, S.py); else placerPiquet(S.mode);
+  reinitialiser();
+}
+document.getElementById('btnBat').addEventListener('click', () => {
+  S.bat = !S.bat;
+  if (S.bat) placerPiquet('coin'); else S.mode = 'libre';   // le piquet reste où il est quand on retire le bâtiment
+  reinitialiser();
+});
+document.getElementById('rBw').addEventListener('input', changerBatiment);
+document.getElementById('rBh').addEventListener('input', changerBatiment);
+document.querySelectorAll('[data-piquet]').forEach(b => b.addEventListener('click', () => { placerPiquet(b.dataset.piquet); reinitialiser(); }));
+document.querySelectorAll('[data-voir]').forEach(b => b.addEventListener('click', () => { voir[b.dataset.voir] = !voir[b.dataset.voir]; majPanneau(); }));
+document.getElementById('btnTour').addEventListener('click', () => {
+  auto = auto && !auto.type ? null : { sens: 1, demi: 0, bloque: 0, parcouru: 0 };
+  majPanneau();
+});
+document.getElementById('btnTendue').addEventListener('click', () => {
+  auto = auto && auto.type === 'tendue' ? null : { type: 'tendue', sens: Math.random() < 0.5 ? 1 : -1, pause: 0, bloque: 0, duree: 2 + Math.random() * 4 };
+  majPanneau();
+});
+document.getElementById('btnLibre').addEventListener('click', () => {
+  auto = auto && auto.type === 'libre' ? null : { type: 'libre', cible: null, pause: 0, bloque: 0, cap: Math.atan2(G.y - S.py, G.x - S.px) };
+  majPanneau();
+});
+document.getElementById('btnEffacer').addEventListener('click', reinitialiser);
+
+/* ---------- Souris, doigt, clavier ---------- */
+function posMonde(ev) { const r = canvas.getBoundingClientRect(); return versMonde(ev.clientX - r.left, ev.clientY - r.top); }
+canvas.addEventListener('pointerdown', ev => {
+  canvas.setPointerCapture(ev.pointerId);
+  const p = posMonde(ev);
+  glissePiquet = Math.hypot(p.x - S.px, p.y - S.py) < Math.max(0.5, 16 / vue.e);
+  pointeur = p; auto = null; majPanneau();
+  document.getElementById('astuce').style.display = 'none';
+});
+canvas.addEventListener('pointermove', ev => {
+  const p = posMonde(ev);
+  if (!pointeur) { canvas.style.cursor = Math.hypot(p.x - S.px, p.y - S.py) < Math.max(0.5, 16 / vue.e) ? 'grab' : 'pointer'; return; }
+  pointeur = p;
+  if (glissePiquet) { S.mode = 'libre'; accrocherPiquet(p.x, p.y); reinitialiser(); }
+});
+const lacher = () => { pointeur = null; glissePiquet = false; };
+canvas.addEventListener('pointerup', lacher);
+canvas.addEventListener('pointercancel', lacher);
+window.addEventListener('keydown', ev => {
+  if (!ev.key.startsWith('Arrow') || ev.target.tagName === 'INPUT') return;
+  ev.preventDefault(); touches.add(ev.key); auto = null; majPanneau();
+});
+window.addEventListener('keyup', ev => touches.delete(ev.key));
+window.addEventListener('blur', () => touches.clear());
+
+/* ---------- Guide ---------- */
+const overlayGuide = document.getElementById('overlayGuide');
+document.getElementById('btnGuide').addEventListener('click', () => overlayGuide.classList.add('ouvert'));
+document.getElementById('btnFermerGuide').addEventListener('click', () => overlayGuide.classList.remove('ouvert'));
+overlayGuide.addEventListener('click', ev => { if (ev.target === overlayGuide) overlayGuide.classList.remove('ouvert'); });
+
+/* ---------- Démarrage ---------- */
+majRect(); placerPiquet('coin'); redimensionner(); reinitialiser();
+new ResizeObserver(redimensionner).observe(canvas);
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>
